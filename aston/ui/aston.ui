@@ -1,0 +1,447 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>656</width>
+    <height>537</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Aston</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <item>
+     <layout class="QVBoxLayout" name="plotArea"/>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>656</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>File</string>
+    </property>
+    <widget class="QMenu" name="menuExport">
+     <property name="title">
+      <string>Export</string>
+     </property>
+     <addaction name="actionChromatogram_as_Picture"/>
+     <addaction name="actionChromatogram_as_CSV"/>
+     <addaction name="actionSpectra_as_Picture"/>
+     <addaction name="actionSpectra_as_CSV"/>
+     <addaction name="actionPeak_List_as_CSV"/>
+    </widget>
+    <addaction name="actionOpen"/>
+    <addaction name="menuExport"/>
+    <addaction name="separator"/>
+    <addaction name="actionQuit"/>
+   </widget>
+   <widget class="QMenu" name="menuIntegrate">
+    <property name="title">
+     <string>Chromatogram</string>
+    </property>
+    <addaction name="actionIntegrate"/>
+    <addaction name="actionIntegrate_2"/>
+    <addaction name="actionIntegration_Parameters"/>
+    <addaction name="separator"/>
+    <addaction name="actionAuto_align_Chromatogram"/>
+    <addaction name="actionAlign_Chromatogram"/>
+    <addaction name="actionSubtract_Add_Chromatogram"/>
+    <addaction name="actionSmoothChromatogram"/>
+    <addaction name="actionRemove_Periodic_Noise"/>
+    <addaction name="actionRevert"/>
+    <addaction name="separator"/>
+    <addaction name="actionCalculate_Info"/>
+   </widget>
+   <widget class="QMenu" name="menuSpectrum">
+    <property name="title">
+     <string>Spectrum</string>
+    </property>
+    <addaction name="actionSearch_Database"/>
+    <addaction name="actionSave_to_Database"/>
+    <addaction name="actionSequence"/>
+    <addaction name="actionStructure"/>
+   </widget>
+   <widget class="QMenu" name="menuHelp">
+    <property name="enabled">
+     <bool>false</bool>
+    </property>
+    <property name="title">
+     <string>Help</string>
+    </property>
+   </widget>
+   <widget class="QMenu" name="menuPeaks">
+    <property name="title">
+     <string>Peaks</string>
+    </property>
+    <addaction name="actionCalculate_Isotopic"/>
+    <addaction name="actionExport_Peak_List"/>
+    <addaction name="actionIdentify"/>
+   </widget>
+   <widget class="QMenu" name="menuWindows">
+    <property name="title">
+     <string>Windows</string>
+    </property>
+    <addaction name="actionFiles"/>
+    <addaction name="actionSettings"/>
+    <addaction name="actionPeaks"/>
+    <addaction name="actionSpectra"/>
+   </widget>
+   <addaction name="menuFile"/>
+   <addaction name="menuIntegrate"/>
+   <addaction name="menuSpectrum"/>
+   <addaction name="menuPeaks"/>
+   <addaction name="menuWindows"/>
+   <addaction name="menuHelp"/>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+  <widget class="QDockWidget" name="filesDockWidget">
+   <property name="accessibleName">
+    <string/>
+   </property>
+   <property name="layoutDirection">
+    <enum>Qt::LeftToRight</enum>
+   </property>
+   <property name="floating">
+    <bool>false</bool>
+   </property>
+   <property name="windowTitle">
+    <string>Files</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>8</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents">
+    <layout class="QVBoxLayout" name="verticalLayout_4">
+     <item>
+      <widget class="QLineEdit" name="lineEdit">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="placeholderText">
+        <string>Seach by Name</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QTreeView" name="fileTreeView"/>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+  <widget class="QDockWidget" name="settingsDockWidget">
+   <property name="accessibleName">
+    <string/>
+   </property>
+   <property name="windowTitle">
+    <string>Settings</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>8</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents_3">
+    <layout class="QHBoxLayout" name="horizontalLayout_4">
+     <item>
+      <layout class="QFormLayout" name="filterLayout">
+       <property name="fieldGrowthPolicy">
+        <enum>QFormLayout::ExpandingFieldsGrow</enum>
+       </property>
+       <item row="1" column="0">
+        <widget class="QLabel" name="label_2">
+         <property name="text">
+          <string>Legend</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <widget class="QCheckBox" name="legendCheckBox">
+         <property name="text">
+          <string/>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="0">
+        <widget class="QLabel" name="styleLabel">
+         <property name="text">
+          <string>Graph Style</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QComboBox" name="styleComboBox">
+         <property name="duplicatesEnabled">
+          <bool>false</bool>
+         </property>
+         <property name="frame">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="1">
+        <widget class="QComboBox" name="colorSchemeComboBox"/>
+       </item>
+       <item row="2" column="0">
+        <widget class="QLabel" name="colorSchemeLabel">
+         <property name="text">
+          <string>Color Scheme</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="1">
+        <widget class="QComboBox" name="labelPeaksComboBox"/>
+       </item>
+       <item row="3" column="0">
+        <widget class="QLabel" name="labelPeaksLabel">
+         <property name="text">
+          <string>Label Peaks</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+  <widget class="QDockWidget" name="peaksDockWidget">
+   <property name="accessibleName">
+    <string/>
+   </property>
+   <property name="windowTitle">
+    <string>Peaks</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>8</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents_4">
+    <layout class="QVBoxLayout" name="verticalLayout_5">
+     <item>
+      <widget class="QTreeView" name="peakTreeView"/>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+  <widget class="QDockWidget" name="spectraDockWidget">
+   <property name="accessibleName">
+    <string/>
+   </property>
+   <property name="windowTitle">
+    <string>Spectra</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>8</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents_5">
+    <layout class="QHBoxLayout" name="horizontalLayout_3">
+     <item>
+      <layout class="QVBoxLayout" name="specArea"/>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+  <action name="actionOpen">
+   <property name="text">
+    <string>Open Folder</string>
+   </property>
+  </action>
+  <action name="actionChromatogram_as_Picture">
+   <property name="text">
+    <string>Chromatogram as Picture</string>
+   </property>
+  </action>
+  <action name="actionChromatogram_as_CSV">
+   <property name="text">
+    <string>Chromatogram as CSV</string>
+   </property>
+  </action>
+  <action name="actionSpectra_as_Picture">
+   <property name="text">
+    <string>Spectra as Picture</string>
+   </property>
+  </action>
+  <action name="actionSpectra_as_CSV">
+   <property name="text">
+    <string>Spectra as CSV</string>
+   </property>
+  </action>
+  <action name="actionPeak_List_as_CSV">
+   <property name="text">
+    <string>Peak List as CSV</string>
+   </property>
+  </action>
+  <action name="actionQuit">
+   <property name="text">
+    <string>Quit</string>
+   </property>
+  </action>
+  <action name="actionIntegrate">
+   <property name="text">
+    <string>Quick Integrate</string>
+   </property>
+  </action>
+  <action name="actionIntegration_Parameters">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Integration Parameters</string>
+   </property>
+  </action>
+  <action name="actionIntegrate_2">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Integrate</string>
+   </property>
+  </action>
+  <action name="actionSearch_Database">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Search Database</string>
+   </property>
+  </action>
+  <action name="actionSave_to_Database">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Save to Database</string>
+   </property>
+  </action>
+  <action name="actionSequence">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Sequence</string>
+   </property>
+  </action>
+  <action name="actionStructure">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Structure</string>
+   </property>
+  </action>
+  <action name="actionCalculate_Info">
+   <property name="text">
+    <string>Calculate Info</string>
+   </property>
+  </action>
+  <action name="actionAuto_align_Chromatogram">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Auto-Align Chromatogram</string>
+   </property>
+  </action>
+  <action name="actionSubtract_Add_Chromatogram">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Subtract/Add Chromatogram</string>
+   </property>
+  </action>
+  <action name="actionRevert">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Revert to Original</string>
+   </property>
+  </action>
+  <action name="actionRemove_Periodic_Noise">
+   <property name="text">
+    <string>Remove Periodic Noise</string>
+   </property>
+  </action>
+  <action name="actionSmoothChromatogram">
+   <property name="text">
+    <string>Smooth Chromatogram</string>
+   </property>
+  </action>
+  <action name="actionAlign_Chromatogram">
+   <property name="text">
+    <string>Adjust Chromatogram</string>
+   </property>
+  </action>
+  <action name="actionCalculate_Isotopic">
+   <property name="text">
+    <string>Calculate Isotopic</string>
+   </property>
+  </action>
+  <action name="actionExport_Peak_List">
+   <property name="text">
+    <string>Export Peak List</string>
+   </property>
+  </action>
+  <action name="actionIdentify">
+   <property name="text">
+    <string>Quick Identify</string>
+   </property>
+  </action>
+  <action name="actionFiles">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Files</string>
+   </property>
+  </action>
+  <action name="actionSettings">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Settings</string>
+   </property>
+  </action>
+  <action name="actionPeaks">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Peaks</string>
+   </property>
+  </action>
+  <action name="actionSpectra">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Spectra</string>
+   </property>
+  </action>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

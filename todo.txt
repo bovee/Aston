@@ -1,0 +1,35 @@
+-method database
+
+-compound database
+--compound identification
+
+-MS/MS stuff
+--figure out MS-MS format
+
+-chromatogram stuff
+--autoalignment of multiple chromatograms
+--wavelet integrator
+--remove periodic noise
+--baseline detection (as a trace type?)
+--actuals as a trace type (pressure/flow rate/temp)
+
+-peak stuff
+--Gaussian peak types and conversion to/from 
+--adjustable peaks (little selectors on each end of "baseline")
+--peaks adjust with chromatogram adjustment (respect scale/offset)
+--highlight selected (in peak table) peak on graph
+--delete all peaks menu item (with confirmation)
+
+-user interface
+--icon for Aston
+--help manual
+--trace selector dialog
+--dialog (or something) for selecting smoothing options
+--consistent date types (in file table)
+--injection size (in file table)
+--color schemes for graphs
+--do offsets/scaling for multiple traces
+--display fraction collection data
+
+-optimization
+--separate thread for database updating
