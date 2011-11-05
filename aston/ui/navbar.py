@@ -11,13 +11,13 @@ class AstonNavBar(NavigationToolbar2QTAgg):
         
         #add the peak tool
         #TODO: this next path doesn't work on Windows?
-        pkpath = op.join(op.curdir,'aston','ui','peak.svg')
+        pkpath = op.join(op.curdir,'aston','ui','icons','peak.png')
         peakToolAct = QtGui.QAction(QtGui.QIcon(pkpath),'Add/Delete Peak',self)
         self.insertAction(self.actions()[4],peakToolAct)
         self.connect(peakToolAct, QtCore.SIGNAL('triggered()'), self.peak)
 
         #add the alignment tool
-        pkpath = op.join(op.curdir,'aston','ui','align.svg')
+        pkpath = op.join(op.curdir,'aston','ui','icons','align.png')
         alignToolAct = QtGui.QAction(QtGui.QIcon(pkpath),'Align Chromatogram',self)
         self.insertAction(self.actions()[4],alignToolAct)
         self.connect(alignToolAct, QtCore.SIGNAL('triggered()'), self.align)

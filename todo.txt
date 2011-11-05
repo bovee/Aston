@@ -33,3 +33,10 @@
 
 -optimization
 --separate thread for database updating
+
+-Distribution
+-- bad path to icons on Macs and PCs
+-- "[Paths] Plugins = bollocks" in qt.conf in Resources on Macs
+-- copying qt_menu.nib to Resources on Macs
+-- package size on Macs
+-- rearranged menus on Mac (Preferences in Python menu)

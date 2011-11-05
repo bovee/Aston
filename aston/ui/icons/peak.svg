@@ -10,10 +10,10 @@
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    version="1.1"
-   width="744.09448"
-   height="1052.3622"
+   width="1000"
+   height="1000"
    id="svg2"
-   inkscape:version="0.48.1 r9760"
+   inkscape:version="0.48.2 r9819"
    sodipodi:docname="peak.svg">
   <sodipodi:namedview
      pagecolor="#ffffff"
@@ -52,7 +52,7 @@
   <g
      id="layer1"
      style="stroke-width:10;stroke-miterlimit:4;stroke-dasharray:none"
-     transform="matrix(1.8526234,0,0,4.2028496,-47.603649,-1938.3854)">
+     transform="matrix(2.632699,0,0,4.2028496,-104.28765,-1967.787)">
     <path
        d="M 72.664753,677.6997 C 222.53487,677.40174 141.87325,499.5931 231.84125,499.96656 c 81.31248,0.33753 28.85066,176.36009 157.24003,175.99766"
        id="path2985"

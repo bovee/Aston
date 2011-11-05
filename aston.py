@@ -25,7 +25,6 @@ class AstonWindow(QtGui.QMainWindow):
         #connect the menu logic
         self.ui.actionOpen.triggered.connect(self.openFolder)
         self.ui.actionPeak_List_as_CSV.triggered.connect(self.peakListAsCSV)
-        self.ui.actionCalculate_Info.triggered.connect(self.calculateInfo)
         self.ui.actionChromatogram_as_Picture.triggered.connect(self.chromatogramAsPic)
         self.ui.actionChromatogram_as_CSV.triggered.connect(self.chromatogramAsCSV)
         self.ui.actionSpectra_as_Picture.triggered.connect(self.spectrumAsPic)
@@ -109,12 +108,14 @@ class AstonWindow(QtGui.QMainWindow):
         self.ui.styleComboBox.currentIndexChanged.connect(self.plotData)
 
     def updateWindows(self):
+        #this updates the tab windows to match the menu
         self.ui.filesDockWidget.setVisible(self.ui.actionFiles.isChecked())
         self.ui.settingsDockWidget.setVisible(self.ui.actionSettings.isChecked())
         self.ui.peaksDockWidget.setVisible(self.ui.actionPeaks.isChecked())
         self.ui.spectraDockWidget.setVisible(self.ui.actionSpectra.isChecked())
 
     def updateWindowsMenu(self):
+        #this updates the windows menu to match the tab
         self.ui.actionFiles.setChecked(self.ui.filesDockWidget.isVisible())
         self.ui.actionSettings.setChecked(self.ui.settingsDockWidget.isVisible())
         self.ui.actionPeaks.setChecked(self.ui.peaksDockWidget.isVisible())
@@ -161,6 +162,7 @@ class AstonWindow(QtGui.QMainWindow):
         self.bplot.get_figure().savefig(fname,transparent=True)
 
     def peakListAsCSV(self):
+        #TODO: does this still work?
         fname = str(QtGui.QFileDialog.getSaveFileName(self,"Save As..."))
         f = open(fname,'w')
         for i in self.ptab_mod.peaks:
@@ -196,13 +198,12 @@ class AstonWindow(QtGui.QMainWindow):
         self.ptab_mod.endResetModel() 
         self.tcanvas.draw()
 
-    def calculateInfo(self):
-        pass
-
     def removePeriodicNoise(self):
+        #TODO: definitely doesn't work
         pass
 
     def smooth(self):
+        #TODO: probably doesn't work
         from PyQt4.QtGui import QInputDialog
         x = QInputDialog.getItem(self,'Smoothing Type','Aston',['Moving Average','Savitsky-Golay','None'],editable=False)
         if not x[1]: return
@@ -223,6 +224,7 @@ class AstonWindow(QtGui.QMainWindow):
             self.data.setInfo('smooth','')
 
     def alignChrom(self):
+        #TODO: probably doesn't work
         from PyQt4.QtGui import QInputDialog
         x = QInputDialog.getDouble(self, 'Scale by?', 'Aston', value = 1)
         if not x[1]: return
@@ -239,6 +241,8 @@ class AstonWindow(QtGui.QMainWindow):
             self.data.setInfo('offset',str(x[0]))
 
     def revertChromChange(self):
+        '''Go through and delete all of the info keys related to 
+        display properties.'''
         keys = ['scale', 'yscale', 'offset', 'yoffset', 'smooth', \
           'smooth window', 'smooth order', 'remove_periodic_noise']
         for dt in self.ftab_mod.returnSelFiles():
@@ -261,45 +265,8 @@ class AstonWindow(QtGui.QMainWindow):
             self.plotter.plotData(datafiles,self.ptab_mod)
         self.tcanvas.draw()
 
-#    def plotData(self,updateBounds=True):
-#        #get the files that have been checked to be visible
-#        datafiles = self.ftab_mod.returnChkFiles()
-#
-#        if not updateBounds:
-#            bnds = self.tplot.get_xlim(),self.tplot.get_ylim()
-#
-#        #plot all of the datafiles
-#        self.tplot.cla()
-#        for x in datafiles:
-#            for y in x.info['traces'].split(','):
-#                if y != '': self.tplot.plot(x.time(),x.trace(y),label=x.name+' '+y)
-#
-#        #add a legend and make it pretty
-#        if self.ui.legendCheckBox.isChecked():
-#            leg = self.tplot.legend(frameon=False)
-#            #leg.get_frame().edgecolor = None
-#            clrs = [i.get_color() for i in leg.get_lines()]
-#            for i,j in enumerate(clrs):
-#                leg.get_texts()[i].set_color(j)
-#            for i in leg.get_lines():
-#                i.set_linestyle('')
-#
-#        if updateBounds:
-#            #update the view bounds in the navbar's history
-#            self.tnavbar._views.clear()
-#            self.tnavbar._positions.clear()
-#            self.tnavbar.push_current()
-#        else:
-#            self.tplot.set_xlim(bnds[0])
-#            self.tplot.set_ylim(bnds[1])
-#
-#        #draw peaks
-#        if self.ptab_mod is not None: self.ptab_mod.drawPeaks()
-#
-#        #redraw the canvas
-#        self.tcanvas.draw()
-
     def updateSearch(self,text):
+        '''If the search box changes, update the file table.'''
         self.ftab_mod.proxyMod.setFilterFixedString(text)
 
     def mousedown(self, event):
