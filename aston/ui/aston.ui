@@ -108,9 +108,6 @@
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <widget class="QDockWidget" name="filesDockWidget">
-   <property name="accessibleName">
-    <string/>
-   </property>
    <property name="layoutDirection">
     <enum>Qt::LeftToRight</enum>
    </property>
@@ -142,9 +139,6 @@
    </widget>
   </widget>
   <widget class="QDockWidget" name="settingsDockWidget">
-   <property name="accessibleName">
-    <string/>
-   </property>
    <property name="windowTitle">
     <string>Settings</string>
    </property>
@@ -215,9 +209,6 @@
    </widget>
   </widget>
   <widget class="QDockWidget" name="peaksDockWidget">
-   <property name="accessibleName">
-    <string/>
-   </property>
    <property name="windowTitle">
     <string>Peaks</string>
    </property>
@@ -233,9 +224,6 @@
    </widget>
   </widget>
   <widget class="QDockWidget" name="spectraDockWidget">
-   <property name="accessibleName">
-    <string/>
-   </property>
    <property name="windowTitle">
     <string>Spectra</string>
    </property>

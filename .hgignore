@@ -1,5 +1,7 @@
 syntax: glob
 
+.directory
+*.sqlite
 *.pyc
 *__pycache__/*
 *data/*

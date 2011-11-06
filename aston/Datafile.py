@@ -43,6 +43,9 @@ class Datafile(object):
         elif ext == 'UV' and magic == 0x0233:
             from .AgilentUV import AgilentCSDAD
             return super(Datafile, cls).__new__(AgilentCSDAD,filename,*args)
+        elif ext == 'CSV':
+            from .OtherFiles import CSVFile
+            return super(Datafile, cls).__new__(CSVFile,filename,*args)
         else:
             return None
             #return super(Datafile, cls).__new__(cls,filename,*args)

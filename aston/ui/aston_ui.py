@@ -2,8 +2,8 @@
 
 # Form implementation generated from reading ui file 'aston.ui'
 #
-# Created: Tue Oct 25 18:53:50 2011
-#      by: PyQt4 UI code generator 4.8.5
+# Created: Sat Nov  5 19:57:15 2011
+#      by: PyQt4 UI code generator 4.8.6
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -57,7 +57,6 @@ class Ui_MainWindow(object):
         self.statusbar.setObjectName(_fromUtf8("statusbar"))
         MainWindow.setStatusBar(self.statusbar)
         self.filesDockWidget = QtGui.QDockWidget(MainWindow)
-        self.filesDockWidget.setAccessibleName(_fromUtf8(""))
         self.filesDockWidget.setLayoutDirection(QtCore.Qt.LeftToRight)
         self.filesDockWidget.setFloating(False)
         self.filesDockWidget.setWindowTitle(QtGui.QApplication.translate("MainWindow", "Files", None, QtGui.QApplication.UnicodeUTF8))
@@ -77,7 +76,6 @@ class Ui_MainWindow(object):
         self.filesDockWidget.setWidget(self.dockWidgetContents)
         MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(8), self.filesDockWidget)
         self.settingsDockWidget = QtGui.QDockWidget(MainWindow)
-        self.settingsDockWidget.setAccessibleName(_fromUtf8(""))
         self.settingsDockWidget.setWindowTitle(QtGui.QApplication.translate("MainWindow", "Settings", None, QtGui.QApplication.UnicodeUTF8))
         self.settingsDockWidget.setObjectName(_fromUtf8("settingsDockWidget"))
         self.dockWidgetContents_3 = QtGui.QWidget()
@@ -122,7 +120,6 @@ class Ui_MainWindow(object):
         self.settingsDockWidget.setWidget(self.dockWidgetContents_3)
         MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(8), self.settingsDockWidget)
         self.peaksDockWidget = QtGui.QDockWidget(MainWindow)
-        self.peaksDockWidget.setAccessibleName(_fromUtf8(""))
         self.peaksDockWidget.setWindowTitle(QtGui.QApplication.translate("MainWindow", "Peaks", None, QtGui.QApplication.UnicodeUTF8))
         self.peaksDockWidget.setObjectName(_fromUtf8("peaksDockWidget"))
         self.dockWidgetContents_4 = QtGui.QWidget()
@@ -135,7 +132,6 @@ class Ui_MainWindow(object):
         self.peaksDockWidget.setWidget(self.dockWidgetContents_4)
         MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(8), self.peaksDockWidget)
         self.spectraDockWidget = QtGui.QDockWidget(MainWindow)
-        self.spectraDockWidget.setAccessibleName(_fromUtf8(""))
         self.spectraDockWidget.setWindowTitle(QtGui.QApplication.translate("MainWindow", "Spectra", None, QtGui.QApplication.UnicodeUTF8))
         self.spectraDockWidget.setObjectName(_fromUtf8("spectraDockWidget"))
         self.dockWidgetContents_5 = QtGui.QWidget()
