@@ -38,10 +38,8 @@ class AstonWindow(QtGui.QMainWindow):
         #self.connect(self.ui.actionSequence, QtCore.SIGNAL('triggered()'), self.calculateInfo)
         #self.connect(self.ui.actionStructure, QtCore.SIGNAL('triggered()'), self.calculateInfo)
         #self.connect(self.ui.actionAuto_align_Chromatogram, QtCore.SIGNAL('triggered()'), self.calculateInfo)
-        self.ui.actionAlign_Chromatogram.triggered.connect(self.alignChrom)
-        #self.connect(self.ui.actionSubtract_Add_Chromatogram, QtCore.SIGNAL('triggered()'), self.calculateInfo)
-        self.ui.actionSmoothChromatogram.triggered.connect(self.smooth)
-        self.ui.actionRemove_Periodic_Noise.triggered.connect(self.removePeriodicNoise)
+        #self.connect(self.ui.actionSubtractAddChromatogram, QtCore.SIGNAL('triggered()'), self.calculateInfo)
+        self.ui.actionEditFilters.triggered.connect(self.showFilterWindow)
         self.ui.actionRevert.triggered.connect(self.revertChromChange)
         self.connect(self.ui.actionQuit, QtCore.SIGNAL('triggered()'), QtGui.qApp, QtCore.SLOT('quit()'))
 
@@ -198,53 +196,16 @@ class AstonWindow(QtGui.QMainWindow):
         self.ptab_mod.endResetModel() 
         self.tcanvas.draw()
 
-    def removePeriodicNoise(self):
-        #TODO: definitely doesn't work
-        pass
-
-    def smooth(self):
-        #TODO: probably doesn't work
-        from PyQt4.QtGui import QInputDialog
-        x = QInputDialog.getItem(self,'Smoothing Type','Aston',['Moving Average','Savitsky-Golay','None'],editable=False)
-        if not x[1]: return
-        if x[0] == 'Moving Average':
-            x = QInputDialog.getInteger(self,'Window Size','Aston',value=5)
-            if not x[1]: return
-            self.data.setInfo('smooth','moving_average')
-            self.data.setInfo('smooth_window',str(x[0]))
-        elif x[0] == 'Savitsky-Golay':
-            x = QInputDialog.getInteger(self,'Window Size','Aston',value=5)
-            if not x[1]: return
-            y = QInputDialog.getInteger(self,'Polynomial Order','Aston',value=3)
-            if not y[1]: return
-            self.data.setInfo('smooth','savitsky_golay')
-            self.data.setInfo('smooth_window',str(x[0]))
-            self.data.setInfo('smooth_order',str(y[0]))
-        else:
-            self.data.setInfo('smooth','')
-
-    def alignChrom(self):
-        #TODO: probably doesn't work
-        from PyQt4.QtGui import QInputDialog
-        x = QInputDialog.getDouble(self, 'Scale by?', 'Aston', value = 1)
-        if not x[1]: return
-        if x[0] == 0 or x[0] == 1:
-            self.data.setInfo('scale','')
-        else:
-            self.data.setInfo('scale',str(x[0]))
-
-        x = QInputDialog.getDouble(self, 'Offset by?', 'Aston', value = 0)
-        if not x[1]: return
-        if x[0] == 0:
-            self.data.setInfo('offset','')
-        else:
-            self.data.setInfo('offset',str(x[0]))
+    def showFilterWindow(self):
+        from aston.ui.FilterWindow import FilterWindow
+        self.dlg = FilterWindow(self)
+        self.dlg.show()
 
     def revertChromChange(self):
         '''Go through and delete all of the info keys related to 
         display properties.'''
         keys = ['scale', 'yscale', 'offset', 'yoffset', 'smooth', \
-          'smooth window', 'smooth order', 'remove_periodic_noise']
+          'smooth window', 'smooth order', 'remove noise']
         for dt in self.ftab_mod.returnSelFiles():
             for key in keys:
                 try: del dt.info[key]

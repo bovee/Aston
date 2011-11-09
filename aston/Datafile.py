@@ -31,9 +31,12 @@ class Datafile(object):
         #elif ext == 'BIN' and magic == 257:
         #    from .AgilentMS import AgilentMSMSScan
         #    return super(Datafile, cls).__new__(AgilentMSMSScan,filename,*args)
-        elif ext == 'CF':
-            from .Thermo import ThermoIRMS
-            return super(Datafile, cls).__new__(ThermoIRMS,filename,*args)
+        elif ext == 'CF' and magic == 0xFFFF:
+            from .Thermo import ThermoCF
+            return super(Datafile, cls).__new__(ThermoCF,filename,*args)
+        elif ext == 'DXF' and magic == 0xFFFF:
+            from .Thermo import ThermoDXF
+            return super(Datafile, cls).__new__(ThermoDXF,filename,*args)
         elif ext == 'SD':
             from .AgilentUV import AgilentDAD
             return super(Datafile, cls).__new__(AgilentDAD,filename,*args)
@@ -130,7 +133,12 @@ class Datafile(object):
         #Windig W: The use of the Durbin-Watson criterion for noise and background reduction of complex liquid chromatography/mass spectrometry data and a new algorithm to determine sample differences. Chemometrics and Intelligent Laboratory Systems. 2005, 77:206-214.
         #TODO: LOESS (local regression) filter
 
-        if 'remove periodic noise' in self.info:
+        if 'yscale' in self.info:
+            ic *= float(self.info['yscale'])
+        if 'yoffset' in self.info:
+            ic += float(self.info['yoffset'])
+
+        if 'remove noise' in self.info:
             pass
 
         if 'smooth' in self.info:
@@ -152,11 +160,6 @@ class Datafile(object):
             lastvals = ic[-1] + np.abs(ic[-half_wind-1:-1][::-1] - ic[-1])
             y = np.concatenate((firstvals, ic, lastvals))
             ic = np.convolve(m, y, mode='valid')
-
-        if 'yscale' in self.info:
-            ic *= float(self.info['yscale'])
-        if 'yoffset' in self.info:
-            ic += float(self.info['yoffset'])
 
         return self._getTimeSlice(ic,st_time,en_time)
 

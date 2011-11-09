@@ -12,7 +12,7 @@ class CSVFile(Datafile):
         delim = ','
         self.times = []
         self.data = []
-        try:
+        try: #TODO: better, smarter error checking than this
             with open(self.filename,'r') as f:
                 lns = f.readlines()
                 hdrs = [float(i) for i in lns[0].split(delim)[1:]]

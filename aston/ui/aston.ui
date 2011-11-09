@@ -56,14 +56,10 @@
     <addaction name="actionIntegrate_2"/>
     <addaction name="actionIntegration_Parameters"/>
     <addaction name="separator"/>
-    <addaction name="actionAuto_align_Chromatogram"/>
-    <addaction name="actionAlign_Chromatogram"/>
-    <addaction name="actionSubtract_Add_Chromatogram"/>
-    <addaction name="actionSmoothChromatogram"/>
-    <addaction name="actionRemove_Periodic_Noise"/>
+    <addaction name="actionAutoAlignChromatogram"/>
+    <addaction name="actionSubtractAddChromatogram"/>
+    <addaction name="actionEditFilters"/>
     <addaction name="actionRevert"/>
-    <addaction name="separator"/>
-    <addaction name="actionCalculate_Info"/>
    </widget>
    <widget class="QMenu" name="menuSpectrum">
     <property name="title">
@@ -331,7 +327,7 @@
     <string>Calculate Info</string>
    </property>
   </action>
-  <action name="actionAuto_align_Chromatogram">
+  <action name="actionAutoAlignChromatogram">
    <property name="enabled">
     <bool>false</bool>
    </property>
@@ -339,7 +335,7 @@
     <string>Auto-Align Chromatogram</string>
    </property>
   </action>
-  <action name="actionSubtract_Add_Chromatogram">
+  <action name="actionSubtractAddChromatogram">
    <property name="enabled">
     <bool>false</bool>
    </property>
@@ -355,9 +351,9 @@
     <string>Revert to Original</string>
    </property>
   </action>
-  <action name="actionRemove_Periodic_Noise">
+  <action name="actionEditFilters">
    <property name="text">
-    <string>Remove Periodic Noise</string>
+    <string>Edit Filters...</string>
    </property>
   </action>
   <action name="actionSmoothChromatogram">
@@ -371,16 +367,25 @@
    </property>
   </action>
   <action name="actionCalculate_Isotopic">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Calculate Isotopic</string>
    </property>
   </action>
   <action name="actionExport_Peak_List">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Export Peak List</string>
    </property>
   </action>
   <action name="actionIdentify">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Quick Identify</string>
    </property>
