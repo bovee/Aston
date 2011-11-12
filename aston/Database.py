@@ -5,6 +5,7 @@ class AstonDatabase():
         import os, sqlite3
         from .Datafile import Datafile
         self.database_path = database
+        
         if not os.path.exists(database): 
             # create a database file if one doesn't exist
             self.db = sqlite3.connect(database)
@@ -90,6 +91,12 @@ class AstonDatabase():
         self.db.commit()
         c.close()
         return True
+
+    def getFileByName(self,fname):
+        for dt in self.files:
+            if fname.lower() == dt.name.lower():
+                return dt
+        return None
 
     def getProjects(self):
         c = self.db.cursor()

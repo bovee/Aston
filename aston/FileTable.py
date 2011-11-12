@@ -138,7 +138,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             if fld == 'vis?' and role == QtCore.Qt.CheckStateRole:
                 if f.visible: rslt = QtCore.Qt.Checked
                 else: rslt = QtCore.Qt.Unchecked
-            elif role == QtCore.Qt.DisplayRole:
+            elif role == QtCore.Qt.DisplayRole or role == QtCore.Qt.EditRole:
                 if fld == 'name' : rslt = f.name
                 elif fld == 'file name': rslt = f.shortFilename()
                 elif fld == 'scans': rslt = str(len(f.time()))

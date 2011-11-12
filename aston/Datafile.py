@@ -99,7 +99,8 @@ class Datafile(object):
         return arr[st_idx:en_idx]
 
     def time(self, st_time=None, en_time=None):
-        '''Returns an array with all of the time points at which data was collected'''
+        '''Returns an array with all of the time points at which
+        data was collected'''
         import numpy as np
         #load the data if it hasn't been already
         #TODO: this should cache only the times in case we're looking at GCMS data
@@ -115,13 +116,12 @@ class Datafile(object):
         return self._getTimeSlice(tme,st_time,en_time)
 
     def trace(self, ion=None, st_time=None, en_time=None):
-        '''Returns an array, either time/ion filtered or not of chromatographic data.'''
-        import numpy as np
-
+        '''Returns an array, either time/ion filtered or not
+        of chromatographic data.'''
         if self.data is None: self._cacheData()
 
         if type(ion) == str or type(ion) == unicode:
-            ic = self._parseIonString(ion)
+            ic = self._parseIonString(ion.lower())
         elif type(ion) == int or type(ion) == float:
             #if the ion is a number, do the straightforward thing
             ic = self._getIonTrace(ion)
@@ -129,66 +129,94 @@ class Datafile(object):
             #all other cases, just return the total trace
             ic = self._getTotalTrace()
 
-        #TODO: CoDA Durbin-Watson noise removal?
-        #Windig W: The use of the Durbin-Watson criterion for noise and background reduction of complex liquid chromatography/mass spectrometry data and a new algorithm to determine sample differences. Chemometrics and Intelligent Laboratory Systems. 2005, 77:206-214.
-        #TODO: LOESS (local regression) filter
-
         if 'yscale' in self.info:
             ic *= float(self.info['yscale'])
         if 'yoffset' in self.info:
             ic += float(self.info['yoffset'])
 
         if 'remove noise' in self.info:
+            #TODO: LOESS (local regression) filter
             pass
 
         if 'smooth' in self.info:
-            if self.info['smooth'] == 'moving_average':
-                x = int(self.info['smooth window'])
-                half_wind = (x-1) // 2
-                m = np.ones(x) / x
-            elif self.info['smooth'] == 'savitsky_golay':
-                # adapted from http://www.scipy.org/Cookbook/SavitzkyGolay
-                order_range = range(int(self.info['smooth order'])+1)
-                half_wind = (int(self.info['smooth window']) -1) // 2
-                # precompute coefficients
-                b = [[k**i for i in order_range] for k in range(-half_wind, half_wind+1)]
-                m = np.linalg.pinv(b)
-                m = m[0]
-            # pad the signal at the extremes with
-            # values taken from the signal itself
-            firstvals = ic[0] - np.abs(ic[1:half_wind+1][::-1] - ic[0])
-            lastvals = ic[-1] + np.abs(ic[-half_wind-1:-1][::-1] - ic[-1])
-            y = np.concatenate((firstvals, ic, lastvals))
-            ic = np.convolve(m, y, mode='valid')
+            if self.info['smooth'] == 'moving average':
+                wnd = self.info['smooth window']
+                ic = self._applyFxn(ic,'movingaverage',wnd)
+            elif self.info['smooth'] == 'savitsky-golay':
+                wnd = self.info['smooth window']
+                sord = self.info['smooth order']
+                ic = self._applyFxn(ic,'savitskygolay',wnd,sord)
 
         return self._getTimeSlice(ic,st_time,en_time)
 
     def _parseIonString(self,istr):
         #TODO: better error checking in here?
         import numpy as np
+        from scipy.interpolate import interp1d
 
+        #null case
+        if istr.strip() == '': return np.zeros(len(self.times))
+        
         #remove any parantheses or pluses around the whole thing
         if istr[0] in '+': istr = istr[1:]
         if istr[0] in '(' and istr[-1] in ')': istr = istr[1:-1]
+
         #invert it if preceded by a minus sign
         if istr[0] in '-': return -1.0*self._parseIonString(istr[1:])
+
+        #this is a function
+        if istr[:istr.find('(')].isalnum() and istr.find('(') != -1:
+            fxn = istr[:istr.find('(')]
+            if fxn == 'file' or fxn == 'f':
+                args = istr[istr.find('(')+1:-1].split(';')
+                dt = self.database.getFileByName(args[0])
+                if dt is None: return np.zeros(len(self.times))
+                if len(args) > 1:
+                    y = dt.trace(args[1])
+                else:
+                    y = dt.trace()
+                t = np.array(dt.times)
+                f = interp1d(t,y,bounds_error=False,fill_value=0.0)
+                return f(self.times)
+            else:
+                args = istr[istr.find('(')+1:-1].split(';')
+                ic = self._parseIonString(args[0])
+                return self._applyFxn(ic,fxn,*args[1:])
 
         #have we simplified enough? is all of the tricky math gone?
         if set(istr).intersection(set('+-/*()')) == set():
             if istr.count(':') == 1:
+                #contains an ion range
                 ion = np.array([float(i) for i in istr.split(':')]).mean()
                 tol = abs(float(istr.split(':')[0])-ion)
                 return self._getIonTrace(ion,tol)
-            elif istr == 'TIME':
-                #TODO: this isn't the scaled and shifted time?
-                return np.array(self.times)
-            elif istr == 'T' or istr == 'TIC':
+            elif all(i in '0123456789.' for i in istr):
+                return self._getIonTrace(float(istr))
+            elif istr == 't' or istr == 'time':
+                tme = np.array(self.times)
+                if 'scale' in self.info: tme *= float(self.info['scale'])
+                if 'offset' in self.info: tme += float(self.info['offset'])
+                return tme
+            elif istr == 'x' or istr == 'tic':
                 return self._getTotalTrace()
-            elif istr == 'B' or istr == 'BASE':
+            elif istr == 'b' or istr == 'base':
                 #TODO: create a baseline
                 pass
+            elif istr == 'coda':
+                #Windig W: The use of the Durbin-Watson criterion for noise and background reduction of complex liquid chromatography/mass spectrometry data and a new algorithm to determine sample differences. Chemometrics and Intelligent Laboratory Systems. 2005, 77:206-214.
+                pass
+            elif istr == 'rnie':
+                #Yunfei L, Qu H, and Cheng Y: A entropy-based method for noise reduction of LC-MS data. Analytica Chimica Acta 612.1 (2008)
+                pass
+            elif istr == 'wmsm':
+                #Fleming C et al. Windowed mass selection method: a new data processing algorithm for LC-MS data. Journal of Chromatography A 849.1 (1999) 71-85.
+                pass
+            elif istr[0] == '!' and all(i in '0123456789.' for i in istr[1:]):
+                return np.ones(len(self.times)) * float(istr[1:])
+            elif istr == '!pi':
+                return np.ones(len(self.times))*np.pi
             else:
-                return self._getIonTrace(float(istr))
+                return self._getOtherTrace(istr)
         
         #parse out the additive parts
         ic = np.zeros(len(self.times))
@@ -223,6 +251,42 @@ class Datafile(object):
             return ic / self._parseIonString(pa[1:])
         else:
             return 0 #this should never happen?
+
+    def _applyFxn(self,ic,fxn,*args):
+        import numpy as np
+        if fxn == 'fft':
+            ic = np.abs(np.fft.hfft(ic)) / len(ic)
+        elif fxn == 'abs':
+            ic = np.abs(ic)
+        elif fxn == 'sin':
+            ic = np.sin(ic)
+        elif fxn == 'cos':
+            ic = np.cos(ic)
+        elif fxn == 'tan':
+            ic = np.tan(ic)
+        elif fxn == 'd' or fxn == 'derivative':
+            ic = np.gradient(ic)
+        elif (fxn == 'movingaverage' and len(args) == 1) or \
+          (fxn == 'savitskygolay' and len(args) == 2):
+            if fxn == 'movingaverage':
+                x = int(args[0])
+                half_wind = (x-1) // 2
+                m = np.ones(x) / x
+            elif fxn == 'savitskygolay':
+                # adapted from http://www.scipy.org/Cookbook/SavitzkyGolay
+                half_wind = (int(args[0]) -1) // 2
+                order_range = range(int(args[1])+1)
+                # precompute coefficients
+                b = [[k**i for i in order_range] for k in range(-half_wind, half_wind+1)]
+                m = np.linalg.pinv(b)
+                m = m[0]
+            # pad the signal at the extremes with
+            # values taken from the signal itself
+            firstvals = ic[0] - np.abs(ic[1:half_wind+1][::-1] - ic[0])
+            lastvals = ic[-1] + np.abs(ic[-half_wind-1:-1][::-1] - ic[-1])
+            y = np.concatenate((firstvals, ic, lastvals))
+            ic = np.convolve(m, y, mode='valid')
+        return ic
 
     def scan(self,time):
         import numpy as np
@@ -267,6 +331,10 @@ class Datafile(object):
         if self.data is None: self._cacheData()
         return np.array([sum([i for ion,i in pt.items() \
             if ion >= val-tol and ion <= val+tol]) for pt in self.data])
+
+    def _getOtherTrace(self,name):
+        import numpy as np
+        return np.zeros(len(self.time))
 
     def _getTotalTrace(self):
         import numpy as np
