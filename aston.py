@@ -85,14 +85,18 @@ class AstonWindow(QtGui.QMainWindow):
         self.ui.plotArea.addWidget(self.tcanvas)
     
         self.tplot = tfig.add_subplot(111)
-        self.tcanvas.mpl_connect('scroll_event',self.mousescroll)
         self.tcanvas.mpl_connect('button_press_event',self.mousedown)
+        self.tcanvas.mpl_connect('scroll_event',self.mousescroll)
 
+        #create the canvas for spectral plotting
         bfig = Figure()
         self.bcanvas = FigureCanvasQTAgg(bfig)
         self.ui.specArea.addWidget(self.bcanvas)
+
         self.bplot = bfig.add_subplot(111)
-        
+        self.bcanvas.mpl_connect('button_press_event',self.specmousedown)
+        self.bcanvas.mpl_connect('scroll_event',self.specmousescroll)
+
         #create the thing that keeps track of how the plot should look
         self.plotter = Plotter(self.tplot, self.tnavbar)
 
@@ -231,6 +235,7 @@ class AstonWindow(QtGui.QMainWindow):
         self.ftab_mod.proxyMod.setFilterFixedString(text)
 
     def mousedown(self, event):
+        import numpy as np
         if event.button == 3 and self.tnavbar.mode != 'align':
             #get the specral data of the current point
             cur_file = self.ftab_mod.returnSelFile()
@@ -242,6 +247,28 @@ class AstonWindow(QtGui.QMainWindow):
             self.bplot.cla()
             self.bplot.vlines(scan.keys(),[0],scan.values())
             self.bplot.set_ylim(bottom=0)
+
+            #go through the top 10% highest ions from highest to lowest
+            #always have at least 10 labels, but no more than 50 (arbitrary picks)
+            v2lbl = {}
+            nlbls = -1*min(max(int(len(scan)/10.0),10),50)
+            for ind in np.array(scan.values()).argsort()[:nlbls:-1]:
+                v2lbl[scan.keys()[ind]] = scan.values()[ind]
+                #TODO: add filtering for close values?
+
+            #add peak labels
+            yoff = 0 #max(scan.values()) / 20.
+            for v in v2lbl:
+                self.bplot.text(v,v2lbl[v]+yoff,str(v),ha='center', \
+                  va='bottom',rotation=90, \
+                  bbox={'boxstyle':'larrow,pad=0.1','fc':'0.9', \
+                        'ec':'0.9','lw':1,'alpha':'0.5'},size=10,color='0.3')
+            #self.bplot.annotate('ion name',xy=(1,1),xycoords='data', \`
+            #  xytext=(1,1),textcoords='offset points',rotation=90, \
+            #    arrowprops=dict(arrowstyle='-[',facecolor='gray'))
+            pass
+
+            #update the canvas
             self.bcanvas.draw()
             
             # draw a line on the main plot for the location
@@ -263,6 +290,29 @@ class AstonWindow(QtGui.QMainWindow):
             ymin, ymax = max(ymin,self.tnavbar._views.home()[0][2]), min(ymax,self.tnavbar._views.home()[0][3])
             self.tplot.axis([xmin,xmax,ymin,ymax])
         self.tcanvas.draw()
+
+    def specmousedown(self,event):
+        if event.button == 1:
+            pass
+        elif event.button == 3:
+            dlim = self.bplot.dataLim.get_points()
+            self.bplot.axis([dlim[0][0],dlim[1][0],dlim[0][1],dlim[1][1]])
+            self.bcanvas.draw()
+
+    def specmousescroll(self,event):
+        xmin,xmax = self.bplot.get_xlim()
+        ymin,ymax = self.bplot.get_ylim()
+        if event.button == 'up': #zoom in
+            self.bplot.set_xlim(event.xdata-(event.xdata-xmin)/2.,event.xdata+(xmax-event.xdata)/2.)
+            self.bplot.set_ylim(event.ydata-(event.ydata-ymin)/2.,event.ydata+(ymax-event.ydata)/2.)
+        elif event.button == 'down': #zoom out
+            dlim = self.bplot.dataLim.get_points()
+            xmin = max(event.xdata-2*(event.xdata-xmin),dlim[0][0])
+            xmax = min(event.xdata+2*(xmax-event.xdata),dlim[1][0])
+            ymin = max(event.ydata-2*(event.ydata-ymin),dlim[0][1])
+            ymax = min(event.ydata+2*(ymax-event.ydata),dlim[1][1])
+            self.bplot.axis([xmin,xmax,ymin,ymax])
+        self.bcanvas.draw()
 
 if __name__ == "__main__":
     import sys

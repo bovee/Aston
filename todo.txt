@@ -26,10 +26,10 @@
 --help manual
 --trace selector dialog
 --dialog (or something) for selecting smoothing options
+--do offsets/scaling for multiple traces
 --consistent date types (in file table)
 --injection size (in file table)
---color schemes for graphs
---do offsets/scaling for multiple traces
+--(better) color schemes for graphs
 --display fraction collection data
 
 -optimization
