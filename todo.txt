@@ -3,16 +3,16 @@
 -compound database
 --compound identification
 
--MS/MS stuff
+-format stuff
 --figure out MS-MS format
 --figure out UV format
+--actuals as a trace type (pressure/flow rate/temp)
 
 -chromatogram stuff
 --autoalignment of multiple chromatograms
 --wavelet integrator
---remove periodic noise
+--remove noise
 --baseline detection (as a trace type?)
---actuals as a trace type (pressure/flow rate/temp)
 
 -peak stuff
 --Gaussian peak types and conversion to/from 
@@ -26,16 +26,16 @@
 --help manual
 --trace selector dialog
 --dialog (or something) for selecting smoothing options
---do offsets/scaling for multiple traces
 --consistent date types (in file table)
 --injection size (in file table)
 --(better) color schemes for graphs
 --display fraction collection data
+--better display of "ions" for UV-Vis data (e.g. smooth line/below 0 vals)
 
 -optimization
 --separate thread for database updating
+--faster 2D plots (better binning)
 
 -distribution
---bad path to icons on PCs
 --package size on Macs
 --rearranged menus on Mac (Preferences in Python menu)

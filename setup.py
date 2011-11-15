@@ -5,7 +5,7 @@ import sys, os
 
 options = {
     'name':'Aston',
-    'version':'0.1 alpha',
+    'version':'0.1.1a',
     'description':'Mass/UV Spectral Analysis Program',
     'author':'Roderick Bovee',
     'author_email':'bovee@fas.harvard.edu',
@@ -26,8 +26,9 @@ if len(sys.argv) >= 2 and sys.argv[1] == 'py2exe':
     options['windows'] = ['aston.py']
     options['options'] = {
         'py2exe':{'skip_archive': False,
-        'dll_excludes':['MSVCP90.dll'],
-        'includes': ['sip']}
+        'dll_excludes':['MSVCP90.dll','tcl85.dll','tk85.dll'],
+        'includes':['sip'],
+        'excludes':['_gtkagg','_tkagg','tcl','Tkconstants','Tkinter']}
     }
 
     #clean up stuff
@@ -63,6 +64,10 @@ if len(sys.argv) >= 2 and sys.argv[1] == 'py2exe':
     #TODO: test this out
     #os.system('copy c:\\python27\\lib\\site-packages\\wx-2.8-msw-unicode\\wx\\MSVCP71.dll dist\\')
     os.system('rmdir build /s /q')
+    os.system('mkdir dist\\aston')
+    os.system('mkdir dist\\aston\\ui')
+    os.system('mkdir dist\\aston\\ui\\icons')
+    os.system('cp aston\\ui\\icons\\*.png dist\\aston\\ui\\icons\\')
     #TODO: create an install wizard
 elif len(sys.argv) >= 2 and sys.argv[1] == 'py2app':
     os.system('rm -rf build')
@@ -71,7 +76,7 @@ elif len(sys.argv) >= 2 and sys.argv[1] == 'py2app':
     os.system('mkdir dist/Aston.app/Contents/Resources/aston')
     os.system('mkdir dist/Aston.app/Contents/Resources/aston/ui')
     os.system('mkdir dist/Aston.app/Contents/Resources/aston/ui/icons')
-    os.system('cp aston/ui/icons/*.png dist/Aston.app/Contents/Resources/aston/ui/icons/')
+    os.system('copy aston/ui/icons/*.png dist/Aston.app/Contents/Resources/aston/ui/icons/')
     #remove stuff from "dist/Aston.app/Contents/Resources/lib/python2.7"
     #matplotlib.tests and scipy.weave
     #remove other stuff from package

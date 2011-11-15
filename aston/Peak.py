@@ -30,13 +30,7 @@ class Peak(object):
         if pwhm:
             #TODO: better way to pick these points
             pt1,pt2 = self.verts[0], self.verts[-1]
-            #TODO: there's an error in here when pt1 or pt2 is below 0
-            #adjust the y value on every point to remove "baseline"
-            #m = (pt2[0]-pt1[0]) / (pt2[1]-pt1[1])
-            #b = (pt2[0]*pt1[1] - pt1[0]*pt2[1]) / (pt2[0]-pt1[0])
-            #avs = np.array([(pt[0],(pt[1] - m*pt[0] - b)) for pt in self.verts])
-            #print avs
-            #print np.array(self.verts)
+            
             m = (pt2[1]-pt1[1]) / (pt2[0]-pt1[0])
             avs = np.array([(pt[0],(pt[1] - m*(pt[0]-pt1[0]) - pt1[1])) for pt in self.verts])
 

@@ -334,7 +334,7 @@ class Datafile(object):
 
     def _getOtherTrace(self,name):
         import numpy as np
-        return np.zeros(len(self.time))
+        return np.zeros(len(self.times))
 
     def _getTotalTrace(self):
         import numpy as np

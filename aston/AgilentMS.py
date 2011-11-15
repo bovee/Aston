@@ -28,7 +28,6 @@ class AgilentMS(Datafile):
             f.seek(npos-4)
             tic[i] = struct.unpack('>I',f.read(4))[0] 
             f.seek(npos)
-
         f.close()
         return tic
 
@@ -56,7 +55,7 @@ class AgilentMS(Datafile):
         self.data = []
         for i in range(nscans):
             npos = f.tell() + 2*struct.unpack('>H',f.read(2))[0]
-            # the sampling rate is evidentally 1000/60 Hz on all Agilent's MS's
+            # the sampling rate is evidentally 60 kHz on all Agilent's MS's
             self.times.append(struct.unpack('>I',f.read(4))[0] / 60000.)
 
             #something is broken about LCMS files that needs this?
@@ -66,16 +65,14 @@ class AgilentMS(Datafile):
             npts = struct.unpack('>H',f.read(2))[0] - 1
 
             s = {}
-            f.seek(f.tell()+6)
+            f.seek(f.tell()+4)
             for i in range(npts+1):
                 t = struct.unpack('>HH',f.read(4))
-                #TODO: fix where t[1] = 5.0
-                if i != 0:
-                    s[t[1]/20.] = t[0]
+                s[t[0]/20.] = t[1]
 
             self.data.append(s)
             f.seek(npos)
-
+        
         f.close()
 
     def _getInfoFromFile(self):
