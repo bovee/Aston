@@ -67,8 +67,8 @@ class AgilentMS(Datafile):
             s = {}
             f.seek(f.tell()+4)
             for i in range(npts+1):
-                t = struct.unpack('>HH',f.read(4))
-                s[t[0]/20.] = t[1]
+                mz = struct.unpack('>HH',f.read(4))[0]
+                s[mz/20.] = t[1]
 
             self.data.append(s)
             f.seek(npos)
@@ -191,6 +191,11 @@ class AgilentMSMSScan(Datafile):
         info['data_type'] = 'AgilentMS'
         f.close()
         return name,info
+    
+    def _getOtherTrace(self,name):
+        #TODO: read from MSPeriodicActuals.bin and TCC.* files
+        import numpy as np
+        return np.zeros(len(self.times))
 
 class AgilentMSMSProf(Datafile):
     def __init__(self,*args,**kwargs):

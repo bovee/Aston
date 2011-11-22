@@ -67,7 +67,7 @@ if len(sys.argv) >= 2 and sys.argv[1] == 'py2exe':
     os.system('mkdir dist\\aston')
     os.system('mkdir dist\\aston\\ui')
     os.system('mkdir dist\\aston\\ui\\icons')
-    os.system('cp aston\\ui\\icons\\*.png dist\\aston\\ui\\icons\\')
+    os.system('copy aston\\ui\\icons\\*.png dist\\aston\\ui\\icons\\')
     #TODO: create an install wizard
 elif len(sys.argv) >= 2 and sys.argv[1] == 'py2app':
     os.system('rm -rf build')

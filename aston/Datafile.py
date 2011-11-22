@@ -199,9 +199,9 @@ class Datafile(object):
                 return tme
             elif istr == 'x' or istr == 'tic':
                 return self._getTotalTrace()
-            elif istr == 'b' or istr == 'base':
-                #TODO: create a baseline
-                pass
+            #elif istr == 'b' or istr == 'base':
+            #    #TODO: create a baseline
+            #    pass
             elif istr == 'coda':
                 #Windig W: The use of the Durbin-Watson criterion for noise and background reduction of complex liquid chromatography/mass spectrometry data and a new algorithm to determine sample differences. Chemometrics and Intelligent Laboratory Systems. 2005, 77:206-214.
                 pass
@@ -253,9 +253,26 @@ class Datafile(object):
             return 0 #this should never happen?
 
     def _applyFxn(self,ic,fxn,*args):
+        #FIXME: this should be returning something named differently than ic
         import numpy as np
         if fxn == 'fft':
-            ic = np.abs(np.fft.hfft(ic)) / len(ic)
+            #FIXME: "time" of FFT axis doesn't match time of ic axis
+            ic = np.abs(np.fft.fftshift(np.fft.fft(ic))) / len(ic)
+        #elif fxn == 'ifft':
+        #    ic = np.fft.ifft(np.fft.fftshift(ic * len(ic)))# / len(ic)
+        elif fxn == 'noisefilter':
+            ic = np.fft.fftshift(np.fft.fft(ic))
+            ic[:-1*int(len(ic)/20.)] = np.angle(ic[:-1*int(len(ic)/20.)])
+            f_rng = 1 #int(len(ic)/50.)
+            f_hlf = int(len(ic)/2.)
+            ica = np.angle(ic[f_rng-f_hlf:f_rng+f_hlf])
+            icm = 0*np.abs(ic[f_rng-f_hlf:f_rng+f_hlf])
+            ic[f_rng-f_hlf:f_rng+f_hlf] = icm*(1j*np.sin(ica) + np.cos(ica))
+            #ica = np.angle(ic[-f_rng:])
+            #icm = 0*np.abs(ic[-f_rng:])
+            #ic[-f_rng:] = icm*(1j*np.sin(ica) + np.cos(ica))
+            ic = np.fft.ifft(np.fft.ifftshift(ic))
+            pass
         elif fxn == 'abs':
             ic = np.abs(ic)
         elif fxn == 'sin':
@@ -265,7 +282,34 @@ class Datafile(object):
         elif fxn == 'tan':
             ic = np.tan(ic)
         elif fxn == 'd' or fxn == 'derivative':
+            #FIXME: not adjusted for time at all
             ic = np.gradient(ic)
+        elif fxn == 'base':
+            #INSPIRED by Algorithm A12 from Zupan
+            #5 point pre-smoothing
+            sc = np.convolve(np.ones(5)/5.0,ic,mode='same')
+            #get local minima
+            mn = np.arange(len(ic))[np.r_[True,((sc < np.roll(sc,1)) &
+              (sc < np.roll(sc,-1)))[1:-1],True]]
+            #don't allow baseline to have a slope greater than
+            #10x less than the steepest peak
+            max_slope = np.max(np.gradient(ic))/10.0
+            slope = max_slope
+            pi = 0 #previous index
+            bc = np.zeros(len(ic))
+            for i in range(1,len(mn)):
+                if slope < (ic[mn[i]]-ic[mn[pi]])/(mn[i]-mn[pi]) and \
+                  slope < max_slope:
+                    #add trend
+                    bc[mn[pi]:mn[i-1]] = \
+                      np.linspace(ic[mn[pi]],ic[mn[i-1]],mn[i-1]-mn[pi])
+                    pi = i -1
+                slope = (ic[mn[i]]-ic[mn[pi]])/(mn[i]-mn[pi])
+            print mn[pi],mn[-1]
+            bc[mn[pi]:mn[-1]] = \
+              np.linspace(ic[mn[pi]],ic[mn[-1]],mn[-1]-mn[pi])
+            bc[-1] = bc[-2] #FIXME: there's definitely a bug in here somewhere
+            return bc
         elif (fxn == 'movingaverage' and len(args) == 1) or \
           (fxn == 'savitskygolay' and len(args) == 2):
             if fxn == 'movingaverage':

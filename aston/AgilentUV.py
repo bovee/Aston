@@ -152,21 +152,43 @@ class AgilentDAD(Datafile):
         return name,info
 
 class AgilentCSDAD(Datafile):
+    '''Interpreter for *.UV files from Agilent Chemstation'''
     def __init__(self,*args,**kwargs):
         super(AgilentCSDAD,self).__init__(*args,**kwargs)
 
     def _cacheData(self): 
-        self.times = []
-        self.data = []
+        #TODO: the chromatograms this generates are not exactly the
+        #same as the ones in the *.CH files. Maybe they need to be 0'd?
+        import struct
+        f = open(self.filename,'rb')
 
-#        import re, struct
-#        f = open(fname,'rb')
-#
-#        f.seek(0x50)
-#        nscans = struct.unpack('Q',f.read(8))[0]
-#
-#        f.seek(0x10B)
-#        f.seek(f.read(2))
+        f.seek(0x116)
+        nscans = struct.unpack('>i',f.read(4))[0]
+
+        self.times = nscans*[0]
+        self.data = nscans*[{}]
+        npos = 0x202
+        for i in range(nscans):
+            f.seek(npos)
+            nd = struct.unpack('<H',f.read(2))[0]
+            f.seek(f.tell()-2)
+            npos += struct.unpack('<H',f.read(2))[0]
+            self.times[i] = struct.unpack('<L',f.read(4))[0] / 60000.
+            nm_srt = struct.unpack('<H',f.read(2))[0] / 20.
+            nm_end = struct.unpack('<H',f.read(2))[0] / 20.
+            nm_stp = struct.unpack('<H',f.read(2))[0] / 20.
+            f.read(8)
+            s = {}
+            v = struct.unpack('<h',f.read(2))[0] / 2000.
+            s[nm_srt] = v
+            for j in range(1,int((nm_end-nm_srt)/nm_stp)):
+                ov = struct.unpack('<h',f.read(2))[0]
+                if ov == -32768:
+                    v = struct.unpack('<i',f.read(4))[0] / 2000.
+                else:
+                    v += ov / 2000.
+                s[nm_srt+j*nm_stp] = v
+            self.data[i] = s
 
     def _getInfoFromFile(self):
         import struct
