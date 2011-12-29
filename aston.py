@@ -244,7 +244,8 @@ class AstonWindow(QtGui.QMainWindow):
             if not cur_file.visible: return
             scan = cur_file.scan(event.xdata)
             
-            self.specplotter.plotSpec(scan)
+            self.specplotter.addSpec(scan)
+            self.specplotter.plotSpec()
             self.specplotter.specTime = event.xdata
             
             # draw a line on the main plot for the location
@@ -272,13 +273,51 @@ class AstonWindow(QtGui.QMainWindow):
         elif event.button == 3:
             #TODO: make the spec window work better
             menu = QtGui.QMenu(self.bcanvas)
-            menu.addAction('New Project',self.test)
-            #delAc.setData(index.internalPointer()[0])
-            menu.exec_(self.bcanvas.mapToGlobal(
-              QtCore.QPoint(event.x,self.bcanvas.height()-event.y)))
+            for i in self.specplotter.scans:
+                if i == '':
+                    ac = menu.addAction('current')
+                else:
+                    ac = menu.addAction(i)
+                submenu = QtGui.QMenu(menu)
+                sac = submenu.addAction('Display',self.togSpc)
+                sac.setCheckable(True)
+                sac.setChecked(i in self.specplotter.scansToDisp)
+                sac.setData(i)
+                sac = submenu.addAction('Label',self.spcLbl)
+                sac.setCheckable(True)
+                sac.setChecked(i in self.specplotter.scansToLbl)
+                sac.setData(i)
+                sac = submenu.addAction('Save',self.saveSpc)
+                sac.setData(i)
+                ac.setMenu(submenu)
+                
+            if not menu.isEmpty():
+                menu.exec_(self.bcanvas.mapToGlobal(
+                  QtCore.QPoint(event.x,self.bcanvas.height()-event.y)))
 
-    def test(self):
-        pass
+    def togSpc(self):
+        scn_nm = str(self.sender().data())
+        if scn_nm in self.specplotter.scansToDisp:
+            self.specplotter.scansToDisp.remove(scn_nm)
+        else:
+            self.specplotter.scansToDisp.append(scn_nm)
+        self.specplotter.plotSpec()
+
+    def spcLbl(self):
+        scn_nm = str(self.sender().data())
+        if scn_nm in self.specplotter.scansToLbl:
+            self.specplotter.scansToLbl.remove(scn_nm)
+        else:
+            self.specplotter.scansToLbl.append(scn_nm)
+        self.specplotter.plotSpec()
+
+    def saveSpc(self):
+        from aston.Peak import Peak
+        scn_nm = str(self.sender().data())
+        scn = self.specplotter.scans[scn_nm]
+        pk = Peak(scn,None,'Spectrum')
+        pk.ids[2] = self.ftab_mod.returnSelFile().fid[1]
+        self.ptab_mod.addPeaks([pk])
     
     def specmousescroll(self,event):
         xmin,xmax = self.bplot.get_xlim()

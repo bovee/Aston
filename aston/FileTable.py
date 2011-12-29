@@ -208,10 +208,10 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         if self.masterWindow.ptab_mod is not None:
             self.masterWindow.ptab_mod.clearPatches()
         #recreate the table of peaks for the new files
-        if any([i.visible for i in self.returnSelFiles()]):
-            self.masterWindow.ptab_mod = PeakTreeModel(self.database, self.masterWindow.ui.peakTreeView, self.masterWindow, self.masterWindow.ftab_mod.returnSelFiles())
-        else:
-            self.masterWindow.ptab_mod = PeakTreeModel(self.database, self.masterWindow.ui.peakTreeView, self.masterWindow)
+        #if any([i.visible for i in self.returnSelFiles()]):
+        self.masterWindow.ptab_mod = PeakTreeModel(self.database, self.masterWindow.ui.peakTreeView, self.masterWindow, self.masterWindow.ftab_mod.returnSelFiles())
+        #else:
+        #    self.masterWindow.ptab_mod = PeakTreeModel(self.database, self.masterWindow.ui.peakTreeView, self.masterWindow)
 
     def rightClickMenu(self,point):
         index = self.proxyMod.mapToSource(self.treeView.indexAt(point))

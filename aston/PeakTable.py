@@ -138,7 +138,19 @@ class PeakTreeModel(QtCore.QAbstractItemModel):
 
     def itemSelected(self):
         #TODO: change the selected peak on the graph?
-        pass
+        tab_sel = self.treeView.selectionModel()
+        if not tab_sel.currentIndex().isValid: return
+
+        #pk = self.proxyMod.mapToSource(tab_sel.currentIndex()).internalPointer()
+        pk = tab_sel.currentIndex().internalPointer()
+        if pk is not None:
+            if pk.ion is None:
+                #it's a spectrum
+                self.masterWindow.specplotter.addSpec(pk.verts,'lib')
+                self.masterWindow.specplotter.plotSpec()
+            else:
+                #it's a peak
+                pass
 
     def rightClickMenu(self,point):
         index = self.treeView.indexAt(point)

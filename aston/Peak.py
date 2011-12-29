@@ -3,16 +3,19 @@ class Peak(object):
     or spectra.'''
     def __init__(self,verts,ion,peaktype='',ids=None):
         import numpy as np
+        #if ion is None, this is a spectrum (not a "real" peak)
+        if ion == '': self.ion = None
+        else: self.ion = ion
         #peakType (gaussian, lognormal, data)
         self.peaktype = peaktype
         if peaktype == 'gaussian':
             pass
         elif peaktype == 'lognormal':
             pass
-        else:
+        elif self.ion is not None:
             self.verts = np.array(verts)
-        #if ion is None, this is a spectrum (not a "real" peak)
-        self.ion = ion
+        else:
+            self.verts = verts
         #ids = (peak_id,compound_id,file_id)
         if ids is None:
             self.ids = [None,None,None]
