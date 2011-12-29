@@ -1,6 +1,6 @@
-from .Datafile import Datafile
+from .. import Datafile
 
-class AgilentMWD(Datafile):
+class AgilentMWD(Datafile.Datafile):
     def __init__(self,*args,**kwargs):
         super(AgilentMWD,self).__init__(*args,**kwargs)
         #import os
@@ -87,7 +87,7 @@ class AgilentMWD(Datafile):
         f.close()
         return name, info
 
-class AgilentDAD(Datafile):
+class AgilentDAD(Datafile.Datafile):
 #header data in DAD1.sd
 #80 byte repetition
 #offset = 0xA4, format = 'IIfIfffQIIdddd'
@@ -151,7 +151,7 @@ class AgilentDAD(Datafile):
         info['data_type'] = 'AgilentMasshunterDAD'
         return name,info
 
-class AgilentCSDAD(Datafile):
+class AgilentCSDAD(Datafile.Datafile):
     '''Interpreter for *.UV files from Agilent Chemstation'''
     def __init__(self,*args,**kwargs):
         super(AgilentCSDAD,self).__init__(*args,**kwargs)

@@ -1,6 +1,6 @@
-from .Datafile import Datafile
+from .. import Datafile
 
-class CSVFile(Datafile):
+class CSVFile(Datafile.Datafile):
     '''
     Reads in a *.CSV. Assumes that the first line is the header and 
     that the file is comma delimited.

@@ -23,7 +23,7 @@ class Datafile(object):
         #TODO: .RAW : PerkinElmer TurboMass file format
         
         if ext == 'MS' and magic == 0x0132:
-            from .AgilentMS import AgilentMS
+            from FileFormats.AgilentMS import AgilentMS
             return super(Datafile, cls).__new__(AgilentMS,filename,*args)
         #elif ext == 'BIN' and magic == 513:
         #    from .AgilentMS import AgilentMSMSProf
@@ -32,22 +32,22 @@ class Datafile(object):
         #    from .AgilentMS import AgilentMSMSScan
         #    return super(Datafile, cls).__new__(AgilentMSMSScan,filename,*args)
         elif ext == 'CF' and magic == 0xFFFF:
-            from .Thermo import ThermoCF
+            from FileFormats.Thermo import ThermoCF
             return super(Datafile, cls).__new__(ThermoCF,filename,*args)
         elif ext == 'DXF' and magic == 0xFFFF:
-            from .Thermo import ThermoDXF
+            from FileFormats.Thermo import ThermoDXF
             return super(Datafile, cls).__new__(ThermoDXF,filename,*args)
         elif ext == 'SD':
-            from .AgilentUV import AgilentDAD
+            from FileFormats.AgilentUV import AgilentDAD
             return super(Datafile, cls).__new__(AgilentDAD,filename,*args)
         elif ext == 'CH' and magic == 0x0233:
-            from .AgilentUV import AgilentMWD
+            from FileFormats.AgilentUV import AgilentMWD
             return super(Datafile, cls).__new__(AgilentMWD,filename,*args)
         elif ext == 'UV' and magic == 0x0233:
-            from .AgilentUV import AgilentCSDAD
+            from FileFormats.AgilentUV import AgilentCSDAD
             return super(Datafile, cls).__new__(AgilentCSDAD,filename,*args)
         elif ext == 'CSV':
-            from .OtherFiles import CSVFile
+            from FileFormats.OtherFiles import CSVFile
             return super(Datafile, cls).__new__(CSVFile,filename,*args)
         else:
             return None

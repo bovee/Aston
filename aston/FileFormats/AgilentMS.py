@@ -1,6 +1,6 @@
-from .Datafile import Datafile
+from .. import Datafile
 
-class AgilentMS(Datafile):
+class AgilentMS(Datafile.Datafile):
     def __init__(self,*args,**kwargs):
         super(AgilentMS,self).__init__(*args,**kwargs)
 
@@ -98,7 +98,7 @@ class AgilentMS(Datafile):
         f.close()
         return name,info
 
-class AgilentMSMSScan(Datafile):
+class AgilentMSMSScan(Datafile.Datafile):
     def __init__(self,*args,**kwargs):
         super(AgilentMSMSScan,self).__init__(*args,**kwargs)
 
@@ -197,6 +197,6 @@ class AgilentMSMSScan(Datafile):
         import numpy as np
         return np.zeros(len(self.times))
 
-class AgilentMSMSProf(Datafile):
+class AgilentMSMSProf(Datafile.Datafile):
     def __init__(self,*args,**kwargs):
         super(AgilentMSMSProf,self).__init__(*args,**kwargs)

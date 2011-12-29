@@ -1,6 +1,6 @@
-from .Datafile import Datafile
+from .. import Datafile
 
-class ThermoCF(Datafile):
+class ThermoCF(Datafile.Datafile):
     def __init__(self,*args,**kwargs):
         super(ThermoCF,self).__init__(*args,**kwargs)
 
@@ -45,7 +45,7 @@ class ThermoCF(Datafile):
         info['data_type'] = 'Thermo Isodat CF'
         return name,info
 
-class ThermoDXF(Datafile):
+class ThermoDXF(Datafile.Datafile):
     def __init__(self,*args,**kwargs):
         super(ThermoDXF,self).__init__(*args,**kwargs)
 
