@@ -1,11 +1,12 @@
 -method database
+--method editor
 
 -compound database
+--spectra tool
 --compound identification
 
 -format stuff
 --figure out MS-MS format
---figure out UV format
 --actuals as a trace type (pressure/flow rate/temp)
 
 -chromatogram stuff
@@ -25,8 +26,8 @@
 --icon for Aston
 --help manual
 --trace selector dialog
---dialog (or something) for selecting smoothing options
---consistent date types (in file table)
+---dialog (or something) for selecting smoothing options
+---consistent date types (in file table)
 --injection size (in file table)
 --(better) color schemes for graphs
 --display fraction collection data

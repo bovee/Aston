@@ -1,4 +1,6 @@
 class Peak(object):
+    '''This class is used for interacting with peak shapes
+    or spectra.'''
     def __init__(self,verts,ion,peaktype='',ids=None):
         import numpy as np
         #peakType (gaussian, lognormal, data)
@@ -9,6 +11,7 @@ class Peak(object):
             pass
         else:
             self.verts = np.array(verts)
+        #if ion is None, this is a spectrum (not a "real" peak)
         self.ion = ion
         #ids = (peak_id,compound_id,file_id)
         if ids is None:
@@ -56,6 +59,7 @@ class Peak(object):
         return self.verts[:,1].max() - self.verts[:,1].min()
 
     def time(self):
+        #TODO: add support for spectra times
         if self.verts[1,0] < self.verts[:,0].max():
             return self.verts[self.verts[:,1].argmax(),0]
         else: # inverted peak
@@ -63,6 +67,8 @@ class Peak(object):
         pass
 
     def contains(self,x,y):
+        #first check if it's a spectrum (ion='')
+        if self.ion is None: return false
         #from: http://www.ariel.com.au/a/python-point-int-poly.html
         n = len(self.verts)
         inside = False
@@ -92,8 +98,11 @@ class Compound(object):
         self.peaks = database.getPeaks(cmpd_id)
         self.cmpd_type = cmpd_type
 
-    def getPeaks(self,file_ids):
-        return [i for i in self.peaks if i.ids[2] in file_ids]
+    def getPeaks(self,file_ids,incSpc=False):
+        if incSpc: #include spectra
+            return [i for i in self.peaks if i.ids[2] in file_ids]
+        else: #only return peaks
+            return [i for i in self.peaks if i.ids[2] in file_ids and i.ion is not None]
 
     def addPeak(self,peak):
         peak.ids[1] = self.cmpd_id

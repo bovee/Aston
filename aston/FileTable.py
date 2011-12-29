@@ -200,14 +200,18 @@ class FileTreeModel(QtCore.QAbstractItemModel):
 
     def itemSelected(self):
         #TODO: update an info window?
-        #TODO: reset the spectra view
         from .PeakTable import PeakTreeModel
+        #redraw the spectral line as gray
+        self.masterWindow.plotter.drawSpecLine(self.masterWindow.specplotter.specTime,linestyle='--')
+
+        #remove all of the peak patches from the main plot
         if self.masterWindow.ptab_mod is not None:
             self.masterWindow.ptab_mod.clearPatches()
+        #recreate the table of peaks for the new files
         if any([i.visible for i in self.returnSelFiles()]):
-            self.masterWindow.ptab_mod = PeakTreeModel(self.database, self.masterWindow.ui.peakTreeView, self.masterWindow)
+            self.masterWindow.ptab_mod = PeakTreeModel(self.database, self.masterWindow.ui.peakTreeView, self.masterWindow, self.masterWindow.ftab_mod.returnSelFiles())
         else:
-            self.masterWindow.ptab_mod = None #TODO: does this even work?
+            self.masterWindow.ptab_mod = PeakTreeModel(self.database, self.masterWindow.ui.peakTreeView, self.masterWindow)
 
     def rightClickMenu(self,point):
         index = self.proxyMod.mapToSource(self.treeView.indexAt(point))
@@ -242,7 +246,8 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         fld = str(self.sender().text())
         if fld == 'Name': return
         self.beginResetModel()
-        if fld in self.fields: self.fields.remove(fld)
+        if fld in self.fields:
+            self.fields.remove(fld)
         else:
             self.treeView.resizeColumnToContents(len(self.fields)-1)
             self.fields.append(fld)

@@ -67,8 +67,8 @@ class AgilentMS(Datafile):
             s = {}
             f.seek(f.tell()+4)
             for i in range(npts+1):
-                mz = struct.unpack('>HH',f.read(4))[0]
-                s[mz/20.] = t[1]
+                mz = struct.unpack('>HH',f.read(4))
+                s[mz[0]/20.] = mz[1]
 
             self.data.append(s)
             f.seek(npos)

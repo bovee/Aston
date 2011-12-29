@@ -68,7 +68,7 @@ class AstonWindow(QtGui.QMainWindow):
     def create_plots(self):
         #FIXME: resizing bug obliterates controls underneath the tcanvas
         from aston.ui.navbar import AstonNavBar
-        from aston.Plotting import Plotter
+        from aston.Plotting import Plotter, SpecPlotter
         from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg
         
         try:
@@ -97,8 +97,9 @@ class AstonWindow(QtGui.QMainWindow):
         self.bcanvas.mpl_connect('button_press_event',self.specmousedown)
         self.bcanvas.mpl_connect('scroll_event',self.specmousescroll)
 
-        #create the thing that keeps track of how the plot should look
-        self.plotter = Plotter(self.tplot, self.tnavbar)
+        #create the things that keep track of how the plots should look
+        self.plotter = Plotter(self.tplot, self.tcanvas, self.tnavbar)
+        self.specplotter = SpecPlotter(self.bplot, self.bcanvas)
 
         #add stuff to the combo boxes
         self.ui.colorSchemeComboBox.addItems(self.plotter.availColors())
@@ -202,8 +203,9 @@ class AstonWindow(QtGui.QMainWindow):
 
     def showFilterWindow(self):
         from aston.ui.FilterWindow import FilterWindow
-        self.dlg = FilterWindow(self)
-        self.dlg.show()
+        if self.ftab_mod.returnSelFile() is not None:
+            self.dlg = FilterWindow(self)
+            self.dlg.show()
 
     def revertChromChange(self):
         '''Go through and delete all of the info keys related to 
@@ -228,54 +230,25 @@ class AstonWindow(QtGui.QMainWindow):
             self.plotter.plotData(datafiles,self.ptab_mod,kwargs['updateBounds'])
         else:
             self.plotter.plotData(datafiles,self.ptab_mod)
-        self.tcanvas.draw()
 
     def updateSearch(self,text):
         '''If the search box changes, update the file table.'''
         self.ftab_mod.proxyMod.setFilterFixedString(text)
 
     def mousedown(self, event):
-        import numpy as np
         if event.button == 3 and self.tnavbar.mode != 'align':
+            #TODO: make this work for click and drag too
             #get the specral data of the current point
             cur_file = self.ftab_mod.returnSelFile()
             if cur_file is None: return
             if not cur_file.visible: return
             scan = cur_file.scan(event.xdata)
-
-            #plot it in the area below
-            self.bplot.cla()
-            self.bplot.vlines(scan.keys(),[0],scan.values())
-            self.bplot.set_ylim(bottom=0)
-
-            #go through the top 10% highest ions from highest to lowest
-            #always have at least 10 labels, but no more than 50 (arbitrary picks)
-            v2lbl = {}
-            nlbls = -1*min(max(int(len(scan)/10.0),10),50)
-            for ind in np.array(scan.values()).argsort()[:nlbls:-1]:
-                v2lbl[scan.keys()[ind]] = scan.values()[ind]
-                #TODO: add filtering for close values?
-
-            #add peak labels
-            yoff = 0 #max(scan.values()) / 20.
-            for v in v2lbl:
-                self.bplot.text(v,v2lbl[v]+yoff,str(v),ha='center', \
-                  va='bottom',rotation=90, \
-                  bbox={'boxstyle':'larrow,pad=0.1','fc':'0.9', \
-                        'ec':'0.9','lw':1,'alpha':'0.5'},size=10,color='0.3')
-            #self.bplot.annotate('ion name',xy=(1,1),xycoords='data', \`
-            #  xytext=(1,1),textcoords='offset points',rotation=90, \
-            #    arrowprops=dict(arrowstyle='-[',facecolor='gray'))
-            pass
-
-            #update the canvas
-            self.bcanvas.draw()
+            
+            self.specplotter.plotSpec(scan)
+            self.specplotter.specTime = event.xdata
             
             # draw a line on the main plot for the location
-            try: self.tplot.lines.remove(self.spec_line)
-            except: pass
-            self.spec_line = self.tplot.axvline(event.xdata,color='black')
-            self.tcanvas.draw()
+            self.plotter.drawSpecLine(event.xdata,linestyle='-')
     
     def mousescroll(self,event):
         xmin,xmax = self.tplot.get_xlim()
@@ -293,12 +266,20 @@ class AstonWindow(QtGui.QMainWindow):
 
     def specmousedown(self,event):
         if event.button == 1:
-            pass
-        elif event.button == 3:
             dlim = self.bplot.dataLim.get_points()
             self.bplot.axis([dlim[0][0],dlim[1][0],dlim[0][1],dlim[1][1]])
             self.bcanvas.draw()
+        elif event.button == 3:
+            #TODO: make the spec window work better
+            menu = QtGui.QMenu(self.bcanvas)
+            menu.addAction('New Project',self.test)
+            #delAc.setData(index.internalPointer()[0])
+            menu.exec_(self.bcanvas.mapToGlobal(
+              QtCore.QPoint(event.x,self.bcanvas.height()-event.y)))
 
+    def test(self):
+        pass
+    
     def specmousescroll(self,event):
         xmin,xmax = self.bplot.get_xlim()
         ymin,ymax = self.bplot.get_ylim()

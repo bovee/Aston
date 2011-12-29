@@ -1,8 +1,8 @@
 """This module acts as an intermediary between the Agilent, Thermo,
 and other instrument specific classes and the rest of the program."""
 class Datafile(object):
-    '''This abstacts away the implementation details of the specific file
-    formats'''
+    '''Generic chromatography data containter. This abstacts away
+    the implementation details of the specific file formats.'''
     def __new__(cls, filename, *args):
         import struct
 
@@ -150,6 +150,7 @@ class Datafile(object):
         return self._getTimeSlice(ic,st_time,en_time)
 
     def _parseIonString(self,istr):
+        '''Recursive string parser that handles "ion" strings'''
         #TODO: better error checking in here?
         import numpy as np
         from scipy.interpolate import interp1d
@@ -253,34 +254,30 @@ class Datafile(object):
             return 0 #this should never happen?
 
     def _applyFxn(self,ic,fxn,*args):
-        #FIXME: this should be returning something named differently than ic
         import numpy as np
         if fxn == 'fft':
             #FIXME: "time" of FFT axis doesn't match time of ic axis
-            ic = np.abs(np.fft.fftshift(np.fft.fft(ic))) / len(ic)
+            oc = np.abs(np.fft.fftshift(np.fft.fft(ic))) / len(ic)
         #elif fxn == 'ifft':
         #    ic = np.fft.ifft(np.fft.fftshift(ic * len(ic)))# / len(ic)
-        elif fxn == 'noisefilter':
-            ic = np.fft.fftshift(np.fft.fft(ic))
-            ic[:-1*int(len(ic)/20.)] = np.angle(ic[:-1*int(len(ic)/20.)])
-            f_rng = 1 #int(len(ic)/50.)
-            f_hlf = int(len(ic)/2.)
-            ica = np.angle(ic[f_rng-f_hlf:f_rng+f_hlf])
-            icm = 0*np.abs(ic[f_rng-f_hlf:f_rng+f_hlf])
-            ic[f_rng-f_hlf:f_rng+f_hlf] = icm*(1j*np.sin(ica) + np.cos(ica))
-            #ica = np.angle(ic[-f_rng:])
-            #icm = 0*np.abs(ic[-f_rng:])
-            #ic[-f_rng:] = icm*(1j*np.sin(ica) + np.cos(ica))
-            ic = np.fft.ifft(np.fft.ifftshift(ic))
-            pass
+        elif fxn == 'noisefilter' and len(args) == 1:
+            #adapted from http://glowingpython.blogspot.com/2011/08/fourier-transforms-and-image-filtering.html
+            I = np.fft.fftshift(np.fft.fft(ic)) # entering to frequency domain
+            # fftshift moves zero-frequency component to the center of the array
+            P = np.zeros(len(I),dtype=complex)
+            c1 = len(I)/2 # spectrum center
+            r = float(args[0]) #percent of signal to save
+            r = int((r*len(I))/2) #convert to coverage of the array
+            for i in range(c1-r,c1+r): P[i] = I[i] # frequency cutting
+            oc = np.real(np.fft.ifft(np.fft.ifftshift(P)))
         elif fxn == 'abs':
-            ic = np.abs(ic)
+            oc = np.abs(ic)
         elif fxn == 'sin':
-            ic = np.sin(ic)
+            oc = np.sin(ic)
         elif fxn == 'cos':
-            ic = np.cos(ic)
+            oc = np.cos(ic)
         elif fxn == 'tan':
-            ic = np.tan(ic)
+            oc = np.tan(ic)
         elif fxn == 'd' or fxn == 'derivative':
             #FIXME: not adjusted for time at all
             ic = np.gradient(ic)
@@ -296,20 +293,19 @@ class Datafile(object):
             max_slope = np.max(np.gradient(ic))/10.0
             slope = max_slope
             pi = 0 #previous index
-            bc = np.zeros(len(ic))
+            oc = np.zeros(len(ic))
             for i in range(1,len(mn)):
                 if slope < (ic[mn[i]]-ic[mn[pi]])/(mn[i]-mn[pi]) and \
                   slope < max_slope:
                     #add trend
-                    bc[mn[pi]:mn[i-1]] = \
+                    oc[mn[pi]:mn[i-1]] = \
                       np.linspace(ic[mn[pi]],ic[mn[i-1]],mn[i-1]-mn[pi])
                     pi = i -1
                 slope = (ic[mn[i]]-ic[mn[pi]])/(mn[i]-mn[pi])
             print mn[pi],mn[-1]
-            bc[mn[pi]:mn[-1]] = \
+            oc[mn[pi]:mn[-1]] = \
               np.linspace(ic[mn[pi]],ic[mn[-1]],mn[-1]-mn[pi])
-            bc[-1] = bc[-2] #FIXME: there's definitely a bug in here somewhere
-            return bc
+            oc[-1] = oc[-2] #FIXME: there's definitely a bug in here somewhere
         elif (fxn == 'movingaverage' and len(args) == 1) or \
           (fxn == 'savitskygolay' and len(args) == 2):
             if fxn == 'movingaverage':
@@ -329,8 +325,10 @@ class Datafile(object):
             firstvals = ic[0] - np.abs(ic[1:half_wind+1][::-1] - ic[0])
             lastvals = ic[-1] + np.abs(ic[-half_wind-1:-1][::-1] - ic[-1])
             y = np.concatenate((firstvals, ic, lastvals))
-            ic = np.convolve(m, y, mode='valid')
-        return ic
+            oc = np.convolve(m, y, mode='valid')
+        else:
+            oc = ic
+        return oc
 
     def scan(self,time):
         import numpy as np

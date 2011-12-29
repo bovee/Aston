@@ -1,17 +1,21 @@
 from PyQt4 import QtCore, QtGui
 
 class PeakTreeModel(QtCore.QAbstractItemModel):
-    def __init__(self, database=None, treeView=None, masterWindow=None, *args): 
+    def __init__(self, database=None, treeView=None, masterWindow=None, selFiles=None, *args): 
         QtCore.QAbstractItemModel.__init__(self, *args)
         self.database = database
         self.fields = ['Name','Type']
         self.masterWindow = masterWindow
-        self.fids = [i.fid[1] for i in masterWindow.ftab_mod.returnSelFiles()]
-        self.compounds = database.getCompounds(self.fids)
+
+        if selFiles is None:
+            self.fids = None
+            self.compounds = None
+        else:
+            self.fids = [i.fid[1] for i in selFiles]
+            self.compounds = database.getCompounds(self.fids)
         self.patches = {}
-
         self.drawPeaks()
-
+        
         if treeView is not None:
             self.treeView = treeView
             treeView.setModel(self)
@@ -36,7 +40,7 @@ class PeakTreeModel(QtCore.QAbstractItemModel):
             return self.createIndex(row,column,self.compounds[row])
         else:
         #elif parent.internalPointer() is not None: #a peak!
-            peak = parent.internalPointer().getPeaks(self.fids)[row]
+            peak = parent.internalPointer().getPeaks(self.fids,incSpc=True)[row]
             return self.createIndex(row,column,peak)
 
     def parent(self,index):
@@ -52,10 +56,11 @@ class PeakTreeModel(QtCore.QAbstractItemModel):
 
     def rowCount(self,parent):
         from .Peak import Compound
+        if self.compounds is None: return 0
         if not parent.isValid():
             return len(self.compounds)
         elif type(parent.internalPointer()) is Compound:
-            return len(parent.internalPointer().getPeaks(self.fids))
+            return len(parent.internalPointer().getPeaks(self.fids,incSpc=True))
         else:
             return 0
 
@@ -76,21 +81,31 @@ class PeakTreeModel(QtCore.QAbstractItemModel):
             elif fld == 'd13c':
                 rslt = str(index.internalPointer().isotopeValue())
         else:
-            if fld == 'name':
-                rslt = str(index.internalPointer().ion) + '@'
-                rslt += format(index.internalPointer().time(),'.3f')
-            elif fld == 'type':
-                rslt = index.internalPointer().peaktype
-            elif fld == 'area':
-                rslt = str(index.internalPointer().area())
-            elif fld == 'length':
-                rslt = str(index.internalPointer().length())
-            elif fld == 'height':
-                rslt = str(index.internalPointer().height())
-            elif fld == 'pwhm':
-                rslt = str(index.internalPointer().length(pwhm=True))
-            elif fld == 'time':
-                rslt = str(index.internalPointer().time())
+            if index.internalPointer().ion is None:
+                #it's a spectra
+                if fld == 'name':
+                    #TODO: add support for time() so this works
+                    rslt = 'Spectra'# @ '
+                    #rslt += format(index.internalPointer().time(),'.3f')
+                elif fld == 'type':
+                    rslt = index.internalPointer().peaktype
+            else:
+                #it's a peak
+                if fld == 'name':
+                    rslt = str(index.internalPointer().ion) + '@'
+                    rslt += format(index.internalPointer().time(),'.3f')
+                elif fld == 'type':
+                    rslt = index.internalPointer().peaktype
+                elif fld == 'area':
+                    rslt = str(index.internalPointer().area())
+                elif fld == 'length':
+                    rslt = str(index.internalPointer().length())
+                elif fld == 'height':
+                    rslt = str(index.internalPointer().height())
+                elif fld == 'pwhm':
+                    rslt = str(index.internalPointer().length(pwhm=True))
+                elif fld == 'time':
+                    rslt = str(index.internalPointer().time())
         return rslt
 
     def headerData(self,col,orientation,role):
@@ -134,11 +149,14 @@ class PeakTreeModel(QtCore.QAbstractItemModel):
                 if index.internalPointer().cmpd_id is not None:
                     delAc = menu.addAction('Delete Compound',self._delCompoundFromMenu)
                     delAc.setData(index.internalPointer().cmpd_id)
+                    spcAc = menu.addAction('Attach Current Spectrum',self._attSpcFromMenu)
+                    spcAc.setData(index.internalPointer().cmpd_id)
             else:
                 delAc = menu.addAction('Delete Peak',self._delPeakFromMenu)
                 delAc.setData(index.internalPointer().ids[0])
-                newAc = menu.addAction('Make New Compound',self._addCompoundFromMenu)
-                newAc.setData(index.internalPointer().ids[0])
+                if index.internalPointer().ion is not None:
+                    newAc = menu.addAction('Make New Compound',self._addCompoundFromMenu)
+                    newAc.setData(index.internalPointer().ids[0])
         else:
             pass
 
@@ -158,13 +176,29 @@ class PeakTreeModel(QtCore.QAbstractItemModel):
         fld = str(self.sender().text())
         if fld == 'Name': return
         self.beginResetModel()
-        if fld in self.fields: self.fields.remove(fld)
-        else: self.fields.append(fld)
+        if fld in self.fields:
+            self.fields.remove(fld)
+        else:
+            self.treeView.resizeColumnToContents(len(self.fields)-1)
+            self.fields.append(fld)
         self.endResetModel()
 
     def _delCompoundFromMenu(self):
         cmpd_id = self.sender().data()
         self.delCompound(cmpd_id)
+
+    def _attSpcFromMenu(self):
+        cmpd_id = self.sender().data()
+        dt = self.masterWindow.ftab_mod.returnSelFile()
+        #FIXME: this won't match the current spectra if the user has selected something else
+        for cmpd in self.compounds:
+            if cmpd.cmpd_id == cmpd_id:
+                #TODO: get the actual spectra
+                verts = [] #spectrum
+                #TODO: make the peak type MS or UV?
+                pk = Peak.Peak(verts,None,'spectra')
+                pk.ids[2] = dt.fid[1]
+                cmpd.addPeak(pk)
 
     def _addCompoundFromMenu(self):
         pk_id = self.sender().data()
@@ -221,8 +255,9 @@ class PeakTreeModel(QtCore.QAbstractItemModel):
         for cmpd in self.compounds:
             if cmpd.cmpd_id == cmpd_id:
                 for peak in cmpd.peaks:
-                    patch = self.patches[peak.ids[0]]
-                    self.masterWindow.tplot.patches.remove(patch)
+                    if peak.ion is not None:
+                        patch = self.patches[peak.ids[0]]
+                        self.masterWindow.tplot.patches.remove(patch)
                 self.masterWindow.tcanvas.draw()
                 break
             
@@ -233,10 +268,11 @@ class PeakTreeModel(QtCore.QAbstractItemModel):
 
     def delPeak(self,peak):
         for cmpd in self.compounds:
-            if peak in cmpd.getPeaks(self.fids):
-                patch = self.patches[peak.ids[0]]
-                self.masterWindow.tplot.patches.remove(patch)
-                self.masterWindow.tcanvas.draw()
+            if peak in cmpd.getPeaks(self.fids,incSpc=True):
+                if peak.ion is not None:
+                    patch = self.patches[peak.ids[0]]
+                    self.masterWindow.tplot.patches.remove(patch)
+                    self.masterWindow.tcanvas.draw()
                 self.beginResetModel()
                 if len(cmpd.getPeaks(self.fids)) == 1 and cmpd.cmpd_id is not None:
                     self.database.delCompound(cmpd.cmpd_id)
@@ -250,11 +286,13 @@ class PeakTreeModel(QtCore.QAbstractItemModel):
         self.beginResetModel()
         for pk in pks:
             self.compounds[0].addPeak(pk)
-            self.addPatchToCanvas(pk)
+            if pk.ion is not None:
+                self.addPatchToCanvas(pk)
         self.endResetModel()
         self.masterWindow.tcanvas.draw()
 
     def drawPeaks(self):
+        if self.compounds is None: return
         #generate the patches for peaks in the database
         for i in self.compounds:
             for j in i.getPeaks(self.fids):

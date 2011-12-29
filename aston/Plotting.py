@@ -1,8 +1,7 @@
 class Plotter(object):
-    def __init__(self,plt=None,navbar=None,style='default',scheme='default'):
-        #TODO: also "style" where style is stacked, 2D, etc.
-        #TODO: autoscaled
+    def __init__(self,plt=None,cvs=None,navbar=None,style='default',scheme='default'):
         self.plt = plt
+        self.canvas = cvs
         self.navbar = navbar
         self.style = style
         self.setColorScheme(scheme)
@@ -125,3 +124,73 @@ class Plotter(object):
         #draw peaks
         if peaktable is not None and '2d' not in self.style:
             peaktable.drawPeaks()
+
+        #update the canvas
+        self.canvas.draw()
+
+    def drawSpecLine(self,x,color='black',linestyle='-'):
+        '''Draw the line that indicates where the spectrum came from.'''
+        #try to remove the line from the previous spectrum (if it exists)
+        try: self.plt.lines.remove(self.spec_line)
+        except: pass
+        #draw a new line
+        self.spec_line = self.plt.axvline(x,color=color,ls=linestyle)
+        #redraw the canvas
+        self.canvas.draw()
+
+class SpecPlotter(object):
+    def __init__(self,plt=None,cvs=None,style='default'):
+        self.plt = plt
+        self.canvas = cvs
+        self.style = style
+        self.scans = {}
+        self.specTime = None
+
+    def plotSpec(self,scan,label=''):
+        import numpy as np
+
+        #save into scans dictionary
+        if label is '' and '' in self.scans:
+            self.scans['prev'] = self.scans['']
+        self.scans[label] = scan
+
+        #plot it in the area below
+        self.plt.cla()
+        
+        #colors
+        clrs = {'':'black','prev':'0.7','lib':'blue'}
+
+        #loop through all of the scans to be displayed
+        for scn_nm in self.scans:
+            scn = self.scans[scn_nm]
+            try: clr = clrs[scn_nm]
+            except: clr = 'black'
+            
+            #TODO: display UV spectra as continuous lines
+            #add the spectral lines (and little points!)
+            self.plt.vlines(scn.keys(),[0],scn.values(),color=clr,alpha=0.5)
+            self.plt.plot(scn.keys(),scn.values(),',',color=clr)
+            self.plt.set_ylim(bottom=0)
+
+            #go through the top 10% highest ions from highest to lowest
+            #always have at least 10 labels, but no more than 50 (arbitrary)
+            #if an ion is close to one seen previously, don't display it
+            v2lbl = {} #values to label
+            plbl = [] #skip labeling these values
+            nls = -1*min(max(int(len(scan)/10.0),10),50) #number of labels
+            for i in np.array(scn.values()).argsort()[:nls:-1]:
+                mz = scn.keys()[i]
+                if not np.any(np.abs(np.array(plbl)-mz) < 1.5):
+                    v2lbl[mz] = scn.values()[i]
+                plbl.append(mz)
+
+            #add peak labels
+            if scn_nm != 'prev':
+                for v in v2lbl:
+                    self.plt.text(v,v2lbl[v],str(v),ha='center', \
+                      va='bottom',rotation=90,size=10,color=clr, \
+                      bbox={'boxstyle':'larrow,pad=0.3','fc':clr, \
+                            'ec':clr,'lw':1,'alpha':'0.25'})
+
+        #redraw the canvas
+        self.canvas.draw()
