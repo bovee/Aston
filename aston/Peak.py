@@ -1,8 +1,9 @@
+import numpy as np
+        
 class Peak(object):
     '''This class is used for interacting with peak shapes
     or spectra.'''
     def __init__(self,verts,ion,peaktype='',ids=None):
-        import numpy as np
         #if ion is None, this is a spectrum (not a "real" peak)
         if ion == '': self.ion = None
         else: self.ion = ion
@@ -32,7 +33,6 @@ class Peak(object):
         return abs(csum / 2.)
 
     def length(self, pwhm=False):
-        import numpy as np
         if pwhm:
             #TODO: better way to pick these points
             pt1,pt2 = self.verts[0], self.verts[-1]

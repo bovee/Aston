@@ -1,10 +1,13 @@
+import struct
+import numpy as np
+from scipy.interpolate import interp1d
+        
 """This module acts as an intermediary between the Agilent, Thermo,
 and other instrument specific classes and the rest of the program."""
 class Datafile(object):
     '''Generic chromatography data containter. This abstacts away
     the implementation details of the specific file formats.'''
     def __new__(cls, filename, *args):
-        import struct
 
         ext = filename.split('.')[-1].upper()
         try:
@@ -86,7 +89,6 @@ class Datafile(object):
         '''Returns a slice of the incoming array filtered between
         the two times specified. Assumes the array is the same
         length as self.times. Acts in the time() and trace() functions.'''
-        import numpy as np
         if len(self.times) == 0: return np.array([])
         if st_time is None:
             st_idx = 0
@@ -101,17 +103,16 @@ class Datafile(object):
     def time(self, st_time=None, en_time=None):
         '''Returns an array with all of the time points at which
         data was collected'''
-        import numpy as np
         #load the data if it hasn't been already
         #TODO: this should cache only the times in case we're looking at GCMS data
         if self.times is None: self._cacheData()
         
         #scale and offset the data appropriately
         tme = np.array(self.times)
-        if 'scale' in self.info:
-            tme *= float(self.info['scale'])
-        if 'offset' in self.info:
-            tme += float(self.info['offset'])
+        if 't-scale' in self.info:
+            tme *= float(self.info['t-scale'])
+        if 't-offset' in self.info:
+            tme += float(self.info['t-offset'])
         #return the time series
         return self._getTimeSlice(tme,st_time,en_time)
 
@@ -129,22 +130,22 @@ class Datafile(object):
             #all other cases, just return the total trace
             ic = self._getTotalTrace()
 
-        if 'yscale' in self.info:
-            ic *= float(self.info['yscale'])
-        if 'yoffset' in self.info:
-            ic += float(self.info['yoffset'])
+        if 't-yscale' in self.info:
+            ic *= float(self.info['t-yscale'])
+        if 't-yoffset' in self.info:
+            ic += float(self.info['t-yoffset'])
 
         if 'remove noise' in self.info:
             #TODO: LOESS (local regression) filter
             pass
 
-        if 'smooth' in self.info:
-            if self.info['smooth'] == 'moving average':
-                wnd = self.info['smooth window']
+        if 't-smooth' in self.info:
+            if self.info['t-smooth'] == 'moving average':
+                wnd = self.info['t-smooth-window']
                 ic = self._applyFxn(ic,'movingaverage',wnd)
-            elif self.info['smooth'] == 'savitsky-golay':
-                wnd = self.info['smooth window']
-                sord = self.info['smooth order']
+            elif self.info['t-smooth'] == 'savitsky-golay':
+                wnd = self.info['t-smooth-window']
+                sord = self.info['t-smooth-order']
                 ic = self._applyFxn(ic,'savitskygolay',wnd,sord)
 
         return self._getTimeSlice(ic,st_time,en_time)
@@ -152,8 +153,6 @@ class Datafile(object):
     def _parseIonString(self,istr):
         '''Recursive string parser that handles "ion" strings'''
         #TODO: better error checking in here?
-        import numpy as np
-        from scipy.interpolate import interp1d
 
         #null case
         if istr.strip() == '': return np.zeros(len(self.times))
@@ -195,8 +194,8 @@ class Datafile(object):
                 return self._getIonTrace(float(istr))
             elif istr == 't' or istr == 'time':
                 tme = np.array(self.times)
-                if 'scale' in self.info: tme *= float(self.info['scale'])
-                if 'offset' in self.info: tme += float(self.info['offset'])
+                if 't-scale' in self.info: tme *= float(self.info['t-scale'])
+                if 't-offset' in self.info: tme += float(self.info['t-offset'])
                 return tme
             elif istr == 'x' or istr == 'tic':
                 return self._getTotalTrace()
@@ -254,7 +253,6 @@ class Datafile(object):
             return 0 #this should never happen?
 
     def _applyFxn(self,ic,fxn,*args):
-        import numpy as np
         if fxn == 'fft':
             #FIXME: "time" of FFT axis doesn't match time of ic axis
             oc = np.abs(np.fft.fftshift(np.fft.fft(ic))) / len(ic)
@@ -331,11 +329,10 @@ class Datafile(object):
         return oc
 
     def scan(self,time):
-        import numpy as np
-        if 'offset' in self.info:
-            time = time-float(self.info['offset'])
-        if 'scale' in self.info:
-            time = time/float(self.info['scale'])
+        if 't-offset' in self.info:
+            time = time-float(self.info['t-offset'])
+        if 't-scale' in self.info:
+            time = time/float(self.info['t-scale'])
         try:
             return self.data[self.times.index(time)]
         except:
@@ -369,17 +366,14 @@ class Datafile(object):
         self.data = []
 
     def _getIonTrace(self,val,tol=0.5):
-        import numpy as np
         if self.data is None: self._cacheData()
         return np.array([sum([i for ion,i in pt.items() \
             if ion >= val-tol and ion <= val+tol]) for pt in self.data])
 
     def _getOtherTrace(self,name):
-        import numpy as np
         return np.zeros(len(self.times))
 
     def _getTotalTrace(self):
-        import numpy as np
         if self.data is None: self._cacheData()
         return np.array([sum(i.values()) for i in self.data])
 

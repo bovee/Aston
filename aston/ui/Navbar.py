@@ -119,14 +119,14 @@ class AstonNavBar(NavigationToolbar2QTAgg):
     def press_align(self,event):
         dt = self.parent.ftab_mod.returnSelFile()
         if event.button == 1:
-            try: x = float(dt.info['offset']) - event.xdata
+            try: x = float(dt.info['t-offset']) - event.xdata
             except: x = 0 - event.xdata
-            try: y = float(dt.info['yoffset']) - event.ydata
+            try: y = float(dt.info['t-yoffset']) - event.ydata
             except: y = 0 - event.ydata
         elif event.button == 3:
-            try: x = float(dt.info['scale']) / event.xdata
+            try: x = float(dt.info['t-scale']) / event.xdata
             except: x = 1 / event.xdata
-            try: y = float(dt.info['yscale']) / event.ydata
+            try: y = float(dt.info['t-yscale']) / event.ydata
             except: y = 1 / event.ydata
         self._xypress = x,y
 
@@ -135,11 +135,11 @@ class AstonNavBar(NavigationToolbar2QTAgg):
         if event.xdata is None or event.ydata is None: return
         dt = self.parent.ftab_mod.returnSelFile()
         if event.button == 1:
-            dt.info['offset'] = str(self._xypress[0] + event.xdata)
-            dt.info['yoffset'] = str(self._xypress[1] + event.ydata)
+            dt.info['t-offset'] = str(self._xypress[0] + event.xdata)
+            dt.info['t-yoffset'] = str(self._xypress[1] + event.ydata)
         elif event.button == 3:
-            dt.info['scale'] = str(self._xypress[0] * event.xdata)
-            dt.info['yscale'] = str(self._xypress[1] * event.ydata)
+            dt.info['t-scale'] = str(self._xypress[0] * event.xdata)
+            dt.info['t-yscale'] = str(self._xypress[1] * event.ydata)
         self.parent.plotData(updateBounds=False)
 
     def release_align(self,event):

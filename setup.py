@@ -55,14 +55,10 @@ elif len(sys.argv) >= 2 and sys.argv[1] == 'py2app':
     #clean up stuff
     os.system('rm -rf build')
 
-print options
-
 #all the magic happens right here
 setup(**options)
 
 if len(sys.argv) >= 2 and sys.argv[1] == 'py2exe':
-    #TODO: test this out
-    #os.system('copy c:\\python27\\lib\\site-packages\\wx-2.8-msw-unicode\\wx\\MSVCP71.dll dist\\')
     os.system('rmdir build /s /q')
     os.system('mkdir dist\\aston')
     os.system('mkdir dist\\aston\\ui')
@@ -77,9 +73,8 @@ elif len(sys.argv) >= 2 and sys.argv[1] == 'py2app':
     os.system('mkdir dist/Aston.app/Contents/Resources/aston/ui')
     os.system('mkdir dist/Aston.app/Contents/Resources/aston/ui/icons')
     os.system('copy aston/ui/icons/*.png dist/Aston.app/Contents/Resources/aston/ui/icons/')
-    #remove stuff from "dist/Aston.app/Contents/Resources/lib/python2.7"
+    #TODO: remove stuff from "dist/Aston.app/Contents/Resources/lib/python2.7"
     #matplotlib.tests and scipy.weave
-    #remove other stuff from package
 
     #The following doesn't seem to work?
     #os.system('rm -rf dist_mac')

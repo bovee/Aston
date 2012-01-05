@@ -1,9 +1,14 @@
+import os
+import sqlite3
+import pickle
+
+from aston.Datafile import Datafile
+from aston.Peak import Peak, Compound
+        
 class AstonDatabase():
     """This class acts as a interface to the aston.sqlite database
     that's created inside every working folder."""
     def __init__(self,database):
-        import os, sqlite3
-        from .Datafile import Datafile
         self.database_path = database
         
         if not os.path.exists(database): 
@@ -39,9 +44,6 @@ class AstonDatabase():
 
     def updateFileList(self):
         #TODO: this needs to run in a separate thread
-        import os
-        from .Datafile import Datafile
-
         #extract a list of lists of file names in my directory
         foldname = os.path.dirname(self.database_path)
         if foldname == '': foldname = os.curdir
@@ -126,7 +128,6 @@ class AstonDatabase():
         return [i for i in self.files if i.fid[0] == project_id]
 
     def getCompounds(self, file_ids):
-        from .Peak import Compound
         c = self.db.cursor()
         c.execute('''SELECT DISTINCT c.cmpd_id,c.cmpd_name,c.type
                   FROM compounds as c, peaks as p
@@ -163,8 +164,6 @@ class AstonDatabase():
         c.close()
 
     def getPeaks(self,cmpd_id):
-        from .Peak import Peak
-        import pickle
         c = self.db.cursor()
         if cmpd_id is None:
             c.execute('''SELECT verts,ion,type,peak_id,file_id
@@ -184,7 +183,6 @@ class AstonDatabase():
         return pks
 
     def addPeak(self,pk):
-        import pickle
         c = self.db.cursor()
         pverts = pickle.dumps(pk.verts)
         if pk.ids[0] is None:

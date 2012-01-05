@@ -1,14 +1,18 @@
+# -*- coding: utf-8 -*-
 from PyQt4 import QtCore, QtGui
+from Method import flds
+from aston.Database import AstonDatabase
+from .PeakTable import PeakTreeModel
+import os.path as op
 
 class FileTreeModel(QtCore.QAbstractItemModel):
+    
     def __init__(self, database=None, treeView=None, masterWindow=None, *args): 
-        from aston.Database import AstonDatabase
-        import os.path as op
         QtCore.QAbstractItemModel.__init__(self, *args) 
         
         self.database = AstonDatabase(op.join(database,'aston.sqlite'))
         self.projects = self.database.getProjects()
-        self.fields = ['Name','Vis?','Traces','File Name']
+        self.fields = ['name','vis','traces','r-filename']
         self.masterWindow = masterWindow
 
         if treeView is not None:
@@ -135,22 +139,25 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         else:
             #return info about a file
             f = index.internalPointer()
-            if fld == 'vis?' and role == QtCore.Qt.CheckStateRole:
+            if fld == 'vis' and role == QtCore.Qt.CheckStateRole:
                 if f.visible: rslt = QtCore.Qt.Checked
                 else: rslt = QtCore.Qt.Unchecked
             elif role == QtCore.Qt.DisplayRole or role == QtCore.Qt.EditRole:
                 if fld == 'name' : rslt = f.name
-                elif fld == 'file name': rslt = f.shortFilename()
-                elif fld == 'scans': rslt = str(len(f.time()))
-                elif fld == 'start time': rslt = str(min(f.time()))
-                elif fld == 'end time': rslt = str(max(f.time()))
+                elif fld == 'r-filename': rslt = f.shortFilename()
+                elif fld == 's-scans': rslt = str(len(f.time()))
+                elif fld == 's-st-time': rslt = str(min(f.time()))
+                elif fld == 's-en-time': rslt = str(max(f.time()))
                 elif fld in f.info.keys(): rslt = f.info[fld]
         return rslt
 
     def headerData(self,col,orientation,role):
         rslt = None
         if orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole:
-            rslt = self.fields[col]
+            if self.fields[col] in flds:
+                rslt = flds[self.fields[col]]
+            else:
+                rslt = self.fields[col]
         return rslt
 
     def setData(self, index, data, role):
@@ -162,12 +169,12 @@ class FileTreeModel(QtCore.QAbstractItemModel):
                 self.database.addProject(data,proj_id)
                 self.projects[index.row()][1] = data
         else:
-            if col == 'vis?':
+            if col == 'vis':
                 index.internalPointer().visible = data == '2'
                 #redraw the main plot
                 self.masterWindow.plotData()
-            elif col in ['traces','scale','offset','smooth',
-              'smooth order','smooth window','remove periodic noise']:
+            elif col in ['traces','t-scale','t-offset','t-smooth',
+              't-smooth-order','t-smooth-window','t-remove-noise']:
                 index.internalPointer().info[col] = data
                 if index.internalPointer().visible:
                     self.masterWindow.plotData()
@@ -191,18 +198,18 @@ class FileTreeModel(QtCore.QAbstractItemModel):
                 return dflags | QtCore.Qt.ItemIsDropEnabled
         else:
             dflags = dflags | QtCore.Qt.ItemIsDragEnabled
-            if col == 'vis?':
+            if col == 'vis':
                 return dflags | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsUserCheckable
-            elif col in ['file name']:
+            elif col in ['r-filename']:
                 return dflags
             else:
                 return dflags | QtCore.Qt.ItemIsEditable
 
     def itemSelected(self):
         #TODO: update an info window?
-        from .PeakTable import PeakTreeModel
-        #redraw the spectral line as gray
-        self.masterWindow.plotter.drawSpecLine(self.masterWindow.specplotter.specTime,linestyle='--')
+        #remove the current spectrum
+        #self.masterWindow.plotter.drawSpecLine(self.masterWindow.specplotter.specTime,linestyle='--')
+        self.masterWindow.plotter.drawSpecLine(None)
 
         #remove all of the peak patches from the main plot
         if self.masterWindow.ptab_mod is not None:
@@ -233,18 +240,41 @@ class FileTreeModel(QtCore.QAbstractItemModel):
 
     def rightClickMenuHead(self,point):
         menu = QtGui.QMenu(self.treeView)
-        pos_flds = ['Vis?','Traces','File Name','Date','Operator', \
-                    'Method','Type','Scans','Start Time','End Time', \
-                    'Vial Position','Sequence Number','Units']
-        for fld in pos_flds:
-            ac = menu.addAction(fld,self.rightClickMenuHeadHandler)
+        m_menu = QtGui.QMenu(menu)
+        r_menu = QtGui.QMenu(menu)
+        s_menu = QtGui.QMenu(menu)
+        t_menu = QtGui.QMenu(menu)
+        
+        for fld in flds:
+            if fld == 'name': continue
+            if fld[:2] == 'm-':
+                ac = m_menu.addAction(flds[fld],self.rightClickMenuHeadHandler)
+            elif fld[:2] == 'r-':
+                ac = r_menu.addAction(flds[fld],self.rightClickMenuHeadHandler)
+            elif fld[:2] == 's-':
+                ac = s_menu.addAction(flds[fld],self.rightClickMenuHeadHandler)
+            elif fld[:2] == 't-':
+                ac = t_menu.addAction(flds[fld],self.rightClickMenuHeadHandler)
+            else:
+                ac = menu.addAction(flds[fld],self.rightClickMenuHeadHandler)
+            ac.setData(fld)
             ac.setCheckable(True)
             if fld in self.fields: ac.setChecked(True)
-        if not menu.isEmpty(): menu.exec_(self.treeView.mapToGlobal(point))
+            
+        ac = menu.addAction('Method')
+        ac.setMenu(m_menu)
+        ac = menu.addAction('Run')
+        ac.setMenu(r_menu)
+        ac = menu.addAction('Stats')
+        ac.setMenu(s_menu)
+        ac = menu.addAction('Transforms')
+        ac.setMenu(t_menu)
+            
+        menu.exec_(self.treeView.mapToGlobal(point))
     
     def rightClickMenuHeadHandler(self):
-        fld = str(self.sender().text())
-        if fld == 'Name': return
+        fld = str(self.sender().data())
+        if fld == 'name': return
         self.beginResetModel()
         if fld in self.fields:
             self.fields.remove(fld)
