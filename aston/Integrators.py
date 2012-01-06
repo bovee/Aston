@@ -2,6 +2,10 @@ import numpy as np
 import scipy.ndimage as nd
 from aston.Peak import Peak
 
+#TODO: remove these imports
+from matplotlib.path import Path
+import matplotlib.patches as patches
+
 def waveletIntegrate(ptab,dt,ion=None):
     #TODO: make this an integration option
     x = dt.trace(ion)
@@ -34,8 +38,6 @@ def waveletIntegrate(ptab,dt,ion=None):
     # get the indices of the local maxima
     inds = np.array([i[mx] for i in np.indices(mx.shape)]).T
 
-    from matplotlib.path import Path
-    import matplotlib.patches as patches
     for i in inds:
         #get peak time, width and "area"
         #pk_t, pk_w, pk_a = t[i[1]], f(i[0]), z[i[0],i[1]]
@@ -47,7 +49,6 @@ def waveletIntegrate(ptab,dt,ion=None):
         y = patches.PathPatch(Path(zip(rng,verts)),facecolor='red',lw=0)
         ptab.masterWindow.tplot.add_patch(y)
         #except:
-        pass
 
 def statSlopeIntegrate(ptab,dt,ion=None):
     t = dt.time()

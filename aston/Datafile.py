@@ -1,9 +1,13 @@
+'''This module acts as an intermediary between the Agilent, Thermo,
+and other instrument specific classes and the rest of the program.'''
+#pylint: disable=C0103
+
 import struct
+import os.path as op
 import numpy as np
+import json
 from scipy.interpolate import interp1d
         
-"""This module acts as an intermediary between the Agilent, Thermo,
-and other instrument specific classes and the rest of the program."""
 class Datafile(object):
     '''Generic chromatography data containter. This abstacts away
     the implementation details of the specific file formats.'''
@@ -11,10 +15,10 @@ class Datafile(object):
 
         ext = filename.split('.')[-1].upper()
         try:
-            f = open(filename,mode='rb')
-            magic = struct.unpack('>H',f.read(2))[0]
+            f = open(filename, mode='rb')
+            magic = struct.unpack('>H', f.read(2))[0]
             f.close()
-        except:
+        except struct.error:
             magic = 0
 
         #TODO: .BAF : Bruker instrument data format
@@ -26,8 +30,8 @@ class Datafile(object):
         #TODO: .RAW : PerkinElmer TurboMass file format
         
         if ext == 'MS' and magic == 0x0132:
-            from FileFormats.AgilentMS import AgilentMS
-            return super(Datafile, cls).__new__(AgilentMS,filename,*args)
+            from aston.FileFormats.AgilentMS import AgilentMS
+            return super(Datafile, cls).__new__(AgilentMS, filename, *args)
         #elif ext == 'BIN' and magic == 513:
         #    from .AgilentMS import AgilentMSMSProf
         #    return super(Datafile, cls).__new__(AgilentMSMSProf,filename,*args)
@@ -35,44 +39,46 @@ class Datafile(object):
         #    from .AgilentMS import AgilentMSMSScan
         #    return super(Datafile, cls).__new__(AgilentMSMSScan,filename,*args)
         elif ext == 'CF' and magic == 0xFFFF:
-            from FileFormats.Thermo import ThermoCF
-            return super(Datafile, cls).__new__(ThermoCF,filename,*args)
+            from aston.FileFormats.Thermo import ThermoCF
+            return super(Datafile, cls).__new__(ThermoCF, filename, *args)
         elif ext == 'DXF' and magic == 0xFFFF:
-            from FileFormats.Thermo import ThermoDXF
-            return super(Datafile, cls).__new__(ThermoDXF,filename,*args)
+            from aston.FileFormats.Thermo import ThermoDXF
+            return super(Datafile, cls).__new__(ThermoDXF, filename, *args)
         elif ext == 'SD':
-            from FileFormats.AgilentUV import AgilentDAD
-            return super(Datafile, cls).__new__(AgilentDAD,filename,*args)
+            from aston.FileFormats.AgilentUV import AgilentDAD
+            return super(Datafile, cls).__new__(AgilentDAD, filename, *args)
         elif ext == 'CH' and magic == 0x0233:
-            from FileFormats.AgilentUV import AgilentMWD
-            return super(Datafile, cls).__new__(AgilentMWD,filename,*args)
+            from aston.FileFormats.AgilentUV import AgilentMWD
+            return super(Datafile, cls).__new__(AgilentMWD, filename, *args)
         elif ext == 'UV' and magic == 0x0233:
-            from FileFormats.AgilentUV import AgilentCSDAD
-            return super(Datafile, cls).__new__(AgilentCSDAD,filename,*args)
+            from aston.FileFormats.AgilentUV import AgilentCSDAD
+            return super(Datafile, cls).__new__(AgilentCSDAD, filename, *args)
         elif ext == 'CSV':
-            from FileFormats.OtherFiles import CSVFile
-            return super(Datafile, cls).__new__(CSVFile,filename,*args)
+            from aston.FileFormats.OtherFiles import CSVFile
+            return super(Datafile, cls).__new__(CSVFile, filename, *args)
         else:
             return None
             #return super(Datafile, cls).__new__(cls,filename,*args)
 
-    def __init__(self,filename,database=None,info=()):
+    def __init__(self, filename, database=None, info=()):
         #info is of the form: [name,info,projid,fileid]
         self.filename = filename
         self.database = database
 
-        #to decode the strings stored in the database into dictionarys
         #TODO: move this back into the database module
         def F(x):
-            if x.find('\\') >= 0: return dict([i.split('\\') for i in x.split('|')])
-            else: return {}
+            '''Decode the strings stored in the database into dictionarys.'''
+            if x.find('\\') >= 0:
+                return dict([i.split('\\') for i in x.split('|')])
+            else:
+                return {}
 
         #ways to initialize myself
         #1. using parameters passed to me
         if database is not None:
             self.name = info[0]
-            self.info = F(info[1])
-            self.fid = (info[2],info[3]) #(project_id, file_id)
+            self.info = json.loads(info[1])
+            self.fid = (info[2], info[3]) #(project_id, file_id)
         #2. from file info -> use this if not using the Aston GUI
         else:
             self.name, self.info = self._getInfoFromFile()
@@ -89,7 +95,8 @@ class Datafile(object):
         '''Returns a slice of the incoming array filtered between
         the two times specified. Assumes the array is the same
         length as self.times. Acts in the time() and trace() functions.'''
-        if len(self.times) == 0: return np.array([])
+        if len(self.times) == 0:
+            return np.array([])
         if st_time is None:
             st_idx = 0
         else:
@@ -104,8 +111,10 @@ class Datafile(object):
         '''Returns an array with all of the time points at which
         data was collected'''
         #load the data if it hasn't been already
-        #TODO: this should cache only the times in case we're looking at GCMS data
-        if self.times is None: self._cacheData()
+        #TODO: this should cache only the times (to speed up access
+        #in case we're looking at something with the _getTotalTrace)
+        if self.times is None:
+            self._cacheData()
         
         #scale and offset the data appropriately
         tme = np.array(self.times)
@@ -114,12 +123,13 @@ class Datafile(object):
         if 't-offset' in self.info:
             tme += float(self.info['t-offset'])
         #return the time series
-        return self._getTimeSlice(tme,st_time,en_time)
+        return self._getTimeSlice(tme, st_time, en_time)
 
     def trace(self, ion=None, st_time=None, en_time=None):
         '''Returns an array, either time/ion filtered or not
         of chromatographic data.'''
-        if self.data is None: self._cacheData()
+        if self.data is None:
+            self._cacheData()
 
         if type(ion) == str or type(ion) == unicode:
             ic = self._parseIonString(ion.lower())
@@ -142,27 +152,31 @@ class Datafile(object):
         if 't-smooth' in self.info:
             if self.info['t-smooth'] == 'moving average':
                 wnd = self.info['t-smooth-window']
-                ic = self._applyFxn(ic,'movingaverage',wnd)
+                ic = self._applyFxn(ic, 'movingaverage', wnd)
             elif self.info['t-smooth'] == 'savitsky-golay':
                 wnd = self.info['t-smooth-window']
                 sord = self.info['t-smooth-order']
-                ic = self._applyFxn(ic,'savitskygolay',wnd,sord)
+                ic = self._applyFxn(ic, 'savitskygolay', wnd, sord)
 
-        return self._getTimeSlice(ic,st_time,en_time)
+        return self._getTimeSlice(ic, st_time, en_time)
 
-    def _parseIonString(self,istr):
-        '''Recursive string parser that handles "ion" strings'''
+    def _parseIonString(self, istr):
+        '''Recursive string parser that handles "ion" strings.'''
         #TODO: better error checking in here?
 
         #null case
-        if istr.strip() == '': return np.zeros(len(self.times))
+        if istr.strip() == '':
+            return np.zeros(len(self.times))
         
         #remove any parantheses or pluses around the whole thing
-        if istr[0] in '+': istr = istr[1:]
-        if istr[0] in '(' and istr[-1] in ')': istr = istr[1:-1]
+        if istr[0] in '+':
+            istr = istr[1:]
+        if istr[0] in '(' and istr[-1] in ')':
+            istr = istr[1:-1]
 
         #invert it if preceded by a minus sign
-        if istr[0] in '-': return -1.0*self._parseIonString(istr[1:])
+        if istr[0] in '-':
+            return -1.0*self._parseIonString(istr[1:])
 
         #this is a function
         if istr[:istr.find('(')].isalnum() and istr.find('(') != -1:
@@ -176,26 +190,28 @@ class Datafile(object):
                 else:
                     y = dt.trace()
                 t = np.array(dt.times)
-                f = interp1d(t,y,bounds_error=False,fill_value=0.0)
+                f = interp1d(t, y, bounds_error=False, fill_value=0.0)
                 return f(self.times)
             else:
                 args = istr[istr.find('(')+1:-1].split(';')
                 ic = self._parseIonString(args[0])
-                return self._applyFxn(ic,fxn,*args[1:])
+                return self._applyFxn(ic, fxn, *args[1:])
 
         #have we simplified enough? is all of the tricky math gone?
         if set(istr).intersection(set('+-/*()')) == set():
             if istr.count(':') == 1:
                 #contains an ion range
                 ion = np.array([float(i) for i in istr.split(':')]).mean()
-                tol = abs(float(istr.split(':')[0])-ion)
-                return self._getIonTrace(ion,tol)
+                tol = abs(float(istr.split(':')[0]) - ion)
+                return self._getIonTrace(ion, tol)
             elif all(i in '0123456789.' for i in istr):
                 return self._getIonTrace(float(istr))
             elif istr == 't' or istr == 'time':
                 tme = np.array(self.times)
-                if 't-scale' in self.info: tme *= float(self.info['t-scale'])
-                if 't-offset' in self.info: tme += float(self.info['t-offset'])
+                if 't-scale' in self.info:
+                    tme *= float(self.info['t-scale'])
+                if 't-offset' in self.info:
+                    tme += float(self.info['t-offset'])
                 return tme
             elif istr == 'x' or istr == 'tic':
                 return self._getTotalTrace()
@@ -203,18 +219,26 @@ class Datafile(object):
             #    #TODO: create a baseline
             #    pass
             elif istr == 'coda':
-                #Windig W: The use of the Durbin-Watson criterion for noise and background reduction of complex liquid chromatography/mass spectrometry data and a new algorithm to determine sample differences. Chemometrics and Intelligent Laboratory Systems. 2005, 77:206-214.
+                # Windig W: The use of the Durbin-Watson criterion for
+                # noise and background reduction of complex liquid
+                # chromatography/mass spectrometry data and a new algorithm
+                # to determine sample differences. Chemometrics and
+                # Intelligent Laboratory Systems. 2005, 77:206-214.
                 pass
             elif istr == 'rnie':
-                #Yunfei L, Qu H, and Cheng Y: A entropy-based method for noise reduction of LC-MS data. Analytica Chimica Acta 612.1 (2008)
+                # Yunfei L, Qu H, and Cheng Y: A entropy-based method
+                # for noise reduction of LC-MS data. Analytica Chimica
+                # Acta 612.1 (2008)
                 pass
             elif istr == 'wmsm':
-                #Fleming C et al. Windowed mass selection method: a new data processing algorithm for LC-MS data. Journal of Chromatography A 849.1 (1999) 71-85.
+                # Fleming C et al. Windowed mass selection method:
+                # a new data processing algorithm for LC-MS data.
+                # Journal of Chromatography A 849.1 (1999) 71-85.
                 pass
             elif istr[0] == '!' and all(i in '0123456789.' for i in istr[1:]):
                 return np.ones(len(self.times)) * float(istr[1:])
             elif istr == '!pi':
-                return np.ones(len(self.times))*np.pi
+                return np.ones(len(self.times)) * np.pi
             else:
                 return self._getOtherTrace(istr)
         
@@ -252,7 +276,8 @@ class Datafile(object):
         else:
             return 0 #this should never happen?
 
-    def _applyFxn(self,ic,fxn,*args):
+    def _applyFxn(self, ic, fxn, *args):
+        '''Apply the function, fxn, to the trace, ic, and returns the result.'''
         if fxn == 'fft':
             #FIXME: "time" of FFT axis doesn't match time of ic axis
             oc = np.abs(np.fft.fftshift(np.fft.fft(ic))) / len(ic)
@@ -262,11 +287,12 @@ class Datafile(object):
             #adapted from http://glowingpython.blogspot.com/2011/08/fourier-transforms-and-image-filtering.html
             I = np.fft.fftshift(np.fft.fft(ic)) # entering to frequency domain
             # fftshift moves zero-frequency component to the center of the array
-            P = np.zeros(len(I),dtype=complex)
+            P = np.zeros(len(I), dtype=complex)
             c1 = len(I)/2 # spectrum center
             r = float(args[0]) #percent of signal to save
             r = int((r*len(I))/2) #convert to coverage of the array
-            for i in range(c1-r,c1+r): P[i] = I[i] # frequency cutting
+            for i in range(c1-r, c1+r):
+                P[i] = I[i] # frequency cutting
             oc = np.real(np.fft.ifft(np.fft.ifftshift(P)))
         elif fxn == 'abs':
             oc = np.abs(ic)
@@ -282,25 +308,25 @@ class Datafile(object):
         elif fxn == 'base':
             #INSPIRED by Algorithm A12 from Zupan
             #5 point pre-smoothing
-            sc = np.convolve(np.ones(5)/5.0,ic,mode='same')
+            sc = np.convolve(np.ones(5) / 5.0, ic, mode='same')
             #get local minima
-            mn = np.arange(len(ic))[np.r_[True,((sc < np.roll(sc,1)) &
-              (sc < np.roll(sc,-1)))[1:-1],True]]
+            mn = np.arange(len(ic))[np.r_[True,((sc < np.roll(sc, 1)) &
+              (sc < np.roll(sc, -1)))[1:-1], True]]
             #don't allow baseline to have a slope greater than
             #10x less than the steepest peak
             max_slope = np.max(np.gradient(ic))/10.0
             slope = max_slope
             pi = 0 #previous index
             oc = np.zeros(len(ic))
-            for i in range(1,len(mn)):
-                if slope < (ic[mn[i]]-ic[mn[pi]])/(mn[i]-mn[pi]) and \
+            for i in range(1, len(mn)):
+                if slope < (ic[mn[i]]-ic[mn[pi]]) / (mn[i]-mn[pi]) and \
                   slope < max_slope:
                     #add trend
                     oc[mn[pi]:mn[i-1]] = \
                       np.linspace(ic[mn[pi]],ic[mn[i-1]],mn[i-1]-mn[pi])
                     pi = i -1
                 slope = (ic[mn[i]]-ic[mn[pi]])/(mn[i]-mn[pi])
-            print mn[pi],mn[-1]
+            print(mn[pi], mn[-1])
             oc[mn[pi]:mn[-1]] = \
               np.linspace(ic[mn[pi]],ic[mn[-1]],mn[-1]-mn[pi])
             oc[-1] = oc[-2] #FIXME: there's definitely a bug in here somewhere
@@ -315,7 +341,8 @@ class Datafile(object):
                 half_wind = (int(args[0]) -1) // 2
                 order_range = range(int(args[1])+1)
                 # precompute coefficients
-                b = [[k**i for i in order_range] for k in range(-half_wind, half_wind+1)]
+                b = [[k**i for i in order_range] \
+                     for k in range(-half_wind, half_wind+1)]
                 m = np.linalg.pinv(b)
                 m = m[0]
             # pad the signal at the extremes with
@@ -328,31 +355,39 @@ class Datafile(object):
             oc = ic
         return oc
 
-    def scan(self,time):
+    def scan(self, time):
+        '''Returns the spectrum from a specific time.'''
         if 't-offset' in self.info:
-            time = time-float(self.info['t-offset'])
+            time -= float(self.info['t-offset'])
         if 't-scale' in self.info:
-            time = time/float(self.info['t-scale'])
+            time /= float(self.info['t-scale'])
         try:
             return self.data[self.times.index(time)]
-        except:
+        except ValueError:
             idx = (np.abs(np.array(self.times)-time)).argmin()
             return self.data[idx]
 
     def mz_bounds(self):
+        '''Returns the highest and lowest m/z values in the data.'''
+        if self.data is None:
+            self._cacheData()
+            
         mz_min, mz_max = 100, 0
         for i in self.data:
             try:
-                mz_min = min(min(i.keys()),mz_min)
-                mz_max = max(max(i.keys()),mz_max)
-            except: pass
+                mz_min = min(min(i.keys()), mz_min)
+                mz_max = max(max(i.keys()), mz_max)
+            except ValueError:
+                pass
         return mz_min, mz_max
 
     def shortFilename(self):
-        import os.path as op
-        return op.join(op.basename(op.dirname(self.filename)),op.basename(self.filename))
+        '''Returns the filename used for display in the program.'''
+        return op.join(op.basename(op.dirname(self.filename)),
+                       op.basename(self.filename))
     
     def saveChanges(self):
+        '''Save any changes to the datafile to the database.'''
         if self.fid[1] is not None:
             return self.database.updateFile(self)
         else:
@@ -362,20 +397,27 @@ class Datafile(object):
     #subclasses that handle the raw datafiles.
 
     def _cacheData(self):
+        '''Load the data into the Datafile for the first time.'''
         self.times = []
         self.data = []
 
-    def _getIonTrace(self,val,tol=0.5):
-        if self.data is None: self._cacheData()
-        return np.array([sum([i for ion,i in pt.items() \
+    def _getIonTrace(self, val, tol=0.5):
+        '''Return a specific ion trace from the data.'''
+        if self.data is None:
+            self._cacheData()
+        return np.array([sum([i for ion, i in pt.items() \
             if ion >= val-tol and ion <= val+tol]) for pt in self.data])
 
-    def _getOtherTrace(self,name):
+    def _getOtherTrace(self, name):
+        '''Return a named trace, like pressure or temperature.'''
         return np.zeros(len(self.times))
 
     def _getTotalTrace(self):
-        if self.data is None: self._cacheData()
+        '''Return the default, total trace.'''
+        if self.data is None:
+            self._cacheData()
         return np.array([sum(i.values()) for i in self.data])
 
     def _getInfoFromFile(self):
-        return '',{}
+        '''Return file information.'''
+        return '', {}

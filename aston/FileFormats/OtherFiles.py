@@ -1,4 +1,5 @@
-from .. import Datafile
+from aston import Datafile
+import os.path as op
 
 class CSVFile(Datafile.Datafile):
     '''
@@ -25,10 +26,9 @@ class CSVFile(Datafile.Datafile):
             self.data = []
             
     def _getInfoFromFile(self):
-        import os.path as op
         name = op.splitext(op.basename(self.filename))[0]
         info = {}
         info['traces'] = 'TIC'
-        info['type'] = 'Sample'
-        info['data_type'] = 'CSV'
+        info['r-type'] = 'Sample'
+        info['s-file-type'] = 'CSV'
         return name,info

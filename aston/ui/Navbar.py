@@ -1,9 +1,11 @@
+from PyQt4 import QtGui, QtCore
+import os.path as op
 from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg
+import time
+from aston.Features import Peak
 
 class AstonNavBar(NavigationToolbar2QTAgg):
     def __init__(self, canvas, parent=None):
-        from PyQt4 import QtGui, QtCore
-        import os.path as op
         NavigationToolbar2QTAgg.__init__(self,canvas,parent,False)
         self.parent = parent
         self.ev_time = 0
@@ -55,15 +57,13 @@ class AstonNavBar(NavigationToolbar2QTAgg):
         self._xypress = event.xdata, event.ydata
 
     def release_peak(self,event):
-        import time
-        from .. import Peak
 
         if time.time() - self.ev_time < 1:
             self.ev_time = time.time()
             if abs(self._xypress[0] - event.xdata) > 0.01: return
             pks = self.parent.ptab_mod.findPeak(event.xdata,event.ydata)
             if len(pks) == 0: return
-            self.parent.ptab_mod.delPeak(pks[0])
+            self.parent.ptab_mod.delFeat(pks[0])
         else:
             self.ev_time = time.time()
             if abs(self._xypress[0] - event.xdata) < 0.01: return
@@ -76,13 +76,12 @@ class AstonNavBar(NavigationToolbar2QTAgg):
             else:
                 pt1, pt2 = (event.xdata, event.ydata), (self._xypress[0], self._xypress[1])
             
-            print pt1,pt2
             verts = [pt1]
             verts += zip(dt.time(pt1[0],pt2[0]),dt.trace(ion,pt1[0],pt2[0]))
             verts += [pt2]
-            pk = Peak.Peak(verts,ion,'Manual')
+            pk = Peak(verts,None,ion)
             pk.ids[2] = dt.fid[1]
-            self.parent.ptab_mod.addPeaks([pk])
+            self.parent.ptab_mod.addFeats([pk])
 
         #self.draw()
         self._xypress = None

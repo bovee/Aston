@@ -1,6 +1,7 @@
 syntax: glob
 
 .directory
+*.ropeproject/*
 *.sqlite
 *.pyc
 *__pycache__/*

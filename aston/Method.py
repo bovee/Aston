@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 class MethodDatabase(object):
     def __init__(self,database):
-        import os, sqlite3
+        #import os, sqlite3
         pass
 # fields:
 # 1. inst_type - HPLC, GC, etc
@@ -68,10 +68,12 @@ flds = {
         'r-smp-conc':'Sample Concentration',
         'r-date':'Date',
         'r-opr':'Operator',
-        'r-type':'Type',
+        'r-type':'Type', #sample, standard, etc.
         'r-vial-pos':'Vial Position',
         'r-seq-num':'Sequence Number',
+        'r-inst':'Instrument',
     # information generated in the program ("statistics")
+        's-file-type':'File Type',
         's-scans':'Scans',
         's-st-time':'Start Time (min)',
         's-en-time':'End Time (min)',

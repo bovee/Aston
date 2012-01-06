@@ -9,7 +9,7 @@ from aston.ui.FilterWindow import FilterWindow
 from aston.Plotting import Plotter, SpecPlotter
 from aston.FileTable import FileTreeModel
 from aston.Integrators import statSlopeIntegrate
-from aston.Peak import Peak
+from aston.Features import Spectrum
 
 class AstonWindow(QtGui.QMainWindow):
     def __init__(self, parent=None):
@@ -309,9 +309,9 @@ class AstonWindow(QtGui.QMainWindow):
     def saveSpc(self):
         scn_nm = str(self.sender().data())
         scn = self.specplotter.scans[scn_nm]
-        pk = Peak(scn,None,'Spectrum')
-        pk.ids[2] = self.ftab_mod.returnSelFile().fid[1]
-        self.ptab_mod.addPeaks([pk])
+        spc = Spectrum(scn,None)
+        spc.ids[2] = self.ftab_mod.returnSelFile().fid[1]
+        self.ptab_mod.addFeats([spc])
     
     def specmousescroll(self,event):
         xmin,xmax = self.bplot.get_xlim()

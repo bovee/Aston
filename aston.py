@@ -1,4 +1,5 @@
 #!/usr/bin/python2.7
+'''Loads and runs the Aston application.'''
 
 #for compatibility with Python 2
 import sip
@@ -10,7 +11,7 @@ import PyQt4
 from aston.ui.MainWindow import AstonWindow
 
 #standard QT stuff to set up
-app = PyQt4.QtGui.QApplication(sys.argv)
-myapp = AstonWindow()
-myapp.show()
-sys.exit(app.exec_())
+qt = PyQt4.QtGui.QApplication(sys.argv)
+aston = AstonWindow()
+aston.show()
+sys.exit(qt.exec_())

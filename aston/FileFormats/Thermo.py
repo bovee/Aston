@@ -1,11 +1,13 @@
-from .. import Datafile
+from aston import Datafile
+import struct
+import time
+import os
 
 class ThermoCF(Datafile.Datafile):
     def __init__(self,*args,**kwargs):
         super(ThermoCF,self).__init__(*args,**kwargs)
 
     def _cacheData(self):
-        import struct
         if self.data is not None: return
 
         f = open(self.filename,'rb')
@@ -23,26 +25,26 @@ class ThermoCF(Datafile.Datafile):
         self.times = []
         self.data = []
         f.seek(f.tell()+35)
-        for i in range(nscans):
+        for _ in range(nscans):
             self.times.append(struct.unpack('<f',f.read(4))[0] / 60.)
-            self.data.append(dict(map(lambda x,y:(x,y),(44,45,46),struct.unpack('ddd',f.read(24)))))
+            ms = map(lambda x,y:(x,y),(44,45,46),struct.unpack('<ddd',f.read(24)))
+            self.data.append(dict(ms))
         f.close()
 
     def _getInfoFromFile(self):
-        import time, os
         name = ''
         info = {}
         info['traces'] = 'TIC'
-        info['operator'] = ''
-        info['method'] = ''
+        info['r-opr'] = ''
+        info['m'] = ''
         #try: #TODO: this crashes in python 3; not clear why?
-        info['date'] = time.ctime(os.path.getctime(self.filename))
+        info['r-date'] = time.ctime(os.path.getctime(self.filename))
         #except:
         #    pass
         #info['file name'] = os.path.basename(self.filename)
         name = os.path.splitext(os.path.basename(self.filename))[0]
-        info['type'] = 'Sample'
-        info['data_type'] = 'Thermo Isodat CF'
+        info['r-type'] = 'Sample'
+        info['s-file-type'] = 'Thermo Isodat CF'
         return name,info
 
 class ThermoDXF(Datafile.Datafile):
@@ -50,7 +52,6 @@ class ThermoDXF(Datafile.Datafile):
         super(ThermoDXF,self).__init__(*args,**kwargs)
 
     def _cacheData(self):
-        import struct
         if self.data is not None: return
         self.times = []
         self.data = []
@@ -69,25 +70,24 @@ class ThermoDXF(Datafile.Datafile):
         #next line assumes all record are 28 bytes long ('fddd')
         nscans = int(struct.unpack('<I',f.read(4))[0]/28.0)
 
-        for i in range(nscans):
+        for _ in range(nscans):
             self.times.append(struct.unpack('<f',f.read(4))[0] / 60.)
-            self.data.append(dict(map(lambda
-                                      x,y:(x,y),(44,45,46),struct.unpack('<ddd',f.read(24)))))
+            ms = map(lambda x,y:(x,y),(44,45,46),struct.unpack('<ddd',f.read(24)))
+            self.data.append(dict(ms))
         f.close()
 
     def _getInfoFromFile(self):
-        import time, os
         name = ''
         info = {}
         info['traces'] = 'TIC'
-        info['operator'] = ''
-        info['method'] = ''
+        info['r-opr'] = ''
+        info['m'] = ''
         #try: #TODO: this crashes in python 3; not clear why?
         info['date'] = time.ctime(os.path.getctime(self.filename))
         #except:
         #    pass
         #info['file name'] = os.path.basename(self.filename)
         name = os.path.splitext(os.path.basename(self.filename))[0]
-        info['type'] = 'Sample'
-        info['data_type'] = 'Thermo Isodat DXF'
+        info['r-type'] = 'Sample'
+        info['s-file-type'] = 'Thermo Isodat DXF'
         return name,info

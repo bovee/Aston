@@ -1,18 +1,18 @@
 # -*- coding: utf-8 -*-
-from PyQt4 import QtCore, QtGui
+#pylint: disable=C0103
+from PyQt4 import QtGui, QtCore
 from Method import flds
 from aston.Database import AstonDatabase
-from .PeakTable import PeakTreeModel
+from aston.PeakTable import PeakTreeModel
 import os.path as op
 
 class FileTreeModel(QtCore.QAbstractItemModel):
-    
     def __init__(self, database=None, treeView=None, masterWindow=None, *args): 
         QtCore.QAbstractItemModel.__init__(self, *args) 
         
         self.database = AstonDatabase(op.join(database,'aston.sqlite'))
         self.projects = self.database.getProjects()
-        self.fields = ['name','vis','traces','r-filename']
+        self.fields = ['name', 'vis', 'traces', 'r-filename']
         self.masterWindow = masterWindow
 
         if treeView is not None:
@@ -49,7 +49,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             treeView.resizeColumnToContents(0)
             treeView.resizeColumnToContents(1)
 
-    def dragMoveEvent(self,event):
+    def dragMoveEvent(self, event):
         index = self.proxyMod.mapToSource(self.treeView.indexAt(event.pos()))
         if not index.parent().isValid() and \
            event.mimeData().hasFormat('application/x-aston-file'):
@@ -63,7 +63,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         types.append('application/x-aston-file')
         return types
 
-    def mimeData(self,indexList):
+    def mimeData(self, indexList):
         fname_lst = []
         fid_lst = []
         for i in indexList:
@@ -75,7 +75,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         data.setData('application/x-aston-file',','.join(fid_lst))
         return data
 
-    def dropMimeData(self,data,action,row,col,parent):
+    def dropMimeData(self, data, action, row, col, parent):
         #TODO: drop files into library?
         fids = data.data('application/x-aston-file')
         if not parent.isValid(): return False
@@ -97,13 +97,13 @@ class FileTreeModel(QtCore.QAbstractItemModel):
     def index(self,row,column,parent):
         if not parent.isValid():
             projid = self.projects[row]
-            return self.createIndex(row,column,projid)
+            return self.createIndex(row, column, projid)
         else:
             projid = parent.internalPointer()[0]
             datafile = self.database.getProjFiles(projid)[row]
-            return self.createIndex(row,column,datafile)
+            return self.createIndex(row, column, datafile)
 
-    def parent(self,index):
+    def parent(self, index):
         if not index.isValid():
             return QtCore.QModelIndex()
         elif type(index.internalPointer()) is list or index.internalPointer() is None:
@@ -112,7 +112,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             projid = index.internalPointer().fid[0]
             row = [i[0] for i in self.projects].index(projid)
             #figure out the project row and projid of the given fileid
-            return self.createIndex(row,0,self.projects[row])
+            return self.createIndex(row, 0, self.projects[row])
 
     def rowCount(self,parent):
         if not parent.isValid():
@@ -125,10 +125,10 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         else:
             return 0
 
-    def columnCount(self,parent):
+    def columnCount(self, parent):
         return len(self.fields)
 
-    def data(self,index,role):
+    def data(self, index, role):
         rslt = None
 
         fld = self.fields[index.column()].lower()
@@ -140,10 +140,12 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             #return info about a file
             f = index.internalPointer()
             if fld == 'vis' and role == QtCore.Qt.CheckStateRole:
-                if f.visible: rslt = QtCore.Qt.Checked
-                else: rslt = QtCore.Qt.Unchecked
+                if f.visible:
+                    rslt = QtCore.Qt.Checked
+                else:
+                    rslt = QtCore.Qt.Unchecked
             elif role == QtCore.Qt.DisplayRole or role == QtCore.Qt.EditRole:
-                if fld == 'name' : rslt = f.name
+                if fld == 'name': rslt = f.name
                 elif fld == 'r-filename': rslt = f.shortFilename()
                 elif fld == 's-scans': rslt = str(len(f.time()))
                 elif fld == 's-st-time': rslt = str(min(f.time()))
@@ -151,7 +153,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
                 elif fld in f.info.keys(): rslt = f.info[fld]
         return rslt
 
-    def headerData(self,col,orientation,role):
+    def headerData(self, col, orientation, role):
         rslt = None
         if orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole:
             if self.fields[col] in flds:
@@ -173,8 +175,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
                 index.internalPointer().visible = data == '2'
                 #redraw the main plot
                 self.masterWindow.plotData()
-            elif col in ['traces','t-scale','t-offset','t-smooth',
-              't-smooth-order','t-smooth-window','t-remove-noise']:
+            elif col == 'traces' or col[:2] == 't-':
                 index.internalPointer().info[col] = data
                 if index.internalPointer().visible:
                     self.masterWindow.plotData()
@@ -183,7 +184,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             else:
                 index.internalPointer().info[col] = data
             index.internalPointer().saveChanges()
-        self.dataChanged.emit(index,index)
+        self.dataChanged.emit(index, index)
         return True
         
     def flags(self, index):
@@ -193,13 +194,15 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             return dflags
         if not index.parent().isValid():
             if index.internalPointer()[0] is not None and col == 'name':
-                return  dflags | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsDropEnabled
+                return  dflags | QtCore.Qt.ItemIsEditable | \
+                        QtCore.Qt.ItemIsDropEnabled
             else:
                 return dflags | QtCore.Qt.ItemIsDropEnabled
         else:
             dflags = dflags | QtCore.Qt.ItemIsDragEnabled
             if col == 'vis':
-                return dflags | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsUserCheckable
+                return dflags | QtCore.Qt.ItemIsEditable | \
+                       QtCore.Qt.ItemIsUserCheckable
             elif col in ['r-filename']:
                 return dflags
             else:
@@ -216,7 +219,10 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             self.masterWindow.ptab_mod.clearPatches()
         #recreate the table of peaks for the new files
         #if any([i.visible for i in self.returnSelFiles()]):
-        self.masterWindow.ptab_mod = PeakTreeModel(self.database, self.masterWindow.ui.peakTreeView, self.masterWindow, self.masterWindow.ftab_mod.returnSelFiles())
+        self.masterWindow.ptab_mod = PeakTreeModel(self.database,
+          self.masterWindow.ui.peakTreeView,
+          self.masterWindow,
+          self.masterWindow.ftab_mod.returnSelFiles())
         #else:
         #    self.masterWindow.ptab_mod = PeakTreeModel(self.database, self.masterWindow.ui.peakTreeView, self.masterWindow)
 
@@ -233,7 +239,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             else:
                 pass
         else:
-            menu.addAction('New Project',self.addProject)
+            menu.addAction('New Project', self.addProject)
 
         if not menu.isEmpty():
             menu.exec_(self.treeView.mapToGlobal(point))
@@ -248,15 +254,15 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         for fld in flds:
             if fld == 'name': continue
             if fld[:2] == 'm-':
-                ac = m_menu.addAction(flds[fld],self.rightClickMenuHeadHandler)
+                ac = m_menu.addAction(flds[fld], self.rightClickMenuHeadHandler)
             elif fld[:2] == 'r-':
-                ac = r_menu.addAction(flds[fld],self.rightClickMenuHeadHandler)
+                ac = r_menu.addAction(flds[fld], self.rightClickMenuHeadHandler)
             elif fld[:2] == 's-':
-                ac = s_menu.addAction(flds[fld],self.rightClickMenuHeadHandler)
+                ac = s_menu.addAction(flds[fld], self.rightClickMenuHeadHandler)
             elif fld[:2] == 't-':
-                ac = t_menu.addAction(flds[fld],self.rightClickMenuHeadHandler)
+                ac = t_menu.addAction(flds[fld], self.rightClickMenuHeadHandler)
             else:
-                ac = menu.addAction(flds[fld],self.rightClickMenuHeadHandler)
+                ac = menu.addAction(flds[fld], self.rightClickMenuHeadHandler)
             ac.setData(fld)
             ac.setCheckable(True)
             if fld in self.fields: ac.setChecked(True)
@@ -308,7 +314,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         for i in range(self.proxyMod.rowCount(QtCore.QModelIndex())):
             prjNode = self.proxyMod.index(i,0,QtCore.QModelIndex())
             for j in range(self.proxyMod.rowCount(prjNode)):
-                f = self.proxyMod.mapToSource(self.proxyMod.index(j,0,prjNode)).internalPointer()
+                f = self.proxyMod.mapToSource(self.proxyMod.index(j, 0, prjNode)).internalPointer()
                 if f.visible:
                     chkFiles.append(f)
         return chkFiles
@@ -317,10 +323,12 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         #returns the file currently selected in the file list
         #used for determing which spectra to display on right click, etc.
         tab_sel = self.treeView.selectionModel()
-        if not tab_sel.currentIndex().isValid: return
+        if not tab_sel.currentIndex().isValid:
+            return
 
         ind = self.proxyMod.mapToSource(tab_sel.currentIndex())
-        if ind.internalPointer() is None: return
+        if ind.internalPointer() is None:
+            return
         return ind.internalPointer()
 
     def returnSelFiles(self):
@@ -337,7 +345,8 @@ class FilterModel(QtGui.QSortFilterProxyModel):
     def __init__(self,parent=None):
         super(FilterModel,self).__init__(parent)
 
-    def filterAcceptsRow(self,row,index):
-        if not index.isValid(): return True
-        else: return super(FilterModel,self).filterAcceptsRow(row,index)
-
+    def filterAcceptsRow(self, row, index):
+        if not index.isValid():
+            return True
+        else:
+            return super(FilterModel, self).filterAcceptsRow(row, index)
