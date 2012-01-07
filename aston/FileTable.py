@@ -232,14 +232,15 @@ class FileTreeModel(QtCore.QAbstractItemModel):
 
         if index.isValid():
             if not index.parent().isValid():
-                menu.addAction('New Project',self.addProject)
+                menu.addAction(self.tr('New Project'),self.addProject)
                 if index.internalPointer()[0] is not None:
-                    delAc = menu.addAction('Delete Project',self.delProject)
+                    delAc = menu.addAction(self.tr('Delete Project'),
+                                           self.delProject)
                     delAc.setData(index.internalPointer()[0])
             else:
                 pass
         else:
-            menu.addAction('New Project', self.addProject)
+            menu.addAction(self.tr('New Project'), self.addProject)
 
         if not menu.isEmpty():
             menu.exec_(self.treeView.mapToGlobal(point))
@@ -253,27 +254,28 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         
         for fld in flds:
             if fld == 'name': continue
+            mi = flds[fld]
             if fld[:2] == 'm-':
-                ac = m_menu.addAction(flds[fld], self.rightClickMenuHeadHandler)
+                ac = m_menu.addAction(mi, self.rightClickMenuHeadHandler)
             elif fld[:2] == 'r-':
-                ac = r_menu.addAction(flds[fld], self.rightClickMenuHeadHandler)
+                ac = r_menu.addAction(mi, self.rightClickMenuHeadHandler)
             elif fld[:2] == 's-':
-                ac = s_menu.addAction(flds[fld], self.rightClickMenuHeadHandler)
+                ac = s_menu.addAction(mi, self.rightClickMenuHeadHandler)
             elif fld[:2] == 't-':
-                ac = t_menu.addAction(flds[fld], self.rightClickMenuHeadHandler)
+                ac = t_menu.addAction(mi, self.rightClickMenuHeadHandler)
             else:
-                ac = menu.addAction(flds[fld], self.rightClickMenuHeadHandler)
+                ac = menu.addAction(mi, self.rightClickMenuHeadHandler)
             ac.setData(fld)
             ac.setCheckable(True)
             if fld in self.fields: ac.setChecked(True)
             
-        ac = menu.addAction('Method')
+        ac = menu.addAction(self.tr('Method'))
         ac.setMenu(m_menu)
-        ac = menu.addAction('Run')
+        ac = menu.addAction(self.tr('Run'))
         ac.setMenu(r_menu)
-        ac = menu.addAction('Stats')
+        ac = menu.addAction(self.tr('Stats'))
         ac.setMenu(s_menu)
-        ac = menu.addAction('Transforms')
+        ac = menu.addAction(self.tr('Transforms'))
         ac.setMenu(t_menu)
             
         menu.exec_(self.treeView.mapToGlobal(point))

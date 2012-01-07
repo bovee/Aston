@@ -2,6 +2,7 @@ import numpy as np
 from PyQt4 import QtCore, QtGui
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg
+from matplotlib.ticker import AutoMinorLocator
 
 from aston.Features import Spectrum
 
@@ -14,14 +15,18 @@ class SpecPlotter(object):
         
         #create the canvas for spectral plotting
         bfig = Figure()
+        bfig.set_facecolor('white')
         self.canvas = FigureCanvasQTAgg(bfig)
         specArea.addWidget(self.canvas)
 
-        self.plt = bfig.add_subplot(111)
+        self.plt = bfig.add_subplot(111, frameon=False)
+        self.plt.xaxis.set_ticks_position('bottom')
+        self.plt.yaxis.set_ticks_position('none')
+        self.plt.xaxis.set_tick_params(which='both', direction='out')
+        
         self.canvas.mpl_connect('button_press_event',self.specmousedown)
         self.canvas.mpl_connect('scroll_event',self.specmousescroll)
 
-        
         self.scans = {}
         self.scansToDisp = []
         self.scansToLbl = ['']

@@ -159,15 +159,16 @@ class PeakTreeModel(QtCore.QAbstractItemModel):
         if index.isValid():
             if not index.parent().isValid():
                 if index.internalPointer().cmpd_id is not None:
-                    delAc = menu.addAction('Delete Compound',self._delCompoundFromMenu)
+                    delAc = menu.addAction(self.tr('Delete Compound'),
+                                           self._delCompoundFromMenu)
                     delAc.setData(index.internalPointer().cmpd_id)
-                    spcAc = menu.addAction('Attach Current Spectrum',self._attSpcFromMenu)
+                    spcAc = menu.addAction(self.tr('Attach Current Spectrum'), self._attSpcFromMenu)
                     spcAc.setData(index.internalPointer().cmpd_id)
             else:
-                delAc = menu.addAction('Delete Feature',self._delFeatFromMenu)
+                delAc = menu.addAction(self.tr('Delete Feature'),self._delFeatFromMenu)
                 delAc.setData(index.internalPointer().ids[0])
                 if index.internalPointer().ion is not None:
-                    newAc = menu.addAction('Make New Compound',self._addCompoundFromMenu)
+                    newAc = menu.addAction(self.tr('Make New Compound'),self._addCompoundFromMenu)
                     newAc.setData(index.internalPointer().ids[0])
         else:
             pass
@@ -223,7 +224,7 @@ class PeakTreeModel(QtCore.QAbstractItemModel):
                     ft = j
                     break
         if ft is None: return
-        self.addCompoundWithFeat(ft,'New Compound')
+        self.addCompoundWithFeat(ft,self.tr('New Compound'))
         self.endResetModel()
     
     def _delFeatFromMenu(self):
@@ -260,7 +261,7 @@ class PeakTreeModel(QtCore.QAbstractItemModel):
         for cmpd in self.compounds:
             if cmpd.cmpd_id == cmpd_id:
                 for ft in cmpd.feats:
-                    if 'Peak' in ft.cls:
+                    if self.tr('Peak') in ft.cls:
                         pks.append(ft)
                 self.masterWindow.plotter.removePeaks(pks)
                 break
@@ -274,7 +275,7 @@ class PeakTreeModel(QtCore.QAbstractItemModel):
         #TODO: factor plotter code into plotter
         for cmpd in self.compounds:
             if ft in cmpd.getFeats(self.fids):
-                if 'Peak' in ft.cls:
+                if self.tr('Peak') in ft.cls:
                     self.masterWindow.plotter.removePeaks([ft])
                 self.beginResetModel()
                 if len(cmpd.getFeats(self.fids)) == 1 and \
@@ -290,7 +291,7 @@ class PeakTreeModel(QtCore.QAbstractItemModel):
         self.beginResetModel()
         for ft in fts:
             self.compounds[0].addFeat(ft)
-            if 'Peak' in ft.cls:
+            if self.tr('Peak') in ft.cls:
                 self.masterWindow.plotter.addPeak(ft)
         self.endResetModel()
         self.masterWindow.plotter.redraw()

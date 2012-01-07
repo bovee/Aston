@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 class MethodDatabase(object):
     def __init__(self,database):
         #import os, sqlite3

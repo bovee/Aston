@@ -21,11 +21,8 @@ class Plotter(object):
         plotArea.addWidget(self.canvas)
     
         self.plt = tfig.add_subplot(111, frameon=False)
-        ## self.plt.spines['right'].set_color('none')
-        ## self.plt.spines['top'].set_color('none')
         self.plt.xaxis.set_ticks_position('none')
         self.plt.yaxis.set_ticks_position('none')
-        
         
         self.canvas.mpl_connect('button_press_event',self.mousedown)
         self.canvas.mpl_connect('scroll_event',self.mousescroll)
@@ -158,7 +155,10 @@ class Plotter(object):
         '''Draw the line that indicates where the spectrum came from.'''
         #try to remove the line from the previous spectrum (if it exists)
         if self.spec_line is not None:
-            self.plt.lines.remove(self.spec_line)
+            try:
+                self.plt.lines.remove(self.spec_line)
+            except ValueError:
+                pass #not sure why this happens?
         #draw a new line
         if x is not None:
             self.spec_line = self.plt.axvline(x,color=color,ls=linestyle)
