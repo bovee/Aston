@@ -1,6 +1,6 @@
 from PyQt4 import QtCore, QtGui
 
-from aston.Features import Peak, Spectrum, Compound
+from aston.Features import Spectrum, Compound
 
 class PeakTreeModel(QtCore.QAbstractItemModel):
     def __init__(self, database=None, treeView=None, masterWindow=None, selFiles=None, *args): 

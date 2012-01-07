@@ -6,21 +6,27 @@ from matplotlib.path import Path
 import matplotlib.patches as patches
 
 class Plotter(object):
-    def __init__(self,masterWindow,style='default',scheme='default'):
+    def __init__(self,masterWindow,style='default',scheme='Default'):
         self.masterWindow = masterWindow
         self.style = style
-        self.setColorScheme(scheme)
         
         plotArea = masterWindow.ui.plotArea
         
         #create the plotting canvas and its toolbar and add them
         tfig = Figure()
+        tfig.set_facecolor('white')
         self.canvas = FigureCanvasQTAgg(tfig)
         self.navbar = AstonNavBar(self.canvas,masterWindow)
         plotArea.addWidget(self.navbar)
         plotArea.addWidget(self.canvas)
     
-        self.plt = tfig.add_subplot(111)
+        self.plt = tfig.add_subplot(111, frameon=False)
+        ## self.plt.spines['right'].set_color('none')
+        ## self.plt.spines['top'].set_color('none')
+        self.plt.xaxis.set_ticks_position('none')
+        self.plt.yaxis.set_ticks_position('none')
+        
+        
         self.canvas.mpl_connect('button_press_event',self.mousedown)
         self.canvas.mpl_connect('scroll_event',self.mousescroll)
 
@@ -28,7 +34,6 @@ class Plotter(object):
 
         self.patches = {}
         
-    def setColorScheme(self,scheme='default'):
         #These color schemes are modified from ColorBrewer, license as follows:
         #
         #Apache-Style Software License for ColorBrewer software and
@@ -47,32 +52,25 @@ class Plotter(object):
         #"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
         #either express or implied. See the License for the specific
         #language governing permissions and limitations under the License.
-        scheme = str(scheme).lower()
-        self._color = {
-            'default':['#8DD3C7','#FFFFB3','#BEBADA','#FB8072','#80B1D3','#FDB462','#B3DE69'],
-            'greys':['#D9D9D9','#BDBDBD','#969696','#737373','#525252','#252525','#000000'],
-            'blue-green':['#CCECE6','#99D8C9','#66C2A4','#41AE76','#238B45','#006D2C','#00441B'],
-            'blue-purple':['#BFD3E6','#9EBCDA','#8C96C6','#8C6BB1','#88419D','#810F7C','#4D004B'],
-            'yellow-red':['#FED976','#FEB24C','#FD8D3C','#FC4E2A','#E31A1C','#BD0026','#800026'],
-            'rainbow':['#E41A1C','#FF7F00','#FFFF33','#4DAF4A','#377EB8','#984EA3','#A65628'],
-            'spectral':['#D53E4F','#FC8D59','#FEE08B','#FFFFBF','#E6F598','#99D594','#3288BD'],
-            'purple-green':['#762A83','#9970AB','#C2A5CF','#E7D4E8','#A6DBA0','#5AAE61','#1B7837']
-            }[scheme]
-        self._peakcolor = {
-            'default':['#B3E2CD','#FDCDAC','#CBD5E8','#F4CAE4','#E6F5C9','#FFF2AE','#F1E2CC'],
-            'greys':7*['#FOFOFO'],
-            'blue-green':7*['#E5F5F9'],
-            'blue-purple':7*['#E0ECF4'],
-            'yellow-red':7*['#FFEDA0'],
-            'rainbow':['#FBB4AE','#FED9A6','#FFFFCC','#CCEBC5','#B3CDE3','#DECBE4','#E5D8BD'],
-            'spectral':7*['#FOFOFO'], #better choices here
-            'purple-green':7*['#FOFOFO'] #better choices here
-            }[scheme]
+        self._colors = {
+            'Default':['#F0F0F0','#8DD3C7','#FFFFB3','#BEBADA','#FB8072','#80B1D3','#FDB462','#B3DE69'],
+            'Greys':['#F0F0F0','#D9D9D9','#BDBDBD','#969696','#737373','#525252','#252525','#000000'],
+            'Blue-Green':['#E5F5F9','#CCECE6','#99D8C9','#66C2A4','#41AE76','#238B45','#006D2C','#00441B'],
+            'Blue-Purple':['#E0ECF4','#BFD3E6','#9EBCDA','#8C96C6','#8C6BB1','#88419D','#810F7C','#4D004B'],
+            'Yellow-Red':['#FFEDA0','#FED976','#FEB24C','#FD8D3C','#FC4E2A','#E31A1C','#BD0026','#800026'],
+            'Rainbow':['#F0F0F0','#E41A1C','#FF7F00','#FFFF33','#4DAF4A','#377EB8','#984EA3','#A65628'],
+            'Spectral':['#F0F0F0','#D53E4F','#FC8D59','#FEE08B','#FFFFBF','#E6F598','#99D594','#3288BD'],
+            'Purple-Green':['#F0F0F0','#762A83','#9970AB','#C2A5CF','#E7D4E8','#A6DBA0','#5AAE61','#1B7837']
+            }
         self._linestyle = ['-','--',':','-.']
+        self.setColorScheme(scheme)
 
+    def setColorScheme(self,scheme='Default'):
+        self._color = self._colors[str(scheme)][1:]
+        self._peakcolor = self._colors[str(scheme)][0]
+        
     def availColors(self):
-        return ['Default','Greys','Blue-Green','Blue-Purple','Yellow-Red', \
-                'Rainbow','Spectral','Purple-Green']
+        return self._colors.keys()
 
     def availStyles(self):
         return ['Default','Scaled','Stacked','Scaled Stacked','2D']
@@ -119,7 +117,7 @@ class Plotter(object):
                     c = self._color[int(tnum % 7)]
                     ls = self._linestyle[int(np.floor((tnum % 28)/7))]
                     nm = x.name+' '+y
-                    self.plt.plot(x.time(),trace,color=c,linestyle=ls,label=nm)
+                    self.plt.plot(x.time(),trace,color=c,ls=ls,lw=1.2,label=nm)
                     tnum += 1
 
             #add a legend and make it pretty
@@ -132,6 +130,7 @@ class Plotter(object):
                 for i in leg.get_lines():
                     i.set_linestyle('')
 
+
         #update the view bounds in the navbar's history
         if updateBounds:
             self.navbar._views.clear()
@@ -140,6 +139,14 @@ class Plotter(object):
         else:
             self.plt.set_xlim(bnds[0])
             self.plt.set_ylim(bnds[1])
+
+        #draw peaks
+        if peaktable is not None and '2d' not in self.style:
+            self.loadCompounds(peaktable.compounds,peaktable.fids)
+            self.clearPeaks()
+
+        #draw grid lines
+        self.plt.grid(c='black',ls='-',alpha='0.05')
 
         #update the canvas
         self.canvas.draw()
@@ -213,5 +220,6 @@ class Plotter(object):
         self.redraw()
         
     def addPeak(self,pk):
-        self.patches[pk.ids[0]] = patches.PathPatch(Path(pk.data),facecolor='orange',lw=0)
+        self.patches[pk.ids[0]] = patches.PathPatch(Path(pk.data), \
+                                  facecolor=self._peakcolor, lw=0)
         self.plt.add_patch(self.patches[pk.ids[0]])

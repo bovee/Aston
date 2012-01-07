@@ -177,7 +177,7 @@ class AstonWindow(QtGui.QMainWindow):
         for dt in self.ftab_mod.returnSelFiles():
             for key in keys:
                 try: del dt.info[key]
-                except: pass
+                except KeyError: pass
             dt.saveChanges()
         self.plotData()
 
