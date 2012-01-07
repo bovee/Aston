@@ -80,6 +80,10 @@ class Peak(Feature):
             p1x, p1y = p2x, p2y
         return inside
 
+    def changePeakType(self,new_type):
+        #http://www.scipy.org/Cookbook/FittingData
+        pass
+
 class GaussianPeak(Peak):
     def __init__(self, data, ids, ion, *args, **kwargs):
         self.ion = ion

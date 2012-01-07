@@ -1,12 +1,32 @@
 import numpy as np
-        
+from aston.ui.Navbar import AstonNavBar
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg
+from matplotlib.path import Path
+import matplotlib.patches as patches
+
 class Plotter(object):
-    def __init__(self,plt=None,cvs=None,navbar=None,style='default',scheme='default'):
-        self.plt = plt
-        self.canvas = cvs
-        self.navbar = navbar
+    def __init__(self,masterWindow,style='default',scheme='default'):
+        self.masterWindow = masterWindow
         self.style = style
         self.setColorScheme(scheme)
+        
+        plotArea = masterWindow.ui.plotArea
+        
+        #create the plotting canvas and its toolbar and add them
+        tfig = Figure()
+        self.canvas = FigureCanvasQTAgg(tfig)
+        self.navbar = AstonNavBar(self.canvas,masterWindow)
+        plotArea.addWidget(self.navbar)
+        plotArea.addWidget(self.canvas)
+    
+        self.plt = tfig.add_subplot(111)
+        self.canvas.mpl_connect('button_press_event',self.mousedown)
+        self.canvas.mpl_connect('scroll_event',self.mousescroll)
+
+        self.spec_line = None
+
+        self.patches = {}
         
     def setColorScheme(self,scheme='default'):
         #These color schemes are modified from ColorBrewer, license as follows:
@@ -58,7 +78,6 @@ class Plotter(object):
         return ['Default','Scaled','Stacked','Scaled Stacked','2D']
 
     def plotData(self,datafiles,peaktable=None,updateBounds=True):
-
         if not updateBounds:
             bnds = self.plt.get_xlim(),self.plt.get_ylim()
 
@@ -122,20 +141,77 @@ class Plotter(object):
             self.plt.set_xlim(bnds[0])
             self.plt.set_ylim(bnds[1])
 
-        #draw peaks
-        if peaktable is not None and '2d' not in self.style:
-            peaktable.drawPeaks()
-
         #update the canvas
+        self.canvas.draw()
+
+    def redraw(self):
         self.canvas.draw()
 
     def drawSpecLine(self,x,color='black',linestyle='-'):
         '''Draw the line that indicates where the spectrum came from.'''
         #try to remove the line from the previous spectrum (if it exists)
-        try: self.plt.lines.remove(self.spec_line)
-        except: pass
+        if self.spec_line is not None:
+            self.plt.lines.remove(self.spec_line)
         #draw a new line
         if x is not None:
             self.spec_line = self.plt.axvline(x,color=color,ls=linestyle)
         #redraw the canvas
         self.canvas.draw()
+        
+    def mousedown(self, event):
+        if event.button == 3 and self.navbar.mode != 'align':
+            #TODO: make this work for click and drag too
+            #get the specral data of the current point
+            cur_file = self.masterWindow.ftab_mod.returnSelFile()
+            if cur_file is None: return
+            if not cur_file.visible: return
+            scan = cur_file.scan(event.xdata)
+            
+            self.masterWindow.specplotter.addSpec(scan)
+            self.masterWindow.specplotter.plotSpec()
+            self.masterWindow.specplotter.specTime = event.xdata
+            
+            # draw a line on the main plot for the location
+            self.drawSpecLine(event.xdata,linestyle='-')
+
+    def mousescroll(self,event):
+        xmin,xmax = self.plt.get_xlim()
+        ymin,ymax = self.plt.get_ylim()
+        if event.button == 'up': #zoom in
+            self.plt.set_xlim(event.xdata-(event.xdata-xmin)/2.,
+                                      event.xdata+(xmax-event.xdata)/2.)
+            self.plt.set_ylim(event.ydata-(event.ydata-ymin)/2.,
+                                      event.ydata+(ymax-event.ydata)/2.)
+        elif event.button == 'down': #zoom out
+            xmin = event.xdata-2*(event.xdata-xmin),
+            xmax = event.xdata+2*(xmax-event.xdata)
+            xmin = max(xmin,self.navbar._views.home()[0][0])
+            xmax = min(xmax,self.navbar._views.home()[0][1])
+            ymin = event.ydata-2*(event.ydata-ymin)
+            ymax = event.ydata+2*(ymax-event.ydata)
+            ymin = max(ymin,self.navbar._views.home()[0][2])
+            ymax = min(ymax,self.navbar._views.home()[0][3])
+        self.plt.axis([xmin,xmax,ymin,ymax])
+        self.redraw()
+
+    def loadCompounds(self,cmpds,fids):
+        if cmpds is None: return
+        #generate the patches for peaks in the database
+        for i in cmpds:
+            for j in i.getPeaks(fids):
+                self.addPeak(j)
+        self.redraw()
+
+    def clearPeaks(self):
+        self.plt.patches = []
+        self.redraw()
+
+    def removePeaks(self,pks):
+        for pk in pks:
+            patch = self.patches[pk.ids[0]]
+            self.plt.patches.remove(patch)
+        self.redraw()
+        
+    def addPeak(self,pk):
+        self.patches[pk.ids[0]] = patches.PathPatch(Path(pk.data),facecolor='orange',lw=0)
+        self.plt.add_patch(self.patches[pk.ids[0]])

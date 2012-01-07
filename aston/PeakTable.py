@@ -1,6 +1,4 @@
 from PyQt4 import QtCore, QtGui
-from matplotlib.path import Path
-import matplotlib.patches as patches
 
 from aston.Features import Peak, Spectrum, Compound
 
@@ -17,8 +15,8 @@ class PeakTreeModel(QtCore.QAbstractItemModel):
         else:
             self.fids = [i.fid[1] for i in selFiles]
             self.compounds = database.getCompounds(self.fids)
-        self.patches = {}
-        self.drawPeaks()
+
+        self.masterWindow.plotter.loadCompounds(self.compounds, self.fids)
         
         if treeView is not None:
             self.treeView = treeView
@@ -242,9 +240,6 @@ class PeakTreeModel(QtCore.QAbstractItemModel):
     # The following functions are not overriden, but deal
     # with stuff in the peaks database so they're here.
 
-    def addPatchToCanvas(self,pk):
-        self.patches[pk.ids[0]] = patches.PathPatch(Path(pk.data),facecolor='orange',lw=0)
-        self.masterWindow.tplot.add_patch(self.patches[pk.ids[0]])
     def findPeak(self,x,y):
         lst = []
         for i in self.compounds:
@@ -261,14 +256,13 @@ class PeakTreeModel(QtCore.QAbstractItemModel):
 
     def delCompound(self,cmpd_id):
         #delete all the patchs assigned to pks belonging to this cmpd
-        #TODO: remove this code if peaks are moved to 'Unassigned'
+        pks = []
         for cmpd in self.compounds:
             if cmpd.cmpd_id == cmpd_id:
                 for ft in cmpd.feats:
-                    if ft.ion is not None:
-                        patch = self.patches[ft.ids[0]]
-                        self.masterWindow.tplot.patches.remove(patch)
-                self.masterWindow.tcanvas.draw()
+                    if 'Peak' in ft.cls:
+                        pks.append(ft)
+                self.masterWindow.plotter.removePeaks(pks)
                 break
             
         self.beginResetModel()
@@ -277,12 +271,11 @@ class PeakTreeModel(QtCore.QAbstractItemModel):
         self.endResetModel()
 
     def delFeat(self,ft):
+        #TODO: factor plotter code into plotter
         for cmpd in self.compounds:
             if ft in cmpd.getFeats(self.fids):
-                if ft.ion is not None:
-                    patch = self.patches[ft.ids[0]]
-                    self.masterWindow.tplot.patches.remove(patch)
-                    self.masterWindow.tcanvas.draw()
+                if 'Peak' in ft.cls:
+                    self.masterWindow.plotter.removePeaks([ft])
                 self.beginResetModel()
                 if len(cmpd.getFeats(self.fids)) == 1 and \
                    cmpd.cmpd_id is not None:
@@ -297,19 +290,7 @@ class PeakTreeModel(QtCore.QAbstractItemModel):
         self.beginResetModel()
         for ft in fts:
             self.compounds[0].addFeat(ft)
-            if ft.ion is not None:
-                self.addPatchToCanvas(ft)
+            if 'Peak' in ft.cls:
+                self.masterWindow.plotter.addPeak(ft)
         self.endResetModel()
-        self.masterWindow.tcanvas.draw()
-
-    def drawPeaks(self):
-        if self.compounds is None: return
-        #generate the patches for peaks in the database
-        for i in self.compounds:
-            for j in i.getPeaks(self.fids):
-                self.addPatchToCanvas(j)
-        self.masterWindow.tcanvas.draw()
-
-    def clearPatches(self):
-        self.masterWindow.tplot.patches = []
-        self.masterWindow.tcanvas.draw()
+        self.masterWindow.plotter.redraw()

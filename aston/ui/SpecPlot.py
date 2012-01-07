@@ -1,10 +1,27 @@
 import numpy as np
-        
+from PyQt4 import QtCore, QtGui
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg
+
+from aston.Features import Spectrum
+
 class SpecPlotter(object):
-    def __init__(self,plt=None,cvs=None,style='default'):
-        self.plt = plt
-        self.canvas = cvs
+    def __init__(self,masterWindow,style='default'):
+        self.masterWindow = masterWindow
         self.style = style
+        
+        specArea = masterWindow.ui.specArea
+        
+        #create the canvas for spectral plotting
+        bfig = Figure()
+        self.canvas = FigureCanvasQTAgg(bfig)
+        specArea.addWidget(self.canvas)
+
+        self.plt = bfig.add_subplot(111)
+        self.canvas.mpl_connect('button_press_event',self.specmousedown)
+        self.canvas.mpl_connect('scroll_event',self.specmousescroll)
+
+        
         self.scans = {}
         self.scansToDisp = []
         self.scansToLbl = ['']
@@ -59,4 +76,72 @@ class SpecPlotter(object):
                             'ec':clr,'lw':1,'alpha':'0.25'})
 
         #redraw the canvas
+        self.canvas.draw()
+
+    def specmousedown(self,event):
+        if event.button == 1:
+            dlim = self.plt.dataLim.get_points()
+            self.plt.axis([dlim[0][0],dlim[1][0],dlim[0][1],dlim[1][1]])
+            self.canvas.draw()
+        elif event.button == 3:
+            #TODO: make the spec window work better
+            menu = QtGui.QMenu(self.canvas)
+            for i in self.scans:
+                if i == '':
+                    ac = menu.addAction('current')
+                else:
+                    ac = menu.addAction(i)
+                submenu = QtGui.QMenu(menu)
+                sac = submenu.addAction('Display',self.togSpc)
+                sac.setCheckable(True)
+                sac.setChecked(i in self.scansToDisp)
+                sac.setData(i)
+                sac = submenu.addAction('Label',self.spcLbl)
+                sac.setCheckable(True)
+                sac.setChecked(i in self.scansToLbl)
+                sac.setData(i)
+                sac = submenu.addAction('Save',self.saveSpc)
+                sac.setData(i)
+                ac.setMenu(submenu)
+                
+            if not menu.isEmpty():
+                menu.exec_(self.canvas.mapToGlobal(
+                  QtCore.QPoint(event.x,self.canvas.height()-event.y)))
+
+    def togSpc(self):
+        scn_nm = str(self.masterWindow.sender().data())
+        if scn_nm in self.scansToDisp:
+            self.scansToDisp.remove(scn_nm)
+        else:
+            self.scansToDisp.append(scn_nm)
+        self.plotSpec()
+
+    def spcLbl(self):
+        scn_nm = str(self.masterWindow.sender().data())
+        if scn_nm in self.scansToLbl:
+            self.scansToLbl.remove(scn_nm)
+        else:
+            self.scansToLbl.append(scn_nm)
+        self.plotSpec()
+
+    def saveSpc(self):
+        scn_nm = str(self.masterWindow.sender().data())
+        scn = self.scans[scn_nm]
+        spc = Spectrum(scn,None)
+        spc.ids[2] = self.masterWindow.ftab_mod.returnSelFile().fid[1]
+        self.masterWindow.ptab_mod.addFeats([spc])
+
+    def specmousescroll(self,event):
+        xmin,xmax = self.plt.get_xlim()
+        ymin,ymax = self.plt.get_ylim()
+        if event.button == 'up': #zoom in
+            self.plt.set_xlim(event.xdata-(event.xdata-xmin)/2.,event.xdata+(xmax-event.xdata)/2.)
+            self.plt.set_ylim(event.ydata-(event.ydata-ymin)/2.,event.ydata+(ymax-event.ydata)/2.)
+        elif event.button == 'down': #zoom out
+            dlim = self.plt.dataLim.get_points()
+            xmin = max(event.xdata-2*(event.xdata-xmin),dlim[0][0])
+            xmax = min(event.xdata+2*(xmax-event.xdata),dlim[1][0])
+            ymin = max(event.ydata-2*(event.ydata-ymin),dlim[0][1])
+            ymax = min(event.ydata+2*(ymax-event.ydata),dlim[1][1])
+            self.plt.axis([xmin,xmax,ymin,ymax])
         self.canvas.draw()

@@ -215,8 +215,8 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         self.masterWindow.plotter.drawSpecLine(None)
 
         #remove all of the peak patches from the main plot
-        if self.masterWindow.ptab_mod is not None:
-            self.masterWindow.ptab_mod.clearPatches()
+        self.masterWindow.plotter.clearPeaks()
+        
         #recreate the table of peaks for the new files
         #if any([i.visible for i in self.returnSelFiles()]):
         self.masterWindow.ptab_mod = PeakTreeModel(self.database,
