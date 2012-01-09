@@ -142,25 +142,25 @@ class AstonWindow(QtGui.QMainWindow):
         self.ptab_mod.beginResetModel()
 
         #add compounds for ions from the first set
-        pks = statSlopeIntegrate(self.ptab_mod,dt,ions[0])
+        pks = statSlopeIntegrate(dt,ions[0])
         for pk in pks: 
-            self.ptab_mod.addCompoundWithPeak(pk,str(pk.time()))
-            self.ptab_mod.addPatchToCanvas(pk)
+            self.ptab_mod.addCompoundWithFeat(pk,str(pk.time()))
+            self.plotter.addPeak(pk)
 
         #add other ions into first compounds
         for ion in ions[1:]:
-            pks = statSlopeIntegrate(self.ptab_mod,dt,ion)
+            pks = statSlopeIntegrate(dt,ion)
             for pk in pks:
                 for cmpd in self.ptab_mod.compounds[1:]:
                     opk = cmpd.getPeaks(self.ptab_mod.fids)[0]
                     if pk.time()-opk.time() < 0.01:
                         cmpd.addPeak(pk)
                         self.ptab_mod.database.addCompound(cmpd)
-                        self.ptab_mod.addPatchToCanvas(pk)
+                        self.plotter.addPeak(pk)
                         break
                 if pk.ids[1] is None:
-                    self.ptab_mod.addCompoundWithPeak(pk,str(pk.time()))
-                    self.ptab_mod.addPatchToCanvas(pk)
+                    self.ptab_mod.addCompoundWithFeat(pk,str(pk.time()))
+                    self.plotter.addPeak(pk)
         self.ptab_mod.endResetModel() 
         self.plotter.redraw()
 

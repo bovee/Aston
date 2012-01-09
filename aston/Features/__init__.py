@@ -11,6 +11,10 @@ class Feature(object):
             self.ids = list(ids)
         self.cls = 'Feature'
 
+    def data_for_export(self):
+        return self._data
+
+
 #convenience of being able to import these without specifying the file
 from aston.Features.Peak import Peak
 from aston.Features.Compound import Compound

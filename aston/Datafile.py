@@ -284,7 +284,8 @@ class Datafile(object):
         #elif fxn == 'ifft':
         #    ic = np.fft.ifft(np.fft.fftshift(ic * len(ic)))# / len(ic)
         elif fxn == 'noisefilter' and len(args) == 1:
-            #adapted from http://glowingpython.blogspot.com/2011/08/fourier-transforms-and-image-filtering.html
+            #adapted from http://glowingpython.blogspot.com/
+            #2011/08/fourier-transforms-and-image-filtering.html
             I = np.fft.fftshift(np.fft.fft(ic)) # entering to frequency domain
             # fftshift moves zero-frequency component to the center of the array
             P = np.zeros(len(I), dtype=complex)

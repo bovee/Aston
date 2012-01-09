@@ -1,12 +1,16 @@
 # -*- coding: utf-8 -*-
 #pylint: disable=C0103
+'''Model for handling display of open files.'''
+
+import os.path as op
 from PyQt4 import QtGui, QtCore
+
 from Method import flds
 from aston.Database import AstonDatabase
 from aston.PeakTable import PeakTreeModel
-import os.path as op
 
 class FileTreeModel(QtCore.QAbstractItemModel):
+    '''Handles interfacing with QTreeView and other file-related duties.'''
     def __init__(self, database=None, treeView=None, masterWindow=None, *args): 
         QtCore.QAbstractItemModel.__init__(self, *args) 
         
@@ -36,7 +40,8 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             treeView.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
             treeView.customContextMenuRequested.connect(self.rightClickMenu)
             treeView.header().setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-            treeView.header().customContextMenuRequested.connect(self.rightClickMenuHead)
+            treeView.header().customContextMenuRequested.connect( \
+                self.rightClickMenuHead)
             
             #set up drag and drop
             treeView.setDragEnabled(True)
@@ -69,7 +74,8 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         for i in indexList:
             if i.column() == 0:
                 fname_lst.append(i.internalPointer().filename)
-                fid_lst.append(':'.join([str(j) for j in i.internalPointer().fid]))
+                fid_lst.append(':'.join([str(j) for j in \
+                                         i.internalPointer().fid]))
         data = QtCore.QMimeData()
         data.setText('\n'.join(fname_lst))
         data.setData('application/x-aston-file',','.join(fid_lst))
@@ -106,7 +112,8 @@ class FileTreeModel(QtCore.QAbstractItemModel):
     def parent(self, index):
         if not index.isValid():
             return QtCore.QModelIndex()
-        elif type(index.internalPointer()) is list or index.internalPointer() is None:
+        elif type(index.internalPointer()) is list or \
+                  index.internalPointer() is None:
             return QtCore.QModelIndex()
         else:
             projid = index.internalPointer().fid[0]
@@ -155,7 +162,8 @@ class FileTreeModel(QtCore.QAbstractItemModel):
 
     def headerData(self, col, orientation, role):
         rslt = None
-        if orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole:
+        if orientation == QtCore.Qt.Horizontal and \
+                  role == QtCore.Qt.DisplayRole:
             if self.fields[col] in flds:
                 rslt = flds[self.fields[col]]
             else:
@@ -211,20 +219,16 @@ class FileTreeModel(QtCore.QAbstractItemModel):
     def itemSelected(self):
         #TODO: update an info window?
         #remove the current spectrum
-        #self.masterWindow.plotter.drawSpecLine(self.masterWindow.specplotter.specTime,linestyle='--')
         self.masterWindow.plotter.drawSpecLine(None)
 
         #remove all of the peak patches from the main plot
         self.masterWindow.plotter.clearPeaks()
         
         #recreate the table of peaks for the new files
-        #if any([i.visible for i in self.returnSelFiles()]):
         self.masterWindow.ptab_mod = PeakTreeModel(self.database,
           self.masterWindow.ui.peakTreeView,
           self.masterWindow,
           self.masterWindow.ftab_mod.returnSelFiles())
-        #else:
-        #    self.masterWindow.ptab_mod = PeakTreeModel(self.database, self.masterWindow.ui.peakTreeView, self.masterWindow)
 
     def rightClickMenu(self,point):
         index = self.proxyMod.mapToSource(self.treeView.indexAt(point))
@@ -292,12 +296,14 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         self.endResetModel()
 
     def addProject(self):
+        '''Add a project to the list.'''
         self.beginResetModel()
         self.database.addProject('New Project')
         self.projects = self.database.getProjects()
         self.endResetModel()
 
     def delProject(self):
+        '''Deletes a project from the list.'''
         #TODO: move files back to 'Unsorted' project
         proj_id = self.sender().data()
         self.beginResetModel()
@@ -309,21 +315,20 @@ class FileTreeModel(QtCore.QAbstractItemModel):
     #because they rely upon data only know to the file table.
 
     def returnChkFiles(self):
-        #TODO: this should return the checked files in order
-        #returns the files checked as visible in the file list
-        #return [i for i in self.database.files if i.visible]
+        '''Returns the files checked as visible in the file list.'''
         chkFiles = []
         for i in range(self.proxyMod.rowCount(QtCore.QModelIndex())):
             prjNode = self.proxyMod.index(i,0,QtCore.QModelIndex())
             for j in range(self.proxyMod.rowCount(prjNode)):
-                f = self.proxyMod.mapToSource(self.proxyMod.index(j, 0, prjNode)).internalPointer()
+                f = self.proxyMod.mapToSource( \
+                    self.proxyMod.index(j, 0, prjNode)).internalPointer()
                 if f.visible:
                     chkFiles.append(f)
         return chkFiles
 
     def returnSelFile(self):
-        #returns the file currently selected in the file list
-        #used for determing which spectra to display on right click, etc.
+        '''Returns the file currently selected in the file list.
+        Used for determing which spectra to display on right click, etc.'''
         tab_sel = self.treeView.selectionModel()
         if not tab_sel.currentIndex().isValid:
             return
@@ -334,8 +339,8 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         return ind.internalPointer()
 
     def returnSelFiles(self):
-        #returns the files currently selected in the file list
-        #used for displaying the peak list, etc.
+        '''Returns the files currently selected in the file list.
+        Used for displaying the peak list, etc.'''
         tab_sel = self.treeView.selectionModel()
         files = []
         for i in tab_sel.selectedRows():

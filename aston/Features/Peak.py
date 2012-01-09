@@ -53,11 +53,10 @@ class Peak(Feature):
 
     def time(self):
         #TODO: add support for spectra times
-        data = np.array(self.data)
-        if data[1,0] < data[:,0].max():
-            return data[data[:,1].argmax(),0]
+        if self.data[1,0] < self.data[:,0].max():
+            return self.data[self.data[:,1].argmax(),0]
         else: # inverted peak
-            return data[data[:,1].argmin(),0]
+            return self.data[self.data[:,1].argmin(),0]
 
     def contains(self,x,y):
         #first check if it's a spectrum (ion='')

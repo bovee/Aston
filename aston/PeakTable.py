@@ -1,6 +1,6 @@
 from PyQt4 import QtCore, QtGui
 
-from aston.Features import Spectrum, Compound
+from aston.Features import Spectrum, Peak, Compound
 
 class PeakTreeModel(QtCore.QAbstractItemModel):
     def __init__(self, database=None, treeView=None, masterWindow=None, selFiles=None, *args): 
@@ -81,7 +81,7 @@ class PeakTreeModel(QtCore.QAbstractItemModel):
             elif fld == 'd13c':
                 rslt = str(index.internalPointer().isotopeValue())
         else:
-            if index.internalPointer().cls == 'Spectrum':
+            if isinstance(index.internalPointer(),Spectrum):
                 #it's a spectra
                 if fld == 'name':
                     #TODO: add support for time() so this works
@@ -141,12 +141,11 @@ class PeakTreeModel(QtCore.QAbstractItemModel):
         tab_sel = self.treeView.selectionModel()
         if not tab_sel.currentIndex().isValid: return
 
-        #pk = self.proxyMod.mapToSource(tab_sel.currentIndex()).internalPointer()
-        pk = tab_sel.currentIndex().internalPointer()
-        if pk is not None:
-            if pk.ion is None:
+        ft = tab_sel.currentIndex().internalPointer()
+        if ft is not None:
+            if isinstance(ft,Spectrum):
                 #it's a spectrum
-                self.masterWindow.specplotter.addSpec(pk.data,'lib')
+                self.masterWindow.specplotter.addSpec(dict(ft.data),'lib')
                 self.masterWindow.specplotter.plotSpec()
             else:
                 #it's a peak
@@ -167,7 +166,7 @@ class PeakTreeModel(QtCore.QAbstractItemModel):
             else:
                 delAc = menu.addAction(self.tr('Delete Feature'),self._delFeatFromMenu)
                 delAc.setData(index.internalPointer().ids[0])
-                if index.internalPointer().ion is not None:
+                if isinstance(index.internalPointer(), Peak):
                     newAc = menu.addAction(self.tr('Make New Compound'),self._addCompoundFromMenu)
                     newAc.setData(index.internalPointer().ids[0])
         else:
@@ -241,27 +240,29 @@ class PeakTreeModel(QtCore.QAbstractItemModel):
     # The following functions are not overriden, but deal
     # with stuff in the peaks database so they're here.
 
-    def findPeak(self,x,y):
+    def findPeak(self, x, y):
         lst = []
         for i in self.compounds:
             for j in i.getPeaks(self.fids):
-                if j.contains(x,y):
+                if j.contains(x, y):
                     lst.append(j)
         return lst
 
-    def addCompoundWithFeat(self,ft,name):
+    def addCompoundWithFeat(self, ft, name):
         new_cmpd = Compound(name,self.database)
         self.database.addCompound(new_cmpd)
         new_cmpd.addFeat(ft)
+        #TODO: this next line is going to slow this down if
+        #we use it in an batch integrator
         self.compounds = self.database.getCompounds(self.fids)
 
-    def delCompound(self,cmpd_id):
+    def delCompound(self, cmpd_id):
         #delete all the patchs assigned to pks belonging to this cmpd
         pks = []
         for cmpd in self.compounds:
             if cmpd.cmpd_id == cmpd_id:
                 for ft in cmpd.feats:
-                    if self.tr('Peak') in ft.cls:
+                    if isinstance(ft, Peak):
                         pks.append(ft)
                 self.masterWindow.plotter.removePeaks(pks)
                 break
@@ -271,11 +272,11 @@ class PeakTreeModel(QtCore.QAbstractItemModel):
         self.compounds = self.database.getCompounds(self.fids)
         self.endResetModel()
 
-    def delFeat(self,ft):
+    def delFeat(self, ft):
         #TODO: factor plotter code into plotter
         for cmpd in self.compounds:
             if ft in cmpd.getFeats(self.fids):
-                if self.tr('Peak') in ft.cls:
+                if isinstance(ft, Peak):
                     self.masterWindow.plotter.removePeaks([ft])
                 self.beginResetModel()
                 if len(cmpd.getFeats(self.fids)) == 1 and \
@@ -291,7 +292,7 @@ class PeakTreeModel(QtCore.QAbstractItemModel):
         self.beginResetModel()
         for ft in fts:
             self.compounds[0].addFeat(ft)
-            if self.tr('Peak') in ft.cls:
+            if isinstance(ft, Peak):
                 self.masterWindow.plotter.addPeak(ft)
         self.endResetModel()
         self.masterWindow.plotter.redraw()

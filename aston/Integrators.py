@@ -1,6 +1,6 @@
 import numpy as np
 import scipy.ndimage as nd
-from aston.Peak import Peak
+from aston.Features import Peak
 
 #TODO: remove these imports
 from matplotlib.path import Path
@@ -50,7 +50,7 @@ def waveletIntegrate(ptab,dt,ion=None):
         ptab.masterWindow.tplot.add_patch(y)
         #except:
 
-def statSlopeIntegrate(ptab,dt,ion=None):
+def statSlopeIntegrate(dt,ion=None):
     t = dt.time()
     x = dt.trace(ion)
     pks = []
@@ -93,7 +93,7 @@ def statSlopeIntegrate(ptab,dt,ion=None):
             verts = [pt1]
             verts += zip(dt.time(pt1[0],pt2[0]),dt.trace(ion,pt1[0],pt2[0]))
             verts += [pt2]
-            pk = Peak(verts,ion,'StatSlope')
+            pk = Peak(verts,None,ion,'StatSlope')
             pk.ids[2] = dt.fid[1]
             pks.append(pk)
         l_i = i

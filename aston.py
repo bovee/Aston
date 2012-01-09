@@ -1,5 +1,7 @@
 #!/usr/bin/python2.7
+# -*- coding: utf-8 -*-
 '''Loads and runs the Aston application.'''
+#pylint: disable=C0103
 
 #for compatibility with Python 2
 import sip

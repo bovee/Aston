@@ -199,6 +199,7 @@ class AstonDatabase():
         fts = []
         for i in c:
             verts = json.loads(zlib.decompress(i[0]))
+            #TODO: better way of doing this type-checking
             if i[2] == 'Peak':
                 #first argument is ion
                 ft = Peak(verts, (i[3], cmpd_id, i[4]), i[1])
@@ -213,16 +214,15 @@ class AstonDatabase():
         '''Add a feature to the database or make a change 
         to an existing one.'''
         c = self.db.cursor()
-        fdata = buffer(zlib.compress(json.dumps(ft._data),9))
-        if 'Peak' in ft.cls:
+        fdata = buffer(zlib.compress(json.dumps(ft.data_for_export()), 9))
+        if isinstance(ft, Peak):
             ident = ft.ion
         else:
             ident = None
         if ft.ids[0] is None:
-            if 'Peak' in ft.cls:
-                a = c.execute('''INSERT INTO features (cmpd_id, file_id,
-                      ident, type, verts) VALUES (?,?,?,?,?)''',
-                      (ft.ids[1], ft.ids[2], ident, ft.cls, fdata))
+            a = c.execute('''INSERT INTO features (cmpd_id, file_id,
+                  ident, type, verts) VALUES (?,?,?,?,?)''',
+                  (ft.ids[1], ft.ids[2], ident, ft.cls, fdata))
             ft.ids[0] = a.lastrowid
         else:
             c.execute('''UPDATE features SET cmpd_id=?,file_id=?,ident=?,
