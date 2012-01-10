@@ -56,7 +56,12 @@ class SpecPlotter(object):
             
             #TODO: display UV spectra as continuous lines
             #add the spectral lines (and little points!)
-            self.plt.vlines(scn.keys(),[0],scn.values(),color=clr,alpha=0.5)
+            try:
+                #FIXME: this crashes on Windows unless the user has clicked on
+                #the spectrum graph previously. Matplotlib bug, needs workaround
+                self.plt.vlines(scn.keys(),[0],scn.values(),color=clr,alpha=0.5)
+            except:
+                pass
             self.plt.plot(scn.keys(),scn.values(),',',color=clr)
 #            self.plt.set_ylim(bottom=0)
 

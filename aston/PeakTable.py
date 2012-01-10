@@ -211,6 +211,7 @@ class PeakTreeModel(QtCore.QAbstractItemModel):
                 ft = Spectrum(data,None)
                 ft.ids[2] = dt.fid[1]
                 cmpd.addFeat(ft)
+                #TODO: make this update the Peak Table
 
     def _addCompoundFromMenu(self):
         ft_id = self.sender().data()

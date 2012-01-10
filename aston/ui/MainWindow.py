@@ -15,6 +15,9 @@ class AstonWindow(QtGui.QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
+        #quick fix for Mac OS menus
+        self.ui.actionSettings.setMenuRole(QtGui.QAction.NoRole)
+
         #set up the grouping for the dock widgets
         self.tabifyDockWidget(self.ui.filesDockWidget,self.ui.settingsDockWidget)
         self.tabifyDockWidget(self.ui.filesDockWidget,self.ui.peaksDockWidget)

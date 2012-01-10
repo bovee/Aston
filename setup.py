@@ -5,12 +5,12 @@ import sys, os
 
 options = {
     'name':'Aston',
-    'version':'0.1.1a',
+    'version':'0.1.2',
     'description':'Mass/UV Spectral Analysis Program',
     'author':'Roderick Bovee',
     'author_email':'bovee@fas.harvard.edu',
     'url':'http://code.google.com/p/aston',
-    'packages':['aston','aston.ui'],
+    'packages':['aston','aston.ui','aston.Features','aston.FileFormats'],
     'scripts':['aston.py'],
     'data_files':matplotlib.get_py2exe_datafiles(),
 }
@@ -72,9 +72,12 @@ elif len(sys.argv) >= 2 and sys.argv[1] == 'py2app':
     os.system('mkdir dist/Aston.app/Contents/Resources/aston')
     os.system('mkdir dist/Aston.app/Contents/Resources/aston/ui')
     os.system('mkdir dist/Aston.app/Contents/Resources/aston/ui/icons')
-    os.system('copy aston/ui/icons/*.png dist/Aston.app/Contents/Resources/aston/ui/icons/')
+    os.system('cp aston/ui/icons/*.png dist/Aston.app/Contents/Resources/aston/ui/icons/')
     #TODO: remove stuff from "dist/Aston.app/Contents/Resources/lib/python2.7"
-    #matplotlib.tests and scipy.weave
+    #matplotlib.tests, scipy.weave, numpy.f2py
+    #libQtNetwork.4.dylib, libQtXmlPatterns.4.dylib, libtcl8.5.dylib
+    #libtk8.dylib, libQtDeclarative.dylib, libQtScript, libQtScriptTools
+    #libQtSql, libX11
 
     #The following doesn't seem to work?
     #os.system('rm -rf dist_mac')
