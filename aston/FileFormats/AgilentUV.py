@@ -61,7 +61,6 @@ class AgilentMWD(Datafile.Datafile):
         f.close()
 
     def _getInfoFromFile(self):
-        name = ''
         info = {}
         info['traces'] = 'TIC'
         #TODO: fix this so that it doesn't rely upon MWD1A.CH?
@@ -69,7 +68,7 @@ class AgilentMWD(Datafile.Datafile):
         #fname = os.path.join(os.path.dirname(self.filename),'mwd1A.ch')
         f = open(self.filename,'rb')
         f.seek(0x18)
-        name = f.read(struct.unpack('>B',f.read(1))[0]).decode()
+        info['name'] = f.read(struct.unpack('>B',f.read(1))[0]).decode()
         f.seek(0x94)
         info['r-opr'] = f.read(struct.unpack('>B',f.read(1))[0]).decode()
         f.seek(0xE4)
@@ -87,7 +86,7 @@ class AgilentMWD(Datafile.Datafile):
         info['s-file-type'] = 'AgilentMWD'
         
         f.close()
-        return name, info
+        return info
 
 class AgilentDAD(Datafile.Datafile):
 #header data in DAD1.sd
@@ -131,8 +130,6 @@ class AgilentDAD(Datafile.Datafile):
         fdata.close()
 
     def _getInfoFromFile(self):
-
-        name = ''
         info = {}
         info['traces'] = 'TIC'
         tree = ElementTree.parse(op.join(op.dirname(self.filename),'sample_info.xml'))
@@ -140,7 +137,7 @@ class AgilentDAD(Datafile.Datafile):
             tagname = i.find('Name').text
             tagvalue = i.find('Value').text
             if tagname == 'Sample Name':
-                name = tagvalue
+                info['name'] = tagvalue
             elif tagname == 'Sample Position':
                 info['r-vial-pos'] = tagvalue
             elif tagname == 'Method':
@@ -149,7 +146,7 @@ class AgilentDAD(Datafile.Datafile):
         info['r-date'] = time.ctime(op.getctime(self.filename))
         info['r-type'] = 'Sample'
         info['s-file-type'] = 'AgilentMasshunterDAD'
-        return name,info
+        return info
 
 class AgilentCSDAD(Datafile.Datafile):
     '''Interpreter for *.UV files from Agilent Chemstation'''
@@ -188,12 +185,11 @@ class AgilentCSDAD(Datafile.Datafile):
             self.data[i] = s
 
     def _getInfoFromFile(self):
-        name = ''
         info = {}
         info['traces'] = 'TIC'
         f = open(self.filename,'rb')
         f.seek(0x18)
-        name = f.read(struct.unpack('>B',f.read(1))[0]).decode().strip()
+        info['name'] = f.read(struct.unpack('>B',f.read(1))[0]).decode().strip()
         f.seek(0x94)
         info['r-opr'] = f.read(struct.unpack('>B',f.read(1))[0]).decode()
         f.seek(0xE4)
@@ -215,4 +211,4 @@ class AgilentCSDAD(Datafile.Datafile):
         info['r-type'] = 'Sample'
         info['s-file-type'] = 'AgilentChemstationDAD'
         f.close()
-        return name,info
+        return info

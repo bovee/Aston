@@ -32,7 +32,6 @@ class ThermoCF(Datafile.Datafile):
         f.close()
 
     def _getInfoFromFile(self):
-        name = ''
         info = {}
         info['traces'] = 'TIC'
         info['r-opr'] = ''
@@ -42,10 +41,10 @@ class ThermoCF(Datafile.Datafile):
         #except:
         #    pass
         #info['file name'] = os.path.basename(self.filename)
-        name = os.path.splitext(os.path.basename(self.filename))[0]
+        info['name'] = os.path.splitext(os.path.basename(self.filename))[0]
         info['r-type'] = 'Sample'
         info['s-file-type'] = 'Thermo Isodat CF'
-        return name,info
+        return info
 
 class ThermoDXF(Datafile.Datafile):
     def __init__(self,*args,**kwargs):
@@ -77,7 +76,6 @@ class ThermoDXF(Datafile.Datafile):
         f.close()
 
     def _getInfoFromFile(self):
-        name = ''
         info = {}
         info['traces'] = 'TIC'
         info['r-opr'] = ''
@@ -87,7 +85,7 @@ class ThermoDXF(Datafile.Datafile):
         #except:
         #    pass
         #info['file name'] = os.path.basename(self.filename)
-        name = os.path.splitext(os.path.basename(self.filename))[0]
+        info['name'] = os.path.splitext(os.path.basename(self.filename))[0]
         info['r-type'] = 'Sample'
         info['s-file-type'] = 'Thermo Isodat DXF'
-        return name,info
+        return info

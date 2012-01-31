@@ -68,12 +68,11 @@ class Datafile(object):
         #ways to initialize myself
         #1. using parameters passed to me
         if database is not None:
-            self.name = info[0]
-            self.info = json.loads(info[1])
-            self.fid = (info[2], info[3]) #(project_id, file_id)
+            self.info = json.loads(info[0])
+            self.fid = (info[1], info[2]) #(project_id, file_id)
         #2. from file info -> use this if not using the Aston GUI
         else:
-            self.name, self.info = self._getInfoFromFile()
+            self.info = self._getInfoFromFile()
             self.fid = (None, None)
         
         #make invisible at first

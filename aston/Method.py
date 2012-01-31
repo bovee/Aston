@@ -36,7 +36,7 @@ class Method(object):
 
 flds = {
     # aston specific information
-    'name':'Name',
+        'name':'Name',
         'vis':'Vis?',
         'traces':'Traces',
     # method information

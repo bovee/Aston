@@ -26,9 +26,9 @@ class CSVFile(Datafile.Datafile):
             self.data = []
             
     def _getInfoFromFile(self):
-        name = op.splitext(op.basename(self.filename))[0]
         info = {}
         info['traces'] = 'TIC'
+        info['name'] = op.splitext(op.basename(self.filename))[0]
         info['r-type'] = 'Sample'
         info['s-file-type'] = 'CSV'
-        return name,info
+        return info

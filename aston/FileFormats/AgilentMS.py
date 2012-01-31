@@ -76,12 +76,11 @@ class AgilentMS(Datafile.Datafile):
         f.close()
 
     def _getInfoFromFile(self):
-        name = ''
         info = {}
         info['traces'] = 'TIC'
         f = open(self.filename,'rb')
         f.seek(0x18)
-        name = f.read(struct.unpack('>B',f.read(1))[0]).decode().strip()
+        info['name'] = f.read(struct.unpack('>B',f.read(1))[0]).decode().strip()
         f.seek(0x94)
         info['r-opr'] = f.read(struct.unpack('>B',f.read(1))[0]).decode()
         f.seek(0xE4)
@@ -94,7 +93,7 @@ class AgilentMS(Datafile.Datafile):
         info['s-file-type'] = 'AgilentMS'
         #TODO: vial number in here too?
         f.close()
-        return name,info
+        return info
 
 class AgilentMSMSScan(Datafile.Datafile):
     def __init__(self,*args,**kwargs):
@@ -166,12 +165,11 @@ class AgilentMSMSScan(Datafile.Datafile):
         f.close()
 
     def _getInfoFromFile(self):
-        name = ''
         info = {}
         info['traces'] = 'TIC'
         f = open(self.filename,'rb')
         f.seek(0x18)
-        name = str(f.read(struct.unpack('>B',f.read(1))[0]).strip())
+        info['name'] = str(f.read(struct.unpack('>B',f.read(1))[0]).strip())
         f.seek(0x94)
         info['r-opr'] = str(f.read(struct.unpack('>B',f.read(1))[0]))
         f.seek(0xE4)
@@ -183,7 +181,7 @@ class AgilentMSMSScan(Datafile.Datafile):
         info['r-type'] = 'Sample'
         info['s-file-type'] = 'AgilentMS'
         f.close()
-        return name,info
+        return info
     
     def _getOtherTrace(self,name):
         #TODO: read from MSPeriodicActuals.bin and TCC.* files

@@ -23,8 +23,7 @@ class AstonDatabase():
             c.execute('''CREATE TABLE projects (project_id INTEGER PRIMARY
                       KEY ASC, project_name TEXT)''')
             c.execute('''CREATE TABLE files (file_id INTEGER PRIMARY KEY
-                      ASC, project_id INTEGER, name TEXT, file_name TEXT,
-                      info TEXT)''')
+                      ASC, project_id INTEGER, file_name TEXT, info TEXT)''')
             c.execute('''CREATE TABLE features (ft_id INTEGER PRIMARY KEY
                       ASC, cmpd_id INTEGER, file_id INTEGER, ident TEXT,
                       type TEXT, verts BLOB)''')
@@ -40,11 +39,11 @@ class AstonDatabase():
 
         #read in all of the files
         c = self.db.cursor()
-        c.execute('''SELECT file_name,name,info,project_id,
+        c.execute('''SELECT file_name,info,project_id,
                   file_id FROM files''')
         lst = c.fetchall()
         c.close()
-        self.files = [Datafile(i[0], self, i[1:5]) for i in lst]
+        self.files = [Datafile(i[0], self, i[1:4]) for i in lst]
 
     def updateFileList(self):
         '''Makes sure the database is in sync with the file system.'''
@@ -81,8 +80,8 @@ class AstonDatabase():
             dfl = Datafile(fn, None)
             if dfl is not None:
                 info_str = json.dumps(dfl.info)
-                c.execute('''INSERT INTO files (name,file_name,info)
-                  VALUES (?,?,?)''', (dfl.name, fn, info_str))
+                c.execute('''INSERT INTO files (file_name,info)
+                  VALUES (?,?)''', (fn, info_str))
                 self.db.commit()
         c.close()
 
@@ -92,11 +91,11 @@ class AstonDatabase():
         info_str = json.dumps(dt.info)
         c = self.db.cursor()
         if dt.fid[0] is None:
-            c.execute('''UPDATE files SET name=?,info=?,project_id=NULL 
-              WHERE file_id = ?''', (dt.name, info_str, dt.fid[1]))
+            c.execute('''UPDATE files SET info=?,project_id=NULL 
+              WHERE file_id = ?''', (info_str, dt.fid[1]))
         else:
-            c.execute('''UPDATE files SET name=?,info=?,project_id=? 
-              WHERE file_id = ?''', (dt.name, info_str, dt.fid[0], dt.fid[1]))
+            c.execute('''UPDATE files SET info=?,project_id=? 
+              WHERE file_id = ?''', (info_str, dt.fid[0], dt.fid[1]))
         self.db.commit()
         c.close()
         return True
@@ -104,7 +103,7 @@ class AstonDatabase():
     def getFileByName(self, fname):
         '''Return a datafile object corresponding to fname.'''
         for dt in self.files:
-            if fname.lower() == dt.name.lower():
+            if fname.lower() == dt.info['name'].lower():
                 return dt
         return None
 

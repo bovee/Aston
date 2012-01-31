@@ -152,8 +152,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
                 else:
                     rslt = QtCore.Qt.Unchecked
             elif role == QtCore.Qt.DisplayRole or role == QtCore.Qt.EditRole:
-                if fld == 'name': rslt = f.name
-                elif fld == 'r-filename': rslt = f.shortFilename()
+                if fld == 'r-filename': rslt = f.shortFilename()
                 elif fld == 's-scans': rslt = str(len(f.time()))
                 elif fld == 's-st-time': rslt = str(min(f.time()))
                 elif fld == 's-en-time': rslt = str(max(f.time()))
@@ -187,8 +186,6 @@ class FileTreeModel(QtCore.QAbstractItemModel):
                 index.internalPointer().info[col] = data
                 if index.internalPointer().visible:
                     self.masterWindow.plotData()
-            elif col == 'name':
-                index.internalPointer().name = data
             else:
                 index.internalPointer().info[col] = data
             index.internalPointer().saveChanges()
