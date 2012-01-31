@@ -65,14 +65,6 @@ class Datafile(object):
         self.filename = filename
         self.database = database
 
-        #TODO: move this back into the database module
-        def F(x):
-            '''Decode the strings stored in the database into dictionarys.'''
-            if x.find('\\') >= 0:
-                return dict([i.split('\\') for i in x.split('|')])
-            else:
-                return {}
-
         #ways to initialize myself
         #1. using parameters passed to me
         if database is not None:
@@ -207,12 +199,7 @@ class Datafile(object):
             elif all(i in '0123456789.' for i in istr):
                 return self._getIonTrace(float(istr))
             elif istr == 't' or istr == 'time':
-                tme = np.array(self.times)
-                if 't-scale' in self.info:
-                    tme *= float(self.info['t-scale'])
-                if 't-offset' in self.info:
-                    tme += float(self.info['t-offset'])
-                return tme
+                return self.time()
             elif istr == 'x' or istr == 'tic':
                 return self._getTotalTrace()
             #elif istr == 'b' or istr == 'base':
@@ -369,7 +356,8 @@ class Datafile(object):
             return self.data[idx]
 
     def mz_bounds(self):
-        '''Returns the highest and lowest m/z values in the data.'''
+        '''Returns the highest and lowest m/z values in the data.
+           Used for plotting data in 2D heatmaps.'''
         if self.data is None:
             self._cacheData()
             

@@ -1,52 +1,46 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
+import os
+import sqlite3
+import json
+import zlib
 
 class MethodDatabase(object):
     def __init__(self,database):
-        #import os, sqlite3
-        pass
-# fields:
-# 1. inst_type - HPLC, GC, etc
-# 2. name - BARUA, RJBPROT.M, etc.
-# 3. revision - version number of method - e.g. 1,2,3 or date
-# 4. parameters -
-# T, solv. % (A,B,C,D), flow rate, column type, mobile phase type
-#
-# opt. parameters: col. switches, main/bypass switches, rinses, inj. vol.
-# 
+        self.database_path = database
+        
+        if not os.path.exists(database): 
+            # create a database file if one doesn't exist
+            self.db = sqlite3.connect(database)
+            c = self.db.cursor()
+            c.execute('''CREATE TABLE methods (m_id INTEGER PRIMARY KEY,
+                      name TEXT, rev TEXT, type TEXT, info TEXT)''')
+            self.db.commit()
+            c.close()
+        else:
+            self.db = sqlite3.connect(database)
+
+        #read in all of the files
+        c = self.db.cursor()
+        c.execute('''SELECT name, rev, info, m_id FROM methods''')
+        lst = c.fetchall()
+        c.close()
+        self.methods = [Method(*lst) for i in lst]
 
 class Method(object):
-    def __init__(self,name):
+    def __init__(self, name, rev, info=None, m_id = None):
         self.name = name
-        self.mtPrms = {}
-
-        self.name = "RJBPROT" #strip out *.M suffix
-        self.mtPrms['col'] = 'Agilent Poroshell 300SB'
-        self.mtPrms['col-type'] = 'RP'
-        self.mtPrms['col-dim'] = '7.8,150' #mm x mm
-        self.mtPrms['col-part-size'] = '5' #micron
-        self.mtPrms['len'] = '11' #minutes
-        self.mtPrms['inj-size'] = '5' #microliters
-        self.mtPrms['tmp'] = '70' #deg C
-        self.mtPrms['prs'] = '' #not regulated
-        self.mtPrms['flw'] = '500' #ul/min
-        self.mtPrms['slv-A'] = '100 H2O,0.1 formic'
-        self.mtPrms['slv-B'] = '100 MeOH,0.1 formic'
-        self.mtPrms['slv-B-per'] = 'S:5,0:30,9:80,9.01:100,11:100'
-        #5% default %B, pre-run
-        self.mtPrms['ms-int-mode'] = 'POS-ESI'
-
-        #not a part of the method
-        self.mtPrms['smp'] = '5 protein mix'
-        self.mtPrms['smp-conc'] = '5 mg/ml'
+        self.rev = rev
+        self.info = info
+        self.m_id = m_id
 
 flds = {
     # aston specific information
-        'name':'Name',
+    'name':'Name',
         'vis':'Vis?',
         'traces':'Traces',
     # method information
-        'm':'Method Name',
+        'm':'Method Name', #e.g. RJBPROT. strip out *.M suffix
         'm-type':'Chromatography Type',
         'm-col':'Column Name',
         'm-col-type':'Column Phase',
@@ -54,20 +48,23 @@ flds = {
         'm-col-part-size':'Column Particle Size (µ)',
         'm-len':'Run Length (min)',
         'm-inj-size':'Injection Size (µl)',
-        'm-tmp':'Temperature (°C)',
-        'm-prs':'Pressure (kbar)',
-        'm-flw':'Flow (µl/min)',
-        'm-slv':'Solvent/Carrier',
+        'm-tmp':'Temperature (°C)', #type = time-dict
+        'm-prs':'Pressure (kbar)', #type = time-dict
+        'm-flw':'Flow (µl/min)', #type = time-dict
+        'm-slv':'Solvent/Carrier', #Solvent A
         'm-slv-B':'Solvent B',
+        'm-slv-B-per':'% Solvent B', #type = time-dict
         'm-slv-C':'Solvent C',
+        'm-slv-B-per':'% Solvent C', #type = time-dict
         'm-slv-D':'Solvent D',
+        'm-slv-B-per':'% Solvent D', #type = time-dict
         'm-uv':'UV Wavelengths',
         'm-ms-int-mode':'MS Interface Mode',
         'm-y-units':'Units',
     # run information
         'r-filename':'File Name',
-        'r-smp':'Sample',
-        'r-smp-conc':'Sample Concentration',
+        'r-smp':'Sample', #e.g. BSA
+        'r-smp-conc':'Sample Concentration', #e.g. 5 mg/ml
         'r-date':'Date',
         'r-opr':'Operator',
         'r-type':'Type', #sample, standard, etc.
@@ -87,3 +84,7 @@ flds = {
         't-smooth-window':'Smoothing Window',
         't-remove-noise':'Noise Removal Method',
        }
+
+#for time-dicts:
+#blank = not regulated otherwise, it's a dict with at least one entry: S
+#e.g. {'S':5,0:30,9:80,9.01:100,11:100}

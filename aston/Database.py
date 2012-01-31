@@ -77,14 +77,10 @@ class AstonDatabase():
 
         #add the new files into the database
         #TODO: generate projects and project_ids based on folder names?
-        # F is a cleanup function for data going into the database
-        #F = lambda x: x.replace('|', ':').replace('\\', '/')
         for fn in set(fnames).difference(dnames):
             dfl = Datafile(fn, None)
             if dfl is not None:
                 info_str = json.dumps(dfl.info)
-                 #'|'.join([F(i)+'\\'+F(j) \
-                 #                    for i, j in dfl.info.items()])
                 c.execute('''INSERT INTO files (name,file_name,info)
                   VALUES (?,?,?)''', (dfl.name, fn, info_str))
                 self.db.commit()
@@ -93,9 +89,7 @@ class AstonDatabase():
     def updateFile(self, dt):
         '''Updates a file entry in the database.'''
         #TODO: return false if update fails
-        #F = lambda x: x.replace('|',':').replace('\\','/')
         info_str = json.dumps(dt.info)
-        #'|'.join([F(i)+'\\'+F(j) for i, j in dt.info.items()])
         c = self.db.cursor()
         if dt.fid[0] is None:
             c.execute('''UPDATE files SET name=?,info=?,project_id=NULL 

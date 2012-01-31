@@ -2,8 +2,8 @@
 
 # Form implementation generated from reading ui file 'aston.ui'
 #
-# Created: Sun Nov  6 00:56:50 2011
-#      by: PyQt4 UI code generator 4.8.6
+# Created: Tue Jan 10 16:43:29 2012
+#      by: PyQt4 UI code generator 4.8.5
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -17,7 +17,7 @@ except AttributeError:
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName(_fromUtf8("MainWindow"))
-        MainWindow.resize(656, 537)
+        MainWindow.resize(694, 537)
         MainWindow.setWindowTitle(QtGui.QApplication.translate("MainWindow", "Aston", None, QtGui.QApplication.UnicodeUTF8))
         self.centralwidget = QtGui.QWidget(MainWindow)
         self.centralwidget.setObjectName(_fromUtf8("centralwidget"))
@@ -28,7 +28,7 @@ class Ui_MainWindow(object):
         self.verticalLayout.addLayout(self.plotArea)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtGui.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 656, 20))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 694, 21))
         self.menubar.setObjectName(_fromUtf8("menubar"))
         self.menuFile = QtGui.QMenu(self.menubar)
         self.menuFile.setTitle(QtGui.QApplication.translate("MainWindow", "File", None, QtGui.QApplication.UnicodeUTF8))
@@ -143,6 +143,20 @@ class Ui_MainWindow(object):
         self.horizontalLayout_3.addLayout(self.specArea)
         self.spectraDockWidget.setWidget(self.dockWidgetContents_5)
         MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(8), self.spectraDockWidget)
+        self.methodDockWidget = QtGui.QDockWidget(MainWindow)
+        self.methodDockWidget.setWindowTitle(QtGui.QApplication.translate("MainWindow", "Method Library", None, QtGui.QApplication.UnicodeUTF8))
+        self.methodDockWidget.setObjectName(_fromUtf8("methodDockWidget"))
+        self.dockWidgetContents_2 = QtGui.QWidget()
+        self.dockWidgetContents_2.setObjectName(_fromUtf8("dockWidgetContents_2"))
+        self.methodDockWidget.setWidget(self.dockWidgetContents_2)
+        MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(8), self.methodDockWidget)
+        self.compoundDockWidget = QtGui.QDockWidget(MainWindow)
+        self.compoundDockWidget.setWindowTitle(QtGui.QApplication.translate("MainWindow", "Compound Library", None, QtGui.QApplication.UnicodeUTF8))
+        self.compoundDockWidget.setObjectName(_fromUtf8("compoundDockWidget"))
+        self.dockWidgetContents_6 = QtGui.QWidget()
+        self.dockWidgetContents_6.setObjectName(_fromUtf8("dockWidgetContents_6"))
+        self.compoundDockWidget.setWidget(self.dockWidgetContents_6)
+        MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(8), self.compoundDockWidget)
         self.actionOpen = QtGui.QAction(MainWindow)
         self.actionOpen.setText(QtGui.QApplication.translate("MainWindow", "Open Folder", None, QtGui.QApplication.UnicodeUTF8))
         self.actionOpen.setObjectName(_fromUtf8("actionOpen"))

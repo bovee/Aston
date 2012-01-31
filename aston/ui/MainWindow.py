@@ -22,6 +22,8 @@ class AstonWindow(QtGui.QMainWindow):
         self.tabifyDockWidget(self.ui.filesDockWidget,self.ui.settingsDockWidget)
         self.tabifyDockWidget(self.ui.filesDockWidget,self.ui.peaksDockWidget)
         self.tabifyDockWidget(self.ui.filesDockWidget,self.ui.spectraDockWidget)
+        self.tabifyDockWidget(self.ui.filesDockWidget,self.ui.methodDockWidget)
+        self.tabifyDockWidget(self.ui.filesDockWidget,self.ui.compoundDockWidget)
         self.ui.filesDockWidget.raise_()
 
         #connect the menu logic
