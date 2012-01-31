@@ -7,7 +7,8 @@ import os.path as op
 import numpy as np
 import json
 from scipy.interpolate import interp1d
-        
+from aston.Features import Spectrum, Peak
+ 
 class Datafile(object):
     '''Generic chromatography data containter. This abstacts away
     the implementation details of the specific file formats.'''
@@ -72,7 +73,8 @@ class Datafile(object):
             self.fid = (info[1], info[2]) #(project_id, file_id)
         #2. from file info -> use this if not using the Aston GUI
         else:
-            self.info = self._getInfoFromFile()
+            self.info = {'traces':'TIC','name':''}
+            self._updateInfoFromFile()
             self.fid = (None, None)
         
         #make invisible at first
@@ -369,10 +371,41 @@ class Datafile(object):
                 pass
         return mz_min, mz_max
 
-    def shortFilename(self):
-        '''Returns the filename used for display in the program.'''
-        return op.join(op.basename(op.dirname(self.filename)),
-                       op.basename(self.filename))
+    
+    def getInfo(self,fld):
+        #create the key if it doesn't yet exist
+        if fld not in self.info.keys():
+            if fld == 'r-filename':
+                #the filename used for display in the program.
+                self.info[fld] = op.join(op.basename( \
+                  op.dirname(self.filename)), op.basename(self.filename))
+            elif fld == 's-scans':
+                self.info['s-scans'] = str(len(self.time()))
+            elif fld == 's-st-time' or fld == 's-en-time':
+                time = self.time()
+                self.info['s-st-time'] = str(min(time))
+                self.info['s-en-time'] = str(max(time))
+            elif fld == 's-peaks' or fld == 's-spectra':
+                fts = self.database.getFeatsByFile(self.fid[1])
+                self.info['s-peaks'] = \
+                  str(len([ft for ft in fts if isinstance(ft, Peak)]))
+                self.info['s-spectra'] = \
+                  str(len([ft for ft in fts if isinstance(ft, Spectrum)]))
+            elif fld == 's-st-peaks' or fld == 's-en-peaks':
+                fts = self.database.getFeatsByFile(self.fid[1])
+                if len(fts) > 0: 
+                    times = [ft.time() for ft in fts \
+                      if isinstance(ft, Peak)]
+                    self.info['s-st-peaks'] = str(min(times))
+                    self.info['s-en-peaks'] = str(max(times))
+            else:
+                pass
+        
+        #check again to see if we figured out the value
+        if fld not in self.info.keys():
+            return ''
+        else:
+            return self.info[fld]
     
     def saveChanges(self):
         '''Save any changes to the datafile to the database.'''
@@ -406,6 +439,6 @@ class Datafile(object):
             self._cacheData()
         return np.array([sum(i.values()) for i in self.data])
 
-    def _getInfoFromFile(self):
+    #    def _updateInfoFromFile(self):
         '''Return file information.'''
-        return '', {}
+    #    pass

@@ -31,20 +31,19 @@ class ThermoCF(Datafile.Datafile):
             self.data.append(dict(ms))
         f.close()
 
-    def _getInfoFromFile(self):
-        info = {}
-        info['traces'] = 'TIC'
-        info['r-opr'] = ''
-        info['m'] = ''
+    def _updateInfoFromFile(self):
+        d = {}
+        d['r-opr'] = ''
+        d['m'] = ''
         #try: #TODO: this crashes in python 3; not clear why?
-        info['r-date'] = time.ctime(os.path.getctime(self.filename))
+        d['r-date'] = time.ctime(os.path.getctime(self.filename))
         #except:
         #    pass
         #info['file name'] = os.path.basename(self.filename)
-        info['name'] = os.path.splitext(os.path.basename(self.filename))[0]
-        info['r-type'] = 'Sample'
-        info['s-file-type'] = 'Thermo Isodat CF'
-        return info
+        d['name'] = os.path.splitext(os.path.basename(self.filename))[0]
+        d['r-type'] = 'Sample'
+        d['s-file-type'] = 'Thermo Isodat CF'
+        self.info.update(d)
 
 class ThermoDXF(Datafile.Datafile):
     def __init__(self,*args,**kwargs):
@@ -75,17 +74,16 @@ class ThermoDXF(Datafile.Datafile):
             self.data.append(dict(ms))
         f.close()
 
-    def _getInfoFromFile(self):
-        info = {}
-        info['traces'] = 'TIC'
-        info['r-opr'] = ''
-        info['m'] = ''
+    def _updateInfoFromFile(self):
+        d = {}
+        d['r-opr'] = ''
+        d['m'] = ''
         #try: #TODO: this crashes in python 3; not clear why?
-        info['date'] = time.ctime(os.path.getctime(self.filename))
+        d['date'] = time.ctime(os.path.getctime(self.filename))
         #except:
         #    pass
         #info['file name'] = os.path.basename(self.filename)
-        info['name'] = os.path.splitext(os.path.basename(self.filename))[0]
-        info['r-type'] = 'Sample'
-        info['s-file-type'] = 'Thermo Isodat DXF'
-        return info
+        d['name'] = os.path.splitext(os.path.basename(self.filename))[0]
+        d['r-type'] = 'Sample'
+        d['s-file-type'] = 'Thermo Isodat DXF'
+        self.info.update(d)

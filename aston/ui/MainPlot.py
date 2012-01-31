@@ -96,12 +96,12 @@ class Plotter(object):
         else:
             #make up a factor to separate traces by
             if 'stacked' in self.style:
-                ftrace = datafiles[0].trace(datafiles[0].info['traces'].split(',')[0])
+                ftrace = datafiles[0].trace(datafiles[0].getInfo('traces').split(',')[0])
                 sc_factor = (max(ftrace)-min(ftrace))/5.
 
             tnum = 0
             for x in datafiles:
-                for y in x.info['traces'].split(','):
+                for y in x.getInfo('traces').split(','):
                     if y == '':
                         continue
                     trace = x.trace(y)
@@ -113,7 +113,7 @@ class Plotter(object):
                         trace += tnum * sc_factor
                     c = self._color[int(tnum % 7)]
                     ls = self._linestyle[int(np.floor((tnum % 28)/7))]
-                    nm = x.name+' '+y
+                    nm = x.getInfo('name')+' '+y
                     self.plt.plot(x.time(),trace,color=c,ls=ls,lw=1.2,label=nm)
                     tnum += 1
 

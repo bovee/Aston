@@ -103,10 +103,17 @@ class AstonDatabase():
     def getFileByName(self, fname):
         '''Return a datafile object corresponding to fname.'''
         for dt in self.files:
-            if fname.lower() == dt.info['name'].lower():
+            if fname.lower() == dt.getInfo['name'].lower():
                 return dt
         return None
 
+    def getFileByID(self,file_id):
+        '''Return a datafile object corresponding to file_id.'''
+        for dt in self.files:
+            if file_id == dt.fid[1]:
+                return dt
+        return None
+        
     def getProjects(self):
         '''Returns a list of all projects in the database.'''
         c = self.db.cursor()
@@ -185,23 +192,38 @@ class AstonDatabase():
         c = self.db.cursor()
         if cmpd_id is None:
             c.execute('''SELECT verts,ident,type,ft_id,file_id
-                      FROM features WHERE cmpd_id IS NULL''')
+                         FROM features WHERE cmpd_id IS NULL''')
         else:
             c.execute('''SELECT verts,ident,type,ft_id,file_id
-                      FROM features WHERE cmpd_id = ?''',(cmpd_id,))
+                         FROM features WHERE cmpd_id = ?''',(cmpd_id,))
         fts = []
         for i in c:
             verts = json.loads(zlib.decompress(i[0]))
-            #TODO: better way of doing this type-checking
-            if i[2] == 'Peak':
-                #first argument is ion
-                ft = Peak(verts, (i[3], cmpd_id, i[4]), i[1])
-            elif i[2] == 'Spectrum':
-                ft = Spectrum(verts, (i[3], cmpd_id, i[4]))
-            fts.append(ft)
-        #lst = c.fetchall()
+            fts.append(self._makeFt(verts, i[2], i[1], (i[3], cmpd_id, i[4])))
         c.close()
         return fts
+    
+    def getFeatsByFile(self,file_id):
+        '''Return a list of features associated with a specific file.'''
+        c = self.db.cursor()
+        c.execute('''SELECT verts,ident,type,ft_id,cmpd_id
+                     FROM features WHERE file_id IS ?''',(file_id,))
+        fts = []
+        for i in c:
+            verts = json.loads(zlib.decompress(i[0]))
+            fts.append(self._makeFt(verts, i[2], i[1], (i[3], i[4], file_id)))
+        c.close()
+        return fts
+    
+    def _makeFt(self,verts,ft_type,ident,ids):
+        #TODO: better way of doing this type-checking
+        if ft_type == 'Peak':
+            #ident is the ion or wavelength the peak was integrated over
+            ft = Peak(verts, ids, ident)
+        elif ft_type == 'Spectrum':
+            ft = Spectrum(verts, ids)
+        ft.dt = self.getFileByID(ids[2])
+        return ft
 
     def addFeat(self, ft):
         '''Add a feature to the database or make a change 

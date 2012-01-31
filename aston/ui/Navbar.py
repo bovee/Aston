@@ -69,7 +69,7 @@ class AstonNavBar(NavigationToolbar2QTAgg):
             if abs(self._xypress[0] - event.xdata) < 0.01: return
 
             dt = self.parent.ftab_mod.returnSelFile()
-            ion = dt.info['traces'].split(',')[0]
+            ion = dt.getInfo('traces').split(',')[0]
             
             if self._xypress[0] < event.xdata:
                 pt1, pt2 = (self._xypress[0], self._xypress[1]), (event.xdata, event.ydata)
@@ -82,6 +82,8 @@ class AstonNavBar(NavigationToolbar2QTAgg):
             pk = Peak(verts,None,ion)
             pk.ids[2] = dt.fid[1]
             self.parent.ptab_mod.addFeats([pk])
+            del dt.info['s-peaks'], dt.info['s-st-peaks'], dt.info['s-en-peaks']
+
 
         #self.draw()
         self._xypress = None
@@ -118,14 +120,14 @@ class AstonNavBar(NavigationToolbar2QTAgg):
     def press_align(self,event):
         dt = self.parent.ftab_mod.returnSelFile()
         if event.button == 1:
-            try: x = float(dt.info['t-offset']) - event.xdata
+            try: x = float(dt.getInfo('t-offset')) - event.xdata
             except: x = 0 - event.xdata
-            try: y = float(dt.info['t-yoffset']) - event.ydata
+            try: y = float(dt.getInfo('t-yoffset')) - event.ydata
             except: y = 0 - event.ydata
         elif event.button == 3:
-            try: x = float(dt.info['t-scale']) / event.xdata
+            try: x = float(dt.getInfo('t-scale')) / event.xdata
             except: x = 1 / event.xdata
-            try: y = float(dt.info['t-yscale']) / event.ydata
+            try: y = float(dt.getInfo('t-yscale')) / event.ydata
             except: y = 1 / event.ydata
         self._xypress = x,y
 

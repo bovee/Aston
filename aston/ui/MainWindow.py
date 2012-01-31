@@ -166,6 +166,7 @@ class AstonWindow(QtGui.QMainWindow):
                 if pk.ids[1] is None:
                     self.ptab_mod.addCompoundWithFeat(pk,str(pk.time()))
                     self.plotter.addPeak(pk)
+        del dt.info['s-peaks'], dt.info['s-st-peaks'], dt.info['s-en-peaks']
         self.ptab_mod.endResetModel() 
         self.plotter.redraw()
 

@@ -81,31 +81,35 @@ class PeakTreeModel(QtCore.QAbstractItemModel):
             elif fld == 'd13c':
                 rslt = str(index.internalPointer().isotopeValue())
         else:
-            if isinstance(index.internalPointer(),Spectrum):
+            ft = index.internalPointer()
+            if isinstance(ft, Spectrum):
                 #it's a spectra
                 if fld == 'name':
                     #TODO: add support for time() so this works
                     rslt = 'Spectra'# @ '
                     #rslt += format(index.internalPointer().time(),'.3f')
                 elif fld == 'type':
-                    rslt = index.internalPointer().cls
+                    rslt = ft.cls
             else:
                 #it's a peak
                 if fld == 'name':
-                    rslt = str(index.internalPointer().ion) + '@'
-                    rslt += format(index.internalPointer().time(),'.3f')
+                    rslt = str(ft.ion) + '@' + format(ft.time(),'.3f')
                 elif fld == 'type':
-                    rslt = index.internalPointer().cls
+                    rslt = ft.cls
                 elif fld == 'area':
-                    rslt = str(index.internalPointer().area())
+                    rslt = str(ft.area())
                 elif fld == 'length':
-                    rslt = str(index.internalPointer().length())
+                    rslt = str(ft.length())
                 elif fld == 'height':
-                    rslt = str(index.internalPointer().height())
+                    rslt = str(ft.height())
                 elif fld == 'pwhm':
-                    rslt = str(index.internalPointer().length(pwhm=True))
+                    rslt = str(ft.length(pwhm=True))
                 elif fld == 'time':
-                    rslt = str(index.internalPointer().time())
+                    rslt = str(ft.time())
+                elif fld == 's':
+                    t = float(ft.dt.getInfo('s-en-peaks')) - \
+                      float(ft.dt.getInfo('s-st-peaks'))
+                    rslt = str(t / ft.length())
         return rslt
 
     def headerData(self,col,orientation,role):
@@ -177,7 +181,8 @@ class PeakTreeModel(QtCore.QAbstractItemModel):
 
     def rightClickMenuHead(self,point):
         menu = QtGui.QMenu(self.treeView)
-        pos_flds = ['Type','Area','Height','Length','PWHM','Time','d13C']
+        pos_flds = ['Type','Area','Height','Length','PWHM', \
+                    'Time','d13C','S']
         for fld in pos_flds:
             ac = menu.addAction(fld,self.rightClickMenuHeadHandler)
             ac.setCheckable(True)

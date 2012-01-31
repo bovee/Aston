@@ -60,33 +60,30 @@ class AgilentMWD(Datafile.Datafile):
             f.read(1)
         f.close()
 
-    def _getInfoFromFile(self):
-        info = {}
-        info['traces'] = 'TIC'
+    def _updateInfoFromFile(self):
+        d = {}
         #TODO: fix this so that it doesn't rely upon MWD1A.CH?
         #print self.filename
-        #fname = os.path.join(os.path.dirname(self.filename),'mwd1A.ch')
         f = open(self.filename,'rb')
         f.seek(0x18)
-        info['name'] = f.read(struct.unpack('>B',f.read(1))[0]).decode()
+        d['name'] = f.read(struct.unpack('>B',f.read(1))[0]).decode()
         f.seek(0x94)
-        info['r-opr'] = f.read(struct.unpack('>B',f.read(1))[0]).decode()
+        d['r-opr'] = f.read(struct.unpack('>B',f.read(1))[0]).decode()
         f.seek(0xE4)
-        info['m'] = f.read(struct.unpack('>B',f.read(1))[0]).decode()
-        try:
-            f.seek(0xB2)
-            info['r-date'] = f.read(struct.unpack('>B',f.read(1))[0]).decode()
-        except: pass #TODO: find out why this chokes
+        d['m'] = f.read(struct.unpack('>B',f.read(1))[0]).decode()
+        #try:
+        f.seek(0xB2)
+        d['r-date'] = f.read(struct.unpack('>B',f.read(1))[0]).decode()
+        #except: pass #TODO: find out why this chokes
         f.seek(0x244)
-        info['m-y-units'] = f.read(struct.unpack('>B',f.read(1))[0]).decode()
+        d['m-y-units'] = f.read(struct.unpack('>B',f.read(1))[0]).decode()
         f.seek(0x254)
         #TODO: replace signal name with reference_wavelength?
-        info['signal name'] = f.read(struct.unpack('>B',f.read(1))[0]).decode()
-        info['r-type'] = 'Sample'
-        info['s-file-type'] = 'AgilentMWD'
-        
+        d['signal name'] = f.read(struct.unpack('>B',f.read(1))[0]).decode()
+        d['r-type'] = 'Sample'
+        d['s-file-type'] = 'AgilentMWD'
         f.close()
-        return info
+        self.info.update(d)
 
 class AgilentDAD(Datafile.Datafile):
 #header data in DAD1.sd
@@ -129,24 +126,23 @@ class AgilentDAD(Datafile.Datafile):
         fhead.close()
         fdata.close()
 
-    def _getInfoFromFile(self):
-        info = {}
-        info['traces'] = 'TIC'
+    def _updateInfoFromFile(self):
+        d = {}
         tree = ElementTree.parse(op.join(op.dirname(self.filename),'sample_info.xml'))
         for i in tree.iterfind('Field'):
             tagname = i.find('Name').text
             tagvalue = i.find('Value').text
             if tagname == 'Sample Name':
-                info['name'] = tagvalue
+                d['name'] = tagvalue
             elif tagname == 'Sample Position':
-                info['r-vial-pos'] = tagvalue
+                d['r-vial-pos'] = tagvalue
             elif tagname == 'Method':
-                info['m'] = tagvalue.split('/')[-1]
-        info['r-opr'] = ''
-        info['r-date'] = time.ctime(op.getctime(self.filename))
-        info['r-type'] = 'Sample'
-        info['s-file-type'] = 'AgilentMasshunterDAD'
-        return info
+                d['m'] = tagvalue.split('/')[-1]
+        d['r-opr'] = ''
+        d['r-date'] = time.ctime(op.getctime(self.filename))
+        d['r-type'] = 'Sample'
+        d['s-file-type'] = 'AgilentMasshunterDAD'
+        self.info.update(d)
 
 class AgilentCSDAD(Datafile.Datafile):
     '''Interpreter for *.UV files from Agilent Chemstation'''
@@ -184,31 +180,27 @@ class AgilentCSDAD(Datafile.Datafile):
                 s[nm_srt+j*nm_stp] = v
             self.data[i] = s
 
-    def _getInfoFromFile(self):
-        info = {}
-        info['traces'] = 'TIC'
+    def _updateInfoFromFile(self):
+        d = {}
         f = open(self.filename,'rb')
         f.seek(0x18)
-        info['name'] = f.read(struct.unpack('>B',f.read(1))[0]).decode().strip()
+        d['name'] = f.read(struct.unpack('>B',f.read(1))[0]).decode().strip()
         f.seek(0x94)
-        info['r-opr'] = f.read(struct.unpack('>B',f.read(1))[0]).decode()
+        d['r-opr'] = f.read(struct.unpack('>B',f.read(1))[0]).decode()
         f.seek(0xE4)
-        info['m'] = f.read(struct.unpack('>B',f.read(1))[0]).decode().strip()
+        d['m'] = f.read(struct.unpack('>B',f.read(1))[0]).decode().strip()
         f.seek(0xB2)
-        info['r-date'] = f.read(struct.unpack('>B',f.read(1))[0]).decode()
+        d['r-date'] = f.read(struct.unpack('>B',f.read(1))[0]).decode()
         f.seek(0x146)
-        info['m-y-units'] = f.read(struct.unpack('>B',f.read(1))[0]).decode()
+        d['m-y-units'] = f.read(struct.unpack('>B',f.read(1))[0]).decode()
         f.seek(0xD0)
-        info['r-inst'] = f.read(struct.unpack('>B',f.read(1))[0]).decode()
+        d['r-inst'] = f.read(struct.unpack('>B',f.read(1))[0]).decode()
         #TODO: are the next values correct?
         f.seek(0xFE) 
-        info['r-vial-pos'] = str(struct.unpack('>h',f.read(2))[0])
+        d['r-vial-pos'] = str(struct.unpack('>h',f.read(2))[0])
         f.seek(0xFE) 
-        info['r-seq-num'] = str(struct.unpack('>h',f.read(2))[0])
-
-        #info['file name'] = op.join(op.basename(op.dirname(self.filename)),
-        #                            op.basename(self.filename))
-        info['r-type'] = 'Sample'
-        info['s-file-type'] = 'AgilentChemstationDAD'
+        d['r-seq-num'] = str(struct.unpack('>h',f.read(2))[0])
+        d['r-type'] = 'Sample'
+        d['s-file-type'] = 'AgilentChemstationDAD'
         f.close()
-        return info
+        self.info.update(d)

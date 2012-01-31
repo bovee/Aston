@@ -152,11 +152,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
                 else:
                     rslt = QtCore.Qt.Unchecked
             elif role == QtCore.Qt.DisplayRole or role == QtCore.Qt.EditRole:
-                if fld == 'r-filename': rslt = f.shortFilename()
-                elif fld == 's-scans': rslt = str(len(f.time()))
-                elif fld == 's-st-time': rslt = str(min(f.time()))
-                elif fld == 's-en-time': rslt = str(max(f.time()))
-                elif fld in f.info.keys(): rslt = f.info[fld]
+                rslt = f.getInfo(fld)
         return rslt
 
     def headerData(self, col, orientation, role):
@@ -208,7 +204,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             if col == 'vis':
                 return dflags | QtCore.Qt.ItemIsEditable | \
                        QtCore.Qt.ItemIsUserCheckable
-            elif col in ['r-filename']:
+            elif col in ['r-filename'] or col[:2] == 's-':
                 return dflags
             else:
                 return dflags | QtCore.Qt.ItemIsEditable

@@ -35,7 +35,6 @@ class Peak(Feature):
             for i in range(len(avs)-1):
                 #does this line segment intersect half-max?
                 if (avs[i,1]<half_y and avs[i+1,1]>half_y) or (avs[i,1]>half_y and avs[i+1,1]<half_y):
-                    print self.time()
                     m = (avs[i+1,1]-avs[i,1]) / (avs[i+1,0]-avs[i,0])
                     b = (avs[i+1,0]*avs[i,1] - avs[i,0]*avs[i+1,1]) / (avs[i+1,0]-avs[i,0])
                     if np.isnan(lw_x) and np.isnan(hi_x):
@@ -86,7 +85,7 @@ class Peak(Feature):
 class GaussianPeak(Peak):
     def __init__(self, data, ids, ion, *args, **kwargs):
         self.ion = ion
-        super(Peak,self).__init__(data, ids, *args, **kwargs)
+        super(GaussianPeak,self).__init__(data, ids, *args, **kwargs)
         self.cls = 'Gaussian Peak'
 
     @property

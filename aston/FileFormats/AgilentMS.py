@@ -11,8 +11,10 @@ class AgilentMS(Datafile.Datafile):
 
         # get number of scans to read in
         f.seek(0x5)
-        if f.read(4) == 'GC': f.seek(0x142)
-        else: f.seek(0x118)
+        if f.read(4) == 'GC':
+            f.seek(0x142)
+        else:
+            f.seek(0x118)
         nscans = struct.unpack('>H',f.read(2))[0]
 
         # find the starting location of the data
@@ -75,25 +77,22 @@ class AgilentMS(Datafile.Datafile):
         
         f.close()
 
-    def _getInfoFromFile(self):
-        info = {}
-        info['traces'] = 'TIC'
+    def _updateInfoFromFile(self):
+        d = {}
         f = open(self.filename,'rb')
         f.seek(0x18)
-        info['name'] = f.read(struct.unpack('>B',f.read(1))[0]).decode().strip()
+        d['name'] = f.read(struct.unpack('>B',f.read(1))[0]).decode().strip()
         f.seek(0x94)
-        info['r-opr'] = f.read(struct.unpack('>B',f.read(1))[0]).decode()
+        d['r-opr'] = f.read(struct.unpack('>B',f.read(1))[0]).decode()
         f.seek(0xE4)
-        info['m'] = f.read(struct.unpack('>B',f.read(1))[0]).decode().strip()
+        d['m'] = f.read(struct.unpack('>B',f.read(1))[0]).decode().strip()
         f.seek(0xB2)
-        info['r-date'] = f.read(struct.unpack('>B',f.read(1))[0]).decode()
-        #info['file name'] = op.join(op.basename(op.dirname(self.filename)),
-        #                            op.basename(self.filename))
-        info['r-type'] = 'Sample'
-        info['s-file-type'] = 'AgilentMS'
+        d['r-date'] = f.read(struct.unpack('>B',f.read(1))[0]).decode()
+        d['r-type'] = 'Sample'
+        d['s-file-type'] = 'AgilentMS'
         #TODO: vial number in here too?
         f.close()
-        return info
+        self.info.update(d)
 
 class AgilentMSMSScan(Datafile.Datafile):
     def __init__(self,*args,**kwargs):
@@ -164,24 +163,21 @@ class AgilentMSMSScan(Datafile.Datafile):
 
         f.close()
 
-    def _getInfoFromFile(self):
-        info = {}
-        info['traces'] = 'TIC'
+    def _updateInfoFromFile(self):
+        d = {}
         f = open(self.filename,'rb')
         f.seek(0x18)
-        info['name'] = str(f.read(struct.unpack('>B',f.read(1))[0]).strip())
+        d['name'] = str(f.read(struct.unpack('>B',f.read(1))[0]).strip())
         f.seek(0x94)
-        info['r-opr'] = str(f.read(struct.unpack('>B',f.read(1))[0]))
+        d['r-opr'] = str(f.read(struct.unpack('>B',f.read(1))[0]))
         f.seek(0xE4)
-        info['m'] = str(f.read(struct.unpack('>B',f.read(1))[0]))
+        d['m'] = str(f.read(struct.unpack('>B',f.read(1))[0]))
         f.seek(0xB2)
-        info['r-date'] = str(f.read(struct.unpack('>B',f.read(1))[0]))
-        #info['file name'] = op.join(op.basename(op.dirname(self.filename)),
-        #                            op.basename(self.filename))
-        info['r-type'] = 'Sample'
-        info['s-file-type'] = 'AgilentMS'
+        d['r-date'] = str(f.read(struct.unpack('>B',f.read(1))[0]))
+        d['r-type'] = 'Sample'
+        d['s-file-type'] = 'AgilentMS'
         f.close()
-        return info
+        self.info.update(i)
     
     def _getOtherTrace(self,name):
         #TODO: read from MSPeriodicActuals.bin and TCC.* files

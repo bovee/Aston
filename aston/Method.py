@@ -76,6 +76,10 @@ flds = {
         's-scans':'Scans',
         's-st-time':'Start Time (min)',
         's-en-time':'End Time (min)',
+        's-peaks':'# of Peaks',
+        's-spectra':'# of Spectra',
+        's-st-peaks':'First Peak RT (min)',
+        's-en-peaks':'Last Peak RT (min)',
     # data transformations
         't-scale':'Scale',
         't-offset':'Offset',

@@ -25,10 +25,9 @@ class CSVFile(Datafile.Datafile):
             self.times = []
             self.data = []
             
-    def _getInfoFromFile(self):
-        info = {}
-        info['traces'] = 'TIC'
-        info['name'] = op.splitext(op.basename(self.filename))[0]
-        info['r-type'] = 'Sample'
-        info['s-file-type'] = 'CSV'
-        return info
+    def _updateInfoFromFile(self):
+        d = {}
+        d['name'] = op.splitext(op.basename(self.filename))[0]
+        d['r-type'] = 'Sample'
+        d['s-file-type'] = 'CSV'
+        self.info.update(d)
