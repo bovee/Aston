@@ -48,7 +48,10 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             treeView.setAcceptDrops(True)
             treeView.setDragDropMode(QtGui.QAbstractItemView.DragDrop)
             treeView.dragMoveEvent = self.dragMoveEvent
-
+            
+            #keep us aware of column reordering
+            self.treeView.header().sectionMoved.connect(self.colMoved)
+            
             #prettify
             treeView.expandAll()
             treeView.resizeColumnToContents(0)
@@ -222,6 +225,11 @@ class FileTreeModel(QtCore.QAbstractItemModel):
           self.masterWindow.ui.peakTreeView,
           self.masterWindow,
           self.masterWindow.ftab_mod.returnSelFiles())
+        
+    def colMoved(self,x,oldCol,newCol):
+        #self.fields[oldCol], self.fields[newCol] = \
+        #  self.fields[newCol], self.fields[oldCol]
+        print self.fields
 
     def rightClickMenu(self,point):
         index = self.proxyMod.mapToSource(self.treeView.indexAt(point))
@@ -274,35 +282,43 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         ac.setMenu(s_menu)
         ac = menu.addAction(self.tr('Transforms'))
         ac.setMenu(t_menu)
-            
         menu.exec_(self.treeView.mapToGlobal(point))
     
     def rightClickMenuHeadHandler(self):
         fld = str(self.sender().data())
         if fld == 'name': return
-        self.beginResetModel()
         if fld in self.fields:
+            indx = self.fields.index(fld)
+            self.beginRemoveColumns(QtCore.QModelIndex(), indx, indx)
             self.fields.remove(fld)
+            self.endRemoveColumns()
         else:
+            indx = len(self.fields)
+            self.beginInsertColumns(QtCore.QModelIndex(), indx, indx)
             self.treeView.resizeColumnToContents(len(self.fields)-1)
             self.fields.append(fld)
-        self.endResetModel()
+            self.endInsertColumns()
 
     def addProject(self):
         '''Add a project to the list.'''
-        self.beginResetModel()
-        self.database.addProject('New Project')
-        self.projects = self.database.getProjects()
-        self.endResetModel()
+        indx = len(self.projects)
+        #self.beginResetModel()
+        self.beginInsertRows(QtCore.QModelIndex(), indx, indx)
+        proj_id = self.database.addProject('New Project')
+        #self.projects = self.database.getProjects()
+        self.projects.append([proj_id,'New Project'])
+        self.endInsertRows()
+        #self.endResetModel()
 
     def delProject(self):
         '''Deletes a project from the list.'''
-        #TODO: move files back to 'Unsorted' project
+        #TODO: need to update "Unsorted" after this
         proj_id = self.sender().data()
-        self.beginResetModel()
+        indx = [i[0] for i in self.projects].index(proj_id)
+        self.beginRemoveRows(QtCore.QModelIndex(), indx, indx)
         self.database.delProject(proj_id)
-        self.projects = self.database.getProjects()
-        self.endResetModel()
+        del self.projects[indx]
+        self.endRemoveRows()
 
     #The following methods are not being overridden, but are here
     #because they rely upon data only know to the file table.

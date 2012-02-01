@@ -264,12 +264,14 @@ class PeakTreeModel(QtCore.QAbstractItemModel):
 
     def delCompound(self, cmpd_id):
         #delete all the patchs assigned to pks belonging to this cmpd
+        #also make sure all the datafiles are updated
         pks = []
         for cmpd in self.compounds:
             if cmpd.cmpd_id == cmpd_id:
                 for ft in cmpd.feats:
                     if isinstance(ft, Peak):
                         pks.append(ft)
+                        ft.dt.delInfo('s-peaks')
                 self.masterWindow.plotter.removePeaks(pks)
                 break
             
@@ -284,6 +286,7 @@ class PeakTreeModel(QtCore.QAbstractItemModel):
             if ft in cmpd.getFeats(self.fids):
                 if isinstance(ft, Peak):
                     self.masterWindow.plotter.removePeaks([ft])
+                    ft.dt.delInfo('s-peaks')
                 self.beginResetModel()
                 if len(cmpd.getFeats(self.fids)) == 1 and \
                    cmpd.cmpd_id is not None:

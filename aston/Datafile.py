@@ -370,7 +370,16 @@ class Datafile(object):
             except ValueError:
                 pass
         return mz_min, mz_max
-
+    
+    def delInfo(self,fld):
+        delkeys = None
+        if fld == 's-peaks':
+            delkeys = ['s-peaks','s-peaks-st','s-peaks-en']
+        
+        if delkeys is not None:
+            for key in delkeys:
+                if key in self.info:
+                    del self.info[key]
     
     def getInfo(self,fld):
         #create the key if it doesn't yet exist
@@ -381,23 +390,23 @@ class Datafile(object):
                   op.dirname(self.filename)), op.basename(self.filename))
             elif fld == 's-scans':
                 self.info['s-scans'] = str(len(self.time()))
-            elif fld == 's-st-time' or fld == 's-en-time':
+            elif fld == 's-time-st' or fld == 's-time-en':
                 time = self.time()
-                self.info['s-st-time'] = str(min(time))
-                self.info['s-en-time'] = str(max(time))
+                self.info['s-time-st'] = str(min(time))
+                self.info['s-time-en'] = str(max(time))
             elif fld == 's-peaks' or fld == 's-spectra':
                 fts = self.database.getFeatsByFile(self.fid[1])
                 self.info['s-peaks'] = \
                   str(len([ft for ft in fts if isinstance(ft, Peak)]))
                 self.info['s-spectra'] = \
                   str(len([ft for ft in fts if isinstance(ft, Spectrum)]))
-            elif fld == 's-st-peaks' or fld == 's-en-peaks':
+            elif fld == 's-peaks-st' or fld == 's-peaks-en':
                 fts = self.database.getFeatsByFile(self.fid[1])
                 if len(fts) > 0: 
                     times = [ft.time() for ft in fts \
                       if isinstance(ft, Peak)]
-                    self.info['s-st-peaks'] = str(min(times))
-                    self.info['s-en-peaks'] = str(max(times))
+                    self.info['s-peaks-st'] = str(min(times))
+                    self.info['s-peaks-en'] = str(max(times))
             else:
                 pass
         

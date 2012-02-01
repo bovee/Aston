@@ -95,6 +95,7 @@ def statSlopeIntegrate(dt,ion=None):
             verts += [pt2]
             pk = Peak(verts,None,ion,'StatSlope')
             pk.ids[2] = dt.fid[1]
+            pk.dt = dt
             pks.append(pk)
         l_i = i
     return pks

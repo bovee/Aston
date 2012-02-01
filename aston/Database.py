@@ -126,13 +126,17 @@ class AstonDatabase():
         '''Adds a project to the database.'''
         c = self.db.cursor()
         if proj_id is None:
-            c.execute('''INSERT INTO projects (project_name) 
+            a = c.execute('''INSERT INTO projects (project_name) 
                       VALUES (?)''', (name,))
+            self.db.commit()
+            c.close()
+            return a.lastrowid
         else:
             c.execute('''UPDATE projects SET project_name=?
                       WHERE project_id=?''', (name, proj_id))
-        self.db.commit()
-        c.close()
+            self.db.commit()
+            c.close()
+            return None
 
     def delProject(self, proj_id):
         '''Delete a project from the database.'''
@@ -180,8 +184,6 @@ class AstonDatabase():
         '''Delete a compound from the database.'''
         #TODO: make it an option to move all underlying peaks to 'Unassigned'
         c = self.db.cursor()
-        #c.execute('UPDATE features SET cmpd_id = NULL
-        #WHERE cmpd_id = ?',(cmpd_id,))
         c.execute('DELETE FROM features WHERE cmpd_id = ?',(cmpd_id,))
         c.execute('DELETE FROM compounds WHERE cmpd_id = ?',(cmpd_id,))
         self.db.commit()

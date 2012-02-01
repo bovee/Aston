@@ -57,7 +57,6 @@ class AstonNavBar(NavigationToolbar2QTAgg):
         self._xypress = event.xdata, event.ydata
 
     def release_peak(self,event):
-
         if time.time() - self.ev_time < 1:
             self.ev_time = time.time()
             if abs(self._xypress[0] - event.xdata) > 0.01: return
@@ -81,9 +80,9 @@ class AstonNavBar(NavigationToolbar2QTAgg):
             verts += [pt2]
             pk = Peak(verts,None,ion)
             pk.ids[2] = dt.fid[1]
+            pk.dt = dt
             self.parent.ptab_mod.addFeats([pk])
-            del dt.info['s-peaks'], dt.info['s-st-peaks'], dt.info['s-en-peaks']
-
+            dt.delInfo('s-peaks')
 
         #self.draw()
         self._xypress = None
