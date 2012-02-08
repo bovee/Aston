@@ -30,7 +30,8 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             self.proxyMod.setFilterCaseSensitivity(False)
             treeView.setModel(self.proxyMod)
             treeView.setSortingEnabled(True)
-            
+            #treeView.setModel(self)
+
             #set up selections
             treeView.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
             treeView.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
@@ -103,14 +104,19 @@ class FileTreeModel(QtCore.QAbstractItemModel):
     def supportedDropActions(self):
         return QtCore.Qt.MoveAction
 
-    def index(self,row,column,parent):
-        if not parent.isValid():
+    def index(self, row, column, parent):
+        if row < 0 or column < 0 or column > len(self.fields):
+            return QtCore.QModelIndex()
+        if not parent.isValid() and row < len(self.projects):
             projid = self.projects[row]
             return self.createIndex(row, column, projid)
-        else:
+        elif parent.column() == 0:
             projid = parent.internalPointer()[0]
-            datafile = self.database.getProjFiles(projid)[row]
-            return self.createIndex(row, column, datafile)
+            datafiles = self.database.getProjFiles(projid)
+            if row > len(datafiles):
+                return QtCore.QModelIndex()
+            return self.createIndex(row, column, datafiles[row])
+        return QtCore.QModelIndex()
 
     def parent(self, index):
         if not index.isValid():
@@ -290,14 +296,24 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         if fld in self.fields:
             indx = self.fields.index(fld)
             self.beginRemoveColumns(QtCore.QModelIndex(), indx, indx)
+            for i in range(len(self.projects)):
+                self.beginRemoveColumns( \
+                  self.index(i, 0, QtCore.QModelIndex()), indx, indx)
             self.fields.remove(fld)
-            self.endRemoveColumns()
+            for i in range(len(self.projects) + 1):
+                self.endRemoveColumns()
         else:
-            indx = len(self.fields)
-            self.beginInsertColumns(QtCore.QModelIndex(), indx, indx)
+            cols = len(self.fields)
+            self.beginInsertColumns(QtCore.QModelIndex(), cols, cols)
+            for i in range(len(self.projects)):
+                self.beginInsertColumns( \
+                  self.index(i, 0, QtCore.QModelIndex()), cols, cols)
             self.treeView.resizeColumnToContents(len(self.fields)-1)
             self.fields.append(fld)
-            self.endInsertColumns()
+            for i in range(len(self.projects) + 1):
+                self.endInsertColumns()
+            #FIXME: selection needs to be updated to new col too
+            #self.treeView.selectionModel().selectionChanged.emit()
 
     def addProject(self):
         '''Add a project to the list.'''
@@ -343,8 +359,8 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             return
 
         ind = self.proxyMod.mapToSource(tab_sel.currentIndex())
-        if ind.internalPointer() is None:
-            return
+        if ind.internalPointer() is None or type(ind.internalPointer()) is list:
+            return #it's either doesn't exist of is a project
         return ind.internalPointer()
 
     def returnSelFiles(self):

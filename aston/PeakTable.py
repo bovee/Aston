@@ -35,6 +35,7 @@ class PeakTreeModel(QtCore.QAbstractItemModel):
             treeView.header().customContextMenuRequested.connect(self.rightClickMenuHead)
 
             #prettify
+            treeView.expandAll()
             treeView.resizeColumnToContents(0)
             
     def index(self,row,column,parent):
@@ -107,9 +108,9 @@ class PeakTreeModel(QtCore.QAbstractItemModel):
                 elif fld == 'time':
                     rslt = str(ft.time())
                 elif fld == 's':
-                    t = float(ft.dt.getInfo('s-en-peaks')) - \
-                      float(ft.dt.getInfo('s-st-peaks'))
-                    rslt = str(t / ft.length())
+                    t = float(ft.dt.getInfo('s-peaks-en')) - \
+                      float(ft.dt.getInfo('s-peaks-st'))
+                    rslt = str(t / ft.length() + 1)
         return rslt
 
     def headerData(self,col,orientation,role):
@@ -192,13 +193,27 @@ class PeakTreeModel(QtCore.QAbstractItemModel):
     def rightClickMenuHeadHandler(self):
         fld = str(self.sender().text())
         if fld == 'Name': return
-        self.beginResetModel()
+        #self.beginResetModel()
         if fld in self.fields:
+            indx = self.fields.index(fld)
+            self.beginRemoveColumns(QtCore.QModelIndex(), indx, indx)
+            for i in range(len(self.compounds)):
+                self.beginRemoveColumns( \
+                  self.index(i, 0, QtCore.QModelIndex()), indx, indx)
             self.fields.remove(fld)
+            for i in range(len(self.compounds) + 1):
+                self.endRemoveColumns()
         else:
+            cols = len(self.fields)
+            self.beginInsertColumns(QtCore.QModelIndex(), cols, cols)
+            for i in range(len(self.compounds)):
+                self.beginInsertColumns( \
+                  self.index(i, 0, QtCore.QModelIndex()), cols, cols)
             self.treeView.resizeColumnToContents(len(self.fields)-1)
             self.fields.append(fld)
-        self.endResetModel()
+            for i in range(len(self.compounds) + 1):
+                self.endInsertColumns()
+        #self.endResetModel()
 
     def _delCompoundFromMenu(self):
         cmpd_id = self.sender().data()

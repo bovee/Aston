@@ -84,6 +84,20 @@ class AstonDatabase():
                   VALUES (?,?)''', (fn, info_str))
                 self.db.commit()
         c.close()
+        
+    def getKey(self, key):
+#        c = self.db.cursor()
+#        c.execute('''SELECT * FROM prefs WHERE key = ?''',(key,))
+#        c.close()
+#        return c[0]
+        pass
+
+    def setKey(self, key, val):
+#        c = self.db.cursor()
+#        c.execute('''SELECT * FROM prefs WHERE key = ?''',(key,))
+#        c.close()
+#        return c[0]
+        pass
 
     def updateFile(self, dt):
         '''Updates a file entry in the database.'''
@@ -103,7 +117,7 @@ class AstonDatabase():
     def getFileByName(self, fname):
         '''Return a datafile object corresponding to fname.'''
         for dt in self.files:
-            if fname.lower() == dt.getInfo['name'].lower():
+            if fname.lower() == dt.getInfo('name').lower():
                 return dt
         return None
 
