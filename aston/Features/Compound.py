@@ -9,18 +9,18 @@ class Compound(object):
         self.feats = database.getFeats(cmpd_id)
         self.cmpd_type = cmpd_type
 
-    def getFeats(self,file_ids):
+    def getFeats(self, file_ids):
         return [i for i in self.feats if i.ids[2] in file_ids]
 
-    def getPeaks(self,file_ids):
+    def getPeaks(self, file_ids):
         return [i for i in self.feats if i.ids[2] in file_ids and 'Peak' in i.cls]
 
-    def addFeat(self,ft):
+    def addFeat(self, ft):
         ft.ids[1] = self.cmpd_id
         self.feats.append(ft)
         self.database.addFeat(ft)
 
-    def delFeat(self,ft):
+    def delFeat(self, ft):
         self.feats.remove(ft)
         self.database.delFeat(ft.ids[0])
         del ft

@@ -38,7 +38,7 @@ class PeakTreeModel(QtCore.QAbstractItemModel):
             treeView.expandAll()
             treeView.resizeColumnToContents(0)
             
-    def index(self,row,column,parent):
+    def index(self, row, column, parent):
         if not parent.isValid(): #a compound! (many peaks)
             return self.createIndex(row,column,self.compounds[row])
         else:
@@ -46,7 +46,7 @@ class PeakTreeModel(QtCore.QAbstractItemModel):
             ft = parent.internalPointer().getFeats(self.fids)[row]
             return self.createIndex(row,column,ft)
 
-    def parent(self,index):
+    def parent(self, index):
         if not index.isValid():
             return QtCore.QModelIndex()
         elif type(index.internalPointer()) is Compound or index.internalPointer() is None:

@@ -159,7 +159,7 @@ class AstonWindow(QtGui.QMainWindow):
                 for cmpd in self.ptab_mod.compounds[1:]:
                     opk = cmpd.getPeaks(self.ptab_mod.fids)[0]
                     if pk.time()-opk.time() < 0.01:
-                        cmpd.addPeak(pk)
+                        cmpd.addFeat(pk)
                         self.ptab_mod.database.addCompound(cmpd)
                         self.plotter.addPeak(pk)
                         break

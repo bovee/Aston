@@ -72,7 +72,7 @@ class Plotter(object):
     def availStyles(self):
         return ['Default','Scaled','Stacked','Scaled Stacked','2D']
 
-    def plotData(self,datafiles,peaktable=None,updateBounds=True):
+    def plotData(self, datafiles, peaktable=None, updateBounds=True):
         if not updateBounds:
             bnds = self.plt.get_xlim(),self.plt.get_ylim()
 
@@ -139,8 +139,8 @@ class Plotter(object):
 
         #draw peaks
         if peaktable is not None and '2d' not in self.style:
-            self.loadCompounds(peaktable.compounds,peaktable.fids)
-            self.clearPeaks()
+            self.loadCompounds(peaktable.compounds, peaktable.fids)
+            #self.clearPeaks()
 
         #draw grid lines
         self.plt.grid(c='black',ls='-',alpha='0.05')
@@ -203,10 +203,12 @@ class Plotter(object):
 
     def loadCompounds(self,cmpds,fids):
         if cmpds is None: return
+        self.plt.patches = []
         #generate the patches for peaks in the database
         for i in cmpds:
             for j in i.getPeaks(fids):
-                self.addPeak(j)
+                if j.dt.visible:
+                    self.addPeak(j)
         self.redraw()
 
     def clearPeaks(self):

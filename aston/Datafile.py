@@ -192,43 +192,21 @@ class Datafile(object):
 
         #have we simplified enough? is all of the tricky math gone?
         if set(istr).intersection(set('+-/*()')) == set():
-            if istr.count(':') == 1:
+            if istr == 'x' or istr == 'tic':
+                return self._getTotalTrace()
+            elif istr.count(':') == 1:
                 #contains an ion range
                 ion = np.array([float(i) for i in istr.split(':')]).mean()
                 tol = abs(float(istr.split(':')[0]) - ion)
                 return self._getIonTrace(ion, tol)
             elif all(i in '0123456789.' for i in istr):
                 return self._getIonTrace(float(istr))
-            elif istr == 't' or istr == 'time':
-                return self.time()
-            elif istr == 'x' or istr == 'tic':
-                return self._getTotalTrace()
-            #elif istr == 'b' or istr == 'base':
-            #    #TODO: create a baseline
-            #    pass
-            elif istr == 'coda':
-                # Windig W: The use of the Durbin-Watson criterion for
-                # noise and background reduction of complex liquid
-                # chromatography/mass spectrometry data and a new algorithm
-                # to determine sample differences. Chemometrics and
-                # Intelligent Laboratory Systems. 2005, 77:206-214.
-                pass
-            elif istr == 'rnie':
-                # Yunfei L, Qu H, and Cheng Y: A entropy-based method
-                # for noise reduction of LC-MS data. Analytica Chimica
-                # Acta 612.1 (2008)
-                pass
-            elif istr == 'wmsm':
-                # Fleming C et al. Windowed mass selection method:
-                # a new data processing algorithm for LC-MS data.
-                # Journal of Chromatography A 849.1 (1999) 71-85.
-                pass
             elif istr[0] == '!' and all(i in '0123456789.' for i in istr[1:]):
                 return np.ones(len(self.times)) * float(istr[1:])
             elif istr == '!pi':
                 return np.ones(len(self.times)) * np.pi
             else:
-                return self._getOtherTrace(istr)
+                return self._getNamedTrace(istr)
         
         #parse out the additive parts
         ic = np.zeros(len(self.times))
@@ -264,6 +242,42 @@ class Datafile(object):
         else:
             return 0 #this should never happen?
 
+    def _getNamedTrace(self, name):
+        lookdict = {'temp':'m-tmp','pres':'m-prs','flow':'m-flw'}
+        if name == 't' or name == 'time':
+            return self.time()
+        #elif name == 'b' or name == 'base':
+        #    #TODO: create a baseline
+        #    pass
+        elif name == 'coda':
+            # Windig W: The use of the Durbin-Watson criterion for
+            # noise and background reduction of complex liquid
+            # chromatography/mass spectrometry data and a new algorithm
+            # to determine sample differences. Chemometrics and
+            # Intelligent Laboratory Systems. 2005, 77:206-214.
+            pass
+        elif name == 'rnie':
+            # Yunfei L, Qu H, and Cheng Y: A entropy-based method
+            # for noise reduction of LC-MS data. Analytica Chimica
+            # Acta 612.1 (2008)
+            pass
+        elif name == 'wmsm':
+            # Fleming C et al. Windowed mass selection method:
+            # a new data processing algorithm for LC-MS data.
+            # Journal of Chromatography A 849.1 (1999) 71-85.
+            pass
+        elif name in lookdict:
+            #e.g. {'S':5,0:30,9:80,9.01:100,11:100}
+            desc = self.getInfo(lookdict[name])
+            for tpt in [tpt.split(':') for tpt in desc.split(',')]:
+                if tpt[0] == 'S':
+                    pass
+                pass
+ 
+            pass
+        else:
+            return self._getOtherTrace(name)
+    
     def _applyFxn(self, ic, fxn, *args):
         '''Apply the function, fxn, to the trace, ic, and returns the result.'''
         if fxn == 'fft':
@@ -381,7 +395,7 @@ class Datafile(object):
                 if key in self.info:
                     del self.info[key]
     
-    def getInfo(self,fld):
+    def getInfo(self, fld):
         #create the key if it doesn't yet exist
         if fld not in self.info.keys():
             if fld == 'r-filename':
