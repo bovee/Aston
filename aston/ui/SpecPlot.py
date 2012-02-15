@@ -32,7 +32,7 @@ class SpecPlotter(object):
         self.scansToLbl = ['']
         self.specTime = None
 
-    def addSpec(self,scan,label=''):
+    def addSpec(self, scan, label=''):
         #save into scans dictionary
         if label is '' and '' in self.scans:
             self.scans['prev'] = self.scans['']
@@ -135,11 +135,17 @@ class SpecPlotter(object):
         self.plotSpec()
 
     def saveSpc(self):
+        #TODO: better metadata on spectra
         scn_nm = str(self.masterWindow.sender().data())
         scn = self.scans[scn_nm]
-        spc = Spectrum(scn,None)
-        spc.ids[2] = self.masterWindow.ftab_mod.returnSelFile().fid[1]
-        self.masterWindow.ptab_mod.addFeats([spc])
+        dt = self.masterWindow.obj_tab.returnSelFile()
+        info = {'name':scn_nm}
+        if dt is None:
+            spc = Spectrum(self.masterWindow.obj_tab.db, \
+                           None, None, info, scn)
+        else:
+            spc = Spectrum(dt.db, None, dt.db_id, info, scn)
+        self.masterWindow.obj_tab.addObjects(dt, [spc])
 
     def specmousescroll(self,event):
         xmin,xmax = self.plt.get_xlim()

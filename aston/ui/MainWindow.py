@@ -6,7 +6,7 @@ from aston.ui.MainPlot import Plotter
 from aston.ui.SpecPlot import SpecPlotter
 
 from aston.FileTable import FileTreeModel
-from aston.Integrators import statSlopeIntegrate
+from aston.Math.Integrators import statSlopeIntegrate
 from aston.Features import Spectrum
 
 class AstonWindow(QtGui.QMainWindow):
@@ -15,12 +15,15 @@ class AstonWindow(QtGui.QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
+        ##my icon! TODO: make an icon
+        #icn_path = op.join(op.curdir,'aston','ui','icons','aston.png')
+        #self.setIcon(QtGui.QIcon(icn_path))
+
         #quick fix for Mac OS menus
         self.ui.actionSettings.setMenuRole(QtGui.QAction.NoRole)
 
         #set up the grouping for the dock widgets
         self.tabifyDockWidget(self.ui.filesDockWidget,self.ui.settingsDockWidget)
-        self.tabifyDockWidget(self.ui.filesDockWidget,self.ui.peaksDockWidget)
         self.tabifyDockWidget(self.ui.filesDockWidget,self.ui.spectraDockWidget)
         self.tabifyDockWidget(self.ui.filesDockWidget,self.ui.methodDockWidget)
         self.tabifyDockWidget(self.ui.filesDockWidget,self.ui.compoundDockWidget)
@@ -33,30 +36,24 @@ class AstonWindow(QtGui.QMainWindow):
         self.ui.actionChromatogram_as_CSV.triggered.connect(self.chromatogramAsCSV)
         self.ui.actionSpectra_as_Picture.triggered.connect(self.spectrumAsPic)
         self.ui.actionSpectra_as_CSV.triggered.connect(self.spectrumAsCSV)
-        #self.ui.actionQuit.triggered.connect(QtCore.SLOT('quit()'), QtGui.qApp)
         self.ui.actionIntegrate.triggered.connect(self.quickIntegrate)
-        #self.connect(self.ui.actionIntegration_Parameters, QtCore.SIGNAL('triggered()'), self.calculateInfo)
-        #self.connect(self.ui.actionIntegrate_2, QtCore.SIGNAL('triggered()'), self.calculateInfo)
-        #self.connect(self.ui.actionSearch_Database, QtCore.SIGNAL('triggered()'), self.calculateInfo)
-        #self.connect(self.ui.actionSave_to_Database, QtCore.SIGNAL('triggered()'), self.calculateInfo)
-        #self.connect(self.ui.actionSequence, QtCore.SIGNAL('triggered()'), self.calculateInfo)
-        #self.connect(self.ui.actionStructure, QtCore.SIGNAL('triggered()'), self.calculateInfo)
-        #self.connect(self.ui.actionAuto_align_Chromatogram, QtCore.SIGNAL('triggered()'), self.calculateInfo)
-        #self.connect(self.ui.actionSubtractAddChromatogram, QtCore.SIGNAL('triggered()'), self.calculateInfo)
         self.ui.actionEditFilters.triggered.connect(self.showFilterWindow)
         self.ui.actionRevert.triggered.connect(self.revertChromChange)
-        self.connect(self.ui.actionQuit, QtCore.SIGNAL('triggered()'), QtGui.qApp, QtCore.SLOT('quit()'))
+        self.ui.actionQuit.triggered.connect(QtGui.qApp.quit)
 
         #hook up the windows to the menu
         self.ui.actionFiles.triggered.connect(self.updateWindows)
         self.ui.actionSettings.triggered.connect(self.updateWindows)
-        self.ui.actionPeaks.triggered.connect(self.updateWindows)
         self.ui.actionSpectra.triggered.connect(self.updateWindows)
-
+        self.ui.actionMethods.triggered.connect(self.updateWindows)
+        self.ui.actionCompounds.triggered.connect(self.updateWindows)
         self.ui.filesDockWidget.visibilityChanged.connect(self.updateWindowsMenu)
         self.ui.settingsDockWidget.visibilityChanged.connect(self.updateWindowsMenu)
-        self.ui.peaksDockWidget.visibilityChanged.connect(self.updateWindowsMenu)
         self.ui.spectraDockWidget.visibilityChanged.connect(self.updateWindowsMenu)
+        self.ui.methodDockWidget.visibilityChanged.connect(self.updateWindowsMenu)
+        self.ui.compoundDockWidget.visibilityChanged.connect(self.updateWindowsMenu)
+        self.ui.compoundDockWidget.setVisible(False)
+        self.ui.methodDockWidget.setVisible(False)
 
         #hook up the search box
         self.ui.lineEdit.textChanged.connect(self.updateSearch)
@@ -76,29 +73,39 @@ class AstonWindow(QtGui.QMainWindow):
 
         #set up the list of files in the current directory
         self.directory = '.'
-        self.ptab_mod = None
-        self.ftab_mod = FileTreeModel(self.directory,self.ui.fileTreeView,self)
+        self.obj_tab = FileTreeModel(self.directory,self.ui.fileTreeView,self)
+        self.plotData()
 
     def updateWindows(self):
-        #this updates the tab windows to match the menu
+        'Update the tab windows to match the menu.'
         self.ui.filesDockWidget.setVisible(self.ui.actionFiles.isChecked())
         self.ui.settingsDockWidget.setVisible(self.ui.actionSettings.isChecked())
-        self.ui.peaksDockWidget.setVisible(self.ui.actionPeaks.isChecked())
         self.ui.spectraDockWidget.setVisible(self.ui.actionSpectra.isChecked())
+        self.ui.methodDockWidget.setVisible(self.ui.actionMethods.isChecked())
+        self.ui.compoundDockWidget.setVisible(self.ui.actionCompounds.isChecked())
 
     def updateWindowsMenu(self):
-        #this updates the windows menu to match the tab
+        'Update the windows menu to match the tab.'
         self.ui.actionFiles.setChecked(self.ui.filesDockWidget.isVisible())
         self.ui.actionSettings.setChecked(self.ui.settingsDockWidget.isVisible())
-        self.ui.actionPeaks.setChecked(self.ui.peaksDockWidget.isVisible())
         self.ui.actionSpectra.setChecked(self.ui.spectraDockWidget.isVisible())
+        self.ui.actionMethods.setChecked(self.ui.methodDockWidget.isVisible())
+        self.ui.actionCompounds.setChecked(self.ui.compoundDockWidget.isVisible())
 
     def openFolder(self):
-
         folder = str(QtGui.QFileDialog.getExistingDirectory(self,"Open Folder"))
         if folder == '': return
         self.directory = folder
-        self.ftab_mod = FileTreeModel(self.directory,self.ui.fileTreeView,self)
+        
+        #need to discard old connections
+        self.ui.fileTreeView.clicked.disconnect()
+        self.ui.fileTreeView.customContextMenuRequested.disconnect()
+        self.ui.fileTreeView.header().customContextMenuRequested.disconnect()
+        self.ui.fileTreeView.header().sectionMoved.disconnect()
+        
+        #load everything
+        self.obj_tab = FileTreeModel(self.directory,self.ui.fileTreeView,self)
+        self.plotData()
 
     def chromatogramAsPic(self):
         fname = str(QtGui.QFileDialog.getSaveFileName(self,"Save As..."))
@@ -107,9 +114,9 @@ class AstonWindow(QtGui.QMainWindow):
     def chromatogramAsCSV(self):
         fname = str(QtGui.QFileDialog.getSaveFileName(self,"Save As..."))
         f = open(fname,'w')
-        cgrm = self.ftab_mod.returnSelFile()
-        a = [['"Time"'] + [str(i) for i in cgrm.time()]]
-        for x in cgrm.info['traces'].split(','):
+        dt = self.obj_tab.returnSelFile()
+        a = [['"Time"'] + [str(i) for i in dt.time()]]
+        for x in dt.info['traces'].split(','):
             if x != '':
                 a += [['"'+x+'"'] + [str(i) for i in cgrm.trace(x)]]
         for i in zip(*a):
@@ -117,9 +124,10 @@ class AstonWindow(QtGui.QMainWindow):
         f.close()
 
     def spectrumAsCSV(self):
+        #FIXME
         fname = str(QtGui.QFileDialog.getSaveFileName(self,"Save As..."))
         f = open(fname,'w')
-        cgrm = self.ftab_mod.returnSelFile()
+        cgrm = self.obj_tab.returnSelFile()
         scan = cgrm.scan(self.spec_line.get_xdata()[0])
         mz,abun = scan.keys(),scan.values()
         a = [['mz','abun']]
@@ -130,10 +138,10 @@ class AstonWindow(QtGui.QMainWindow):
         
     def spectrumAsPic(self):
         fname = str(QtGui.QFileDialog.getSaveFileName(self,"Save As..."))
-        self.specplotter.plt.get_figure().savefig(fname,transparent=True)
+        self.specplotter.plt.get_figure().savefig(fname, transparent=True)
 
     def peakListAsCSV(self):
-        #TODO: does this still work?
+        #FIXME
         fname = str(QtGui.QFileDialog.getSaveFileName(self,"Save As..."))
         f = open(fname,'w')
         for i in self.ptab_mod.peaks:
@@ -142,49 +150,26 @@ class AstonWindow(QtGui.QMainWindow):
         f.close()
 
     def quickIntegrate(self):
-        dt = self.ftab_mod.returnSelFile() 
+        #TODO: group peaks by time
+        dt = self.obj_tab.returnSelFile() 
         ions = [i for i in dt.info['traces'].split(',')]
-        self.ptab_mod.beginResetModel()
 
         #add compounds for ions from the first set
-        pks = statSlopeIntegrate(dt,ions[0])
-        for pk in pks: 
-            self.ptab_mod.addCompoundWithFeat(pk,str(pk.time()))
-            self.plotter.addPeak(pk)
-
-        #add other ions into first compounds
-        for ion in ions[1:]:
-            pks = statSlopeIntegrate(dt,ion)
-            for pk in pks:
-                for cmpd in self.ptab_mod.compounds[1:]:
-                    opk = cmpd.getPeaks(self.ptab_mod.fids)[0]
-                    if pk.time()-opk.time() < 0.01:
-                        cmpd.addFeat(pk)
-                        self.ptab_mod.database.addCompound(cmpd)
-                        self.plotter.addPeak(pk)
-                        break
-                if pk.ids[1] is None:
-                    self.ptab_mod.addCompoundWithFeat(pk,str(pk.time()))
-                    self.plotter.addPeak(pk)
+        for ion in ions:
+            pks = statSlopeIntegrate(dt, ion)
+            self.obj_tab.addObjects(dt, pks)
         dt.delInfo('s-peaks')
-        self.ptab_mod.endResetModel() 
         self.plotter.redraw()
 
     def showFilterWindow(self):
-        if self.ftab_mod.returnSelFile() is not None:
+        if self.obj_tab.returnSelFile() is not None:
             self.dlg = FilterWindow(self)
             self.dlg.show()
 
     def revertChromChange(self):
-        '''Go through and delete all of the info keys related to 
-        display properties.'''
-        keys = ['scale', 'yscale', 'offset', 'yoffset', 'smooth', \
-          'smooth window', 'smooth order', 'remove noise']
-        for dt in self.ftab_mod.returnSelFiles():
-            for key in keys:
-                try: del dt.info[key]
-                except KeyError: pass
-            dt.saveChanges()
+        'Delete all of the info keys related to display transformations.'
+        for dt in self.obj_tab.returnSelFiles('file'):
+            dt.delInfo('t-')
         self.plotData()
 
     def plotData(self,**kwargs):
@@ -193,12 +178,12 @@ class AstonWindow(QtGui.QMainWindow):
         if self.ui.legendCheckBox.isChecked():
             self.plotter.style += ' legend'
 
-        datafiles = self.ftab_mod.returnChkFiles()
+        datafiles = self.obj_tab.returnChkFiles()
         if 'updateBounds' in kwargs:
-            self.plotter.plotData(datafiles,self.ptab_mod,kwargs['updateBounds'])
+            self.plotter.plotData(datafiles,kwargs['updateBounds'])
         else:
-            self.plotter.plotData(datafiles,self.ptab_mod)
+            self.plotter.plotData(datafiles)
 
-    def updateSearch(self,text):
+    def updateSearch(self, text):
         '''If the search box changes, update the file table.'''
-        self.ftab_mod.proxyMod.setFilterFixedString(text)
+        self.obj_tab.proxyMod.setFilterFixedString(text)

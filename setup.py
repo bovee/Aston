@@ -5,12 +5,13 @@ import sys, os
 
 options = {
     'name':'Aston',
-    'version':'0.1.2',
+    'version':'0.2.0',
     'description':'Mass/UV Spectral Analysis Program',
     'author':'Roderick Bovee',
     'author_email':'bovee@fas.harvard.edu',
     'url':'http://code.google.com/p/aston',
-    'packages':['aston','aston.ui','aston.Features','aston.FileFormats'],
+    'packages':['aston', 'aston.ui', 'aston.Features', \
+                'aston.FileFormats', 'aston.Math'],
     'scripts':['aston.py'],
     'data_files':matplotlib.get_py2exe_datafiles(),
 }

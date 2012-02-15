@@ -4,12 +4,9 @@
 import os
 import sqlite3
 import json
-import zlib 
+import zlib
 
-from aston.Datafile import Datafile
-from aston.Features import Peak, Spectrum, Compound
-
-class AstonDatabase():
+class AstonDatabase(object):
     """This class acts as a interface to the aston.sqlite database
     that's created inside every working folder."""
     def __init__(self, database):
@@ -20,251 +17,312 @@ class AstonDatabase():
             self.db = sqlite3.connect(database)
             c = self.db.cursor()
             c.execute('''CREATE TABLE prefs (key TEXT, value TEXT)''')
-            c.execute('''CREATE TABLE projects (project_id INTEGER PRIMARY
-                      KEY ASC, project_name TEXT)''')
-            c.execute('''CREATE TABLE files (file_id INTEGER PRIMARY KEY
-                      ASC, project_id INTEGER, file_name TEXT, info TEXT)''')
-            c.execute('''CREATE TABLE features (ft_id INTEGER PRIMARY KEY
-                      ASC, cmpd_id INTEGER, file_id INTEGER, ident TEXT,
-                      type TEXT, verts BLOB)''')
-            c.execute('''CREATE TABLE compounds (cmpd_id INTEGER PRIMARY
-                      KEY ASC, cmpd_name TEXT, type TEXT)''')
+            c.execute('''CREATE TABLE objs (type TEXT,
+                      id INTEGER PRIMARY KEY ASC, parent_id INTEGER,
+                      name TEXT, info BLOB, data BLOB)''')
             self.db.commit()
             c.close()
         else:
             self.db = sqlite3.connect(database)
-
-        #update the file database (might be slow?)
-        self.updateFileList()
-
-        #read in all of the files
-        c = self.db.cursor()
-        c.execute('''SELECT file_name,info,project_id,
-                  file_id FROM files''')
-        lst = c.fetchall()
-        c.close()
-        self.files = [Datafile(i[0], self, i[1:4]) for i in lst]
-
-    def updateFileList(self):
+        self.objects = None
+    
+    def updateFileList(self, path):
+        from aston.Datafile import Datafile
+        import os
+        import struct
         '''Makes sure the database is in sync with the file system.'''
         #TODO: this needs to run in a separate thread
         #extract a list of lists of file names in my directory
-        foldname = os.path.dirname(self.database_path)
+        foldname = os.path.dirname(path)
         if foldname == '':
             foldname = os.curdir
-        fnames = []
+        datafiles = {}
         for fold, _, files in os.walk(foldname): 
-            for fn in files:
+            for filename in files:
                 #TODO: this MWD stuff is kludgy and will probably break
-                if fn[:3].upper() == 'MWD' and \
-                    fn[-3:].upper() == '.CH': fn = 'mwd1A.ch'
-                if fn[:3].upper() == 'DAD' and \
-                    fn[-3:].upper() == '.CH': fn = 'dad1A.ch'
-                fnames.append(os.path.join(fold, fn))
+                if filename[:3].upper() == 'MWD' and \
+                    filename[-3:].upper() == '.CH': filename = 'mwd1A.ch'
+                if filename[:3].upper() == 'DAD' and \
+                    filename[-3:].upper() == '.CH': filename = 'dad1A.ch'
+                #guess the file type
+                ext = os.path.splitext(filename)[1].upper()
+                try:
+                    f = open(os.path.join(fold, filename), mode='rb')
+                    magic = struct.unpack('>H', f.read(2))[0]
+                    f.close()
+                except struct.error:
+                    magic = 0
+                except IOError:
+                    ext = ''
 
+                #TODO:.BAF : Bruker instrument data format
+                #TODO:.FID : Bruker instrument data format
+                #TODO:.PKL : MassLynx associated format
+                #TODO:.RAW : Micromass MassLynx directory format
+                #TODO:.WIFF: ABI/Sciex (QSTAR and QTRAP instrument) format
+                #TODO:.YEP : Bruker instrument data format
+                #TODO:.RAW : PerkinElmer TurboMass file format
+                if ext == '.MS' and magic == 0x0132:
+                    ftype = 'AgilentMS'
+                elif ext == '.BIN' and magic == 513:
+                    ftype = 'AgilentMSMSProf'
+                elif ext == '.BIN' and magic == 257:
+                    ftype = 'AgilentMSMSScan'
+                elif ext == '.CF' and magic == 0xFFFF:
+                    ftype = 'ThermoCF'
+                elif ext == '.DXF' and magic == 0xFFFF:
+                    ftype = 'ThermoDXF'
+                elif ext == '.SD':
+                    ftype = 'AgilentDAD'
+                elif ext == '.CH' and magic == 0x0233:
+                    ftype = 'AgilentMWD'
+                elif ext == '.UV' and magic == 0x0233:
+                    ftype = 'AgilentCSDAD'
+                elif ext == '.CSV':
+                    ftype = 'CSVFile'
+                else:
+                    ftype = None
+                
+                #if it's a supported file, add it in
+                if ftype is not None:
+                    datafiles[os.path.join(fold, filename)] = ftype
+        
         #extract a list of files from the database
         c = self.db.cursor()
-        c.execute('SELECT file_name FROM files')
+        c.execute('SELECT data FROM objs WHERE type="file"')
         dnames = set([i[0] for i in c])
+        c.close()
 
         #compare the two lists -> remove deleted files from the database
         #TODO: this should only flag files as being bad, not delete them
         #from the database.
-        for fn in dnames.difference(set(fnames)):
-            c.execute('DELETE FROM files WHERE file_name=?',(fn,))
-            self.db.commit()
+        #for fn in dnames.difference(set(fnames)):
+        #    c.execute('DELETE FROM files WHERE file_name=?',(fn,))
+        #    self.db.commit()
 
         #add the new files into the database
         #TODO: generate projects and project_ids based on folder names?
-        for fn in set(fnames).difference(dnames):
-            dfl = Datafile(fn, None)
-            if dfl is not None:
-                info_str = json.dumps(dfl.info)
-                c.execute('''INSERT INTO files (file_name,info)
-                  VALUES (?,?)''', (fn, info_str))
-                self.db.commit()
-        c.close()
+        for fn in set(datafiles.keys()).difference(dnames):
+            info = {'s-file-type':datafiles[fn], 'traces':'TIC'}
+            obj = Datafile(self, None, None, info, fn)
+            obj._updateInfoFromFile()
+            self.addObject(obj)
         
+        #TODO: update old database entries with new metadata
+
+    def reload(self):
+        #preload all the objects in the database
+        c = self.db.cursor()
+        c.execute('SELECT type, id, parent_id, info, data FROM objs')
+        self.objects = []
+        for i in c:
+            self.objects.append(self._getObjFromRow(i))
+        c.close()
+
     def getKey(self, key):
-#        c = self.db.cursor()
-#        c.execute('''SELECT * FROM prefs WHERE key = ?''',(key,))
-#        c.close()
-#        return c[0]
-        pass
-
-    def setKey(self, key, val):
-#        c = self.db.cursor()
-#        c.execute('''SELECT * FROM prefs WHERE key = ?''',(key,))
-#        c.close()
-#        return c[0]
-        pass
-
-    def updateFile(self, dt):
-        '''Updates a file entry in the database.'''
-        #TODO: return false if update fails
-        info_str = json.dumps(dt.info)
         c = self.db.cursor()
-        if dt.fid[0] is None:
-            c.execute('''UPDATE files SET info=?,project_id=NULL 
-              WHERE file_id = ?''', (info_str, dt.fid[1]))
-        else:
-            c.execute('''UPDATE files SET info=?,project_id=? 
-              WHERE file_id = ?''', (info_str, dt.fid[0], dt.fid[1]))
-        self.db.commit()
+        c.execute('SELECT * FROM prefs WHERE key = ?', (key,))
+        res = c.fetchone()
         c.close()
-        return True
-
-    def getFileByName(self, fname):
-        '''Return a datafile object corresponding to fname.'''
-        for dt in self.files:
-            if fname.lower() == dt.getInfo('name').lower():
-                return dt
-        return None
-
-    def getFileByID(self,file_id):
-        '''Return a datafile object corresponding to file_id.'''
-        for dt in self.files:
-            if file_id == dt.fid[1]:
-                return dt
-        return None
         
-    def getProjects(self):
-        '''Returns a list of all projects in the database.'''
-        c = self.db.cursor()
-        c.execute('''SELECT project_id,project_name FROM projects''')
-        lst = [[None, 'Unsorted']] + [list(i) for i in c.fetchall()]
-        c.close()
-        return lst
-
-    def addProject(self, name, proj_id=None):
-        '''Adds a project to the database.'''
-        c = self.db.cursor()
-        if proj_id is None:
-            a = c.execute('''INSERT INTO projects (project_name) 
-                      VALUES (?)''', (name,))
-            self.db.commit()
-            c.close()
-            return a.lastrowid
+        if res is None:
+            return ''
         else:
-            c.execute('''UPDATE projects SET project_name=?
-                      WHERE project_id=?''', (name, proj_id))
-            self.db.commit()
-            c.close()
+            return res[1]
+        
+    def setKey(self, key, val):
+        c = self.db.cursor()
+        c.execute('SELECT * FROM prefs WHERE key = ?', (key,))
+        if c.fetchone() is not None:
+            c.execute('UPDATE prefs SET value=? WHERE key=?', (val, key))
+        else:
+            c.execute('INSERT INTO prefs (value,key) VALUES (?,?)', \
+                      (val, key))
+        self.db.commit()
+        c.close()
+
+    def updateObject(self, obj):
+        c = self.db.cursor()
+        c.execute('''UPDATE objs SET type=?, parent_id=?, name=?,
+                  info=?, data=? WHERE id=?''', \
+                  self._getRowFromObj(obj) + (obj.db_id,))
+        self.db.commit()
+        c.close()
+
+    def addObject(self, obj):
+        if self.objects is None:
+            self.reload()
+        c = self.db.cursor()
+        result = c.execute('''INSERT INTO objs (type, parent_id, name,
+                           info, data) VALUES (?,?,?,?,?)''', \
+                           self._getRowFromObj(obj))
+        obj.db_id = result.lastrowid
+        self.db.commit()
+        c.close()
+        self.objects.append(obj)
+        
+    def deleteObject(self, obj):
+        c = self.db.cursor()
+        c.execute('DELETE FROM objs WHERE id=?',(obj.db_id,))
+        self.db.commit()
+        c.close()
+        del self.objects[self.objects.index(obj)]
+    
+    def getChildren(self, db_id=None):
+        if self.objects is None:
+            self.reload()
+        return [obj for obj in self.objects if obj.parent_id == db_id]
+        ## for some reason the following code crashes
+        #c = self.db.cursor()
+        #if db_id is None:
+        #    c.execute('''SELECT type, id, parent_id, info, data
+        #                 FROM objs WHERE parent_id IS NULL''')
+        #else:
+        #    c.execute('''SELECT type, id, parent_id, info, data
+        #                 FROM objs WHERE parent_id IS ?''',(db_id,))
+        #objs = []
+        #for i in c:
+        #    objs.append(self._getObjFromRow(i))
+        #c.close()
+        #return objs
+
+    def getObjectsByClass(self, cls):
+        if self.objects is None:
+            self.reload()
+        return [obj for obj in self.objects if obj.db_type == cls]
+    
+    def getObjectByID(self, db_id):
+        if self.objects is None:
+            self.reload()
+            
+        objs = []
+        for obj in self.objects:
+            if obj.db_id == db_id:
+                return obj
+        return None
+        ## for some reason the following code crashes
+        #if db_id is None:
+        #    return None
+        #c = self.db.cursor()
+        #c.execute('''SELECT type, id, parent_id, info, data
+        #             FROM objs WHERE id IS ?''',(db_id,))
+        #res = c.fetchone()
+        #if res is None:
+        #    obj = None
+        #else:
+        #    obj = self._getObjFromRow(res)
+        #c.close()
+        #return obj
+    
+    def getObjectByName(self, name, type=None):
+        pass
+    
+    def _getRowFromObj(self, obj):
+        info = buffer(zlib.compress(json.dumps(obj.info)))
+        if obj.type in ['peak','spectrum']:
+            data = buffer(zlib.compress(json.dumps(obj.rawdata)))
+        else:
+            data = obj.rawdata
+        return (obj.type, obj.parent_id, obj.getInfo('name'), info , data)
+
+    def _getObjFromRow(self, row):
+        if row is None:
             return None
-
-    def delProject(self, proj_id):
-        '''Delete a project from the database.'''
-        c = self.db.cursor()
-        c.execute('''UPDATE files SET project_id = NULL
-                  WHERE project_id = ?''',(proj_id,))
-        c.execute('DELETE FROM projects WHERE project_id = ?', (proj_id,))
-        self.db.commit()
-        c.close()
-
-    def getProjFiles(self, project_id):
-        '''Returns the files associated with a specific project.'''
-        return [i for i in self.files if i.fid[0] == project_id]
-
-    def getCompounds(self, file_ids):
-        '''Returns a list of compounds associated with the file_ids.'''
-        c = self.db.cursor()
-        c.execute('''SELECT DISTINCT c.cmpd_id,c.cmpd_name,c.type
-                  FROM compounds as c, features as f
-                  WHERE c.cmpd_id = f.cmpd_id AND f.file_id IN (''' + \
-                  ','.join(['?' for i in file_ids]) + ')', file_ids)
-        lst = [Compound('Unassigned', self, None, 'None')]
-        for i in c:
-            lst.append(Compound(i[1], self, i[0], i[2]))
-        c.close()
-        return lst
-
-    def addCompound(self, cmpd):
-        '''Add a compound to the database.'''
-        #c.execute('''CREATE TABLE compounds (cmpd_id INTEGER PRIMARY
-        #          KEY ASC, cmpd_name TEXT, type TEXT)''')
-        c = self.db.cursor()
-        if cmpd.cmpd_id is None:
-            a = c.execute('''INSERT INTO compounds (cmpd_name,type)
-                      VALUES (?,?)''',(cmpd.name, cmpd.cmpd_type))
-            cmpd.cmpd_id = a.lastrowid
+        info = json.loads(zlib.decompress(row[3]))
+        if row[0] in ['peak','spectrum']:
+            data = json.loads(zlib.decompress(row[4]))
         else:
-            c.execute('''UPDATE compounds SET cmpd_name=?, type=?
-                      WHERE cmpd_id=?''',
-                      (cmpd.name, cmpd.cmpd_type, cmpd.cmpd_id))
-        self.db.commit()
-        c.close()
-
-    def delCompound(self, cmpd_id):
-        '''Delete a compound from the database.'''
-        #TODO: make it an option to move all underlying peaks to 'Unassigned'
-        c = self.db.cursor()
-        c.execute('DELETE FROM features WHERE cmpd_id = ?',(cmpd_id,))
-        c.execute('DELETE FROM compounds WHERE cmpd_id = ?',(cmpd_id,))
-        self.db.commit()
-        c.close()
-
-    def getFeats(self, cmpd_id):
-        '''Return a list of features associated with a specific compound.'''
-        c = self.db.cursor()
-        if cmpd_id is None:
-            c.execute('''SELECT verts,ident,type,ft_id,file_id
-                         FROM features WHERE cmpd_id IS NULL''')
+            data = str(row[4])
+        args = (row[1], row[2], info, data)
+        if row[0] == 'file':
+            from aston.Datafile import Datafile
+            return Datafile(self, *args)
+        elif row[0] == 'peak':
+            from aston.Features import Peak
+            return Peak(self, *args)
+        elif row[0] == 'spectrum':
+            from aston.Features import Spectrum
+            return Spectrum(self, *args)
         else:
-            c.execute('''SELECT verts,ident,type,ft_id,file_id
-                         FROM features WHERE cmpd_id = ?''',(cmpd_id,))
-        fts = []
-        for i in c:
-            verts = json.loads(zlib.decompress(i[0]))
-            fts.append(self._makeFt(verts, i[2], i[1], (i[3], cmpd_id, i[4])))
-        c.close()
-        return fts
+            return DBObject(row[0], self, *args)
+
+class DBObject(object):
+    'Master class for peaks, features, and datafiles.'
+    def __init__(self, db_type='none', db=None, db_id=None, parent_id=None, \
+                     info=None, data=None):
+        self.db_type = db_type
+        self.db = db
+        self.db_id = db_id
+        self.parent_id = parent_id
+        self.type = db_type
+        if info is None:
+            self.info = {'name':''}
+        else:
+            self.info = info
+        self.rawdata = data
+            
+    def getInfo(self, fld):
+        if fld not in self.info.keys():
+            self._loadInfo(fld)
+        
+        if fld in self.info.keys():
+            if self.info[fld] != '':
+                return self.info[fld]
+        return self._calcInfo(fld)
     
-    def getFeatsByFile(self,file_id):
-        '''Return a list of features associated with a specific file.'''
-        c = self.db.cursor()
-        c.execute('''SELECT verts,ident,type,ft_id,cmpd_id
-                     FROM features WHERE file_id IS ?''',(file_id,))
-        fts = []
-        for i in c:
-            verts = json.loads(zlib.decompress(i[0]))
-            fts.append(self._makeFt(verts, i[2], i[1], (i[3], i[4], file_id)))
-        c.close()
-        return fts
+    def setInfo(self, fld, key):
+        self.info[fld] = key
+ 
+    def delInfo(self, fld):
+        for key in self.info.keys():
+            if fld in key:
+                del self.info[key]
+        self.saveChanges()
+
+    @property
+    def parent(self):
+        return self.db.getObjectByID(self.parent_id)
     
-    def _makeFt(self,verts,ft_type,ident,ids):
-        #TODO: better way of doing this type-checking
-        if ft_type == 'Peak':
-            #ident is the ion or wavelength the peak was integrated over
-            ft = Peak(verts, ids, ident)
-        elif ft_type == 'Spectrum':
-            ft = Spectrum(verts, ids)
-        ft.dt = self.getFileByID(ids[2])
-        return ft
-
-    def addFeat(self, ft):
-        '''Add a feature to the database or make a change 
-        to an existing one.'''
-        c = self.db.cursor()
-        fdata = buffer(zlib.compress(json.dumps(ft.data_for_export()), 9))
-        if isinstance(ft, Peak):
-            ident = ft.ion
+    @property
+    def children(self):
+        return self.db.getChildren(self.db_id)
+    
+    def getParentOfType(self, cls=None):
+        prt = self.parent
+        if cls is None:
+            return prt
+        while True:
+            if prt is None:
+                return None
+            elif prt.db_type == cls:
+                return prt
+            prt = prt.parent
+                
+    def getAllChildren(self, cls=None):
+        if len(self.children) == 0:
+            return []
+        child_list = []
+        for child in self.children:
+            if child.db_type == cls:
+                child_list += [child]
+            child_list += child.getAllChildren(cls)
+        return child_list
+    
+    def saveChanges(self):
+        '''Save any changes to the database.'''
+        if self.db is None:
+            return
+        
+        if self.db_id is not None:
+            #update object
+            self.db.updateObject(self)
         else:
-            ident = None
-        if ft.ids[0] is None:
-            a = c.execute('''INSERT INTO features (cmpd_id, file_id,
-                  ident, type, verts) VALUES (?,?,?,?,?)''',
-                  (ft.ids[1], ft.ids[2], ident, ft.cls, fdata))
-            ft.ids[0] = a.lastrowid
-        else:
-            c.execute('''UPDATE features SET cmpd_id=?,file_id=?,ident=?,
-                  type=?, verts=? WHERE ft_id=?''',
-                  (ft.ids[1], ft.ids[2], ident, ft.cls, fdata, ft.ids[0]))
-        self.db.commit()
-        c.close()
+            #create object
+            self.db.addObject(self)
 
-    def delFeat(self, ft_id):
-        '''Delete a feature from the database.'''
-        c = self.db.cursor()
-        c.execute('DELETE FROM features WHERE ft_id = ?',(ft_id,))
-        self.db.commit()
-        c.close()
+    #override in subclasses
+    def _loadInfo(self, fld):
+        pass
+
+    def _calcInfo(self, fld):
+        return ''

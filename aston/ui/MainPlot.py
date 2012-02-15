@@ -28,7 +28,6 @@ class Plotter(object):
         self.canvas.mpl_connect('scroll_event',self.mousescroll)
 
         self.spec_line = None
-
         self.patches = {}
         
         #These color schemes are modified from ColorBrewer, license as follows:
@@ -72,7 +71,7 @@ class Plotter(object):
     def availStyles(self):
         return ['Default','Scaled','Stacked','Scaled Stacked','2D']
 
-    def plotData(self, datafiles, peaktable=None, updateBounds=True):
+    def plotData(self, datafiles, updateBounds=True):
         if not updateBounds:
             bnds = self.plt.get_xlim(),self.plt.get_ylim()
 
@@ -83,8 +82,9 @@ class Plotter(object):
             #TODO: too slow
             #TODO: choose colormap
             dt = datafiles[0]
-            s_mass,e_mass = dt.mz_bounds()
-            X,Y = np.meshgrid(dt.time(),np.arange(s_mass,e_mass+1,1))
+            s_mass = int(float(dt.getInfo('s-mz-min')))
+            e_mass = int(float(dt.getInfo('s-mz-max')))
+            X,Y = np.meshgrid(dt.time(), np.arange(s_mass, e_mass+1, 1))
             Z = np.zeros(X.shape)
             for t in enumerate(dt.time()):
                 d = dt.scan(t[1])
@@ -137,11 +137,6 @@ class Plotter(object):
             self.plt.set_xlim(bnds[0])
             self.plt.set_ylim(bnds[1])
 
-        #draw peaks
-        if peaktable is not None and '2d' not in self.style:
-            self.loadCompounds(peaktable.compounds, peaktable.fids)
-            #self.clearPeaks()
-
         #draw grid lines
         self.plt.grid(c='black',ls='-',alpha='0.05')
 
@@ -169,9 +164,9 @@ class Plotter(object):
         if event.button == 3 and self.navbar.mode != 'align':
             #TODO: make this work for click and drag too
             #get the specral data of the current point
-            cur_file = self.masterWindow.ftab_mod.returnSelFile()
+            cur_file = self.masterWindow.obj_tab.returnSelFile()
             if cur_file is None: return
-            if not cur_file.visible: return
+            if cur_file.getInfo('vis') != 'y': return
             scan = cur_file.scan(event.xdata)
             
             self.masterWindow.specplotter.addSpec(scan)
@@ -182,6 +177,7 @@ class Plotter(object):
             self.drawSpecLine(event.xdata,linestyle='-')
 
     def mousescroll(self,event):
+        if event.xdata is None or event.ydata is None: return
         xmin,xmax = self.plt.get_xlim()
         ymin,ymax = self.plt.get_ylim()
         if event.button == 'up': #zoom in
@@ -190,7 +186,7 @@ class Plotter(object):
             self.plt.set_ylim(event.ydata-(event.ydata-ymin)/2.,
                                       event.ydata+(ymax-event.ydata)/2.)
         elif event.button == 'down': #zoom out
-            xmin = event.xdata-2*(event.xdata-xmin),
+            xmin = event.xdata-2*(event.xdata-xmin)
             xmax = event.xdata+2*(xmax-event.xdata)
             xmin = max(xmin,self.navbar._views.home()[0][0])
             xmax = min(xmax,self.navbar._views.home()[0][1])
@@ -198,30 +194,26 @@ class Plotter(object):
             ymax = event.ydata+2*(ymax-event.ydata)
             ymin = max(ymin,self.navbar._views.home()[0][2])
             ymax = min(ymax,self.navbar._views.home()[0][3])
-        self.plt.axis([xmin,xmax,ymin,ymax])
-        self.redraw()
-
-    def loadCompounds(self,cmpds,fids):
-        if cmpds is None: return
-        self.plt.patches = []
-        #generate the patches for peaks in the database
-        for i in cmpds:
-            for j in i.getPeaks(fids):
-                if j.dt.visible:
-                    self.addPeak(j)
+            self.plt.axis([xmin,xmax,ymin,ymax])
         self.redraw()
 
     def clearPeaks(self):
         self.plt.patches = []
+        self.patches = {}
         self.redraw()
 
-    def removePeaks(self,pks):
+    def removePeaks(self, pks):
         for pk in pks:
-            patch = self.patches[pk.ids[0]]
-            self.plt.patches.remove(patch)
+            if pk.db_type == 'peak':
+                if pk.db_id in self.patches:
+                    patch = self.patches[pk.db_id]
+                    self.plt.patches.remove(patch)
         self.redraw()
         
-    def addPeak(self,pk):
-        self.patches[pk.ids[0]] = patches.PathPatch(Path(pk.data), \
-                                  facecolor=self._peakcolor, lw=0)
-        self.plt.add_patch(self.patches[pk.ids[0]])
+    def addPeaks(self, pks):
+        for pk in pks:
+            if pk.db_type == 'peak':
+                self.patches[pk.db_id] = patches.PathPatch(Path(pk.data), \
+                                          facecolor=self._peakcolor, lw=0)
+                self.plt.add_patch(self.patches[pk.db_id])
+        self.redraw()

@@ -26,7 +26,7 @@
      <x>0</x>
      <y>0</y>
      <width>694</width>
-     <height>21</height>
+     <height>20</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -92,8 +92,9 @@
     </property>
     <addaction name="actionFiles"/>
     <addaction name="actionSettings"/>
-    <addaction name="actionPeaks"/>
     <addaction name="actionSpectra"/>
+    <addaction name="actionMethods"/>
+    <addaction name="actionCompounds"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuIntegrate"/>
@@ -204,21 +205,6 @@
     </layout>
    </widget>
   </widget>
-  <widget class="QDockWidget" name="peaksDockWidget">
-   <property name="windowTitle">
-    <string>Peaks</string>
-   </property>
-   <attribute name="dockWidgetArea">
-    <number>8</number>
-   </attribute>
-   <widget class="QWidget" name="dockWidgetContents_4">
-    <layout class="QVBoxLayout" name="verticalLayout_5">
-     <item>
-      <widget class="QTreeView" name="peakTreeView"/>
-     </item>
-    </layout>
-   </widget>
-  </widget>
   <widget class="QDockWidget" name="spectraDockWidget">
    <property name="windowTitle">
     <string>Spectra</string>
@@ -235,8 +221,11 @@
    </widget>
   </widget>
   <widget class="QDockWidget" name="methodDockWidget">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
    <property name="windowTitle">
-    <string>Method Library</string>
+    <string>Methods</string>
    </property>
    <attribute name="dockWidgetArea">
     <number>8</number>
@@ -245,7 +234,7 @@
   </widget>
   <widget class="QDockWidget" name="compoundDockWidget">
    <property name="windowTitle">
-    <string>Compound Library</string>
+    <string>Compounds</string>
    </property>
    <attribute name="dockWidgetArea">
     <number>8</number>
@@ -263,6 +252,9 @@
    </property>
   </action>
   <action name="actionChromatogram_as_CSV">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Chromatogram as CSV</string>
    </property>
@@ -273,11 +265,17 @@
    </property>
   </action>
   <action name="actionSpectra_as_CSV">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Spectra as CSV</string>
    </property>
   </action>
   <action name="actionPeak_List_as_CSV">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Peak List as CSV</string>
    </property>
@@ -394,7 +392,7 @@
   </action>
   <action name="actionExport_Peak_List">
    <property name="enabled">
-    <bool>true</bool>
+    <bool>false</bool>
    </property>
    <property name="text">
     <string>Export Peak List</string>
@@ -450,6 +448,22 @@
    </property>
    <property name="text">
     <string>Spectra</string>
+   </property>
+  </action>
+  <action name="actionMethods">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Methods</string>
+   </property>
+  </action>
+  <action name="actionCompounds">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Compounds</string>
    </property>
   </action>
  </widget>

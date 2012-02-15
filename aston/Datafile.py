@@ -8,78 +8,52 @@ import numpy as np
 import json
 from scipy.interpolate import interp1d
 from aston.Features import Spectrum, Peak
+from aston.Database import DBObject
  
-class Datafile(object):
+class Datafile(DBObject):
     '''Generic chromatography data containter. This abstacts away
     the implementation details of the specific file formats.'''
-    def __new__(cls, filename, *args):
-
-        ext = filename.split('.')[-1].upper()
-        try:
-            f = open(filename, mode='rb')
-            magic = struct.unpack('>H', f.read(2))[0]
-            f.close()
-        except struct.error:
-            magic = 0
-
-        #TODO: .BAF : Bruker instrument data format
-        #TODO: .FID : Bruker instrument data format
-        #TODO: .PKL : MassLynx associated format
-        #TODO: .RAW : Micromass MassLynx directory format
-        #TODO: .WIFF : ABI/Sciex (QSTAR and QTRAP instrument) file format
-        #TODO: .YEP : Bruker instrument data format
-        #TODO: .RAW : PerkinElmer TurboMass file format
-        
-        if ext == 'MS' and magic == 0x0132:
+    def __new__(cls, db, db_id, parent_id, info, data):
+        if not info.has_key('s-file-type'):
+            return None
+        ftype = info['s-file-type']
+        args = (db, db_id, parent_id, info, data)
+            
+        if ftype == 'AgilentMS':
             from aston.FileFormats.AgilentMS import AgilentMS
-            return super(Datafile, cls).__new__(AgilentMS, filename, *args)
-        #elif ext == 'BIN' and magic == 513:
-        #    from .AgilentMS import AgilentMSMSProf
-        #    return super(Datafile, cls).__new__(AgilentMSMSProf,filename,*args)
-        #elif ext == 'BIN' and magic == 257:
-        #    from .AgilentMS import AgilentMSMSScan
-        #    return super(Datafile, cls).__new__(AgilentMSMSScan,filename,*args)
-        elif ext == 'CF' and magic == 0xFFFF:
+            return super(Datafile, cls).__new__(AgilentMS, *args)
+        elif ftype == 'AgilentMSMSProf':
+            from aston.FileFormats.AgilentMS import AgilentMSMSProf
+            return super(Datafile, cls).__new__(AgilentMSMSProf,*args)
+        elif ftype == 'AgilentMSMSScan':
+            from aston.FileFormats.AgilentMS import AgilentMSMSScan
+            return super(Datafile, cls).__new__(AgilentMSMSScan,*args)
+        elif ftype == 'ThermoCF':
             from aston.FileFormats.Thermo import ThermoCF
-            return super(Datafile, cls).__new__(ThermoCF, filename, *args)
-        elif ext == 'DXF' and magic == 0xFFFF:
+            return super(Datafile, cls).__new__(ThermoCF, *args)
+        elif ftype == 'ThermoDXF':
             from aston.FileFormats.Thermo import ThermoDXF
-            return super(Datafile, cls).__new__(ThermoDXF, filename, *args)
-        elif ext == 'SD':
+            return super(Datafile, cls).__new__(ThermoDXF, *args)
+        elif ftype == 'AgilentDAD':
             from aston.FileFormats.AgilentUV import AgilentDAD
-            return super(Datafile, cls).__new__(AgilentDAD, filename, *args)
-        elif ext == 'CH' and magic == 0x0233:
+            return super(Datafile, cls).__new__(AgilentDAD, *args)
+        elif ftype == 'AgilentMWD':
             from aston.FileFormats.AgilentUV import AgilentMWD
-            return super(Datafile, cls).__new__(AgilentMWD, filename, *args)
-        elif ext == 'UV' and magic == 0x0233:
+            return super(Datafile, cls).__new__(AgilentMWD, *args)
+        elif ftype == 'AgilentCSDAD':
             from aston.FileFormats.AgilentUV import AgilentCSDAD
-            return super(Datafile, cls).__new__(AgilentCSDAD, filename, *args)
-        elif ext == 'CSV':
+            return super(Datafile, cls).__new__(AgilentCSDAD, *args)
+        elif ftype == 'CSVFile':
             from aston.FileFormats.OtherFiles import CSVFile
-            return super(Datafile, cls).__new__(CSVFile, filename, *args)
+            return super(Datafile, cls).__new__(CSVFile, *args)
         else:
             return None
-            #return super(Datafile, cls).__new__(cls,filename,*args)
-
-    def __init__(self, filename, database=None, info=()):
-        #info is of the form: [name,info,projid,fileid]
-        self.filename = filename
-        self.database = database
-
-        #ways to initialize myself
-        #1. using parameters passed to me
-        if database is not None:
-            self.info = json.loads(info[0])
-            self.fid = (info[1], info[2]) #(project_id, file_id)
-        #2. from file info -> use this if not using the Aston GUI
-        else:
-            self.info = {'traces':'TIC','name':''}
-            self._updateInfoFromFile()
-            self.fid = (None, None)
+            #return super(Datafile, cls).__new__(cls, *args)
         
-        #make invisible at first
-        self.visible = False
-
+    def __init__(self, *args, **kwargs):
+        super(Datafile,self).__init__('file',*args,**kwargs)
+        #self._updateInfoFromFile()
+ 
         #make stubs for the time array and the data array
         self.times = None
         self.data = None
@@ -90,14 +64,21 @@ class Datafile(object):
         length as self.times. Acts in the time() and trace() functions.'''
         if len(self.times) == 0:
             return np.array([])
+        
+        tme = np.array(self.times)
+        if 't-scale' in self.info:
+            tme *= float(self.info['t-scale'])
+        if 't-offset' in self.info:
+            tme += float(self.info['t-offset'])
+            
         if st_time is None:
             st_idx = 0
         else:
-            st_idx = (np.abs(np.array(self.times)-st_time)).argmin()
+            st_idx = (np.abs(tme-st_time)).argmin()
         if en_time is None:
             en_idx = len(self.times)
         else:
-            en_idx = (np.abs(np.array(self.times)-en_time)).argmin()+1
+            en_idx = (np.abs(tme-en_time)).argmin()+1
         return arr[st_idx:en_idx]
 
     def time(self, st_time=None, en_time=None):
@@ -132,7 +113,7 @@ class Datafile(object):
         else:
             #all other cases, just return the total trace
             ic = self._getTotalTrace()
-
+        
         if 't-yscale' in self.info:
             ic *= float(self.info['t-yscale'])
         if 't-yoffset' in self.info:
@@ -280,6 +261,8 @@ class Datafile(object):
     
     def _applyFxn(self, ic, fxn, *args):
         '''Apply the function, fxn, to the trace, ic, and returns the result.'''
+        
+        #fxns = dict([(f,peak.__dict__[f]) for f in peak.__dict__ if isinstance(peak.__dict__[f],types.FunctionType)])
         if fxn == 'fft':
             #FIXME: "time" of FFT axis doesn't match time of ic axis
             oc = np.abs(np.fft.fftshift(np.fft.fft(ic))) / len(ic)
@@ -360,6 +343,9 @@ class Datafile(object):
 
     def scan(self, time):
         '''Returns the spectrum from a specific time.'''
+        if self.data is None:
+            self._cacheData()
+            
         if 't-offset' in self.info:
             time -= float(self.info['t-offset'])
         if 't-scale' in self.info:
@@ -369,73 +355,48 @@ class Datafile(object):
         except ValueError:
             idx = (np.abs(np.array(self.times)-time)).argmin()
             return self.data[idx]
-
-    def mz_bounds(self):
-        '''Returns the highest and lowest m/z values in the data.
-           Used for plotting data in 2D heatmaps.'''
-        if self.data is None:
-            self._cacheData()
-            
-        mz_min, mz_max = 100, 0
-        for i in self.data:
-            try:
-                mz_min = min(min(i.keys()), mz_min)
-                mz_max = max(max(i.keys()), mz_max)
-            except ValueError:
-                pass
-        return mz_min, mz_max
     
-    def delInfo(self,fld):
-        delkeys = None
-        if fld == 's-peaks':
-            delkeys = ['s-peaks','s-peaks-st','s-peaks-en']
-        
-        if delkeys is not None:
-            for key in delkeys:
-                if key in self.info:
-                    del self.info[key]
-    
-    def getInfo(self, fld):
+    def _loadInfo(self, fld):
         #create the key if it doesn't yet exist
-        if fld not in self.info.keys():
-            if fld == 'r-filename':
-                #the filename used for display in the program.
-                self.info[fld] = op.join(op.basename( \
-                  op.dirname(self.filename)), op.basename(self.filename))
-            elif fld == 's-scans':
-                self.info['s-scans'] = str(len(self.time()))
-            elif fld == 's-time-st' or fld == 's-time-en':
-                time = self.time()
-                self.info['s-time-st'] = str(min(time))
-                self.info['s-time-en'] = str(max(time))
-            elif fld == 's-peaks' or fld == 's-spectra':
-                fts = self.database.getFeatsByFile(self.fid[1])
-                self.info['s-peaks'] = \
-                  str(len([ft for ft in fts if isinstance(ft, Peak)]))
-                self.info['s-spectra'] = \
-                  str(len([ft for ft in fts if isinstance(ft, Spectrum)]))
-            elif fld == 's-peaks-st' or fld == 's-peaks-en':
-                fts = self.database.getFeatsByFile(self.fid[1])
-                if len(fts) > 0: 
-                    times = [ft.time() for ft in fts \
-                      if isinstance(ft, Peak)]
-                    self.info['s-peaks-st'] = str(min(times))
-                    self.info['s-peaks-en'] = str(max(times))
-            else:
-                pass
-        
-        #check again to see if we figured out the value
-        if fld not in self.info.keys():
-            return ''
+        if fld == 'vis':
+            self.info['vis'] = 'n'
+        elif fld == 'r-filename':
+            #TODO: generate this in Database on creation?
+            #the filename used for display in the program.
+            self.info[fld] = op.join(op.basename( \
+              op.dirname(self.rawdata)), op.basename(self.rawdata))
+        elif fld == 's-scans':
+            self.info['s-scans'] = str(len(self.time()))
+        elif fld == 's-time-st' or fld == 's-time-en':
+            time = self.time()
+            self.info['s-time-st'] = str(min(time))
+            self.info['s-time-en'] = str(max(time))
+        elif fld == 's-peaks' or fld == 's-spectra':
+            fts = self.database.getFeatsByFile(self.fid[1])
+            self.info['s-peaks'] = \
+              str(len([ft for ft in fts if isinstance(ft, Peak)]))
+            self.info['s-spectra'] = \
+              str(len([ft for ft in fts if isinstance(ft, Spectrum)]))
+        elif fld == 's-peaks-st' or fld == 's-peaks-en':
+            pks = self.getAllChildren('peak')
+            if len(pks) > 0: 
+                times = [float(pk.getInfo('p-s-time')) for pk in pks]
+                self.info['s-peaks-st'] = str(min(times))
+                self.info['s-peaks-en'] = str(max(times))
+        elif fld == 's-mz-min' or fld == 's-mz-max':
+            if self.data is None:
+                self._cacheData()
+            mz_min, mz_max = 1e7, 0
+            for i in self.data:
+                try:
+                    mz_min = min(min(i.keys()), mz_min)
+                    mz_max = max(max(i.keys()), mz_max)
+                except ValueError:
+                    pass
+            self.info['s-mz-min'] = str(mz_min)
+            self.info['s-mz-max'] = str(mz_max)
         else:
-            return self.info[fld]
-    
-    def saveChanges(self):
-        '''Save any changes to the datafile to the database.'''
-        if self.fid[1] is not None:
-            return self.database.updateFile(self)
-        else:
-            return False
+            pass
 
     #The following function stubs should be filled out in the
     #subclasses that handle the raw datafiles.
@@ -462,6 +423,6 @@ class Datafile(object):
             self._cacheData()
         return np.array([sum(i.values()) for i in self.data])
 
-    #    def _updateInfoFromFile(self):
+    def _updateInfoFromFile(self):
         '''Return file information.'''
-    #    pass
+        pass

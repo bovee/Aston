@@ -1,29 +1,10 @@
 '''This module handles database access for Aston.'''
 #pylint: disable=C0103
+from aston.Database import DBObject
 
-class Compound(object):
-    def __init__(self, name, database, cmpd_id=None, cmpd_type='None'):
-        self.name = name
-        self.database = database
-        self.cmpd_id = cmpd_id
-        self.feats = database.getFeats(cmpd_id)
-        self.cmpd_type = cmpd_type
-
-    def getFeats(self, file_ids):
-        return [i for i in self.feats if i.ids[2] in file_ids]
-
-    def getPeaks(self, file_ids):
-        return [i for i in self.feats if i.ids[2] in file_ids and 'Peak' in i.cls]
-
-    def addFeat(self, ft):
-        ft.ids[1] = self.cmpd_id
-        self.feats.append(ft)
-        self.database.addFeat(ft)
-
-    def delFeat(self, ft):
-        self.feats.remove(ft)
-        self.database.delFeat(ft.ids[0])
-        del ft
+class Compound(DBObject):
+    def __init__(self, *args, **kwargs):
+        super(Compound, self).__init__('compound', *args, **kwargs)
 
     def isotopeValue(self):
         pk44, pk45, pk46 = None, None, None

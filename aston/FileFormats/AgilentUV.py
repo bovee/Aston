@@ -18,7 +18,7 @@ class AgilentMWD(Datafile.Datafile):
         
         self.times = []
         self.data = []
-        foldname = os.path.dirname(self.filename)
+        foldname = os.path.dirname(self.rawdata)
         if foldname == '': foldname = os.curdir
         for i in [os.path.join(foldname,i) for i in os.listdir(foldname)]:
             if i[-3:].upper() == '.CH':
@@ -64,7 +64,7 @@ class AgilentMWD(Datafile.Datafile):
         d = {}
         #TODO: fix this so that it doesn't rely upon MWD1A.CH?
         #print self.filename
-        f = open(self.filename,'rb')
+        f = open(self.rawdata,'rb')
         f.seek(0x18)
         d['name'] = f.read(struct.unpack('>B',f.read(1))[0]).decode()
         f.seek(0x94)
@@ -81,7 +81,6 @@ class AgilentMWD(Datafile.Datafile):
         #TODO: replace signal name with reference_wavelength?
         d['signal name'] = f.read(struct.unpack('>B',f.read(1))[0]).decode()
         d['r-type'] = 'Sample'
-        d['s-file-type'] = 'AgilentMWD'
         f.close()
         self.info.update(d)
 
@@ -101,8 +100,8 @@ class AgilentDAD(Datafile.Datafile):
     def _cacheData(self): 
         if self.data is not None: return
         
-        fhead = open(self.filename[:-3]+'.sd','rb')
-        fdata = open(self.filename[:-3]+'.sp','rb')
+        fhead = open(self.rawdata[:-3]+'.sd','rb')
+        fdata = open(self.rawdata[:-3]+'.sp','rb')
 
         fhead.seek(0x50)
         nscans = struct.unpack('Q',fhead.read(8))[0]
@@ -128,7 +127,7 @@ class AgilentDAD(Datafile.Datafile):
 
     def _updateInfoFromFile(self):
         d = {}
-        tree = ElementTree.parse(op.join(op.dirname(self.filename),'sample_info.xml'))
+        tree = ElementTree.parse(op.join(op.dirname(self.rawdata),'sample_info.xml'))
         for i in tree.iterfind('Field'):
             tagname = i.find('Name').text
             tagvalue = i.find('Value').text
@@ -139,9 +138,8 @@ class AgilentDAD(Datafile.Datafile):
             elif tagname == 'Method':
                 d['m'] = tagvalue.split('/')[-1]
         d['r-opr'] = ''
-        d['r-date'] = time.ctime(op.getctime(self.filename))
+        d['r-date'] = time.ctime(op.getctime(self.rawdata))
         d['r-type'] = 'Sample'
-        d['s-file-type'] = 'AgilentMasshunterDAD'
         self.info.update(d)
 
 class AgilentCSDAD(Datafile.Datafile):
@@ -152,7 +150,7 @@ class AgilentCSDAD(Datafile.Datafile):
     def _cacheData(self): 
         #TODO: the chromatograms this generates are not exactly the
         #same as the ones in the *.CH files. Maybe they need to be 0'd?
-        f = open(self.filename,'rb')
+        f = open(self.rawdata,'rb')
 
         f.seek(0x116)
         nscans = struct.unpack('>i',f.read(4))[0]
@@ -182,7 +180,7 @@ class AgilentCSDAD(Datafile.Datafile):
 
     def _updateInfoFromFile(self):
         d = {}
-        f = open(self.filename,'rb')
+        f = open(self.rawdata,'rb')
         f.seek(0x18)
         d['name'] = f.read(struct.unpack('>B',f.read(1))[0]).decode().strip()
         f.seek(0x94)
@@ -201,6 +199,5 @@ class AgilentCSDAD(Datafile.Datafile):
         f.seek(0xFE) 
         d['r-seq-num'] = str(struct.unpack('>h',f.read(2))[0])
         d['r-type'] = 'Sample'
-        d['s-file-type'] = 'AgilentChemstationDAD'
         f.close()
         self.info.update(d)

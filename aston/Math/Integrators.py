@@ -50,7 +50,7 @@ def waveletIntegrate(ptab,dt,ion=None):
         ptab.masterWindow.tplot.add_patch(y)
         #except:
 
-def statSlopeIntegrate(dt,ion=None):
+def statSlopeIntegrate(dt, ion=None):
     t = dt.time()
     x = dt.trace(ion)
     pks = []
@@ -91,11 +91,14 @@ def statSlopeIntegrate(dt,ion=None):
         #create a peak and add it to the peak list
         if pt1 != () and pt2 != ():
             verts = [pt1]
-            verts += zip(dt.time(pt1[0],pt2[0]),dt.trace(ion,pt1[0],pt2[0]))
+            verts += zip(dt.time(pt1[0], pt2[0]), \
+                         dt.trace(ion, pt1[0], pt2[0]))
             verts += [pt2]
-            pk = Peak(verts,None,ion,'StatSlope')
-            pk.ids[2] = dt.fid[1]
-            pk.dt = dt
+            info = {'p-type':'Sample', 'p-created':'integrator', \
+                    'p-int':'statslope'}
+            info['name'] = '{:.2f}-{:.2f}'.format(pt1[0], pt2[0])
+            info['p-ion'] = ion
+            pk = Peak(dt.db, None, dt.db_id, info, verts)
             pks.append(pk)
         l_i = i
     return pks

@@ -10,7 +10,7 @@ class ThermoCF(Datafile.Datafile):
     def _cacheData(self):
         if self.data is not None: return
 
-        f = open(self.filename,'rb')
+        f = open(self.rawdata,'rb')
         f.seek(19)
         while True:
             f.seek(f.tell()-19)
@@ -36,13 +36,12 @@ class ThermoCF(Datafile.Datafile):
         d['r-opr'] = ''
         d['m'] = ''
         #try: #TODO: this crashes in python 3; not clear why?
-        d['r-date'] = time.ctime(os.path.getctime(self.filename))
+        d['r-date'] = time.ctime(os.path.getctime(self.rawdata))
         #except:
         #    pass
         #info['file name'] = os.path.basename(self.filename)
-        d['name'] = os.path.splitext(os.path.basename(self.filename))[0]
+        d['name'] = os.path.splitext(os.path.basename(self.rawdata))[0]
         d['r-type'] = 'Sample'
-        d['s-file-type'] = 'Thermo Isodat CF'
         self.info.update(d)
 
 class ThermoDXF(Datafile.Datafile):
@@ -54,7 +53,7 @@ class ThermoDXF(Datafile.Datafile):
         self.times = []
         self.data = []
 
-        f = open(self.filename,'rb')
+        f = open(self.rawdata,'rb')
         f.seek(11)
         while True:
             f.seek(f.tell()-11)
@@ -79,11 +78,10 @@ class ThermoDXF(Datafile.Datafile):
         d['r-opr'] = ''
         d['m'] = ''
         #try: #TODO: this crashes in python 3; not clear why?
-        d['date'] = time.ctime(os.path.getctime(self.filename))
+        d['date'] = time.ctime(os.path.getctime(self.rawdata))
         #except:
         #    pass
         #info['file name'] = os.path.basename(self.filename)
-        d['name'] = os.path.splitext(os.path.basename(self.filename))[0]
+        d['name'] = os.path.splitext(os.path.basename(self.rawdata))[0]
         d['r-type'] = 'Sample'
-        d['s-file-type'] = 'Thermo Isodat DXF'
         self.info.update(d)

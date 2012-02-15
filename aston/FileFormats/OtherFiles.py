@@ -8,13 +8,17 @@ class CSVFile(Datafile.Datafile):
     '''
     def __init__(self,*args,**kwargs):
         super(CSVFile,self).__init__(*args,**kwargs)
+        try:
+            self.db
+        except:
+            print args
 
     def _cacheData(self): 
         delim = ','
         self.times = []
         self.data = []
         try: #TODO: better, smarter error checking than this
-            with open(self.filename,'r') as f:
+            with open(self.rawdata,'r') as f:
                 lns = f.readlines()
                 hdrs = [float(i) for i in lns[0].split(delim)[1:]]
                 for ln in lns[1:]:
@@ -27,7 +31,6 @@ class CSVFile(Datafile.Datafile):
             
     def _updateInfoFromFile(self):
         d = {}
-        d['name'] = op.splitext(op.basename(self.filename))[0]
+        d['name'] = op.splitext(op.basename(self.rawdata))[0]
         d['r-type'] = 'Sample'
-        d['s-file-type'] = 'CSV'
         self.info.update(d)

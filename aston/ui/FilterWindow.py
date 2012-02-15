@@ -15,7 +15,7 @@ class FilterWindow(QtGui.QWidget):
         self.ui.smoothComboBox.addItems(['None','Moving Average','Savitsky-Golay'])
         self.ui.smoothComboBox.currentIndexChanged.connect(self.smoothChanged)
 
-        self.loadInfo(parent.ftab_mod.returnSelFile())
+        self.loadInfo(parent.obj_tab.returnSelFile())
         self.smoothChanged()
 
     def loadInfo(self,dt):
@@ -94,7 +94,7 @@ class FilterWindow(QtGui.QWidget):
             pass
 
     def accept(self):
-        for dt in self.parent.ftab_mod.returnSelFiles():
+        for dt in self.parent.obj_tab.returnSelFiles():
             self._updateFile(dt)
         self.close()
 

@@ -32,6 +32,7 @@
 --(better) color schemes for graphs
 --display fraction collection data
 --better display of "ions" for UV-Vis data (e.g. smooth line/below 0 vals)
+--display x axes in seconds
 
 -optimization
 --separate thread for database updating
@@ -39,5 +40,4 @@
 
 -distribution
 --package size on Macs
---rearranged menus on Mac (Preferences in Python menu)
-http://www.riverbankcomputing.co.uk/static/Docs/PyQt4/html/qaction.html#MenuRole-enum
+--setup/disttools? need better versioning

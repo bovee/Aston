@@ -4,10 +4,10 @@ import numpy as np
 
 class AgilentMS(Datafile.Datafile):
     def __init__(self,*args,**kwargs):
-        super(AgilentMS,self).__init__(*args,**kwargs)
+        super(AgilentMS, self).__init__(*args, **kwargs)
 
     def _getTotalTrace(self):
-        f = open(self.filename,'rb')
+        f = open(self.rawdata,'rb')
 
         # get number of scans to read in
         f.seek(0x5)
@@ -37,7 +37,7 @@ class AgilentMS(Datafile.Datafile):
         if self.data is not None:
             return
 
-        f = open(self.filename,'rb')
+        f = open(self.rawdata,'rb')
 
         # get number of scans to read in
         # note that GC and LC chemstation store this in slightly different
@@ -79,7 +79,7 @@ class AgilentMS(Datafile.Datafile):
 
     def _updateInfoFromFile(self):
         d = {}
-        f = open(self.filename,'rb')
+        f = open(self.rawdata,'rb')
         f.seek(0x18)
         d['name'] = f.read(struct.unpack('>B',f.read(1))[0]).decode().strip()
         f.seek(0x94)
@@ -89,7 +89,6 @@ class AgilentMS(Datafile.Datafile):
         f.seek(0xB2)
         d['r-date'] = f.read(struct.unpack('>B',f.read(1))[0]).decode()
         d['r-type'] = 'Sample'
-        d['s-file-type'] = 'AgilentMS'
         #TODO: vial number in here too?
         f.close()
         self.info.update(d)
@@ -99,7 +98,7 @@ class AgilentMSMSScan(Datafile.Datafile):
         super(AgilentMSMSScan,self).__init__(*args,**kwargs)
 
     def _getTotalTrace(self):
-        f = open(self.filename,'rb')
+        f = open(self.rawdata,'rb')
 
         # get number of scans to read in
         f.seek(0x5)
@@ -127,7 +126,7 @@ class AgilentMSMSScan(Datafile.Datafile):
     def _cacheData(self):
         if self.data is not None: return
 
-        f = open(self.filename,'rb')
+        f = open(self.rawdata,'rb')
 
         # get number of scans to read in
         # note that GC and LC chemstation store this in slightly different
@@ -160,24 +159,23 @@ class AgilentMSMSScan(Datafile.Datafile):
 
             self.data.append(s)
             f.seek(npos)
-
         f.close()
 
     def _updateInfoFromFile(self):
         d = {}
-        f = open(self.filename,'rb')
+        f = open(self.rawdata,'rb')
         f.seek(0x18)
         d['name'] = str(f.read(struct.unpack('>B',f.read(1))[0]).strip())
         f.seek(0x94)
         d['r-opr'] = str(f.read(struct.unpack('>B',f.read(1))[0]))
-        f.seek(0xE4)
-        d['m'] = str(f.read(struct.unpack('>B',f.read(1))[0]))
+        #FIXME: next line isn't proper text?
+        #f.seek(0xE4)
+        #d['m'] = str(f.read(struct.unpack('>B',f.read(1))[0]))
         f.seek(0xB2)
         d['r-date'] = str(f.read(struct.unpack('>B',f.read(1))[0]))
         d['r-type'] = 'Sample'
-        d['s-file-type'] = 'AgilentMS'
         f.close()
-        self.info.update(i)
+        self.info.update(d)
     
     def _getOtherTrace(self,name):
         #TODO: read from MSPeriodicActuals.bin and TCC.* files
