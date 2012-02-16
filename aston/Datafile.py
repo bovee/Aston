@@ -248,14 +248,30 @@ class Datafile(DBObject):
             # Journal of Chromatography A 849.1 (1999) 71-85.
             pass
         elif name in lookdict:
-            #e.g. {'S':5,0:30,9:80,9.01:100,11:100}
-            desc = self.getInfo(lookdict[name])
-            for tpt in [tpt.split(':') for tpt in desc.split(',')]:
-                if tpt[0] == 'S':
-                    pass
-                pass
- 
-            pass
+            #we can store time-series data as a list of timepoints
+            #in certain info fields and query it here
+            def is_num(x):
+                #stupid function to determine if something is a number
+                try:
+                    float(x)
+                    return True
+                except:
+                    return False
+            #turn the time list into a dictionary
+            tpts = dict([tpt.split(':') for tpt in \
+              self.getInfo(lookdict[name]).split(',')])
+            #get the valid times out
+            valid_x = [v for v in tpts if is_num(v)]
+            #generate arrays from them
+            x = np.array([float(v) for v in valid_x])
+            y = np.array([float(tpts[v]) for v in valid_x])
+            srt_ind = np.argsort(x)
+            if 'S' in tpts:
+                #there's a "S"tart value defined
+                return np.interp(self.times, x[srt_ind], y[srt_ind],
+                  float(tpts['S']))
+            else:
+                return np.interp(self.times, x[srt_ind], y[srt_ind])
         else:
             return self._getOtherTrace(name)
     
