@@ -1,4 +1,8 @@
 import numpy as np
+
+#we don't need to reinvent the wheel, so we can straight up use some
+#of numpy's default functions and pass our array directly in
+from numpy import abs, sin, cos, tan, gradient
  
 def fft(ic):
     #FIXME: "time" of FFT axis doesn't match time of ic axis
@@ -6,7 +10,7 @@ def fft(ic):
 #elif fxn == 'ifft':
 #    ic = np.fft.ifft(np.fft.fftshift(ic * len(ic)))# / len(ic)
     
-def noisefilter(ic,bandwidth):
+def noisefilter(ic, bandwidth):
     #adapted from http://glowingpython.blogspot.com/
     #2011/08/fourier-transforms-and-image-filtering.html
     I = np.fft.fftshift(np.fft.fft(ic)) # entering to frequency domain
@@ -18,25 +22,6 @@ def noisefilter(ic,bandwidth):
     for i in range(c1-r, c1+r):
         P[i] = I[i] # frequency cutting
     oc = np.real(np.fft.ifft(np.fft.ifftshift(P)))
-    
-def abs(ic):
-    oc = np.abs(ic)
-    
-def sin(ic):
-    oc = np.sin(ic)
-    
-def cos(ic):
-    oc = np.cos(ic)
-    
-def tan(ic):
-    oc = np.tan(ic)
-
-def d(ic):
-    return derivative(ic)
-
-def derivative(ic):
-    #FIXME: not adjusted for time at all
-    return np.gradient(ic)
     
 def base(ic):
     #INSPIRED by Algorithm A12 from Zupan
@@ -65,31 +50,40 @@ def base(ic):
     oc[-1] = oc[-2] #FIXME: there's definitely a bug in here somewhere
     
 def movingaverage(ic, window):
-    pass
+    x = int(window)
+    half_wind = (x-1) // 2
+    m = np.ones(x) / x
+    return _smooth(ic, half_wind, m)
 
 def savitzkygolay(ic, window, order):
-    pass
-elif (fxn == 'movingaverage' and len(args) == 1) or \
-  (fxn == 'savitskygolay' and len(args) == 2):
-    if fxn == 'movingaverage':
-        x = int(args[0])
-        half_wind = (x-1) // 2
-        m = np.ones(x) / x
-    elif fxn == 'savitskygolay':
-        # adapted from http://www.scipy.org/Cookbook/SavitzkyGolay
-        half_wind = (int(args[0]) -1) // 2
-        order_range = range(int(args[1])+1)
-        # precompute coefficients
-        b = [[k**i for i in order_range] \
-             for k in range(-half_wind, half_wind+1)]
-        m = np.linalg.pinv(b)
-        m = m[0]
+    # adapted from http://www.scipy.org/Cookbook/SavitzkyGolay
+    half_wind = (int(window) -1) // 2
+    order_range = range(int(order)+1)
+    # precompute coefficients
+    b = [[k**i for i in order_range] \
+      for k in range(-half_wind, half_wind+1)]
+    m = np.linalg.pinv(b)
+    m = m[0]
+    return _smooth(ic, half_wind, m)
+
+def _smooth(ic, half_wind, m):
     # pad the signal at the extremes with
     # values taken from the signal itself
     firstvals = ic[0] - np.abs(ic[1:half_wind+1][::-1] - ic[0])
     lastvals = ic[-1] + np.abs(ic[-half_wind-1:-1][::-1] - ic[-1])
     y = np.concatenate((firstvals, ic, lastvals))
     oc = np.convolve(m, y, mode='valid')
-else:
-    oc = ic
-return oc
+    return oc
+
+fxns = {'fft':fft,
+        'noise':noisefilter,
+        'abs':abs,
+        'sin':sin,
+        'cos':cos,
+        'tan':tan,
+        'derivative':gradient,
+        'd':gradient,
+        'base':base,
+        'movingaverage':movingaverage,
+        'savitskygolay':savitzkygolay,
+        }

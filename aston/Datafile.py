@@ -277,85 +277,14 @@ class Datafile(DBObject):
     
     def _applyFxn(self, ic, fxn, *args):
         '''Apply the function, fxn, to the trace, ic, and returns the result.'''
-        
-        #fxns = dict([(f,peak.__dict__[f]) for f in peak.__dict__ if isinstance(peak.__dict__[f],types.FunctionType)])
-        if fxn == 'fft':
-            #FIXME: "time" of FFT axis doesn't match time of ic axis
-            oc = np.abs(np.fft.fftshift(np.fft.fft(ic))) / len(ic)
-        #elif fxn == 'ifft':
-        #    ic = np.fft.ifft(np.fft.fftshift(ic * len(ic)))# / len(ic)
-        elif fxn == 'noisefilter' and len(args) == 1:
-            #adapted from http://glowingpython.blogspot.com/
-            #2011/08/fourier-transforms-and-image-filtering.html
-            I = np.fft.fftshift(np.fft.fft(ic)) # entering to frequency domain
-            # fftshift moves zero-frequency component to the center of the array
-            P = np.zeros(len(I), dtype=complex)
-            c1 = len(I)/2 # spectrum center
-            r = float(args[0]) #percent of signal to save
-            r = int((r*len(I))/2) #convert to coverage of the array
-            for i in range(c1-r, c1+r):
-                P[i] = I[i] # frequency cutting
-            oc = np.real(np.fft.ifft(np.fft.ifftshift(P)))
-        elif fxn == 'abs':
-            oc = np.abs(ic)
-        elif fxn == 'sin':
-            oc = np.sin(ic)
-        elif fxn == 'cos':
-            oc = np.cos(ic)
-        elif fxn == 'tan':
-            oc = np.tan(ic)
-        elif fxn == 'd' or fxn == 'derivative':
-            #FIXME: not adjusted for time at all
-            ic = np.gradient(ic)
-        elif fxn == 'base':
-            #INSPIRED by Algorithm A12 from Zupan
-            #5 point pre-smoothing
-            sc = np.convolve(np.ones(5) / 5.0, ic, mode='same')
-            #get local minima
-            mn = np.arange(len(ic))[np.r_[True,((sc < np.roll(sc, 1)) &
-              (sc < np.roll(sc, -1)))[1:-1], True]]
-            #don't allow baseline to have a slope greater than
-            #10x less than the steepest peak
-            max_slope = np.max(np.gradient(ic))/10.0
-            slope = max_slope
-            pi = 0 #previous index
-            oc = np.zeros(len(ic))
-            for i in range(1, len(mn)):
-                if slope < (ic[mn[i]]-ic[mn[pi]]) / (mn[i]-mn[pi]) and \
-                  slope < max_slope:
-                    #add trend
-                    oc[mn[pi]:mn[i-1]] = \
-                      np.linspace(ic[mn[pi]],ic[mn[i-1]],mn[i-1]-mn[pi])
-                    pi = i -1
-                slope = (ic[mn[i]]-ic[mn[pi]])/(mn[i]-mn[pi])
-            print(mn[pi], mn[-1])
-            oc[mn[pi]:mn[-1]] = \
-              np.linspace(ic[mn[pi]],ic[mn[-1]],mn[-1]-mn[pi])
-            oc[-1] = oc[-2] #FIXME: there's definitely a bug in here somewhere
-        elif (fxn == 'movingaverage' and len(args) == 1) or \
-          (fxn == 'savitskygolay' and len(args) == 2):
-            if fxn == 'movingaverage':
-                x = int(args[0])
-                half_wind = (x-1) // 2
-                m = np.ones(x) / x
-            elif fxn == 'savitskygolay':
-                # adapted from http://www.scipy.org/Cookbook/SavitzkyGolay
-                half_wind = (int(args[0]) -1) // 2
-                order_range = range(int(args[1])+1)
-                # precompute coefficients
-                b = [[k**i for i in order_range] \
-                     for k in range(-half_wind, half_wind+1)]
-                m = np.linalg.pinv(b)
-                m = m[0]
-            # pad the signal at the extremes with
-            # values taken from the signal itself
-            firstvals = ic[0] - np.abs(ic[1:half_wind+1][::-1] - ic[0])
-            lastvals = ic[-1] + np.abs(ic[-half_wind-1:-1][::-1] - ic[-1])
-            y = np.concatenate((firstvals, ic, lastvals))
-            oc = np.convolve(m, y, mode='valid')
-        else:
-            oc = ic
-        return oc
+        from aston.Math.Chromatograms import fxns
+        if fxn in fxns:
+            f = fxns[fxn]
+            try:
+                return f(ic, *args)
+            except TypeError:
+                pass
+        return np.array([0] * len(ic))
 
     def scan(self, time):
         '''Returns the spectrum from a specific time.'''

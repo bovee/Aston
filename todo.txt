@@ -18,9 +18,7 @@
 -peak stuff
 --Gaussian peak types and conversion to/from 
 --adjustable peaks (little selectors on each end of "baseline")
---peaks adjust with chromatogram adjustment (respect scale/offset)
 --highlight selected (in peak table) peak on graph
---delete all peaks menu item (with confirmation)
 
 -user interface
 --icon for Aston
