@@ -13,6 +13,8 @@ class Spectrum(DBObject):
     def _calcInfo(self, fld):
         if fld == 'sp-d13c':
             return self.d13C()
+        else:
+            return ''
     
     def ion(self, ion):
         lst = dict(self.data)

@@ -257,21 +257,26 @@ class Datafile(DBObject):
                     return True
                 except:
                     return False
-            #turn the time list into a dictionary
-            tpts = dict([tpt.split(':') for tpt in \
-              self.getInfo(lookdict[name]).split(',')])
-            #get the valid times out
-            valid_x = [v for v in tpts if is_num(v)]
-            #generate arrays from them
-            x = np.array([float(v) for v in valid_x])
-            y = np.array([float(tpts[v]) for v in valid_x])
-            srt_ind = np.argsort(x)
-            if 'S' in tpts:
-                #there's a "S"tart value defined
-                return np.interp(self.times, x[srt_ind], y[srt_ind],
-                  float(tpts['S']))
-            else:
-                return np.interp(self.times, x[srt_ind], y[srt_ind])
+            
+            val = self.getInfo(lookdict[name])
+            if ',' in val:
+                #turn the time list into a dictionary
+                tpts = dict([tpt.split(':') for tpt in \
+                  self.getInfo(lookdict[name]).split(',')])
+                #get the valid times out
+                valid_x = [v for v in tpts if is_num(v)]
+                #generate arrays from them
+                x = np.array([float(v) for v in valid_x])
+                y = np.array([float(tpts[v]) for v in valid_x])
+                srt_ind = np.argsort(x)
+                if 'S' in tpts:
+                    #there's a "S"tart value defined
+                    return np.interp(self.times, x[srt_ind], y[srt_ind],
+                      float(tpts['S']))
+                else:
+                    return np.interp(self.times, x[srt_ind], y[srt_ind])
+            elif is_num(val):
+                return float(val) * np.ones(len(self.times))
         else:
             return self._getOtherTrace(name)
     

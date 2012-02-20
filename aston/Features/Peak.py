@@ -29,6 +29,8 @@ class Peak(DBObject):
             t = float(prt.getInfo('s-peaks-en')) - \
                 float(prt.getInfo('s-peaks-st'))
             return str(t / peakmath.length(self.data) + 1)
+        else:
+            return ''
  
     def contains(self,x,y):
         return peakmath.contains(self.data, x, y)

@@ -24,6 +24,10 @@ class Plotter(object):
         self.plt.xaxis.set_ticks_position('none')
         self.plt.yaxis.set_ticks_position('none')
         
+        #TODO: find a way to make the axes fill the figure properly
+        #tfig.subplots_adjust(left=0.05, right=0.95, bottom=0.05, top=0.95)
+        tfig.tight_layout(pad = 2)
+        
         self.canvas.mpl_connect('button_press_event',self.mousedown)
         self.canvas.mpl_connect('scroll_event',self.mousescroll)
 
