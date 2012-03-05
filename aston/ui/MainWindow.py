@@ -6,7 +6,7 @@ from aston.ui.MainPlot import Plotter
 from aston.ui.SpecPlot import SpecPlotter
 
 from aston.FileTable import FileTreeModel
-from aston.Math.Integrators import statSlopeIntegrate
+from aston.Math.Integrators import waveletIntegrate, statSlopeIntegrate
 from aston.Features import Spectrum
 
 class AstonWindow(QtGui.QMainWindow):
@@ -156,7 +156,8 @@ class AstonWindow(QtGui.QMainWindow):
 
         #add compounds for ions from the first set
         for ion in ions:
-            pks = statSlopeIntegrate(dt, ion)
+            pks = waveletIntegrate(dt, ion)
+            #pks = statSlopeIntegrate(dt, ion)
             self.obj_tab.addObjects(dt, pks)
         dt.delInfo('s-peaks')
         self.plotter.redraw()

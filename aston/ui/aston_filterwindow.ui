@@ -33,9 +33,9 @@
        <widget class="QListWidget" name="ionList"/>
       </item>
       <item>
-       <widget class="QTabWidget" name="addDefinedIonButton">
+       <widget class="QTabWidget" name="addIonsTabWidget">
         <property name="currentIndex">
-         <number>0</number>
+         <number>1</number>
         </property>
         <property name="elideMode">
          <enum>Qt::ElideNone</enum>
@@ -59,7 +59,7 @@
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="pushButton_4">
+           <widget class="QPushButton" name="addDefinedIonButton">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
               <horstretch>0</horstretch>

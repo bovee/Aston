@@ -124,13 +124,15 @@ class Datafile(DBObject):
             pass
 
         if 't-smooth' in self.info:
-            if self.info['t-smooth'] == 'moving average':
+            if self.info['t-smooth'].lower() == 'moving average':
                 wnd = self.info['t-smooth-window']
-                ic = self._applyFxn(ic, 'movingaverage', wnd)
-            elif self.info['t-smooth'] == 'savitsky-golay':
+                if wnd.isdigit():
+                    ic = self._applyFxn(ic, 'movingaverage', wnd)
+            elif self.info['t-smooth'].lower() == 'savitsky-golay':
                 wnd = self.info['t-smooth-window']
                 sord = self.info['t-smooth-order']
-                ic = self._applyFxn(ic, 'savitskygolay', wnd, sord)
+                if wnd.isdigit() and sord.isdigit():
+                    ic = self._applyFxn(ic, 'savitskygolay', wnd, sord)
 
         return self._getTimeSlice(ic, st_time, en_time)
 
@@ -322,11 +324,12 @@ class Datafile(DBObject):
             self.info['s-time-st'] = str(min(time))
             self.info['s-time-en'] = str(max(time))
         elif fld == 's-peaks' or fld == 's-spectra':
-            fts = self.database.getFeatsByFile(self.fid[1])
-            self.info['s-peaks'] = \
-              str(len([ft for ft in fts if isinstance(ft, Peak)]))
-            self.info['s-spectra'] = \
-              str(len([ft for ft in fts if isinstance(ft, Spectrum)]))
+            #fts = self.db.getFeatsByFile(self.fid[1])
+            #self.info['s-peaks'] = \
+            #  str(len([ft for ft in fts if isinstance(ft, Peak)]))
+            #self.info['s-spectra'] = \
+            #  str(len([ft for ft in fts if isinstance(ft, Spectrum)]))
+            pass
         elif fld == 's-peaks-st' or fld == 's-peaks-en':
             pks = self.getAllChildren('peak')
             if len(pks) > 0: 

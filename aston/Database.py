@@ -11,7 +11,6 @@ class AstonDatabase(object):
     that's created inside every working folder."""
     def __init__(self, database):
         self.database_path = database
-        print database
         
         if not os.path.exists(database): 
             # create a database file if one doesn't exist

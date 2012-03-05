@@ -72,7 +72,7 @@ def _smooth(ic, half_wind, m):
     firstvals = ic[0] - np.abs(ic[1:half_wind+1][::-1] - ic[0])
     lastvals = ic[-1] + np.abs(ic[-half_wind-1:-1][::-1] - ic[-1])
     y = np.concatenate((firstvals, ic, lastvals))
-    oc = np.convolve(m, y, mode='valid')
+    oc = np.convolve(m, y, mode='same')
     return oc
 
 fxns = {'fft':fft,

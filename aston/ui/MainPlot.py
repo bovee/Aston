@@ -29,6 +29,7 @@ class Plotter(object):
         tfig.tight_layout(pad = 2)
         
         self.canvas.mpl_connect('button_press_event',self.mousedown)
+        self.canvas.mpl_connect('button_release_event',self.mouseup)
         self.canvas.mpl_connect('scroll_event',self.mousescroll)
 
         self.spec_line = None
@@ -165,25 +166,19 @@ class Plotter(object):
         self.canvas.draw()
         
     def mousedown(self, event):
-        if event.button == 3 and self.navbar.mode != 'align':
-            #TODO: make this work for click and drag too
-            #get the specral data of the current point
-            cur_file = self.masterWindow.obj_tab.returnSelFile()
-            if cur_file is None: return
-            if cur_file.getInfo('vis') != 'y': return
-            scan = cur_file.scan(event.xdata)
-            
-            self.masterWindow.specplotter.addSpec(scan)
-            self.masterWindow.specplotter.plotSpec()
-            self.masterWindow.specplotter.specTime = event.xdata
-            
-            # draw a line on the main plot for the location
-            self.drawSpecLine(event.xdata,linestyle='-')
+        if event.button == 3 and self.navbar.mode in ['peak', 'spectrum']:
+            event.button = 1
+            self.navbar.press_pan(event)
+        
+    def mouseup(self, event):
+        if event.button == 3 and self.navbar.mode in ['peak', 'spectrum']:
+            event.button = 1
+            self.navbar.release_pan(event)
 
     def mousescroll(self,event):
         if event.xdata is None or event.ydata is None: return
-        xmin,xmax = self.plt.get_xlim()
-        ymin,ymax = self.plt.get_ylim()
+        xmin, xmax = self.plt.get_xlim()
+        ymin, ymax = self.plt.get_ylim()
         if event.button == 'up': #zoom in
             self.plt.set_xlim(event.xdata-(event.xdata-xmin)/2.,
                                       event.xdata+(xmax-event.xdata)/2.)

@@ -13,8 +13,11 @@
    width="1000"
    height="1000"
    id="svg2"
-   inkscape:version="0.48.2 r9819"
-   sodipodi:docname="peak.svg">
+   inkscape:version="0.48.3.1 r9886"
+   sodipodi:docname="peak.svg"
+   inkscape:export-filename="/home/roderick/Documents/2012/Aston/aston/ui/icons/peak.png"
+   inkscape:export-xdpi="4.3200002"
+   inkscape:export-ydpi="4.3200002">
   <sodipodi:namedview
      pagecolor="#ffffff"
      bordercolor="#666666"
@@ -25,7 +28,7 @@
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
      inkscape:window-width="1280"
-     inkscape:window-height="753"
+     inkscape:window-height="780"
      id="namedview7"
      showgrid="false"
      inkscape:zoom="0.26131688"
@@ -45,18 +48,18 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title />
+        <dc:title></dc:title>
       </cc:Work>
     </rdf:RDF>
   </metadata>
   <g
      id="layer1"
-     style="stroke-width:10;stroke-miterlimit:4;stroke-dasharray:none"
+     style="stroke-width:10;stroke-miterlimit:4;stroke-dasharray:none;fill:#bac0c0;fill-opacity:1"
      transform="matrix(2.632699,0,0,4.2028496,-104.28765,-1967.787)">
     <path
        d="M 72.664753,677.6997 C 222.53487,677.40174 141.87325,499.5931 231.84125,499.96656 c 81.31248,0.33753 28.85066,176.36009 157.24003,175.99766"
        id="path2985"
-       style="fill:#ff6600;stroke:#000000;stroke-width:10;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+       style="fill:#bac0c0;stroke:#000000;stroke-width:10;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;fill-opacity:1"
        inkscape:connector-curvature="0"
        sodipodi:nodetypes="csc" />
   </g>

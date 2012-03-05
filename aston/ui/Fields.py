@@ -31,6 +31,7 @@ aston_fields = {
         'm-slv-B-per':'% Solvent C', #type = time-dict
         'm-slv-D':'Solvent D',
         'm-slv-B-per':'% Solvent D', #type = time-dict
+        'm-detect':'Detector Type',
         'm-uv':'UV Wavelengths',
         'm-ms-int-mode':'MS Interface Mode',
         'm-y-units':'Units',
@@ -78,3 +79,13 @@ aston_fields = {
 #for time-dicts:
 #blank = not regulated otherwise, it's a dict with at least one entry: S
 #e.g. {'S':5,0:30,9:80,9.01:100,11:100}
+
+aston_field_opts = {
+    'r-type':['None','Sample','Standard'],
+    'p-type':['None','Sample','Standard'],
+    'sp-type':['None','Sample','Standard','Isotope Standard'],
+    't-smooth':['None','Moving Average','Savitsky-Golay'],
+    't-remove-noise':['None'],
+    'm-type':['None','HPLC','GC'],
+    'm-detect':['None','DAD-UV','MWD-UV','Quad-MS','TOF-MS','Q-TOF-MS'],
+}

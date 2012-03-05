@@ -1,5 +1,7 @@
-from PyQt4 import QtGui
+from PyQt4 import QtCore, QtGui
 from aston_filterwindow_ui import Ui_filterDialog
+
+from aston.ui.Fields import aston_field_opts
 
 class FilterWindow(QtGui.QWidget):
     def __init__(self,parent=None):
@@ -8,14 +10,30 @@ class FilterWindow(QtGui.QWidget):
         self.ui = Ui_filterDialog()
         self.ui.setupUi(self)
         self.ui.buttonBox.clicked.connect(self.clicked)
-        #self.ui.addDefinedIonButton.clicked.connect(self.addDefIon)
-        #self.ui.addSingleIonButton.clicked.connect(self.addSingIon)
-        #self.ui.addRangeIonButton.clicked.connect(self.addRangeIon)
-        #self.ui.addUserIonButton.clicked.connect(self.addUserIon)
-        self.ui.smoothComboBox.addItems(['None','Moving Average','Savitsky-Golay'])
+        
+        dt = parent.obj_tab.returnSelFile()
+        
+        #self.ui.ionList.pressed.connect(self.ionListKeyPressed)
+        self.ui.ionList.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.ui.ionList.customContextMenuRequested.connect(self.iClickMenu)
+        
+        self.ui.definedIonBox.addItems(['TIC','TIME','PRES','TEMP','FLOW'])
+        self.ui.addDefinedIonButton.clicked.connect(self.addDefIon)
+        
+        self.ui.singleIonBox.addItems([str(i) for i in dt.scan(0)])
+        self.ui.singleIonBox.setEditText('')
+        self.ui.addSingleIonButton.clicked.connect(self.addSingleIon)
+        
+        self.ui.addRangeIonButton.clicked.connect(self.addRangeIon)
+        
+        self.ui.addUserIonButton.clicked.connect(self.addUserIon)
+
+        #options for smoothing
+        self.ui.smoothComboBox.addItems(aston_field_opts['t-smooth'])
+        #self.ui.smoothComboBox.addItems(['None','Moving Average','Savitsky-Golay'])
         self.ui.smoothComboBox.currentIndexChanged.connect(self.smoothChanged)
 
-        self.loadInfo(parent.obj_tab.returnSelFile())
+        self.loadInfo(dt)
         self.smoothChanged()
 
     def loadInfo(self,dt):
@@ -70,6 +88,35 @@ class FilterWindow(QtGui.QWidget):
             self.ui.noiseBox.setChecked(True)
         else:
             pass
+        
+    def iClickMenu(self, point):
+        menu = QtGui.QMenu(self.ui.ionList)
+        
+        if len(self.ui.ionList.selectedItems()) > 0:
+            ac = menu.addAction(self.tr('Delete'), self.deleteIon)
+
+        if not menu.isEmpty():
+            menu.exec_(self.ui.ionList.mapToGlobal(point))
+            
+    def deleteIon(self):
+        #for item in self.ui.ionList.selectedItems():
+        pass
+
+    def addDefIon(self):
+        self.ui.ionList.addItem(self.ui.definedIonBox.currentText())
+        
+    def addSingleIon(self):
+        self.ui.ionList.addItem(self.ui.singleIonBox.currentText())
+
+    def addRangeIon(self):
+        ion_range = str(self.ui.startRangeIonBox.text()) + ':' + \
+                    str(self.ui.endRangeIonBox.text())
+        self.ui.ionList.addItem(ion_range)
+        
+    def addUserIon(self):
+        ion_str = self.ui.userIonBox.text()
+        for i in ion_str.split(','):
+            self.ui.ionList.addItem(i)
 
     def smoothChanged(self):
         if self.ui.smoothComboBox.currentText() == 'None':
@@ -98,7 +145,10 @@ class FilterWindow(QtGui.QWidget):
             self._updateFile(dt)
         self.close()
 
-    def _updateFile(self,dt):
+    def _updateFile(self, dt):
+        dt.info['traces'] = ','.join([str(self.ui.ionList.item(i).text())
+          for i in range(self.ui.ionList.count())])
+        
         if self.ui.offsetBox.isChecked():
             if self.ui.XOffsetBox.value() != 0.0:
                 dt.info['t-offset'] = str(self.ui.XOffsetBox.value())
@@ -132,7 +182,6 @@ class FilterWindow(QtGui.QWidget):
                 dt.info['t-smooth'] = 'savitsky-golay'
                 dt.info['t-smooth-window'] = str(self.ui.smoothWindowBox.value())
                 dt.info['t-smooth-order'] = str(self.ui.smoothOrderBox.value())
-                pass
         else:
             for key in ['t-smooth','t-smooth-window','t-smooth-order']:
                 self._delInfo(dt,key)

@@ -6,7 +6,7 @@ import os.path as op
 import json
 from PyQt4 import QtGui, QtCore
 
-from aston.ui.Fields import aston_fields, aston_groups
+from aston.ui.Fields import aston_fields, aston_groups, aston_field_opts
 from aston.Database import AstonDatabase
 
 class FileTreeModel(QtCore.QAbstractItemModel):
@@ -120,12 +120,11 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         return QtCore.Qt.MoveAction
     
     def enableComboCols(self):
-        opts = ['Standard','Sample']
-        for c in ['r-type','p-type','sp-type']:
+        for c in aston_field_opts.keys():
             if c in self.fields and c not in self.cDelegates:
                 #new column, need to add combo support in
-                self.cDelegates[c] = (self.fields.index(c),
-                  ComboDelegate(opts))
+                opts = aston_field_opts[c]
+                self.cDelegates[c] = (self.fields.index(c), ComboDelegate(opts))
                 self.treeView.setItemDelegateForColumn(*self.cDelegates[c])
             elif c not in self.fields and c in self.cDelegates:
                 #column has been deleted, remove from delegate list
@@ -237,7 +236,11 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         if col == 'vis' and obj.db_type == 'file':
             dflags |= QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsUserCheckable
         elif col in ['r-filename'] or col[:2] == 's-' or col == 'vis':
-            return dflags
+            pass
+        elif obj.db_type == 'file' and (col[:2] == 'p-' or col[:3] == 'sp-'):
+            pass
+        elif obj.db_type != 'file' and (col[:2] == 't-' or col[:2] == 'r-'):
+            pass
         else:
             dflags |= QtCore.Qt.ItemIsEditable
         return dflags

@@ -1,53 +1,74 @@
 import numpy as np
 import scipy.ndimage as nd
 from aston.Features import Peak
+from aston.Math import scipy_peak_finding as spf
 
-#TODO: remove these imports
-from matplotlib.path import Path
-import matplotlib.patches as patches
-
-def waveletIntegrate(ptab,dt,ion=None):
+def waveletIntegrate(dt, ion=None):
     #TODO: make this an integration option
     x = dt.trace(ion)
     t = dt.time()
 
     nstep = 20 # number of frequencies to analyse at
-    z = np.zeros((nstep,len(x)))
+    z = np.zeros((nstep, len(x)))
 
     # fxn to calculate window size based on step
     f = lambda i: int((len(x)**(1./(nstep+2.)))**i) #22*(x+1)
     
-    for i in xrange(0,nstep):
+    # perform a continuous wavelet transform and save the results in z
+    for i in range(0, nstep):
         # how long should the wavelet be?
         hat_len = f(i)
         # determine the support of the mexican hat
-        rng = np.linspace(-5,5,hat_len)
+        #rng = np.linspace(-5,5,hat_len)
         # create an array with a mexican hat
-        hat =  1/np.sqrt(hat_len) * (1 - rng**2) * np.exp(-rng**2 / 2)
+        #hat =  1/np.sqrt(hat_len) * (1 - rng**2) * np.exp(-rng**2 / 2)
+        hat = spf.ricker(min(10*hat_len, len(x)), hat_len)
         # convolve the wavelet with the signal at this scale levelax2.
-        z[i] = np.convolve(x,hat,'same')
+        z[i] = np.convolve(x, hat, mode='same')
 
     # plot the wavelet coefficients
     #from matplotlib import cm
     #xs,ys = np.meshgrid(self.data.time(),np.linspace(self.max_bounds[2],self.max_bounds[3],nstep))
     #self.tplot.contourf(xs,ys,z,300,cmap=cm.binary)
     #self.tcanvas.draw()
-
+    
+    max_dists = [f(i) / 4.0 for i in range(0, nstep)]
+    ridges = spf._identify_ridge_lines(z, max_dists, np.ceil(f(0)))
+    filt_ridges = spf._filter_ridge_lines(z, ridges)
+    ridge_locs = sorted(map(lambda x: x[1][0], filt_ridges))
+    
+    pks = []
+    for r in filt_ridges:
+        pk_width = int(f(r[0][0]) / 2.0)
+        pt1 = (t[r[1][0] - pk_width], x[r[1][0] - pk_width])
+        pt2 = (t[r[1][0] + pk_width], x[r[1][0] + pk_width])
+        verts = [pt1]
+        verts += zip(dt.time(pt1[0], pt2[0]), \
+                     dt.trace(ion, pt1[0], pt2[0]))
+        verts += [pt2]
+        info = {'p-type':'Sample', 'p-created':'integrator', \
+                'p-int':'wavelet'}
+        info['name'] = '{:.2f}-{:.2f}'.format(pt1[0], pt2[0])
+        info['p-ion'] = ion
+        pk = Peak(dt.db, None, dt.db_id, info, verts)
+        pks.append(pk)
+    
+    return pks
     # create an True-False array of the local maxima
-    mx = (z == nd.maximum_filter(z,size=(3,17),mode='nearest')) & (z > 100)
+    #mx = (z == nd.maximum_filter(z,size=(3,17),mode='nearest')) & (z > 100)
     # get the indices of the local maxima
-    inds = np.array([i[mx] for i in np.indices(mx.shape)]).T
+    #inds = np.array([i[mx] for i in np.indices(mx.shape)]).T
 
-    for i in inds:
+    #for i in inds:
         #get peak time, width and "area"
         #pk_t, pk_w, pk_a = t[i[1]], f(i[0]), z[i[0],i[1]]
         #print pk_t, pk_w, pk_a
         #try:
-        rng = np.linspace(t[int(i[1]-i[0]/2.)], t[int(i[1]+i[0]/2.)], i[0])
-        verts = z[i[0],i[1]]/np.sqrt(2*np.pi) * np.exp(np.linspace(-5.,5.,i[0])**2/-2.)
-        verts += x[i[1]] - verts[int(i[0]/2)]
-        y = patches.PathPatch(Path(zip(rng,verts)),facecolor='red',lw=0)
-        ptab.masterWindow.tplot.add_patch(y)
+        #rng = np.linspace(t[int(i[1]-i[0]/2.)], t[int(i[1]+i[0]/2.)], i[0])
+        #verts = z[i[0],i[1]]/np.sqrt(2*np.pi) * np.exp(np.linspace(-5.,5.,i[0])**2/-2.)
+        #verts += x[i[1]] - verts[int(i[0]/2)]
+        #y = patches.PathPatch(Path(zip(rng,verts)),facecolor='red',lw=0)
+        #ptab.masterWindow.tplot.add_patch(y)
         #except:
 
 def statSlopeIntegrate(dt, ion=None):

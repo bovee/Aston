@@ -1,41 +1,49 @@
--method database
+method database
 --method editor
 
--compound database
+compound database
 --spectra tool
+----ability to select ranges of spectra
+----shift-click with tool to save spectra to current file
 --compound identification
+----ability to compute numerical match score between spectra
 
--format stuff
+format stuff
 --figure out MS-MS format
 --actuals as a trace type (pressure/flow rate/temp)
+--injection size (in file table)
+--display fraction collection data
 
--chromatogram stuff
+chromatogram stuff
 --autoalignment of multiple chromatograms
 --wavelet integrator
 --remove noise
 --baseline detection (as a trace type?)
 
--peak stuff
+peak stuff
 --Gaussian peak types and conversion to/from 
 --adjustable peaks (little selectors on each end of "baseline")
 --highlight selected (in peak table) peak on graph
 
--user interface
+user interface
 --icon for Aston
 --help manual
 --trace selector dialog
----dialog (or something) for selecting smoothing options
----consistent date types (in file table)
---injection size (in file table)
+----delete items from ion list
+----low-high error checking for ranges, make sure ions are numbers, etc
+--consistent date types (in file table)
 --(better) color schemes for graphs
---display fraction collection data
---better display of "ions" for UV-Vis data (e.g. smooth line/below 0 vals)
---display x axes in seconds
+--better display of "ions" for UV-Vis (e.g. smooth line/handle below 0 vals)
 
--optimization
+optimization
 --separate thread for database updating
---faster 2D plots (better binning)
+--faster 2D plots (better binning?)
 
--distribution
+distribution
 --package size on Macs
 --setup/disttools? need better versioning
+
+long term
+--allow one datafile object to return multiple time axes depending on trace type (e.g. pressure readings at different times from UV measurements)
+--have datafile return units associated with trace types to allow for multiple y axes
+--display x axes in seconds

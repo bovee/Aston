@@ -7,22 +7,38 @@ from aston.Features import Peak
 
 class AstonNavBar(NavigationToolbar2QTAgg):
     def __init__(self, canvas, parent=None):
-        NavigationToolbar2QTAgg.__init__(self,canvas,parent,False)
+        NavigationToolbar2QTAgg.__init__(self, canvas, parent, False)
         self.parent = parent
         self.ev_time = 0
-        self._xypress = None
+        self._xypress = []
+        
+        #remove the plot adjustment buttons
+        self.removeAction(self.actions()[-1])
+        self.removeAction(self.actions()[-1])
+        self.removeAction(self.actions()[-1])
+        
+        #add the alignment tool
+        path = op.join(op.curdir,'aston','ui','icons','align.png')
+        alignToolAct = QtGui.QAction(QtGui.QIcon(path), \
+                                         'Align Chromatogram', self)
+        self.addAction(alignToolAct)
+        alignToolAct.triggered.connect(self.align)
+        
+        self.addSeparator()
         
         #add the peak tool
-        pkpath = op.join(op.curdir,'aston','ui','icons','peak.png')
-        peakToolAct = QtGui.QAction(QtGui.QIcon(pkpath),'Add/Delete Peak',self)
-        self.insertAction(self.actions()[4], peakToolAct)
+        path = op.join(op.curdir,'aston','ui','icons','peak.png')
+        peakToolAct = QtGui.QAction(QtGui.QIcon(path), \
+                                    'Add/Delete Peak', self)
+        self.addAction(peakToolAct)
         peakToolAct.triggered.connect(self.peak)
 
-        #add the alignment tool
-        pkpath = op.join(op.curdir,'aston','ui','icons','align.png')
-        alignToolAct = QtGui.QAction(QtGui.QIcon(pkpath),'Align Chromatogram',self)
-        self.insertAction(self.actions()[4], alignToolAct)
-        alignToolAct.triggered.connect(self.align)
+        #add the spectra tool
+        path = op.join(op.curdir,'aston','ui','icons','spectrum.png')
+        specToolAct = QtGui.QAction(QtGui.QIcon(path), \
+                                        'Get Spectrum', self)
+        self.addAction(specToolAct)
+        specToolAct.triggered.connect(self.spec)
 
     def peak(self, *args):
         self._active = 'PEAK'
@@ -44,9 +60,11 @@ class AstonNavBar(NavigationToolbar2QTAgg):
         self.set_message(self.mode)
 
     def press_peak(self,event):
+        if event.button != 1: return
         self._xypress = event.xdata, event.ydata
 
     def release_peak(self,event):
+        if event.button != 1: return
         dt = self.parent.obj_tab.returnSelFile()
         if dt is None: return
         if dt.db_type != 'file' or dt.getInfo('vis') == 'n': return
@@ -81,7 +99,7 @@ class AstonNavBar(NavigationToolbar2QTAgg):
             self.parent.obj_tab.addObjects(dt, [pk])
             dt.delInfo('s-peaks')
 
-        self._xypress = None
+        self._xypress = []
         self.release(event)
 
     def align(self,*args):
@@ -123,7 +141,7 @@ class AstonNavBar(NavigationToolbar2QTAgg):
         self._xypress = x,y
 
     def drag_align(self,event):
-        if self._xypress is None: return
+        if self._xypress is []: return
         if event.xdata is None or event.ydata is None: return
         dt = self.parent.obj_tab.returnSelFile()
         if dt is None: return
@@ -139,8 +157,43 @@ class AstonNavBar(NavigationToolbar2QTAgg):
         if self._xypress is None: return
         dt = self.parent.obj_tab.returnSelFile()
         dt.saveChanges()
-        self._xypress = None
+        self._xypress = []
         self.release(event)
+        
+    def spec(self, *args):
+        self._active = 'SPECTRUM'
+
+        self.disconnect_all()
+        self._idPress = self.canvas.mpl_connect( \
+            'button_press_event', self.press_spectrum)
+        self._idRelease = self.canvas.mpl_connect( \
+            'button_release_event', self.release_spectrum)
+        self.mode = 'spectrum'
+
+        for a in self.canvas.figure.get_axes():
+            a.set_navigate_mode(self._active)
+
+        self.set_message(self.mode)
+        
+    def press_spectrum(self, event):
+        if event.button != 1: return
+        #TODO: enable spectra collection over a range
+
+    def release_spectrum(self, event):
+        if event.button != 1: return
+        #TODO: figure out how to make shift-click save to database
+        #get the specral data of the current point
+        cur_file = self.parent.obj_tab.returnSelFile()
+        if cur_file is None: return
+        if cur_file.getInfo('vis') != 'y': return
+        scan = cur_file.scan(event.xdata)
+
+        self.parent.specplotter.addSpec(scan)
+        self.parent.specplotter.plotSpec()
+        self.parent.specplotter.specTime = event.xdata
+
+        # draw a line on the main plot for the location
+        self.parent.plotter.drawSpecLine(event.xdata, linestyle='-')
 
     def disconnect_all(self):
         if self._idPress is not None:
