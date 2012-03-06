@@ -37,11 +37,9 @@
      <property name="title">
       <string>Export</string>
      </property>
-     <addaction name="actionChromatogram_as_Picture"/>
-     <addaction name="actionChromatogram_as_CSV"/>
-     <addaction name="actionSpectra_as_Picture"/>
-     <addaction name="actionSpectra_as_CSV"/>
-     <addaction name="actionPeak_List_as_CSV"/>
+     <addaction name="actionExportChromatogram"/>
+     <addaction name="actionExportSpectra"/>
+     <addaction name="actionExportSelectedItems"/>
     </widget>
     <addaction name="actionOpen"/>
     <addaction name="menuExport"/>
@@ -246,9 +244,9 @@
     <string>Open Folder</string>
    </property>
   </action>
-  <action name="actionChromatogram_as_Picture">
+  <action name="actionExportChromatogram">
    <property name="text">
-    <string>Chromatogram as Picture</string>
+    <string>Visible Chromatogram</string>
    </property>
   </action>
   <action name="actionChromatogram_as_CSV">
@@ -259,9 +257,9 @@
     <string>Chromatogram as CSV</string>
    </property>
   </action>
-  <action name="actionSpectra_as_Picture">
+  <action name="actionExportSpectra">
    <property name="text">
-    <string>Spectra as Picture</string>
+    <string>Visible Spectra</string>
    </property>
   </action>
   <action name="actionSpectra_as_CSV">
@@ -272,12 +270,12 @@
     <string>Spectra as CSV</string>
    </property>
   </action>
-  <action name="actionPeak_List_as_CSV">
+  <action name="actionExportSelectedItems">
    <property name="enabled">
-    <bool>false</bool>
+    <bool>true</bool>
    </property>
    <property name="text">
-    <string>Peak List as CSV</string>
+    <string>Selected Items</string>
    </property>
   </action>
   <action name="actionQuit">
@@ -464,6 +462,11 @@
    </property>
    <property name="text">
     <string>Compounds</string>
+   </property>
+  </action>
+  <action name="actionAll_Items_as_CSV">
+   <property name="text">
+    <string>All Items as CSV</string>
    </property>
   </action>
  </widget>

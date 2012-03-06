@@ -31,11 +31,9 @@ class AstonWindow(QtGui.QMainWindow):
 
         #connect the menu logic
         self.ui.actionOpen.triggered.connect(self.openFolder)
-        self.ui.actionPeak_List_as_CSV.triggered.connect(self.peakListAsCSV)
-        self.ui.actionChromatogram_as_Picture.triggered.connect(self.chromatogramAsPic)
-        self.ui.actionChromatogram_as_CSV.triggered.connect(self.chromatogramAsCSV)
-        self.ui.actionSpectra_as_Picture.triggered.connect(self.spectrumAsPic)
-        self.ui.actionSpectra_as_CSV.triggered.connect(self.spectrumAsCSV)
+        self.ui.actionExportChromatogram.triggered.connect(self.exportChromatogram)
+        self.ui.actionExportSpectra.triggered.connect(self.exportSpectrum)
+        self.ui.actionExportSelectedItems.triggered.connect(self.exportItems)
         self.ui.actionIntegrate.triggered.connect(self.quickIntegrate)
         self.ui.actionEditFilters.triggered.connect(self.showFilterWindow)
         self.ui.actionRevert.triggered.connect(self.revertChromChange)
@@ -107,11 +105,8 @@ class AstonWindow(QtGui.QMainWindow):
         self.obj_tab = FileTreeModel(self.directory,self.ui.fileTreeView,self)
         self.plotData()
 
-    def chromatogramAsPic(self):
-        fname = str(QtGui.QFileDialog.getSaveFileName(self,"Save As..."))
-        self.plotter.plt.get_figure().savefig(fname,transparent=True)
-
-    def chromatogramAsCSV(self):
+    def exportChromatogramAsCSV(self):
+        #FIXME: obsolete, needs to be in exportChromatogram
         fname = str(QtGui.QFileDialog.getSaveFileName(self,"Save As..."))
         f = open(fname,'w')
         dt = self.obj_tab.returnSelFile()
@@ -123,8 +118,8 @@ class AstonWindow(QtGui.QMainWindow):
             f.write(','.join(i) + '\n')
         f.close()
 
-    def spectrumAsCSV(self):
-        #FIXME
+    def exportSpectrumAsCSV(self):
+        #FIXME: obsolete, needs to be integrated into exportSpectrum
         fname = str(QtGui.QFileDialog.getSaveFileName(self,"Save As..."))
         f = open(fname,'w')
         cgrm = self.obj_tab.returnSelFile()
@@ -136,17 +131,21 @@ class AstonWindow(QtGui.QMainWindow):
             f.write(','.join(i) + '\n')
         f.close()
         
-    def spectrumAsPic(self):
+    def exportChromatogram(self):
+        fname = str(QtGui.QFileDialog.getSaveFileName(self,"Save As..."))
+        self.plotter.plt.get_figure().savefig(fname,transparent=True)
+        
+    def exportSpectrum(self):
         fname = str(QtGui.QFileDialog.getSaveFileName(self,"Save As..."))
         self.specplotter.plt.get_figure().savefig(fname, transparent=True)
 
-    def peakListAsCSV(self):
-        #FIXME
+    def exportItems(self):
+        #TODO: options for exporting different delimiters (e.g. tab) or 
+        #exporting select items as pictures (e.g. selected spectra)
         fname = str(QtGui.QFileDialog.getSaveFileName(self,"Save As..."))
         f = open(fname,'w')
-        for i in self.ptab_mod.peaks:
-            f.write(str(i.time()) + ',' + str(i.length()) + ',' + str(i.area()) + '\n')
-
+        sel = self.obj_tab.returnSelFiles()
+        f.write(self.obj_tab.itemsAsCSV(sel))
         f.close()
 
     def quickIntegrate(self):
@@ -156,8 +155,8 @@ class AstonWindow(QtGui.QMainWindow):
 
         #add compounds for ions from the first set
         for ion in ions:
-            pks = waveletIntegrate(dt, ion)
-            #pks = statSlopeIntegrate(dt, ion)
+            #pks = waveletIntegrate(dt, ion)
+            pks = statSlopeIntegrate(dt, ion)
             self.obj_tab.addObjects(dt, pks)
         dt.delInfo('s-peaks')
         self.plotter.redraw()

@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'aston.ui'
 #
-# Created: Tue Feb 14 16:49:04 2012
+# Created: Tue Mar  6 13:53:10 2012
 #      by: PyQt4 UI code generator 4.9.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -130,19 +130,19 @@ class Ui_MainWindow(object):
         MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(8), self.compoundDockWidget)
         self.actionOpen = QtGui.QAction(MainWindow)
         self.actionOpen.setObjectName(_fromUtf8("actionOpen"))
-        self.actionChromatogram_as_Picture = QtGui.QAction(MainWindow)
-        self.actionChromatogram_as_Picture.setObjectName(_fromUtf8("actionChromatogram_as_Picture"))
+        self.actionExportChromatogram = QtGui.QAction(MainWindow)
+        self.actionExportChromatogram.setObjectName(_fromUtf8("actionExportChromatogram"))
         self.actionChromatogram_as_CSV = QtGui.QAction(MainWindow)
         self.actionChromatogram_as_CSV.setEnabled(False)
         self.actionChromatogram_as_CSV.setObjectName(_fromUtf8("actionChromatogram_as_CSV"))
-        self.actionSpectra_as_Picture = QtGui.QAction(MainWindow)
-        self.actionSpectra_as_Picture.setObjectName(_fromUtf8("actionSpectra_as_Picture"))
+        self.actionExportSpectra = QtGui.QAction(MainWindow)
+        self.actionExportSpectra.setObjectName(_fromUtf8("actionExportSpectra"))
         self.actionSpectra_as_CSV = QtGui.QAction(MainWindow)
         self.actionSpectra_as_CSV.setEnabled(False)
         self.actionSpectra_as_CSV.setObjectName(_fromUtf8("actionSpectra_as_CSV"))
-        self.actionPeak_List_as_CSV = QtGui.QAction(MainWindow)
-        self.actionPeak_List_as_CSV.setEnabled(False)
-        self.actionPeak_List_as_CSV.setObjectName(_fromUtf8("actionPeak_List_as_CSV"))
+        self.actionExportSelectedItems = QtGui.QAction(MainWindow)
+        self.actionExportSelectedItems.setEnabled(True)
+        self.actionExportSelectedItems.setObjectName(_fromUtf8("actionExportSelectedItems"))
         self.actionQuit = QtGui.QAction(MainWindow)
         self.actionQuit.setObjectName(_fromUtf8("actionQuit"))
         self.actionIntegrate = QtGui.QAction(MainWindow)
@@ -213,11 +213,11 @@ class Ui_MainWindow(object):
         self.actionCompounds = QtGui.QAction(MainWindow)
         self.actionCompounds.setCheckable(True)
         self.actionCompounds.setObjectName(_fromUtf8("actionCompounds"))
-        self.menuExport.addAction(self.actionChromatogram_as_Picture)
-        self.menuExport.addAction(self.actionChromatogram_as_CSV)
-        self.menuExport.addAction(self.actionSpectra_as_Picture)
-        self.menuExport.addAction(self.actionSpectra_as_CSV)
-        self.menuExport.addAction(self.actionPeak_List_as_CSV)
+        self.actionAll_Items_as_CSV = QtGui.QAction(MainWindow)
+        self.actionAll_Items_as_CSV.setObjectName(_fromUtf8("actionAll_Items_as_CSV"))
+        self.menuExport.addAction(self.actionExportChromatogram)
+        self.menuExport.addAction(self.actionExportSpectra)
+        self.menuExport.addAction(self.actionExportSelectedItems)
         self.menuFile.addAction(self.actionOpen)
         self.menuFile.addAction(self.menuExport.menuAction())
         self.menuFile.addSeparator()
@@ -272,11 +272,11 @@ class Ui_MainWindow(object):
         self.methodDockWidget.setWindowTitle(QtGui.QApplication.translate("MainWindow", "Methods", None, QtGui.QApplication.UnicodeUTF8))
         self.compoundDockWidget.setWindowTitle(QtGui.QApplication.translate("MainWindow", "Compounds", None, QtGui.QApplication.UnicodeUTF8))
         self.actionOpen.setText(QtGui.QApplication.translate("MainWindow", "Open Folder", None, QtGui.QApplication.UnicodeUTF8))
-        self.actionChromatogram_as_Picture.setText(QtGui.QApplication.translate("MainWindow", "Chromatogram as Picture", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionExportChromatogram.setText(QtGui.QApplication.translate("MainWindow", "Visible Chromatogram", None, QtGui.QApplication.UnicodeUTF8))
         self.actionChromatogram_as_CSV.setText(QtGui.QApplication.translate("MainWindow", "Chromatogram as CSV", None, QtGui.QApplication.UnicodeUTF8))
-        self.actionSpectra_as_Picture.setText(QtGui.QApplication.translate("MainWindow", "Spectra as Picture", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionExportSpectra.setText(QtGui.QApplication.translate("MainWindow", "Visible Spectra", None, QtGui.QApplication.UnicodeUTF8))
         self.actionSpectra_as_CSV.setText(QtGui.QApplication.translate("MainWindow", "Spectra as CSV", None, QtGui.QApplication.UnicodeUTF8))
-        self.actionPeak_List_as_CSV.setText(QtGui.QApplication.translate("MainWindow", "Peak List as CSV", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionExportSelectedItems.setText(QtGui.QApplication.translate("MainWindow", "Selected Items", None, QtGui.QApplication.UnicodeUTF8))
         self.actionQuit.setText(QtGui.QApplication.translate("MainWindow", "Quit", None, QtGui.QApplication.UnicodeUTF8))
         self.actionIntegrate.setText(QtGui.QApplication.translate("MainWindow", "Quick Integrate", None, QtGui.QApplication.UnicodeUTF8))
         self.actionIntegration_Parameters.setText(QtGui.QApplication.translate("MainWindow", "Integration Parameters", None, QtGui.QApplication.UnicodeUTF8))
@@ -301,4 +301,5 @@ class Ui_MainWindow(object):
         self.actionSpectra.setText(QtGui.QApplication.translate("MainWindow", "Spectra", None, QtGui.QApplication.UnicodeUTF8))
         self.actionMethods.setText(QtGui.QApplication.translate("MainWindow", "Methods", None, QtGui.QApplication.UnicodeUTF8))
         self.actionCompounds.setText(QtGui.QApplication.translate("MainWindow", "Compounds", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionAll_Items_as_CSV.setText(QtGui.QApplication.translate("MainWindow", "All Items as CSV", None, QtGui.QApplication.UnicodeUTF8))
 

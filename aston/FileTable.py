@@ -81,7 +81,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         types.append('application/x-aston-file')
         return types
 
-    def mimeData(self, indexList):
+    def mimeData(self, indexList, incHeaders=False):
         row_lst = []
         id_lst = []
         flds = [self.fields[self.treeView.header().logicalIndex(fld)] \
@@ -95,7 +95,10 @@ class FileTreeModel(QtCore.QAbstractItemModel):
                         col_lst.append(i.internalPointer().getInfo(col))
                 row_lst.append('\t'.join(col_lst))
         data = QtCore.QMimeData()
-        data.setText('\n'.join(row_lst))
+        if incHeaders:
+            data.setText(','.join(flds)+'\n'+'\n'.join(row_lst))
+        else:
+            data.setText('\n'.join(row_lst))
         data.setData('application/x-aston-file',','.join(id_lst))
         return data
 
@@ -423,7 +426,24 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             if cls is None or obj.db_type == cls:
                 files.append(obj)
         return files
-
+    
+    def itemsAsCSV(self, itms, delim=',', incHeaders=True):
+        flds = [self.fields[self.treeView.header().logicalIndex(fld)] \
+                    for fld in range(len(self.fields))]
+        row_lst = []
+        for i in itms:
+            col_lst = []
+            for col in flds:
+                if col not in ['vis']:
+                    col_lst.append(i.getInfo(col))
+            row_lst.append(delim.join(col_lst))
+                
+        if incHeaders:
+            flds = [aston_fields[i] for i in flds if i not in ['vis']]
+            return delim.join(flds)+'\n'+'\n'.join(row_lst)
+        else:
+            return '\n'.join(row_lst)
+    
 class FilterModel(QtGui.QSortFilterProxyModel):
     def __init__(self, parent=None):
         super(FilterModel,self).__init__(parent)

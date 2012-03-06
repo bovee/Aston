@@ -47,3 +47,4 @@ long term
 --allow one datafile object to return multiple time axes depending on trace type (e.g. pressure readings at different times from UV measurements)
 --have datafile return units associated with trace types to allow for multiple y axes
 --display x axes in seconds
+--use hashes of data instead of filenames to match data to database entries
