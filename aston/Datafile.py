@@ -2,10 +2,8 @@
 and other instrument specific classes and the rest of the program.'''
 #pylint: disable=C0103
 
-import struct
 import os.path as op
 import numpy as np
-import json
 from scipy.interpolate import interp1d
 from aston.Features import Spectrum, Peak
 from aston.Database import DBObject

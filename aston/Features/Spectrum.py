@@ -8,7 +8,6 @@ class Spectrum(DBObject):
     @property
     def data(self):
         return self.rawdata
-
     
     def _calcInfo(self, fld):
         if fld == 'sp-d13c':

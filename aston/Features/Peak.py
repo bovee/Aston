@@ -9,7 +9,20 @@ class Peak(DBObject):
 
     @property
     def data(self):
-        return np.array(self.rawdata)
+        if self.getInfo('p-model') == 'gaussian':
+            #TODO: gaussian params should be stored in the database itself
+            #and this "data" should only be generated upon conversion
+            #into the gaussian "peak model."
+            
+            #gaussian parameters: st_t,en_t,points,t,base,height,width
+            st_t, en_t, pts, t, spc, y0, h, w = self.rawdata
+
+            gauss = lambda t : y0 + h*np.exp(-(t-x)**2/(2*w**2))
+            x = np.linspace(st_t,en_t,pts)
+            g_line = gauss(x)
+            return g_line
+        else:
+            return np.array(self.rawdata)
     
     def _calcInfo(self, fld):
         if fld == 'p-s-area':
@@ -39,24 +52,12 @@ class Peak(DBObject):
         prt = self.getParentOfType('file')
         time = peakmath.time(self.data)
         if method is None:
-            data = prt.scan()
+            data = prt.scan(time)
         info = {'sp-time':str(time)}
         return Spectrum(self.db, None, self.db_id, info, data)
 
-    def changePeakType(self,new_type):
-        #http://www.scipy.org/Cookbook/FittingData
-        pass
-
-class GaussianPeak(Peak):
-    def __init__(self, *args, **kwargs):
-        super(Peak, self).__init__('peak', *args, **kwargs)
-
-    @property
-    def data(self):
-        #gaussian parameters: st_t, en_t, points, t, base, height, width
-        st_t, en_t, pts, t, spc, y0, h, w = self.rawdata
-        
-        gauss = lambda t : y0 + h*np.exp(-(t-x)**2/(2*w**2))
-        x = np.linspace(st_t,en_t,pts)
-        g_line = gauss(x)
-        return g_line
+    def setInfo(self, fld, key):
+        if fld == 'p-model':
+            pass #TODO: change the underlying data into the new model
+            #http://www.scipy.org/Cookbook/FittingData
+        super(Peak, self).setInfo(fld, key)

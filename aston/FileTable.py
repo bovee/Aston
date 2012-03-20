@@ -223,7 +223,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             if obj.getInfo('vis') == 'y':
                 self.masterWindow.plotData()
         else:
-            obj.info[col] = data
+            obj.setInfo(col, data)
         obj.saveChanges()
         self.dataChanged.emit(index, index)
         return True

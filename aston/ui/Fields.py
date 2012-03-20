@@ -65,6 +65,7 @@ aston_fields = {
     # peak info
         'p-ion':'Peak Ion',
         'p-type':'Peak Type',
+        'p-model':'Peak Model',
         'p-s-area':'Peak Area',
         'p-s-length':'Peak Width (min)',
         'p-s-height':'Peak Height',
@@ -83,6 +84,7 @@ aston_fields = {
 aston_field_opts = {
     'r-type':['None','Sample','Standard'],
     'p-type':['None','Sample','Standard'],
+    'p-model':['Raw','Gaussian'],
     'sp-type':['None','Sample','Standard','Isotope Standard'],
     't-smooth':['None','Moving Average','Savitsky-Golay'],
     't-remove-noise':['None'],
