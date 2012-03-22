@@ -2,6 +2,7 @@ from aston import Datafile
 import struct
 import time
 import os
+import numpy as np
 
 class ThermoCF(Datafile.Datafile):
     def __init__(self,*args,**kwargs):
@@ -22,13 +23,14 @@ class ThermoCF(Datafile.Datafile):
         f.seek(f.tell()+62)
         nscans = struct.unpack('H',f.read(2))[0]
 
-        self.times = []
-        self.data = []
+        #TODO: this shouldn't be hardcoded
+        self.ions = [44,45,46]
+        ni = len(self.ions)
+        
         f.seek(f.tell()+35)
-        for _ in range(nscans):
-            self.times.append(struct.unpack('<f',f.read(4))[0] / 60.)
-            ms = map(lambda x,y:(x,y),(44,45,46),struct.unpack('<ddd',f.read(24)))
-            self.data.append(dict(ms))
+        self.data = np.array([struct.unpack('<f'+ni*'d', f.read(4+ni*8)) \
+                             for _ in range(nscans)])
+        self.data[:,0] /= 60. #convert time to minutes
         f.close()
 
     def _updateInfoFromFile(self):
@@ -50,8 +52,6 @@ class ThermoDXF(Datafile.Datafile):
 
     def _cacheData(self):
         if self.data is not None: return
-        self.times = []
-        self.data = []
 
         f = open(self.rawdata,'rb')
         f.seek(11)
@@ -62,15 +62,18 @@ class ThermoDXF(Datafile.Datafile):
                 f.close()
                 return
 
-        f.read(4) #not sure what this value means
+        f.read(4) #not sure what this value means?
+        
+        #TODO: this shouldn't be hardcoded
+        self.ions = [44,45,46]
+        ni = len(self.ions)
 
-        #next line assumes all record are 28 bytes long ('fddd')
-        nscans = int(struct.unpack('<I',f.read(4))[0]/28.0)
+        #bytes until the end converted to # of records
+        nscans = int(struct.unpack('<I',f.read(4))[0] / (4.0+ni*8.0))
 
-        for _ in range(nscans):
-            self.times.append(struct.unpack('<f',f.read(4))[0] / 60.)
-            ms = map(lambda x,y:(x,y),(44,45,46),struct.unpack('<ddd',f.read(24)))
-            self.data.append(dict(ms))
+        self.data = np.array([struct.unpack('<f'+ni*'d', f.read(4+ni*8)) \
+                             for _ in range(nscans)])
+        self.data[:,0] /= 60. #convert time to minutes
         f.close()
 
     def _updateInfoFromFile(self):

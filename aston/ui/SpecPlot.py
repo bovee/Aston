@@ -41,7 +41,6 @@ class SpecPlotter(object):
             self.scansToDisp.append(label)
     
     def plotSpec(self):
-
         #plot it in the area below
         self.plt.cla()
         
@@ -59,10 +58,10 @@ class SpecPlotter(object):
             try:
                 #FIXME: this crashes on Windows unless the user has clicked on
                 #the spectrum graph previously. Matplotlib bug, needs workaround
-                self.plt.vlines(scn.keys(),[0],scn.values(),color=clr,alpha=0.5)
+                self.plt.vlines(scn[0],0,scn[1],color=clr,alpha=0.5)
             except:
                 pass
-            self.plt.plot(scn.keys(),scn.values(),',',color=clr)
+            self.plt.plot(scn[0],scn[1],',',color=clr)
 #            self.plt.set_ylim(bottom=0)
 
             if scn_nm in self.scansToLbl:
@@ -72,20 +71,22 @@ class SpecPlotter(object):
                 v2lbl = {} #values to label
                 plbl = [] #skip labeling these values
                 nls = -1*min(max(int(len(scn)/10.0),10),50) #number of labels
-                for i in np.array(scn.values()).argsort()[:nls:-1]:
-                    mz = scn.keys()[i]
+                for i in np.array(scn[1]).argsort()[:nls:-1]:
+                    mz = scn[0][i]
+                    #don't allow a new label within 1.5 units of another
                     if not np.any(np.abs(np.array(plbl)-mz) < 1.5):
-                        v2lbl[mz] = scn.values()[i]
+                        v2lbl[mz] = scn[1][i]
                     plbl.append(mz)
 
                 #add peak labels
                 for v in v2lbl:
-                    self.plt.text(v,v2lbl[v],str(v),ha='center', \
-                      va='bottom',rotation=90,size=10,color=clr, \
+                    self.plt.text(v, v2lbl[v], str(v), ha='center', \
+                      va='bottom', rotation=90, size=10, color=clr, \
                       bbox={'boxstyle':'larrow,pad=0.3','fc':clr, \
                             'ec':clr,'lw':1,'alpha':'0.25'})
 
         #redraw the canvas
+        self.plt.set_xlim(min(scn[0]),max(scn[0]))
         self.canvas.draw()
 
     def specmousedown(self,event):

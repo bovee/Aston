@@ -6,36 +6,44 @@ from aston.Features.Spectrum import Spectrum
 class Peak(DBObject):
     def __init__(self, *args, **kwargs):
         super(Peak, self).__init__('peak', *args, **kwargs)
-
-    @property
-    def data(self):
+        
         if self.getInfo('p-model') == 'gaussian':
             #TODO: gaussian params should be stored in the database itself
             #and this "data" should only be generated upon conversion
             #into the gaussian "peak model."
             
             #gaussian parameters: st_t,en_t,points,t,base,height,width
-            st_t, en_t, pts, t, spc, y0, h, w = self.rawdata
+            y0 = self.info['p-s-base'] #TODO: fix this
+            t = self.info['p-s-time']
+            h = self.info['p-s-height']
+            w = self.info['p-s-pwhm']
 
             gauss = lambda t : y0 + h*np.exp(-(t-x)**2/(2*w**2))
-            x = np.linspace(st_t,en_t,pts)
-            g_line = gauss(x)
-            return g_line
+            times = self.rawdata[:,0]
+            self.data = np.array(gauss(times))
         else:
-            return np.array(self.rawdata)
+            self.data = np.array(self.rawdata)
+
+    def time(self, st_time = None, en_time = None):
+        pass
     
-    def _calcInfo(self, fld):
+    def trace(self, ion=None):
+        pass
+    
+    def _loadInfo(self, fld):
         if fld == 'p-s-area':
-            return str(peakmath.area(self.data))
+            self.info[fld] = str(peakmath.area(self.data))
         elif fld == 'p-s-length':
-            return str(peakmath.length(self.data))
+            self.info[fld] = str(peakmath.length(self.data))
         elif fld == 'p-s-height':
-            return str(peakmath.height(self.data))
+            self.info[fld] = str(peakmath.height(self.data))
         elif fld == 'p-s-time':
-            return str(peakmath.time(self.data))
+            self.info[fld] = str(peakmath.time(self.data))
         elif fld == 'p-s-pwhm':
-            return str(peakmath.length(self.data, pwhm=True))
-        elif fld == 'p-s-pkcap':
+            self.info[fld] = str(peakmath.length(self.data, pwhm=True))
+        
+    def calcInfo(self, fld):
+        if fld == 'p-s-pkcap':
             prt = self.getParentOfType('file')
             if prt is None:
                 return ''

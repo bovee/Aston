@@ -39,7 +39,6 @@ def height(data):
     return data[:,1].max() - data[:,1].min()
 
 def time(data):
-    #TODO: add support for spectra times
     if data[1,0] < data[:,0].max():
         return data[data[:,1].argmax(),0]
     else: # inverted peak

@@ -53,17 +53,17 @@ class Datafile(DBObject):
         #self._updateInfoFromFile()
  
         #make stubs for the time array and the data array
-        self.times = None
+        self.ions = []
         self.data = None
 
     def _getTimeSlice(self, arr, st_time=None, en_time=None):
         '''Returns a slice of the incoming array filtered between
         the two times specified. Assumes the array is the same
-        length as self.times. Acts in the time() and trace() functions.'''
-        if len(self.times) == 0:
-            return np.array([])
+        length as self.data. Acts in the time() and trace() functions.'''
+        if self.data.shape[0] == 0:
+            return self.data[:,0]
         
-        tme = np.array(self.times)
+        tme = self.data[:,0].copy()
         if 't-scale' in self.info:
             tme *= float(self.info['t-scale'])
         if 't-offset' in self.info:
@@ -74,7 +74,7 @@ class Datafile(DBObject):
         else:
             st_idx = (np.abs(tme-st_time)).argmin()
         if en_time is None:
-            en_idx = len(self.times)
+            en_idx = self.data.shape[0]
         else:
             en_idx = (np.abs(tme-en_time)).argmin()+1
         return arr[st_idx:en_idx]
@@ -85,11 +85,11 @@ class Datafile(DBObject):
         #load the data if it hasn't been already
         #TODO: this should cache only the times (to speed up access
         #in case we're looking at something with the _getTotalTrace)
-        if self.times is None:
+        if self.data is None:
             self._cacheData()
         
         #scale and offset the data appropriately
-        tme = np.array(self.times)
+        tme = self.data[:,0].copy()
         if 't-scale' in self.info:
             tme *= float(self.info['t-scale'])
         if 't-offset' in self.info:
@@ -140,7 +140,7 @@ class Datafile(DBObject):
 
         #null case
         if istr.strip() == '':
-            return np.zeros(len(self.times))
+            return np.zeros(self.data.shape[0])
         
         #remove any parantheses or pluses around the whole thing
         if istr[0] in '+':
@@ -158,14 +158,14 @@ class Datafile(DBObject):
             if fxn == 'file' or fxn == 'f':
                 args = istr[istr.find('(')+1:-1].split(';')
                 dt = self.database.getFileByName(args[0])
-                if dt is None: return np.zeros(len(self.times))
+                if dt is None: return np.zeros(self.data.shape[0])
                 if len(args) > 1:
                     y = dt.trace(args[1])
                 else:
                     y = dt.trace()
-                t = np.array(dt.times)
+                t = dt.data[:,0]
                 f = interp1d(t, y, bounds_error=False, fill_value=0.0)
-                return f(self.times)
+                return f(self.data[:,0])
             else:
                 args = istr[istr.find('(')+1:-1].split(';')
                 ic = self._parseIonString(args[0])
@@ -183,14 +183,14 @@ class Datafile(DBObject):
             elif all(i in '0123456789.' for i in istr):
                 return self._getIonTrace(float(istr))
             elif istr[0] == '!' and all(i in '0123456789.' for i in istr[1:]):
-                return np.ones(len(self.times)) * float(istr[1:])
+                return np.ones(self.data.shape[0]) * float(istr[1:])
             elif istr == '!pi':
-                return np.ones(len(self.times)) * np.pi
+                return np.ones(self.data.shape[0]) * np.pi
             else:
                 return self._getNamedTrace(istr)
         
         #parse out the additive parts
-        ic = np.zeros(len(self.times))
+        ic = np.zeros(self.data.shape[0])
         pa = ''
         for i in istr:
             if i in '+-' and pa[-1] not in '*/+' and \
@@ -226,7 +226,7 @@ class Datafile(DBObject):
     def _getNamedTrace(self, name):
         lookdict = {'temp':'m-tmp','pres':'m-prs','flow':'m-flw'}
         if name == 't' or name == 'time':
-            return self.time()
+            return self.data[:,0].copy()
         #elif name == 'b' or name == 'base':
         #    #TODO: create a baseline
         #    pass
@@ -271,12 +271,12 @@ class Datafile(DBObject):
                 srt_ind = np.argsort(x)
                 if 'S' in tpts:
                     #there's a "S"tart value defined
-                    return np.interp(self.times, x[srt_ind], y[srt_ind],
+                    return np.interp(self.data[:,0], x[srt_ind], y[srt_ind],
                       float(tpts['S']))
                 else:
-                    return np.interp(self.times, x[srt_ind], y[srt_ind])
+                    return np.interp(self.data[:,0], x[srt_ind], y[srt_ind])
             elif is_num(val):
-                return float(val) * np.ones(len(self.times))
+                return float(val) * np.ones(self.data.shape[0])
         else:
             return self._getOtherTrace(name)
     
@@ -289,7 +289,7 @@ class Datafile(DBObject):
                 return f(ic, *args)
             except TypeError:
                 pass
-        return np.array([0] * len(ic))
+        return np.zeros(ic.shape[0])
 
     def scan(self, time):
         '''Returns the spectrum from a specific time.'''
@@ -300,11 +300,9 @@ class Datafile(DBObject):
             time -= float(self.info['t-offset'])
         if 't-scale' in self.info:
             time /= float(self.info['t-scale'])
-        try:
-            return self.data[self.times.index(time)]
-        except ValueError:
-            idx = (np.abs(np.array(self.times)-time)).argmin()
-            return self.data[idx]
+            
+        idx = (np.abs(np.array(self.data[:,0])-time)).argmin()
+        return (np.array(self.ions), np.array(self.data[idx,1:]))
     
     def _loadInfo(self, fld):
         #create the key if it doesn't yet exist
@@ -316,9 +314,9 @@ class Datafile(DBObject):
             self.info[fld] = op.join(op.basename( \
               op.dirname(self.rawdata)), op.basename(self.rawdata))
         elif fld == 's-scans':
-            self.info['s-scans'] = str(len(self.time()))
+            self.info['s-scans'] = str(self.data.shape[0])
         elif fld == 's-time-st' or fld == 's-time-en':
-            time = self.time()
+            time = self.data[:,0]
             self.info['s-time-st'] = str(min(time))
             self.info['s-time-en'] = str(max(time))
         elif fld == 's-peaks' or fld == 's-spectra':
@@ -337,15 +335,10 @@ class Datafile(DBObject):
         elif fld == 's-mz-min' or fld == 's-mz-max':
             if self.data is None:
                 self._cacheData()
-            mz_min, mz_max = 1e7, 0
-            for i in self.data:
-                try:
-                    mz_min = min(min(i.keys()), mz_min)
-                    mz_max = max(max(i.keys()), mz_max)
-                except ValueError:
-                    pass
-            self.info['s-mz-min'] = str(mz_min)
-            self.info['s-mz-max'] = str(mz_max)
+            ions = np.array([i for i in self.ions \
+                             if type(i) is int or type(i) is float])
+            self.info['s-mz-min'] = str(min(ions))
+            self.info['s-mz-max'] = str(max(ions))
         else:
             pass
 
@@ -354,25 +347,28 @@ class Datafile(DBObject):
 
     def _cacheData(self):
         '''Load the data into the Datafile for the first time.'''
-        self.times = []
-        self.data = []
+        self.ions = []
+        self.data = np.array([])
 
     def _getIonTrace(self, val, tol=0.5):
         '''Return a specific ion trace from the data.'''
         if self.data is None:
             self._cacheData()
-        return np.array([sum([i for ion, i in pt.items() \
-            if ion >= val-tol and ion <= val+tol]) for pt in self.data])
+        ions = np.array([i for i in self.ions \
+                         if type(i) is int or type(i) is float])
+        rows = 1 + np.where(np.abs(ions-val) < tol)[0]
+        return self.data[:,rows].sum(axis=1)
 
     def _getOtherTrace(self, name):
         '''Return a named trace, like pressure or temperature.'''
-        return np.zeros(len(self.times))
+        return np.zeros(self.data.shape[0])
 
     def _getTotalTrace(self):
         '''Return the default, total trace.'''
         if self.data is None:
             self._cacheData()
-        return np.array([sum(i.values()) for i in self.data])
+        return self.data[:,1:].sum(axis=1)
+        #return np.array([sum(i.values()) for i in self.data])
 
     def _updateInfoFromFile(self):
         '''Return file information.'''

@@ -65,9 +65,11 @@ class AstonDatabase(object):
                 if ext == '.MS' and magic == 0x0132:
                     ftype = 'AgilentMS'
                 elif ext == '.BIN' and magic == 513:
-                    ftype = 'AgilentMSMSProf'
+                    #ftype = 'AgilentMSMSProf'
+                    ftype = None
                 elif ext == '.BIN' and magic == 257:
-                    ftype = 'AgilentMSMSScan'
+                    #ftype = 'AgilentMSMSScan'
+                    ftype = None
                 elif ext == '.CF' and magic == 0xFFFF:
                     ftype = 'ThermoCF'
                 elif ext == '.DXF' and magic == 0xFFFF:
@@ -77,7 +79,8 @@ class AstonDatabase(object):
                 elif ext == '.CH' and magic == 0x0233:
                     ftype = 'AgilentMWD'
                 elif ext == '.UV' and magic == 0x0233:
-                    ftype = 'AgilentCSDAD'
+                    #ftype = 'AgilentCSDAD'
+                    ftype = None
                 elif ext == '.CSV':
                     ftype = 'CSVFile'
                 else:

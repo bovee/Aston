@@ -1,6 +1,7 @@
 from aston import Datafile
 import struct
 import numpy as np
+import scipy
 
 class AgilentMS(Datafile.Datafile):
     def __init__(self,*args,**kwargs):
@@ -32,7 +33,7 @@ class AgilentMS(Datafile.Datafile):
             f.seek(npos)
         f.close()
         return tic
-
+    
     def _cacheData(self):
         if self.data is not None:
             return
@@ -48,34 +49,61 @@ class AgilentMS(Datafile.Datafile):
         else:
             f.seek(0x118)
         nscans = struct.unpack('>H',f.read(2))[0]
-
+        
         # find the starting location of the data
         f.seek(0x10A)
         f.seek(2*struct.unpack('>H',f.read(2))[0]-2)
 
-        self.times = []
-        self.data = []
-        for _ in range(nscans):
+        tot_pts = 0
+        indptr = np.empty(nscans+1, dtype=int)
+        indptr[0] = 0
+        for scn in range(nscans):
+            npos = f.tell() + 2*struct.unpack('>H',f.read(2))[0]
+            #f.seek(f.tell()+10)
+            #tot_pts += 1+struct.unpack('>H',f.read(2))[0]
+            tot_pts += (npos - f.tell() - 22) / 4
+            indptr[scn+1] = tot_pts
+            f.seek(npos)
+            
+        # find the starting location of the data
+        f.seek(0x10A)
+        # jump to the start of the data
+        f.seek(2*struct.unpack('>H',f.read(2))[0]-2)
+
+        ions = []
+        i_lkup = {}
+        idxs = np.empty(tot_pts, dtype=int)
+        vals = np.empty(tot_pts, dtype=float)
+        
+        for scn in range(nscans):
             npos = f.tell() + 2*struct.unpack('>H',f.read(2))[0]
             # the sampling rate is evidentally 60 kHz on all Agilent's MS's
-            self.times.append(struct.unpack('>I',f.read(4))[0] / 60000.)
-
-            #something is broken about LCMS files that needs this?
-            #if npos == f.tell()-6: break
-
-            f.seek(f.tell()+6)
-            npts = struct.unpack('>H',f.read(2))[0] - 1
-
-            s = {}
-            f.seek(f.tell()+4)
-            for _ in range(npts+1):
-                mz = struct.unpack('>HH',f.read(4))
-                s[mz[0]/20.] = mz[1]
-
-            self.data.append(s)
-            f.seek(npos)
+            tme = struct.unpack('>I',f.read(4))[0] / 60000.
         
+            f.seek(f.tell()+4)
+            npts = indptr[scn+1] - indptr[scn] - 1
+            mzs = struct.unpack('>'+npts*'HH',f.read(npts*4))
+            
+            nions = set([mz for mz in mzs[0::2] if mz not in i_lkup])
+            i_lkup.update(dict((ion,i+len(ions)) \
+                                  for i,ion in enumerate(nions)))
+            ions += nions
+            
+            idxs[indptr[scn]:indptr[scn+1]] = \
+                [-1] + [i_lkup[i] for i in mzs[0::2]]
+            vals[indptr[scn]:indptr[scn+1]] = \
+                (tme,) + mzs[1::2]
+            
+            f.seek(npos)
         f.close()
+        
+        idxs += 1
+        d = scipy.sparse.csr_matrix((vals,idxs,indptr), \
+                                    shape=(nscans,len(ions)+1), \
+                                    dtype=float)
+        
+        self.ions = [i / 20. for i in ions]
+        self.data = np.array(d.todense())
 
     def _updateInfoFromFile(self):
         d = {}

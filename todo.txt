@@ -19,6 +19,7 @@ chromatogram stuff
 --wavelet integrator
 --remove noise
 --baseline detection (as a trace type?)
+--MWD import: check changes in "peak width", e.g. sampling rate (0x212 or 0x214?)
 
 peak stuff
 --Gaussian peak types and conversion to/from 

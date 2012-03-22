@@ -6,7 +6,7 @@ from matplotlib.path import Path
 import matplotlib.patches as patches
 
 class Plotter(object):
-    def __init__(self,masterWindow,style='default',scheme='Default'):
+    def __init__(self, masterWindow, style='default', scheme='Default'):
         self.masterWindow = masterWindow
         self.style = style
         

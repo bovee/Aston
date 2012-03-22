@@ -1,5 +1,6 @@
 from aston import Datafile
 import os.path as op
+import numpy as np
 
 class CSVFile(Datafile.Datafile):
     '''
@@ -15,19 +16,15 @@ class CSVFile(Datafile.Datafile):
 
     def _cacheData(self): 
         delim = ','
-        self.times = []
-        self.data = []
         try: #TODO: better, smarter error checking than this
             with open(self.rawdata,'r') as f:
                 lns = f.readlines()
-                hdrs = [float(i) for i in lns[0].split(delim)[1:]]
-                for ln in lns[1:]:
-                    self.times.append(float(ln.split(delim)[0]))
-                    vals = [float(i) for i in ln.split(delim)[1:]]
-                    self.data.append(dict(zip(hdrs,vals)))
+                self.ions = [float(i) for i in lns[0].split(delim)[1:]]
+                self.data = np.array( \
+                    [np.fromstring(ln, sep=delim) for ln in lns[1:]])
         except:
-            self.times = []
-            self.data = []
+            self.data = np.array([])
+        print self.data
             
     def _updateInfoFromFile(self):
         d = {}

@@ -3,7 +3,7 @@ import os
 import re
 import struct
 import time
-import os.path as op
+import numpy as np
 from xml.etree import ElementTree
 
 class AgilentMWD(Datafile.Datafile):
@@ -12,53 +12,69 @@ class AgilentMWD(Datafile.Datafile):
         #self.filename = os.path.split(self.filename)[0] + '/mwd.ch'
 
     def _cacheData(self):
-        #Because the spectra are stored in several files in the same directory,
-        #we need to loop through them and return them together.
+        #Because the spectra are stored in several files in the same
+        #directory, we need to loop through them and return them together.
         if self.data is not None: return
         
-        self.times = []
-        self.data = []
+        self.ions = []
+        dtraces = []
         foldname = os.path.dirname(self.rawdata)
-        if foldname == '': foldname = os.curdir
+        #if foldname == '': foldname = os.curdir
         for i in [os.path.join(foldname,i) for i in os.listdir(foldname)]:
             if i[-3:].upper() == '.CH':
-                self._readIndFile(i)
+                wv, dtrace = self._readIndFile(i)
+                
+                #generate the time points if this is the first trace
+                if len(self.ions) == 0:
+                    f = open(i,'rb')
 
-    def _readIndFile(self,fname):
+                    f.seek(0x11A)
+                    start_time = struct.unpack('>i',f.read(4))[0] / 60000.
+                    #end_time 0x11E '>i'
+                    f.close()
+                    
+                    #TODO: 0.4/60.0 should be obtained from the file???
+                    dtraces.append(start_time + \
+                                       np.arange(len(dtrace)) * (0.4/60.0))
+                
+                #add the wavelength and trace into the appropriate places
+                self.ions.append(wv)
+                dtraces.append(dtrace)
+        self.data = np.array(dtraces).transpose()
+                
+
+    def _readIndFile(self, fname):
         f = open(fname,'rb')
-        
+
         f.seek(0x254)
         sig_name = str(f.read(struct.unpack('>B',f.read(1))[0]))
         #wavelength the file was collected at
         wv = float(re.search("Sig=(\d+),(\d+)",sig_name).group(1))
 
-        f.seek(0x11A)
-        start_time = struct.unpack('>i',f.read(4))[0] / 60000.
-        #end_time 0x11E '>i'
-
         f.seek(0x284)
         del_ab = struct.unpack('>d',f.read(8))[0]
-        
+
+        data = np.array([])
+
         f.seek(0x401)
         loc = 0
         while True:
             rec_len = struct.unpack('>B',f.read(1))[0]
             if rec_len == 0: break
+            data = np.append(data, np.empty(rec_len))
             for _ in range(rec_len):
-                if len(self.data) <= loc:
-                    self.times.append(start_time + loc * (400./60000.))
-                    self.data.append({})
                 inp = struct.unpack('>h',f.read(2))[0]
                 if inp == -32768:
                     inp = struct.unpack('>i',f.read(4))[0]
-                    self.data[loc][wv] = del_ab*inp
+                    data[loc] = del_ab*inp
                 elif loc == 0:
-                    self.data[loc][wv] = del_ab*inp
+                    data[loc] = del_ab*inp
                 else:
-                    self.data[loc][wv] = self.data[loc-1][wv] + del_ab*inp
+                    data[loc] = data[loc-1] + del_ab*inp
                 loc += 1
-            f.read(1)
+            f.read(1) #this value is always 0x10?
         f.close()
+        return wv, data
 
     def _updateInfoFromFile(self):
         d = {}
@@ -107,27 +123,30 @@ class AgilentDAD(Datafile.Datafile):
         nscans = struct.unpack('Q',fhead.read(8))[0]
         fhead.seek(0xA4)
 
-        self.times = []
-        self.data = []
-        for _ in range(nscans):
+        self.ions = []
+        for scn in range(nscans):
             t = struct.unpack('<IdddIQIIdddd', fhead.read(80))
-            self.times.append(t[1])
             
-            s = {}
             npts = t[7]
-            fdata.seek(t[5]+16)
-            #for x in map(lambda x:t[8]+x*t[3],range(npts)):
-            for x in [t[8] + x*t[3] for x in range(npts)]:
-                s[x] = struct.unpack('<d',fdata.read(8))[0]
+            if scn == 0:
+                #TODO: this will fail if the wavelengths collected 
+                #change through the run.
+                self.data = np.zeros((nscans,npts+1))
+                self.ions = [t[8] + x*t[3] for x in range(npts)]
 
-            self.data.append(s)
+            self.data[scn] = t[1]
+            
+            fdata.seek(t[5]+16)
+            self.data[scn,1:] = \
+                struct.unpack('<'+npts*'d',fdata.read(npts*8))
 
         fhead.close()
         fdata.close()
 
     def _updateInfoFromFile(self):
         d = {}
-        tree = ElementTree.parse(op.join(op.dirname(self.rawdata),'sample_info.xml'))
+        tree = ElementTree.parse(os.path.join( \
+                os.path.dirname(self.rawdata),'sample_info.xml'))
         for i in tree.iterfind('Field'):
             tagname = i.find('Name').text
             tagvalue = i.find('Value').text
@@ -138,7 +157,7 @@ class AgilentDAD(Datafile.Datafile):
             elif tagname == 'Method':
                 d['m'] = tagvalue.split('/')[-1]
         d['r-opr'] = ''
-        d['r-date'] = time.ctime(op.getctime(self.rawdata))
+        d['r-date'] = time.ctime(os.path.getctime(self.rawdata))
         d['r-type'] = 'Sample'
         self.info.update(d)
 
