@@ -86,15 +86,14 @@ class Peak(DBObject):
             else:
                 f = None
 
+            self.delInfo('p-s-')
             if f is not None:
                 params = peakmath.fit_to(f,d[:,0],d[:,1]-d[0,1])
-            else:
-                params = ['','','']
-
-            self.info['p-s-time'] = str(params[0])
-            self.info['p-s-height'] = str(params[1])
-            self.info['p-s-base'] = str(d[0,1])
-            self.info['p-s-shape'] = ','.join([str(i) for i in params[2:]])
+                self.info['p-s-time'] = str(params[0])
+                self.info['p-s-height'] = str(params[1])
+                self.info['p-s-base'] = str(d[0,1])
+                self.info['p-s-shape'] = ','.join([str(i) for i \
+                                                       in params[2:]])
         super(Peak, self).setInfo(fld, key)
 
     def as_gaussian(self):

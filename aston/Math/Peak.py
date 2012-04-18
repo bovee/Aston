@@ -70,7 +70,7 @@ def gaussian(p, t):
     
 def lorentzian(p, t):
     g = p[0]
-    return y+i*g**2/((t-x)**2+g**2)
+    return 0.31831*g/(t**2+g**2)
 
 def lognormal(p, t):
     s = p[0]
