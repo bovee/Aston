@@ -6,24 +6,31 @@ from aston.Features.Spectrum import Spectrum
 class Peak(DBObject):
     def __init__(self, *args, **kwargs):
         super(Peak, self).__init__('peak', *args, **kwargs)
+
+    @property
+    def data(self):
+        if 'p-model' not in self.info:
+            return np.array(self.rawdata)
         
-        if self.getInfo('p-model') == 'gaussian':
-            #TODO: gaussian params should be stored in the database itself
-            #and this "data" should only be generated upon conversion
-            #into the gaussian "peak model."
-            
-            #gaussian parameters: st_t,en_t,points,t,base,height,width
-            y0 = self.info['p-s-base'] #TODO: fix this
-            t = self.info['p-s-time']
-            h = self.info['p-s-height']
-            w = self.info['p-s-pwhm']
-
-            gauss = lambda t : y0 + h*np.exp(-(t-x)**2/(2*w**2))
-            times = self.rawdata[:,0]
-            self.data = np.array(gauss(times))
+        if self.info['p-model'] == 'Normal':
+            f = peakmath.gaussian
+        elif self.info['p-model'] == 'Lognormal':
+            f = peakmath.lognormal
+        elif self.info['p-model'] == 'Exp Mod Normal':
+            f = peakmath.exp_mod_gaussian
+        elif self.info['p-model'] == 'Lorentzian':
+            f = peakmath.lorentzian
         else:
-            self.data = np.array(self.rawdata)
-
+            return np.array(self.rawdata)
+        
+        times = np.array(self.rawdata)[:,0]
+        x0 = float(self.info['p-s-time'])
+        y0 = float(self.info['p-s-base'])
+        h = float(self.info['p-s-height'])
+        s = [float(i) for i in self.info['p-s-shape'].split(',')]
+        y = h*f(s,times-x0)+y0
+        return np.column_stack((times,y))
+            
     def time(self, st_time = None, en_time = None):
         pass
     
@@ -66,6 +73,29 @@ class Peak(DBObject):
 
     def setInfo(self, fld, key):
         if fld == 'p-model':
-            pass #TODO: change the underlying data into the new model
-            #http://www.scipy.org/Cookbook/FittingData
+            d = np.array(self.rawdata)
+            self.info['p-model'] = key
+            if key == 'Normal':
+                f = peakmath.gaussian
+            elif key == 'Lognormal':
+                f = peakmath.lognormal
+            elif key == 'Exp Mod Normal':
+                f = peakmath.exp_mod_gaussian
+            elif key == 'Lorentzian':
+                f = peakmath.lorentzian
+            else:
+                f = None
+
+            if f is not None:
+                params = peakmath.fit_to(f,d[:,0],d[:,1]-d[0,1])
+            else:
+                params = ['','','']
+
+            self.info['p-s-time'] = str(params[0])
+            self.info['p-s-height'] = str(params[1])
+            self.info['p-s-base'] = str(d[0,1])
+            self.info['p-s-shape'] = ','.join([str(i) for i in params[2:]])
         super(Peak, self).setInfo(fld, key)
+
+    def as_gaussian(self):
+        pass

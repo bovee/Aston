@@ -79,7 +79,6 @@ class AgilentMWD(Datafile.Datafile):
     def _updateInfoFromFile(self):
         d = {}
         #TODO: fix this so that it doesn't rely upon MWD1A.CH?
-        #print self.filename
         f = open(self.rawdata,'rb')
         f.seek(0x18)
         d['name'] = f.read(struct.unpack('>B',f.read(1))[0]).decode()

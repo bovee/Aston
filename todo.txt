@@ -13,13 +13,13 @@ format stuff
 --actuals as a trace type (pressure/flow rate/temp)
 --injection size (in file table)
 --display fraction collection data
+--MWD import: check changes in "peak width", e.g. sampling rate (0x212 or 0x214?)
 
 chromatogram stuff
 --autoalignment of multiple chromatograms
 --wavelet integrator
 --remove noise
 --baseline detection (as a trace type?)
---MWD import: check changes in "peak width", e.g. sampling rate (0x212 or 0x214?)
 
 peak stuff
 --Gaussian peak types and conversion to/from 

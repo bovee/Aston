@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'aston.ui'
 #
-# Created: Tue Mar  6 13:53:10 2012
+# Created: Fri Apr 13 14:20:13 2012
 #      by: PyQt4 UI code generator 4.9.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -120,12 +120,22 @@ class Ui_MainWindow(object):
         self.methodDockWidget.setObjectName(_fromUtf8("methodDockWidget"))
         self.dockWidgetContents_2 = QtGui.QWidget()
         self.dockWidgetContents_2.setObjectName(_fromUtf8("dockWidgetContents_2"))
+        self.verticalLayout_2 = QtGui.QVBoxLayout(self.dockWidgetContents_2)
+        self.verticalLayout_2.setObjectName(_fromUtf8("verticalLayout_2"))
+        self.methodTreeView = QtGui.QTreeView(self.dockWidgetContents_2)
+        self.methodTreeView.setObjectName(_fromUtf8("methodTreeView"))
+        self.verticalLayout_2.addWidget(self.methodTreeView)
         self.methodDockWidget.setWidget(self.dockWidgetContents_2)
         MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(8), self.methodDockWidget)
         self.compoundDockWidget = QtGui.QDockWidget(MainWindow)
         self.compoundDockWidget.setObjectName(_fromUtf8("compoundDockWidget"))
         self.dockWidgetContents_6 = QtGui.QWidget()
         self.dockWidgetContents_6.setObjectName(_fromUtf8("dockWidgetContents_6"))
+        self.verticalLayout_3 = QtGui.QVBoxLayout(self.dockWidgetContents_6)
+        self.verticalLayout_3.setObjectName(_fromUtf8("verticalLayout_3"))
+        self.compoundTreeView = QtGui.QTreeView(self.dockWidgetContents_6)
+        self.compoundTreeView.setObjectName(_fromUtf8("compoundTreeView"))
+        self.verticalLayout_3.addWidget(self.compoundTreeView)
         self.compoundDockWidget.setWidget(self.dockWidgetContents_6)
         MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(8), self.compoundDockWidget)
         self.actionOpen = QtGui.QAction(MainWindow)

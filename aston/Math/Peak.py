@@ -61,3 +61,59 @@ def contains(data,x,y):
                         inside = not inside
         p1x, p1y = p2x, p2y
     return inside
+
+### PEAK MODELS ###
+
+def gaussian(p, t):
+    s = p[0]
+    return 1.0/(s*2.506628)*np.exp(-0.5*(t/s)**2)
+    
+def lorentzian(p, t):
+    g = p[0]
+    return y+i*g**2/((t-x)**2+g**2)
+
+def lognormal(p, t):
+    s = p[0]
+    #return 1.0/(t*2.506628)*np.exp(-0.5*(np.log(t)/s)**2)
+    return np.array([1.0/(i*2.506628)*np.exp(-0.5*(np.log(i)/s)**2) \
+                if i>0 else 0 for i in t])
+
+def exp_mod_gaussian(p, t):
+    #http://en.wikipedia.org/wiki/Exponentially_modified_Gaussian_distribution
+    from scipy.special import erfc
+    s = p[0]
+    l = p[1]
+    return 0.5*l*np.exp(0.5*l*(l*s**2-2*t))*erfc((l*s**2-t)/(1.414*s))
+
+def voight(p, t):
+    #http://en.wikipedia.org/wiki/Voigt_profile
+    pass
+
+def gamma(p, t):
+    from scipy.special import gamma
+    l = p[0]
+    return  l**t*np.exp(-l) / gamma(t+1)
+    
+def fit_to(f, t, y):
+    from scipy.optimize import leastsq
+    
+    if f is gaussian or f is lorentzian:
+        guess_p = [(t[0]+t[-1])/2, max(y)-min(y), 0.5*(t[-1]-t[0])]
+    elif f is lognormal:
+        guess_p = [t[0], max(y)-min(y), 10*(t[-1]-t[0])]
+    elif f is exp_mod_gaussian:
+        guess_p = [(t[0]+t[-1])/2, max(y)-min(y), 0.5*(t[-1]-t[0]), 0.2]
+    
+    errfunc = lambda p, x, y: p[1] * f(p[2:], x - p[0]) - y
+    fit_p, _ = leastsq(errfunc, guess_p[:], args=(t, y))
+    return fit_p
+
+def bigaussian(t, x, d, s1, s2):
+    #http://www.biomedcentral.com/1471-2105/11/559
+    stp = np.sqrt(2*np.pi) #square root of two pi
+    if t < x:
+        return d/stp*np.exp(-(t-x)**2 / (2*sigma1**2))
+    else:
+        return d/stp*np.exp(-(t-x)**2 / (2*sigma2**2))
+    
+    

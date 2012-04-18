@@ -1,3 +1,4 @@
+import os.path as op
 from PyQt4 import QtCore, QtGui
 
 from aston_ui import Ui_MainWindow
@@ -5,6 +6,8 @@ from aston.ui.FilterWindow import FilterWindow
 from aston.ui.MainPlot import Plotter
 from aston.ui.SpecPlot import SpecPlotter
 
+from aston.Database import AstonFileDatabase
+from aston.Database import AstonDatabase
 from aston.FileTable import FileTreeModel
 from aston.Math.Integrators import waveletIntegrate, statSlopeIntegrate
 from aston.Features import Spectrum
@@ -71,8 +74,14 @@ class AstonWindow(QtGui.QMainWindow):
 
         #set up the list of files in the current directory
         self.directory = '.'
-        self.obj_tab = FileTreeModel(self.directory,self.ui.fileTreeView,self)
+        
+        file_db = AstonFileDatabase(op.join(self.directory,'aston.sqlite'))
+        self.obj_tab = FileTreeModel(file_db, self.ui.fileTreeView, self)
         self.plotData()
+
+        #set up the compound database
+        cmpd_db = AstonDatabase(op.join(self.directory,'compound.sqlite'))
+        self.cmpd_tab = FileTreeModel(cmpd_db, self.ui.compoundTreeView, self)
 
     def updateWindows(self):
         'Update the tab windows to match the menu.'
@@ -102,7 +111,8 @@ class AstonWindow(QtGui.QMainWindow):
         self.ui.fileTreeView.header().sectionMoved.disconnect()
         
         #load everything
-        self.obj_tab = FileTreeModel(self.directory,self.ui.fileTreeView,self)
+        file_db = AstonFileDatabase(op.join(self.directory,'aston.sqlite'))
+        self.obj_tab = FileTreeModel(file_db, self.ui.fileTreeView, self)
         self.plotData()
 
     def exportChromatogramAsCSV(self):

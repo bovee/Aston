@@ -7,22 +7,16 @@ import json
 from PyQt4 import QtGui, QtCore
 
 from aston.ui.Fields import aston_fields, aston_groups, aston_field_opts
-from aston.Database import AstonDatabase
 
 class FileTreeModel(QtCore.QAbstractItemModel):
     '''Handles interfacing with QTreeView and other file-related duties.'''
     def __init__(self, database=None, treeView=None, masterWindow=None, *args): 
         QtCore.QAbstractItemModel.__init__(self, *args) 
         
-        self.db = AstonDatabase(op.join(database,'aston.sqlite'))
-        self.db.updateFileList(database)
+        self.db = database
         self.treehead = self.db.getChildren() #TODO: can this be removed?
-        flds = self.db.getKey('main_cols')
-        if flds == '':
-            self.fields = ['name', 'vis', 'traces', 'r-filename']
-        else:
-            self.fields = json.loads(flds)
         self.masterWindow = masterWindow
+        self.fields = json.loads(self.db.getKey('main_cols'))
 
         if treeView is not None:
             self.treeView = treeView
@@ -222,6 +216,12 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             obj.info[col] = data
             if obj.getInfo('vis') == 'y':
                 self.masterWindow.plotData()
+        elif col == 'p-model':
+            obj.setInfo(col, data)
+            prt = obj.getParentOfType('file')
+            if prt is not None:
+                if prt.getInfo('vis') == 'y':
+                    self.masterWindow.plotData()
         else:
             obj.setInfo(col, data)
         obj.saveChanges()
@@ -286,6 +286,8 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         if len(sel) > 0:
             ac = menu.addAction(self.tr('Delete Items'), self.deleteItem)
             ac.setData(','.join([str(o.db_id) for o in sel]))
+            ac = menu.addAction(self.tr('Debug'), self.debug)
+            ac.setData(','.join([str(o.db_id) for o in sel]))
 
         if not menu.isEmpty():
             menu.exec_(self.treeView.mapToGlobal(point))
@@ -294,6 +296,17 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         db_list = str(self.sender().data()).split(',')
         objs = [self.db.getObjectByID(int(obj)) for obj in db_list]
         self.delObjects(objs)
+
+    def debug(self):
+        db_list = str(self.sender().data()).split(',')
+        objs = [self.db.getObjectByID(int(obj)) for obj in db_list]
+        pks = [o for o in objs if o.db_type == 'peak']
+        for pk in pks:
+            x = pk.data[:,0]
+            y = pk.as_gaussian()
+            plt = self.masterWindow.plotter.plt
+            plt.plot(x,y,'-')
+            self.masterWindow.plotter.canvas.draw()
         
     def createSpec(self):
         db_list = str(self.sender().data()).split(',')
@@ -349,7 +362,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
                 self.endInsertColumns()
         self.enableComboCols()
         self.colsChanged()
-            #FIXME: selection needs to be updated to new col too
+            #FIXME: selection needs to be updated to new col too?
             #self.treeView.selectionModel().selectionChanged.emit()
                 
     def addObjects(self, head, objs):

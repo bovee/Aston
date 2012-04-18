@@ -26,6 +26,126 @@ class AstonDatabase(object):
             self.db = sqlite3.connect(database)
         self.objects = None
     
+    def reload(self):
+        #preload all the objects in the database
+        c = self.db.cursor()
+        c.execute('SELECT type, id, parent_id, info, data FROM objs')
+        self.objects = []
+        for i in c:
+            self.objects.append(self._getObjFromRow(i))
+        c.close()
+
+    def getKey(self, key):
+        c = self.db.cursor()
+        c.execute('SELECT * FROM prefs WHERE key = ?', (key,))
+        res = c.fetchone()
+        c.close()
+        
+        if res is None:
+            return self._getDefaultKey(key)
+        else:
+            return res[1]
+        
+    def setKey(self, key, val):
+        c = self.db.cursor()
+        c.execute('SELECT * FROM prefs WHERE key = ?', (key,))
+        if c.fetchone() is not None:
+            c.execute('UPDATE prefs SET value=? WHERE key=?', (val, key))
+        else:
+            c.execute('INSERT INTO prefs (value,key) VALUES (?,?)', \
+                      (val, key))
+        self.db.commit()
+        c.close()
+
+    def updateObject(self, obj):
+        c = self.db.cursor()
+        c.execute('''UPDATE objs SET type=?, parent_id=?, name=?,
+                  info=?, data=? WHERE id=?''', \
+                  self._getRowFromObj(obj) + (obj.db_id,))
+        self.db.commit()
+        c.close()
+
+    def addObject(self, obj):
+        if self.objects is None:
+            self.reload()
+        c = self.db.cursor()
+        result = c.execute('''INSERT INTO objs (type, parent_id, name,
+                           info, data) VALUES (?,?,?,?,?)''', \
+                           self._getRowFromObj(obj))
+        obj.db_id = result.lastrowid
+        self.db.commit()
+        c.close()
+        self.objects.append(obj)
+        
+    def deleteObject(self, obj):
+        c = self.db.cursor()
+        c.execute('DELETE FROM objs WHERE id=?',(obj.db_id,))
+        self.db.commit()
+        c.close()
+        del self.objects[self.objects.index(obj)]
+    
+    def getChildren(self, db_id=None):
+        if self.objects is None:
+            self.reload()
+        return [obj for obj in self.objects if obj.parent_id == db_id]
+
+    def getObjectsByClass(self, cls):
+        if self.objects is None:
+            self.reload()
+        return [obj for obj in self.objects if obj.db_type == cls]
+    
+    def getObjectByID(self, db_id):
+        if self.objects is None:
+            self.reload()
+            
+        objs = []
+        for obj in self.objects:
+            if obj.db_id == db_id:
+                return obj
+        return None
+    
+    def getObjectByName(self, name, type=None):
+        pass
+    
+    def _getRowFromObj(self, obj):
+        info = buffer(zlib.compress(json.dumps(obj.info)))
+        if obj.type in ['peak','spectrum']:
+            data = buffer(zlib.compress(json.dumps(obj.rawdata)))
+        else:
+            data = obj.rawdata
+        return (obj.type, obj.parent_id, obj.getInfo('name'), info , data)
+
+    def _getObjFromRow(self, row):
+        if row is None:
+            return None
+        info = json.loads(zlib.decompress(row[3]))
+        if row[0] in ['peak','spectrum']:
+            data = json.loads(zlib.decompress(row[4]))
+        else:
+            data = str(row[4])
+        args = (row[1], row[2], info, data)
+        if row[0] == 'file':
+            from aston.Datafile import Datafile
+            return Datafile(self, *args)
+        elif row[0] == 'peak':
+            from aston.Features import Peak
+            return Peak(self, *args)
+        elif row[0] == 'spectrum':
+            from aston.Features import Spectrum
+            return Spectrum(self, *args)
+        else:
+            return DBObject(row[0], self, *args)
+
+    def _getDefaultKey(self, key):
+        if key == 'main_cols':
+            return json.dumps(['name'])
+        return ''
+
+class AstonFileDatabase(AstonDatabase):
+    def __init__(self, *args, **kwargs):
+        super(AstonFileDatabase, self).__init__(*args, **kwargs)
+        self.updateFileList(self.database_path)
+
     def updateFileList(self, path):
         from aston.Datafile import Datafile
         import os
@@ -113,141 +233,10 @@ class AstonDatabase(object):
         
         #TODO: update old database entries with new metadata
 
-    def reload(self):
-        #preload all the objects in the database
-        c = self.db.cursor()
-        c.execute('SELECT type, id, parent_id, info, data FROM objs')
-        self.objects = []
-        for i in c:
-            self.objects.append(self._getObjFromRow(i))
-        c.close()
-
-    def getKey(self, key):
-        c = self.db.cursor()
-        c.execute('SELECT * FROM prefs WHERE key = ?', (key,))
-        res = c.fetchone()
-        c.close()
-        
-        if res is None:
-            return ''
-        else:
-            return res[1]
-        
-    def setKey(self, key, val):
-        c = self.db.cursor()
-        c.execute('SELECT * FROM prefs WHERE key = ?', (key,))
-        if c.fetchone() is not None:
-            c.execute('UPDATE prefs SET value=? WHERE key=?', (val, key))
-        else:
-            c.execute('INSERT INTO prefs (value,key) VALUES (?,?)', \
-                      (val, key))
-        self.db.commit()
-        c.close()
-
-    def updateObject(self, obj):
-        c = self.db.cursor()
-        c.execute('''UPDATE objs SET type=?, parent_id=?, name=?,
-                  info=?, data=? WHERE id=?''', \
-                  self._getRowFromObj(obj) + (obj.db_id,))
-        self.db.commit()
-        c.close()
-
-    def addObject(self, obj):
-        if self.objects is None:
-            self.reload()
-        c = self.db.cursor()
-        result = c.execute('''INSERT INTO objs (type, parent_id, name,
-                           info, data) VALUES (?,?,?,?,?)''', \
-                           self._getRowFromObj(obj))
-        obj.db_id = result.lastrowid
-        self.db.commit()
-        c.close()
-        self.objects.append(obj)
-        
-    def deleteObject(self, obj):
-        c = self.db.cursor()
-        c.execute('DELETE FROM objs WHERE id=?',(obj.db_id,))
-        self.db.commit()
-        c.close()
-        del self.objects[self.objects.index(obj)]
-    
-    def getChildren(self, db_id=None):
-        if self.objects is None:
-            self.reload()
-        return [obj for obj in self.objects if obj.parent_id == db_id]
-        ## for some reason the following code crashes
-        #c = self.db.cursor()
-        #if db_id is None:
-        #    c.execute('''SELECT type, id, parent_id, info, data
-        #                 FROM objs WHERE parent_id IS NULL''')
-        #else:
-        #    c.execute('''SELECT type, id, parent_id, info, data
-        #                 FROM objs WHERE parent_id IS ?''',(db_id,))
-        #objs = []
-        #for i in c:
-        #    objs.append(self._getObjFromRow(i))
-        #c.close()
-        #return objs
-
-    def getObjectsByClass(self, cls):
-        if self.objects is None:
-            self.reload()
-        return [obj for obj in self.objects if obj.db_type == cls]
-    
-    def getObjectByID(self, db_id):
-        if self.objects is None:
-            self.reload()
-            
-        objs = []
-        for obj in self.objects:
-            if obj.db_id == db_id:
-                return obj
-        return None
-        ## for some reason the following code crashes
-        #if db_id is None:
-        #    return None
-        #c = self.db.cursor()
-        #c.execute('''SELECT type, id, parent_id, info, data
-        #             FROM objs WHERE id IS ?''',(db_id,))
-        #res = c.fetchone()
-        #if res is None:
-        #    obj = None
-        #else:
-        #    obj = self._getObjFromRow(res)
-        #c.close()
-        #return obj
-    
-    def getObjectByName(self, name, type=None):
-        pass
-    
-    def _getRowFromObj(self, obj):
-        info = buffer(zlib.compress(json.dumps(obj.info)))
-        if obj.type in ['peak','spectrum']:
-            data = buffer(zlib.compress(json.dumps(obj.rawdata)))
-        else:
-            data = obj.rawdata
-        return (obj.type, obj.parent_id, obj.getInfo('name'), info , data)
-
-    def _getObjFromRow(self, row):
-        if row is None:
-            return None
-        info = json.loads(zlib.decompress(row[3]))
-        if row[0] in ['peak','spectrum']:
-            data = json.loads(zlib.decompress(row[4]))
-        else:
-            data = str(row[4])
-        args = (row[1], row[2], info, data)
-        if row[0] == 'file':
-            from aston.Datafile import Datafile
-            return Datafile(self, *args)
-        elif row[0] == 'peak':
-            from aston.Features import Peak
-            return Peak(self, *args)
-        elif row[0] == 'spectrum':
-            from aston.Features import Spectrum
-            return Spectrum(self, *args)
-        else:
-            return DBObject(row[0], self, *args)
+    def _getDefaultKey(self, key):
+        if key == 'main_cols':
+            return json.dumps(['name', 'vis', 'traces', 'r-filename'])
+        return ''
 
 class DBObject(object):
     'Master class for peaks, features, and datafiles.'
