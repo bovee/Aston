@@ -73,14 +73,14 @@ class AstonWindow(QtGui.QMainWindow):
         self.ui.styleComboBox.currentIndexChanged.connect(self.plotData)
 
         #set up the list of files in the current directory
-        self.directory = '.'
+        self.directory = self.getPref('Default.FILE_DIRECTORY')
         
         file_db = AstonFileDatabase(op.join(self.directory,'aston.sqlite'))
         self.obj_tab = FileTreeModel(file_db, self.ui.fileTreeView, self)
         self.plotData()
 
         #set up the compound database
-        cmpd_db = AstonDatabase(op.join(self.directory,'compound.sqlite'))
+        cmpd_db = AstonDatabase(self.getPref('Default.COMPOUND_DB'))
         self.cmpd_tab = FileTreeModel(cmpd_db, self.ui.compoundTreeView, self)
 
     def updateWindows(self):
@@ -98,6 +98,19 @@ class AstonWindow(QtGui.QMainWindow):
         self.ui.actionSpectra.setChecked(self.ui.spectraDockWidget.isVisible())
         self.ui.actionMethods.setChecked(self.ui.methodDockWidget.isVisible())
         self.ui.actionCompounds.setChecked(self.ui.compoundDockWidget.isVisible())
+
+    def getPref(self, key):
+        try:
+            import configparser
+            cp = configparser.SafeConfigParser()
+        except:
+            import ConfigParser
+            cp = ConfigParser.SafeConfigParser()
+        cp.read('./settings.ini')
+        try:
+            return cp.get(key.split('.')[0],key.split('.')[1])
+        except:
+            return ''
 
     def openFolder(self):
         folder = str(QtGui.QFileDialog.getExistingDirectory(self,"Open Folder"))

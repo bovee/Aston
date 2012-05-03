@@ -4,6 +4,7 @@
 
 import os.path as op
 import json
+import numpy as np
 from PyQt4 import QtGui, QtCore
 
 from aston.ui.Fields import aston_fields, aston_groups, aston_field_opts
@@ -282,13 +283,15 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         if len(peaks) > 0:
             ac = menu.addAction(self.tr('Create Spec.'), self.createSpec)
             ac.setData(','.join([str(o.db_id) for o in peaks]))
+            ac = menu.addAction(self.tr('Split Peak'), self.splitPeaks)
+            ac.setData(','.join([str(o.db_id) for o in peaks]))
             
         #Things we can do with everything
         if len(sel) > 0:
             ac = menu.addAction(self.tr('Delete Items'), self.deleteItem)
             ac.setData(','.join([str(o.db_id) for o in sel]))
-            ac = menu.addAction(self.tr('Debug'), self.debug)
-            ac.setData(','.join([str(o.db_id) for o in sel]))
+            #ac = menu.addAction(self.tr('Debug'), self.debug)
+            #ac.setData(','.join([str(o.db_id) for o in sel]))
 
         if not menu.isEmpty():
             menu.exec_(self.treeView.mapToGlobal(point))
@@ -314,6 +317,51 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         objs = [self.db.getObjectByID(int(obj)) for obj in db_list]
         for obj in objs:
              self.addObjects(obj, [obj.createSpectrum()])
+
+    def splitPeaks(self):
+        from aston.Features.Peak import Peak
+        db_list = str(self.sender().data()).split(',')
+        pks = [self.db.getObjectByID(int(o)) for o in db_list]
+        SPO, Cancel = QtGui.QInputDialog.getDouble(self.masterWindow, "Aston", "Slice Offset", 0.0)
+        if not Cancel: return
+        SPL, Cancel = QtGui.QInputDialog.getDouble(self.masterWindow, "Aston", "Slice Length", 0.2)
+        if not Cancel: return
+        
+        for pk in pks:
+            ts, te = pk.time()[0], pk.time()[-1]
+            if (ts - SPO) % SPL == 0:
+                t0 = pk.time()[0]
+            else:
+                t0 = SPO+SPL*(np.ceil((ts-SPO)/SPL)-1)
+            t = t0
+
+            def y(tm):
+                ys, ye = pk.trace()[0], pk.trace()[-1]
+                return ys+(ye-ys)*(tm-t0)/(te-ts)
+            print pk.trace()[0], pk.trace()[-1]
+            
+            pks = []
+            dt = pk.parent
+            pk.delInfo('p-s-')
+            info = pk.info
+            info['p-int'] = 'split'
+            while t < te:
+                verts = np.column_stack((pk.time(t, t+SPL), \
+                                        pk.trace(None, t, t+SPL)))
+                if t != t0:
+                    #not the first point
+                    verts = np.vstack(([t, y(t)], verts))
+                if t+SPL < te:
+                    #not the last point
+                    verts = np.vstack((verts, [t+SPL, y(t+SPL)]))
+                info['name'] = '{:.2f}-{:.2f}'.format(verts[0,0],\
+                                                      verts[-1,0])
+                pks.append(Peak(dt.db, None, dt.db_id, \
+                                info.copy(), verts.tolist()))
+                t += SPL
+            self.delObjects([pk])
+            self.addObjects(dt, pks)
+            dt.delInfo('s-peaks')
 
     def rClickHead(self,point):
         menu = QtGui.QMenu(self.treeView)

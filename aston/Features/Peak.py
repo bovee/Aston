@@ -32,10 +32,31 @@ class Peak(DBObject):
         return np.column_stack((times,y))
             
     def time(self, st_time = None, en_time = None):
-        pass
+        return self._getTimeSlice(np.array(self.rawdata)[:,0], \
+                                  st_time,en_time)
     
-    def trace(self, ion=None):
-        pass
+    def trace(self, ion=None, st_time = None, en_time = None):
+        #TODO: figure out if something should be done with the ion parameter
+        return self._getTimeSlice(self.data[:,1],st_time,en_time)
+
+    def _getTimeSlice(self, arr, st_time=None, en_time=None):
+        '''Returns a slice of the incoming array filtered between
+        the two times specified. Assumes the array is the same
+        length as self.data. Acts in the time() and trace() functions.'''
+        tme = self.data[:,0].copy()
+        if st_time is None:
+            st_idx = 0
+        else:
+            st_idx = (np.abs(tme-st_time)).argmin()
+            if st_idx == 1:
+                st_idx = 0
+        if en_time is None:
+            en_idx = self.data.shape[0]
+        else:
+            en_idx = (np.abs(tme-en_time)).argmin()+1
+            if en_idx == len(tme)-1:
+                en_idx = len(tme)
+        return arr[st_idx:en_idx]
     
     def _loadInfo(self, fld):
         if fld == 'p-s-area':
