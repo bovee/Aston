@@ -1,31 +1,31 @@
 from PyQt4 import QtCore, QtGui
-from aston_filterwindow_ui import Ui_filterDialog
-
+from aston.ui.aston_filterwindow_ui import Ui_filterDialog
 from aston.ui.Fields import aston_field_opts
 
+
 class FilterWindow(QtGui.QWidget):
-    def __init__(self,parent=None):
+    def __init__(self, parent=None):
         QtGui.QWidget.__init__(self)
         self.parent = parent
         self.ui = Ui_filterDialog()
         self.ui.setupUi(self)
         self.ui.buttonBox.clicked.connect(self.clicked)
-        
+
         dt = parent.obj_tab.returnSelFile()
-        
+
         #self.ui.ionList.pressed.connect(self.ionListKeyPressed)
         self.ui.ionList.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.ui.ionList.customContextMenuRequested.connect(self.iClickMenu)
-        
-        self.ui.definedIonBox.addItems(['TIC','TIME','PRES','TEMP','FLOW'])
+
+        self.ui.definedIonBox.addItems(['TIC', 'TIME', 'PRES', 'TEMP', 'FLOW'])
         self.ui.addDefinedIonButton.clicked.connect(self.addDefIon)
-        
+
         self.ui.singleIonBox.addItems([str(i) for i in dt.scan(0)])
         self.ui.singleIonBox.setEditText('')
         self.ui.addSingleIonButton.clicked.connect(self.addSingleIon)
-        
+
         self.ui.addRangeIonButton.clicked.connect(self.addRangeIon)
-        
+
         self.ui.addUserIonButton.clicked.connect(self.addUserIon)
 
         #options for smoothing
@@ -36,7 +36,7 @@ class FilterWindow(QtGui.QWidget):
         self.loadInfo(dt)
         self.smoothChanged()
 
-    def loadInfo(self,dt):
+    def loadInfo(self, dt):
         #transfer the ion list
         for i in dt.info['traces'].split(','):
             self.ui.ionList.addItem(i)
@@ -88,23 +88,23 @@ class FilterWindow(QtGui.QWidget):
             self.ui.noiseBox.setChecked(True)
         else:
             pass
-        
+
     def iClickMenu(self, point):
         menu = QtGui.QMenu(self.ui.ionList)
-        
+
         if len(self.ui.ionList.selectedItems()) > 0:
             ac = menu.addAction(self.tr('Delete'), self.deleteIon)
 
         if not menu.isEmpty():
             menu.exec_(self.ui.ionList.mapToGlobal(point))
-            
+
     def deleteIon(self):
         #for item in self.ui.ionList.selectedItems():
         pass
 
     def addDefIon(self):
         self.ui.ionList.addItem(self.ui.definedIonBox.currentText())
-        
+
     def addSingleIon(self):
         self.ui.ionList.addItem(self.ui.singleIonBox.currentText())
 
@@ -112,7 +112,7 @@ class FilterWindow(QtGui.QWidget):
         ion_range = str(self.ui.startRangeIonBox.text()) + ':' + \
                     str(self.ui.endRangeIonBox.text())
         self.ui.ionList.addItem(ion_range)
-        
+
     def addUserIon(self):
         ion_str = self.ui.userIonBox.text()
         for i in ion_str.split(','):
@@ -134,8 +134,8 @@ class FilterWindow(QtGui.QWidget):
             self.ui.smoothWindowBox.setEnabled(True)
             self.ui.label_3.setEnabled(True)
             self.ui.smoothOrderBox.setEnabled(True)
-    
-    def clicked(self,btn):
+
+    def clicked(self, btn):
         if btn is self.ui.buttonBox.button(self.ui.buttonBox.RestoreDefaults):
             self.ui.XOffsetBox.setValue(0.0)
             pass
@@ -148,49 +148,51 @@ class FilterWindow(QtGui.QWidget):
     def _updateFile(self, dt):
         dt.info['traces'] = ','.join([str(self.ui.ionList.item(i).text())
           for i in range(self.ui.ionList.count())])
-        
+
         if self.ui.offsetBox.isChecked():
             if self.ui.XOffsetBox.value() != 0.0:
                 dt.info['t-offset'] = str(self.ui.XOffsetBox.value())
             else:
-                self._delInfo(dt,'t-offset')
+                self._delInfo(dt, 't-offset')
             if self.ui.YOffsetBox.value() != 0.0:
                 dt.info['t-yoffset'] = str(self.ui.YOffsetBox.value())
             else:
-                self._delInfo(dt,'t-yoffset')
+                self._delInfo(dt, 't-yoffset')
             if self.ui.XScaleBox.value() != 1.0:
                 dt.info['t-scale'] = str(self.ui.XScaleBox.value())
             else:
-                self._delInfo(dt,'t-scale')
+                self._delInfo(dt, 't-scale')
             if self.ui.YScaleBox.value() != 1.0:
                 dt.info['t-yscale'] = str(self.ui.YScaleBox.value())
             else:
-                self._delInfo(dt,'t-yscale')
+                self._delInfo(dt, 't-yscale')
         else:
-            for key in ['t-offset','t-yoffset','t-scale','t-yscale']:
-                self._delInfo(dt,key)
+            for key in ['t-offset', 't-yoffset', 't-scale', 't-yscale']:
+                self._delInfo(dt, key)
 
         if self.ui.smoothBox.isChecked():
             if self.ui.smoothComboBox.currentText() == 'None':
-                for key in ['t-smooth','t-smooth-window','t-smooth-order']:
-                    self._delInfo(dt,key)
+                for key in ['t-smooth', 't-smooth-window', 't-smooth-order']:
+                    self._delInfo(dt, key)
             elif self.ui.smoothComboBox.currentText() == 'Moving Average':
                 dt.info['t-smooth'] = 'moving average'
                 dt.info['t-smooth-window'] = str(self.ui.smoothWindowBox.value())
-                self._delInfo(dt,'t-smooth-order')
+                self._delInfo(dt, 't-smooth-order')
             elif self.ui.smoothComboBox.currentText() == 'Savitsky-Golay':
                 dt.info['t-smooth'] = 'savitsky-golay'
                 dt.info['t-smooth-window'] = str(self.ui.smoothWindowBox.value())
                 dt.info['t-smooth-order'] = str(self.ui.smoothOrderBox.value())
         else:
-            for key in ['t-smooth','t-smooth-window','t-smooth-order']:
-                self._delInfo(dt,key)
+            for key in ['t-smooth', 't-smooth-window', 't-smooth-order']:
+                self._delInfo(dt, key)
 
         self.parent.plotData()
 
-    def _delInfo(self,dt,key):
-        try: del dt.info[key]
-        except: pass
+    def _delInfo(self, dt, key):
+        try:
+            del dt.info[key]
+        except:
+            pass
 
     def reject(self):
         self.close()

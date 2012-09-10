@@ -1,57 +1,32 @@
-'''This module acts as an intermediary between the Agilent, Thermo,
-and other instrument specific classes and the rest of the program.'''
+"""
+This module acts as an intermediary between the Agilent, Thermo,
+and other instrument specific classes and the rest of the program.
+"""
 #pylint: disable=C0103
 
 import os.path as op
 import numpy as np
 from scipy.interpolate import interp1d
-from aston.Features import Spectrum, Peak
 from aston.Database import DBObject
- 
+from aston.FileFormats.FileFormats import ftype_to_class
+
+
 class Datafile(DBObject):
-    '''Generic chromatography data containter. This abstacts away
-    the implementation details of the specific file formats.'''
+    """
+    Generic chromatography data containter. This abstacts away
+    the implementation details of the specific file formats.
+    """
     def __new__(cls, db, db_id, parent_id, info, data):
-        if not info.has_key('s-file-type'):
+        if 's-file-type' not in info:
             return None
-        ftype = info['s-file-type']
+        ncls = ftype_to_class(info['s-file-type'])
         args = (db, db_id, parent_id, info, data)
-            
-        if ftype == 'AgilentMS':
-            from aston.FileFormats.AgilentMS import AgilentMS
-            return super(Datafile, cls).__new__(AgilentMS, *args)
-        elif ftype == 'AgilentMSMSProf':
-            from aston.FileFormats.AgilentMS import AgilentMSMSProf
-            return super(Datafile, cls).__new__(AgilentMSMSProf,*args)
-        elif ftype == 'AgilentMSMSScan':
-            from aston.FileFormats.AgilentMS import AgilentMSMSScan
-            return super(Datafile, cls).__new__(AgilentMSMSScan,*args)
-        elif ftype == 'ThermoCF':
-            from aston.FileFormats.Thermo import ThermoCF
-            return super(Datafile, cls).__new__(ThermoCF, *args)
-        elif ftype == 'ThermoDXF':
-            from aston.FileFormats.Thermo import ThermoDXF
-            return super(Datafile, cls).__new__(ThermoDXF, *args)
-        elif ftype == 'AgilentDAD':
-            from aston.FileFormats.AgilentUV import AgilentDAD
-            return super(Datafile, cls).__new__(AgilentDAD, *args)
-        elif ftype == 'AgilentMWD':
-            from aston.FileFormats.AgilentUV import AgilentMWD
-            return super(Datafile, cls).__new__(AgilentMWD, *args)
-        elif ftype == 'AgilentCSDAD':
-            from aston.FileFormats.AgilentUV import AgilentCSDAD
-            return super(Datafile, cls).__new__(AgilentCSDAD, *args)
-        elif ftype == 'CSVFile':
-            from aston.FileFormats.OtherFiles import CSVFile
-            return super(Datafile, cls).__new__(CSVFile, *args)
-        else:
-            return None
-            #return super(Datafile, cls).__new__(cls, *args)
-        
+        return super(Datafile, cls).__new__(ncls, *args)
+
     def __init__(self, *args, **kwargs):
-        super(Datafile,self).__init__('file',*args,**kwargs)
+        super(Datafile, self).__init__('file', *args, **kwargs)
         #self._updateInfoFromFile()
- 
+
         #make stubs for the time array and the data array
         self.ions = []
         self.data = None
@@ -61,35 +36,41 @@ class Datafile(DBObject):
         the two times specified. Assumes the array is the same
         length as self.data. Acts in the time() and trace() functions.'''
         if self.data.shape[0] == 0:
-            return self.data[:,0]
-        
-        tme = self.data[:,0].copy()
+            return self.data[:, 0]
+
+        tme = self.data[:, 0].copy()
         if 't-scale' in self.info:
             tme *= float(self.info['t-scale'])
         if 't-offset' in self.info:
             tme += float(self.info['t-offset'])
-            
+
         if st_time is None:
             st_idx = 0
         else:
-            st_idx = (np.abs(tme-st_time)).argmin()
+            st_idx = (np.abs(tme - st_time)).argmin()
         if en_time is None:
             en_idx = self.data.shape[0]
         else:
-            en_idx = (np.abs(tme-en_time)).argmin()+1
+            en_idx = (np.abs(tme - en_time)).argmin() + 1
         return arr[st_idx:en_idx]
 
     def time(self, st_time=None, en_time=None):
-        '''Returns an array with all of the time points at which
-        data was collected'''
+        """
+        Returns an array with all of the time points at which
+        data was collected
+        """
         #load the data if it hasn't been already
         #TODO: this should cache only the times (to speed up access
         #in case we're looking at something with the _getTotalTrace)
         if self.data is None:
             self._cacheData()
-        
+
         #scale and offset the data appropriately
-        tme = self.data[:,0].copy()
+        tme = self.data[:, 0].copy()
+        try:  # convert it back if it's sparse
+            tme = np.array(tme.todense())
+        except:  # it's a regular array, keep it
+            pass
         if 't-scale' in self.info:
             tme *= float(self.info['t-scale'])
         if 't-offset' in self.info:
@@ -111,7 +92,7 @@ class Datafile(DBObject):
         else:
             #all other cases, just return the total trace
             ic = self._getTotalTrace()
-        
+
         if 't-yscale' in self.info:
             ic *= float(self.info['t-yscale'])
         if 't-yoffset' in self.info:
@@ -141,7 +122,7 @@ class Datafile(DBObject):
         #null case
         if istr.strip() == '':
             return np.zeros(self.data.shape[0])
-        
+
         #remove any parantheses or pluses around the whole thing
         if istr[0] in '+':
             istr = istr[1:]
@@ -150,24 +131,25 @@ class Datafile(DBObject):
 
         #invert it if preceded by a minus sign
         if istr[0] in '-':
-            return -1.0*self._parseIonString(istr[1:])
+            return -1.0 * self._parseIonString(istr[1:])
 
         #this is a function
         if istr[:istr.find('(')].isalnum() and istr.find('(') != -1:
             fxn = istr[:istr.find('(')]
             if fxn == 'file' or fxn == 'f':
-                args = istr[istr.find('(')+1:-1].split(';')
+                args = istr[istr.find('(') + 1:-1].split(';')
                 dt = self.database.getFileByName(args[0])
-                if dt is None: return np.zeros(self.data.shape[0])
+                if dt is None:
+                    return np.zeros(self.data.shape[0])
                 if len(args) > 1:
                     y = dt.trace(args[1])
                 else:
                     y = dt.trace()
-                t = dt.data[:,0]
+                t = dt.data[:, 0]
                 f = interp1d(t, y, bounds_error=False, fill_value=0.0)
-                return f(self.data[:,0])
+                return f(self.data[:, 0])
             else:
-                args = istr[istr.find('(')+1:-1].split(';')
+                args = istr[istr.find('(') + 1:-1].split(';')
                 ic = self._parseIonString(args[0])
                 return self._applyFxn(ic, fxn, *args[1:])
 
@@ -188,7 +170,7 @@ class Datafile(DBObject):
                 return np.ones(self.data.shape[0]) * np.pi
             else:
                 return self._getNamedTrace(istr)
-        
+
         #parse out the additive parts
         ic = np.zeros(self.data.shape[0])
         pa = ''
@@ -201,7 +183,7 @@ class Datafile(DBObject):
 
         if pa != istr:
             return ic + self._parseIonString(pa)
-        
+
         #no additive parts, parse multiplicative/divisive parts
         ic = None
         pa = ''
@@ -221,12 +203,12 @@ class Datafile(DBObject):
         elif pa[0] in '/':
             return ic / self._parseIonString(pa[1:])
         else:
-            return 0 #this should never happen?
+            return 0  # this should never happen?
 
     def _getNamedTrace(self, name):
-        lookdict = {'temp':'m-tmp','pres':'m-prs','flow':'m-flw'}
+        lookdict = {'temp': 'm-tmp', 'pres': 'm-prs', 'flow': 'm-flw'}
         if name == 't' or name == 'time':
-            return self.data[:,0].copy()
+            return self.data[:, 0].copy()
         #elif name == 'b' or name == 'base':
         #    #TODO: create a baseline
         #    pass
@@ -257,7 +239,7 @@ class Datafile(DBObject):
                     return True
                 except:
                     return False
-            
+
             val = self.getInfo(lookdict[name])
             if ',' in val:
                 #turn the time list into a dictionary
@@ -271,15 +253,16 @@ class Datafile(DBObject):
                 srt_ind = np.argsort(x)
                 if 'S' in tpts:
                     #there's a "S"tart value defined
-                    return np.interp(self.data[:,0], x[srt_ind], y[srt_ind],
-                      float(tpts['S']))
+                    return np.interp(self.data[:, 0], x[srt_ind], \
+                      y[srt_ind], float(tpts['S']))
                 else:
-                    return np.interp(self.data[:,0], x[srt_ind], y[srt_ind])
+                    return np.interp(self.data[:, 0], x[srt_ind], \
+                      y[srt_ind])
             elif is_num(val):
                 return float(val) * np.ones(self.data.shape[0])
         else:
             return self._getOtherTrace(name)
-    
+
     def _applyFxn(self, ic, fxn, *args):
         '''Apply the function, fxn, to the trace, ic, and returns the result.'''
         from aston.Math.Chromatograms import fxns
@@ -292,18 +275,31 @@ class Datafile(DBObject):
         return np.zeros(ic.shape[0])
 
     def scan(self, time):
-        '''Returns the spectrum from a specific time.'''
+        """
+        Returns the spectrum from a specific time.
+        """
         if self.data is None:
             self._cacheData()
-            
+
         if 't-offset' in self.info:
             time -= float(self.info['t-offset'])
         if 't-scale' in self.info:
             time /= float(self.info['t-scale'])
-            
-        idx = (np.abs(np.array(self.data[:,0])-time)).argmin()
-        return (np.array(self.ions), np.array(self.data[idx,1:]))
-    
+
+        times = self.data[:, 0]
+        try:
+            times = np.array(times.todense())
+        except NameError:
+            times = np.array(times)
+        idx = (np.abs(times - time)).argmin()
+        ion_abs = self.data[idx, 1:]
+        try:
+            ion_abs = np.array(ion_abs.todense())
+        except NameError:
+            ion_abs = np.array(ion_abs)
+        print(len(self.ions), len(ion_abs))
+        return (np.array(self.ions), ion_abs)
+
     def _loadInfo(self, fld):
         #create the key if it doesn't yet exist
         if fld == 'vis':
@@ -316,7 +312,7 @@ class Datafile(DBObject):
         elif fld == 's-scans':
             self.info['s-scans'] = str(self.data.shape[0])
         elif fld == 's-time-st' or fld == 's-time-en':
-            time = self.data[:,0]
+            time = self.data[:, 0]
             self.info['s-time-st'] = str(min(time))
             self.info['s-time-en'] = str(max(time))
         elif fld == 's-peaks' or fld == 's-spectra':
@@ -328,7 +324,7 @@ class Datafile(DBObject):
             pass
         elif fld == 's-peaks-st' or fld == 's-peaks-en':
             pks = self.getAllChildren('peak')
-            if len(pks) > 0: 
+            if len(pks) > 0:
                 times = [float(pk.getInfo('p-s-time')) for pk in pks]
                 self.info['s-peaks-st'] = str(min(times))
                 self.info['s-peaks-en'] = str(max(times))
@@ -348,16 +344,19 @@ class Datafile(DBObject):
     def _cacheData(self):
         '''Load the data into the Datafile for the first time.'''
         self.ions = []
-        self.data = np.array([])
+        self.data = None
 
     def _getIonTrace(self, val, tol=0.5):
         '''Return a specific ion trace from the data.'''
         if self.data is None:
             self._cacheData()
         ions = np.array([i for i in self.ions \
-                         if type(i) is int or type(i) is float])
-        rows = 1 + np.where(np.abs(ions-val) < tol)[0]
-        return self.data[:,rows].sum(axis=1)
+          if type(i) is int or type(i) is float])
+        rows = 1 + np.where(np.abs(ions - val) < tol)[0]
+        if len(rows) == 0:
+            return np.zeros(self.data.shape[0]) * np.nan
+        else:
+            return self.data[:, rows].sum(axis=1)
 
     def _getOtherTrace(self, name):
         '''Return a named trace, like pressure or temperature.'''
@@ -367,7 +366,7 @@ class Datafile(DBObject):
         '''Return the default, total trace.'''
         if self.data is None:
             self._cacheData()
-        return self.data[:,1:].sum(axis=1)
+        return self.data[:, 1:].sum(axis=1)
         #return np.array([sum(i.values()) for i in self.data])
 
     def _updateInfoFromFile(self):

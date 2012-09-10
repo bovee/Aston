@@ -1,4 +1,11 @@
 # -*- coding: utf-8 -*-
+try:
+    u = lambda s: s.decode('utf-8')
+    u('')
+except:
+    u = lambda s: s
+    u('')
+
 #TODO: for Python 3, remove all u' prefixes
 aston_groups = {'m':'Method',
           'r':'Run',
@@ -18,12 +25,12 @@ aston_fields = {
         'm-col':'Column Name',
         'm-col-type':'Column Phase',
         'm-col-dim':'Column Dimensions (mm x mm)',
-        'm-col-part-size':u'Column Particle Size (µ)',
+        'm-col-part-size':u('Column Particle Size (µ)'),
         'm-len':'Run Length (min)',
-        'm-inj-size':u'Injection Size (µl)',
-        'm-tmp':u'Temperature (°C)', #type = time-dict
+        'm-inj-size':u('Injection Size (µl)'),
+        'm-tmp':u('Temperature (°C)'), #type = time-dict
         'm-prs':'Pressure (kbar)', #type = time-dict
-        'm-flw':u'Flow (µl/min)', #type = time-dict
+        'm-flw':u('Flow (µl/min)'), #type = time-dict
         'm-slv':'Solvent/Carrier', #Solvent A
         'm-slv-B':'Solvent B',
         'm-slv-B-per':'% Solvent B', #type = time-dict
@@ -45,7 +52,7 @@ aston_fields = {
         'r-vial-pos':'Vial Position',
         'r-seq-num':'Sequence Number',
         'r-inst':'Instrument',
-        'r-d13c-std':u'Reference δ13C Value (‰)',
+        'r-d13c-std':u('Reference δ13C Value (‰)'),
     # information generated in the program ("statistics")
         's-file-type':'File Type',
         's-scans':'Scans',
@@ -74,7 +81,7 @@ aston_fields = {
         'p-s-pkcap':'Peak Capacity (# Peaks)',
     #spectrum info
         'sp-type':'Spectrum Type',
-        'sp-d13c':u'δ13C Value (‰)',
+        'sp-d13c':u('δ13C Value (‰)'),
        }
 
 #for time-dicts:
@@ -82,12 +89,12 @@ aston_fields = {
 #e.g. {'S':5,0:30,9:80,9.01:100,11:100}
 
 aston_field_opts = {
-    'r-type':['None','Sample','Standard'],
-    'p-type':['None','Sample','Standard'],
-    'p-model':['None','Normal','Lognormal','Exp Mod Normal','Lorentzian'],
-    'sp-type':['None','Sample','Standard','Isotope Standard'],
-    't-smooth':['None','Moving Average','Savitsky-Golay'],
+    'r-type':['None', 'Sample', 'Standard'],
+    'p-type':['None', 'Sample', 'Standard'],
+    'p-model':['None', 'Normal', 'Lognormal', 'Exp Mod Normal', 'Lorentzian'],
+    'sp-type':['None', 'Sample', 'Standard', 'Isotope Standard'],
+    't-smooth':['None', 'Moving Average', 'Savitsky-Golay'],
     't-remove-noise':['None'],
-    'm-type':['None','HPLC','GC'],
-    'm-detect':['None','DAD-UV','MWD-UV','Quad-MS','TOF-MS','Q-TOF-MS'],
+    'm-type':['None', 'HPLC', 'GC'],
+    'm-detect':['None', 'DAD-UV', 'MWD-UV', 'Quad-MS', 'TOF-MS', 'Q-TOF-MS'],
 }

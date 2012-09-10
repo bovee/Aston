@@ -1,18 +1,24 @@
-'''This module handles database access for Aston.'''
+"""
+This module handles database access for Aston.
+"""
 #pylint: disable=C0103
 
 import os
+import struct
 import sqlite3
 import json
 import zlib
 
+
 class AstonDatabase(object):
-    """This class acts as a interface to the aston.sqlite database
-    that's created inside every working folder."""
+    """
+    This class acts as a interface to the aston.sqlite database
+    that's created inside every working folder.
+    """
     def __init__(self, database):
         self.database_path = database
-        
-        if not os.path.exists(database): 
+
+        if not os.path.exists(database):
             # create a database file if one doesn't exist
             self.db = sqlite3.connect(database)
             c = self.db.cursor()
@@ -25,7 +31,7 @@ class AstonDatabase(object):
         else:
             self.db = sqlite3.connect(database)
         self.objects = None
-    
+
     def reload(self):
         #preload all the objects in the database
         c = self.db.cursor()
@@ -40,12 +46,12 @@ class AstonDatabase(object):
         c.execute('SELECT * FROM prefs WHERE key = ?', (key,))
         res = c.fetchone()
         c.close()
-        
+
         if res is None:
             return self._getDefaultKey(key)
         else:
             return res[1]
-        
+
     def setKey(self, key, val):
         c = self.db.cursor()
         c.execute('SELECT * FROM prefs WHERE key = ?', (key,))
@@ -76,14 +82,14 @@ class AstonDatabase(object):
         self.db.commit()
         c.close()
         self.objects.append(obj)
-        
+
     def deleteObject(self, obj):
         c = self.db.cursor()
-        c.execute('DELETE FROM objs WHERE id=?',(obj.db_id,))
+        c.execute('DELETE FROM objs WHERE id=?', (obj.db_id,))
         self.db.commit()
         c.close()
         del self.objects[self.objects.index(obj)]
-    
+
     def getChildren(self, db_id=None):
         if self.objects is None:
             self.reload()
@@ -93,34 +99,40 @@ class AstonDatabase(object):
         if self.objects is None:
             self.reload()
         return [obj for obj in self.objects if obj.db_type == cls]
-    
+
     def getObjectByID(self, db_id):
         if self.objects is None:
             self.reload()
-            
-        objs = []
+
         for obj in self.objects:
             if obj.db_id == db_id:
                 return obj
         return None
-    
+
     def getObjectByName(self, name, type=None):
         pass
-    
+
     def _getRowFromObj(self, obj):
-        info = buffer(zlib.compress(json.dumps(obj.info)))
-        if obj.type in ['peak','spectrum']:
-            data = buffer(zlib.compress(json.dumps(obj.rawdata)))
+        try:
+            pack = lambda r: buffer(zlib.compress(json.dumps(r)))
+            pack([])  # have to force the call here
+        except NameError:
+            pack = lambda r: zlib.compress(json.dumps(r).encode('utf-8'))
+        info = pack(obj.info)
+        if obj.type in ['peak', 'spectrum']:
+            data = pack(obj.rawdata)
         else:
             data = obj.rawdata
-        return (obj.type, obj.parent_id, obj.getInfo('name'), info , data)
+        return (obj.type, obj.parent_id, obj.getInfo('name'), info, data)
 
     def _getObjFromRow(self, row):
         if row is None:
             return None
-        info = json.loads(zlib.decompress(row[3]))
-        if row[0] in ['peak','spectrum']:
-            data = json.loads(zlib.decompress(row[4]))
+        unpack = lambda r: \
+          json.loads(zlib.decompress(r).decode('utf-8'))
+        info = unpack(row[3])
+        if row[0] in ['peak', 'spectrum']:
+            data = unpack(row[4])
         else:
             data = str(row[4])
         args = (row[1], row[2], info, data)
@@ -141,23 +153,26 @@ class AstonDatabase(object):
             return json.dumps(['name'])
         return ''
 
+
 class AstonFileDatabase(AstonDatabase):
     def __init__(self, *args, **kwargs):
         super(AstonFileDatabase, self).__init__(*args, **kwargs)
         self.updateFileList(self.database_path)
 
     def updateFileList(self, path):
+        """
+        Makes sure the database is in sync with the file system.
+        """
+        from aston.FileFormats.FileFormats import guess_filetype
         from aston.Datafile import Datafile
-        import os
-        import struct
-        '''Makes sure the database is in sync with the file system.'''
+
         #TODO: this needs to run in a separate thread
         #extract a list of lists of file names in my directory
         foldname = os.path.dirname(path)
         if foldname == '':
             foldname = os.curdir
         datafiles = {}
-        for fold, _, files in os.walk(foldname): 
+        for fold, _, files in os.walk(foldname):
             for filename in files:
                 #TODO: this MWD stuff is kludgy and will probably break
                 if filename[:3].upper() == 'MWD' and \
@@ -165,7 +180,7 @@ class AstonFileDatabase(AstonDatabase):
                 if filename[:3].upper() == 'DAD' and \
                     filename[-3:].upper() == '.CH': filename = 'dad1A.ch'
                 #guess the file type
-                ext = os.path.splitext(filename)[1].upper()
+                ext = os.path.splitext(filename)[1].upper()[1:]
                 try:
                     f = open(os.path.join(fold, filename), mode='rb')
                     magic = struct.unpack('>H', f.read(2))[0]
@@ -175,41 +190,12 @@ class AstonFileDatabase(AstonDatabase):
                 except IOError:
                     ext = ''
 
-                #TODO:.BAF : Bruker instrument data format
-                #TODO:.FID : Bruker instrument data format
-                #TODO:.PKL : MassLynx associated format
-                #TODO:.RAW : Micromass MassLynx directory format
-                #TODO:.WIFF: ABI/Sciex (QSTAR and QTRAP instrument) format
-                #TODO:.YEP : Bruker instrument data format
-                #TODO:.RAW : PerkinElmer TurboMass file format
-                if ext == '.MS' and magic == 0x0132:
-                    ftype = 'AgilentMS'
-                elif ext == '.BIN' and magic == 513:
-                    #ftype = 'AgilentMSMSProf'
-                    ftype = None
-                elif ext == '.BIN' and magic == 257:
-                    #ftype = 'AgilentMSMSScan'
-                    ftype = None
-                elif ext == '.CF' and magic == 0xFFFF:
-                    ftype = 'ThermoCF'
-                elif ext == '.DXF' and magic == 0xFFFF:
-                    ftype = 'ThermoDXF'
-                elif ext == '.SD':
-                    ftype = 'AgilentDAD'
-                elif ext == '.CH' and magic == 0x0233:
-                    ftype = 'AgilentMWD'
-                elif ext == '.UV' and magic == 0x0233:
-                    #ftype = 'AgilentCSDAD'
-                    ftype = None
-                elif ext == '.CSV':
-                    ftype = 'CSVFile'
-                else:
-                    ftype = None
-                
+                ftype = guess_filetype(ext, magic)
+
                 #if it's a supported file, add it in
                 if ftype is not None:
                     datafiles[os.path.join(fold, filename)] = ftype
-        
+
         #extract a list of files from the database
         c = self.db.cursor()
         c.execute('SELECT data FROM objs WHERE type="file"')
@@ -226,11 +212,11 @@ class AstonFileDatabase(AstonDatabase):
         #add the new files into the database
         #TODO: generate projects and project_ids based on folder names?
         for fn in set(datafiles.keys()).difference(dnames):
-            info = {'s-file-type':datafiles[fn], 'traces':'TIC'}
+            info = {'s-file-type': datafiles[fn], 'traces': 'TIC'}
             obj = Datafile(self, None, None, info, fn)
             obj._updateInfoFromFile()
             self.addObject(obj)
-        
+
         #TODO: update old database entries with new metadata
 
     def _getDefaultKey(self, key):
@@ -238,33 +224,36 @@ class AstonFileDatabase(AstonDatabase):
             return json.dumps(['name', 'vis', 'traces', 'r-filename'])
         return ''
 
+
 class DBObject(object):
-    'Master class for peaks, features, and datafiles.'
-    def __init__(self, db_type='none', db=None, db_id=None, parent_id=None, \
-                     info=None, data=None):
+    """
+    Master class for peaks, features, and datafiles.
+    """
+    def __init__(self, db_type='none', db=None, db_id=None, \
+      parent_id=None, info=None, data=None):
         self.db_type = db_type
         self.db = db
         self.db_id = db_id
         self.parent_id = parent_id
         self.type = db_type
         if info is None:
-            self.info = {'name':''}
+            self.info = {'name': ''}
         else:
             self.info = info
         self.rawdata = data
-            
+
     def getInfo(self, fld):
         if fld not in self.info.keys():
             self._loadInfo(fld)
-        
+
         if fld in self.info.keys():
             if self.info[fld] != '':
                 return self.info[fld]
         return self._calcInfo(fld)
-    
+
     def setInfo(self, fld, key):
         self.info[fld] = key
- 
+
     def delInfo(self, fld):
         for key in self.info.keys():
             if fld in key:
@@ -274,11 +263,11 @@ class DBObject(object):
     @property
     def parent(self):
         return self.db.getObjectByID(self.parent_id)
-    
+
     @property
     def children(self):
         return self.db.getChildren(self.db_id)
-    
+
     def getParentOfType(self, cls=None):
         prt = self.parent
         if cls is None:
@@ -289,7 +278,7 @@ class DBObject(object):
             elif prt.db_type == cls:
                 return prt
             prt = prt.parent
-                
+
     def getAllChildren(self, cls=None):
         if len(self.children) == 0:
             return []
@@ -299,12 +288,14 @@ class DBObject(object):
                 child_list += [child]
             child_list += child.getAllChildren(cls)
         return child_list
-    
+
     def saveChanges(self):
-        '''Save any changes to the database.'''
+        """
+        Save any changes in this object back to the database.
+        """
         if self.db is None:
             return
-        
+
         if self.db_id is not None:
             #update object
             self.db.updateObject(self)

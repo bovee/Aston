@@ -1,27 +1,31 @@
 # -*- coding: utf-8 -*-
 #pylint: disable=C0103
-'''Model for handling display of open files.'''
+"""
+Model for handling display of open files.
+"""
 
 import os.path as op
 import json
 import numpy as np
 from PyQt4 import QtGui, QtCore
-
 from aston.ui.Fields import aston_fields, aston_groups, aston_field_opts
 
+
 class FileTreeModel(QtCore.QAbstractItemModel):
-    '''Handles interfacing with QTreeView and other file-related duties.'''
-    def __init__(self, database=None, treeView=None, masterWindow=None, *args): 
-        QtCore.QAbstractItemModel.__init__(self, *args) 
-        
+    """
+    Handles interfacing with QTreeView and other file-related duties.
+    """
+    def __init__(self, database=None, treeView=None, masterWindow=None, *args):
+        QtCore.QAbstractItemModel.__init__(self, *args)
+
         self.db = database
-        self.treehead = self.db.getChildren() #TODO: can this be removed?
+        self.treehead = self.db.getChildren()  # TODO: can this be removed?
         self.masterWindow = masterWindow
         self.fields = json.loads(self.db.getKey('main_cols'))
 
         if treeView is not None:
             self.treeView = treeView
-            
+
             #set up proxy model
             self.proxyMod = FilterModel()
             self.proxyMod.setSourceModel(self)
@@ -35,7 +39,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             treeView.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
             treeView.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
             treeView.clicked.connect(self.itemSelected)
-            
+
             #set up right-clicking
             treeView.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
             treeView.customContextMenuRequested.connect(self.rClickMenu)
@@ -43,20 +47,20 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             treeView.header().customContextMenuRequested.connect( \
               self.rClickHead)
             treeView.header().setStretchLastSection(False)
-            
+
             #set up drag and drop
             treeView.setDragEnabled(True)
             treeView.setAcceptDrops(True)
             treeView.setDragDropMode(QtGui.QAbstractItemView.DragDrop)
             treeView.dragMoveEvent = self.dragMoveEvent
-            
+
             #keep us aware of column reordering
             self.treeView.header().sectionMoved.connect(self.colsChanged)
-            
+
             #deal with combo boxs in table
             self.cDelegates = {}
             self.enableComboCols()
-            
+
             #prettify
             treeView.expandAll()
             treeView.resizeColumnToContents(0)
@@ -64,7 +68,8 @@ class FileTreeModel(QtCore.QAbstractItemModel):
 
     def dragMoveEvent(self, event):
         #TODO: files should be able to be under peaks
-        index = self.proxyMod.mapToSource(self.treeView.indexAt(event.pos()))
+        #(9/12 - don't understand why this is anymore?)
+        #index = self.proxyMod.mapToSource(self.treeView.indexAt(event.pos()))
         if event.mimeData().hasFormat('application/x-aston-file'):
             QtGui.QTreeView.dragMoveEvent(self.treeView, event)
         else:
@@ -91,10 +96,10 @@ class FileTreeModel(QtCore.QAbstractItemModel):
                 row_lst.append('\t'.join(col_lst))
         data = QtCore.QMimeData()
         if incHeaders:
-            data.setText(','.join(flds)+'\n'+'\n'.join(row_lst))
+            data.setText(','.join(flds) + '\n' + '\n'.join(row_lst))
         else:
             data.setText('\n'.join(row_lst))
-        data.setData('application/x-aston-file',','.join(id_lst))
+        data.setData('application/x-aston-file', ','.join(id_lst))
         return data
 
     def dropMimeData(self, data, action, row, col, parent):
@@ -113,10 +118,10 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             obj.saveChanges()
         self.endResetModel()
         return True
-        
+
     def supportedDropActions(self):
         return QtCore.Qt.MoveAction
-    
+
     def enableComboCols(self):
         for c in aston_field_opts.keys():
             if c in self.fields and c not in self.cDelegates:
@@ -170,7 +175,6 @@ class FileTreeModel(QtCore.QAbstractItemModel):
 
     def data(self, index, role):
         rslt = None
-
         fld = self.fields[index.column()].lower()
         f = index.internalPointer()
         if f is None:
@@ -184,15 +188,10 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         elif role == QtCore.Qt.DisplayRole or role == QtCore.Qt.EditRole:
             rslt = f.getInfo(fld)
         elif role == QtCore.Qt.DecorationRole and index.column() == 0:
-            if f.db_type == 'file':
-                icn_path = op.join(op.curdir,'aston','ui','icons','file.png')
-                return QtGui.QIcon(icn_path)
-            elif f.db_type == 'peak':
-                icn_path = op.join(op.curdir,'aston','ui','icons','peak.png')
-                return QtGui.QIcon(icn_path)
-            elif f.db_type == 'spectrum':
-                icn_path = op.join(op.curdir,'aston','ui','icons','spectrum.png')
-                return QtGui.QIcon(icn_path)
+            fname = {'file': 'file.png', 'peak': 'peak.png', \
+              'spectrum': 'spectrum.png'}
+            rslt = QtGui.QIcon(op.join(op.curdir, 'aston', 'ui', \
+              'icons', fname[f.db_type]))
         return rslt
 
     def headerData(self, col, orientation, role):
@@ -229,7 +228,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         obj.saveChanges()
         self.dataChanged.emit(index, index)
         return True
-        
+
     def flags(self, index):
         col = self.fields[index.column()].lower()
         obj = index.internalPointer()
@@ -265,19 +264,19 @@ class FileTreeModel(QtCore.QAbstractItemModel):
                     self.masterWindow.plotter.addPeaks( \
                         sel.getAllChildren('peak'))
             elif sel.db_type == 'spectrum':
-                self.masterWindow.specplotter.addSpec(dict(sel.data),'lib')
+                self.masterWindow.specplotter.addSpec(dict(sel.data), 'lib')
                 self.masterWindow.specplotter.plotSpec()
-        
-    def colsChanged(self, *_): #don't care about the args
+
+    def colsChanged(self, *_):  # don't care about the args
         flds = [self.fields[self.treeView.header().logicalIndex(fld)] \
                     for fld in range(len(self.fields))]
         self.db.setKey('main_cols', json.dumps(flds))
 
     def rClickMenu(self, point):
-        index = self.proxyMod.mapToSource(self.treeView.indexAt(point))
+        #index = self.proxyMod.mapToSource(self.treeView.indexAt(point))
         menu = QtGui.QMenu(self.treeView)
         sel = self.returnSelFiles()
-        
+
         #Things we can do with peaks
         peaks = [s for s in sel if s.db_type == 'peak']
         if len(peaks) > 0:
@@ -285,7 +284,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             ac.setData(','.join([str(o.db_id) for o in peaks]))
             ac = menu.addAction(self.tr('Split Peak'), self.splitPeaks)
             ac.setData(','.join([str(o.db_id) for o in peaks]))
-            
+
         #Things we can do with everything
         if len(sel) > 0:
             ac = menu.addAction(self.tr('Delete Items'), self.deleteItem)
@@ -295,7 +294,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
 
         if not menu.isEmpty():
             menu.exec_(self.treeView.mapToGlobal(point))
-            
+
     def deleteItem(self):
         db_list = str(self.sender().data()).split(',')
         objs = [self.db.getObjectByID(int(obj)) for obj in db_list]
@@ -306,56 +305,57 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         objs = [self.db.getObjectByID(int(obj)) for obj in db_list]
         pks = [o for o in objs if o.db_type == 'peak']
         for pk in pks:
-            x = pk.data[:,0]
+            x = pk.data[:, 0]
             y = pk.as_gaussian()
             plt = self.masterWindow.plotter.plt
-            plt.plot(x,y,'-')
+            plt.plot(x, y, '-')
             self.masterWindow.plotter.canvas.draw()
-        
+
     def createSpec(self):
         db_list = str(self.sender().data()).split(',')
         objs = [self.db.getObjectByID(int(obj)) for obj in db_list]
         for obj in objs:
-             self.addObjects(obj, [obj.createSpectrum()])
+            self.addObjects(obj, [obj.createSpectrum()])
 
     def splitPeaks(self):
         from aston.Features.Peak import Peak
         db_list = str(self.sender().data()).split(',')
         pks = [self.db.getObjectByID(int(o)) for o in db_list]
         SPO, Cancel = QtGui.QInputDialog.getDouble(self.masterWindow, "Aston", "Slice Offset", 0.0)
-        if not Cancel: return
+        if not Cancel:
+            return
         SPL, Cancel = QtGui.QInputDialog.getDouble(self.masterWindow, "Aston", "Slice Length", 0.2)
-        if not Cancel: return
-        
+        if not Cancel:
+            return
+
         for pk in pks:
             ts, te = pk.time()[0], pk.time()[-1]
             if (ts - SPO) % SPL == 0:
                 t0 = pk.time()[0]
             else:
-                t0 = SPO+SPL*(np.ceil((ts-SPO)/SPL)-1)
+                t0 = SPO + SPL * (np.ceil((ts - SPO) / SPL) - 1)
             t = t0
 
             def y(tm):
                 ys, ye = pk.trace()[0], pk.trace()[-1]
-                return ys+(ye-ys)*(tm-t0)/(te-ts)
-            print pk.trace()[0], pk.trace()[-1]
-            
+                return ys + (ye - ys) * (tm - t0) / (te - ts)
+
             pks = []
             dt = pk.parent
             pk.delInfo('p-s-')
             info = pk.info
             info['p-int'] = 'split'
             while t < te:
-                verts = np.column_stack((pk.time(t, t+SPL), \
-                                        pk.trace(None, t, t+SPL)))
+                verts = np.column_stack((pk.time(t, t + SPL), \
+                  pk.trace(None, t, t + SPL)))
                 if t != t0:
                     #not the first point
                     verts = np.vstack(([t, y(t)], verts))
-                if t+SPL < te:
+                if t + SPL < te:
                     #not the last point
-                    verts = np.vstack((verts, [t+SPL, y(t+SPL)]))
-                info['name'] = '{:.2f}-{:.2f}'.format(verts[0,0],\
-                                                      verts[-1,0])
+                    verts = np.vstack((verts, [t + SPL, y(t + SPL)]))
+                info['name'] = '{:.2f}-{:.2f}'.format(verts[0, 0],\
+                                                      verts[-1, 0])
                 pks.append(Peak(dt.db, None, dt.db_id, \
                                 info.copy(), verts.tolist()))
                 t += SPL
@@ -363,12 +363,13 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             self.addObjects(dt, pks)
             dt.delInfo('s-peaks')
 
-    def rClickHead(self,point):
+    def rClickHead(self, point):
         menu = QtGui.QMenu(self.treeView)
         subs = dict([(n, QtGui.QMenu(menu)) for n in aston_groups])
-        
+
         for fld in aston_fields:
-            if fld == 'name': continue
+            if fld == 'name':
+                continue
             grp = fld.split('-')[0]
             if grp in subs:
                 ac = subs[grp].addAction(aston_fields[fld], \
@@ -380,16 +381,17 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             ac.setCheckable(True)
             if fld in self.fields:
                 ac.setChecked(True)
-            
+
         for grp in subs:
             ac = menu.addAction(aston_groups[grp])
             ac.setMenu(subs[grp])
 
         menu.exec_(self.treeView.mapToGlobal(point))
-    
+
     def rClickHeadHandler(self):
         fld = str(self.sender().data())
-        if fld == 'name': return
+        if fld == 'name':
+            return
         if fld in self.fields:
             indx = self.fields.index(fld)
             self.beginRemoveColumns(QtCore.QModelIndex(), indx, indx)
@@ -405,7 +407,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             for i in range(len(self.treehead)):
                 self.beginInsertColumns( \
                   self.index(i, 0, QtCore.QModelIndex()), cols, cols)
-            self.treeView.resizeColumnToContents(len(self.fields)-1)
+            self.treeView.resizeColumnToContents(len(self.fields) - 1)
             self.fields.append(fld)
             for i in range(len(self.treehead) + 1):
                 self.endInsertColumns()
@@ -413,13 +415,14 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         self.colsChanged()
             #FIXME: selection needs to be updated to new col too?
             #self.treeView.selectionModel().selectionChanged.emit()
-                
+
     def addObjects(self, head, objs):
         if head is None:
             row = len(self.treehead)
         else:
             row = len(head.children)
-        self.beginInsertRows(self._objToIndex(head), row, row+len(objs)-1)
+        self.beginInsertRows(self._objToIndex(head), \
+          row, row + len(objs) - 1)
         for obj in objs:
             if head is not None:
                 obj.parent_id = head.db_id
@@ -441,7 +444,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
                 del self.treehead[self.treehead.index(obj)]
             self.endRemoveRows()
         self.masterWindow.plotter.removePeaks(objs)
-    
+
     def _objToIndex(self, obj):
         if obj is None:
             return QtCore.QModelIndex()
@@ -452,7 +455,9 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         return self.createIndex(row, 0, obj)
 
     def returnChkFiles(self, node=None):
-        '''Returns the files checked as visible in the file list.'''
+        """
+        Returns the files checked as visible in the file list.
+        """
         if node is None:
             node = QtCore.QModelIndex()
 
@@ -467,20 +472,24 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         return chkFiles
 
     def returnSelFile(self):
-        '''Returns the file currently selected in the file list.
-        Used for determing which spectra to display on right click, etc.'''
+        """
+        Returns the file currently selected in the file list.
+        Used for determing which spectra to display on right click, etc.
+        """
         tab_sel = self.treeView.selectionModel()
         if not tab_sel.currentIndex().isValid:
             return
-        
+
         ind = self.proxyMod.mapToSource(tab_sel.currentIndex())
         if ind.internalPointer() is None:
-            return #it's doesn't exist
+            return  # it's doesn't exist
         return ind.internalPointer()
 
     def returnSelFiles(self, cls=None):
-        '''Returns the files currently selected in the file list.
-        Used for displaying the peak list, etc.'''
+        """
+        Returns the files currently selected in the file list.
+        Used for displaying the peak list, etc.
+        """
         tab_sel = self.treeView.selectionModel()
         files = []
         for i in tab_sel.selectedRows():
@@ -488,7 +497,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             if cls is None or obj.db_type == cls:
                 files.append(obj)
         return files
-    
+
     def itemsAsCSV(self, itms, delim=',', incHeaders=True):
         flds = [self.fields[self.treeView.header().logicalIndex(fld)] \
                     for fld in range(len(self.fields))]
@@ -499,16 +508,17 @@ class FileTreeModel(QtCore.QAbstractItemModel):
                 if col not in ['vis']:
                     col_lst.append(i.getInfo(col))
             row_lst.append(delim.join(col_lst))
-                
+
         if incHeaders:
             flds = [aston_fields[i] for i in flds if i not in ['vis']]
-            return delim.join(flds)+'\n'+'\n'.join(row_lst)
+            return delim.join(flds) + '\n' + '\n'.join(row_lst)
         else:
             return '\n'.join(row_lst)
-    
+
+
 class FilterModel(QtGui.QSortFilterProxyModel):
     def __init__(self, parent=None):
-        super(FilterModel,self).__init__(parent)
+        super(FilterModel, self).__init__(parent)
 
     def filterAcceptsRow(self, row, index):
         #if index.internalPointer() is not None:
@@ -520,22 +530,23 @@ class FilterModel(QtGui.QSortFilterProxyModel):
         #else:
         return super(FilterModel, self).filterAcceptsRow(row, index)
 
+
 class ComboDelegate(QtGui.QItemDelegate):
     def __init__(self, opts, *args):
         self.opts = opts
-        super(ComboDelegate,self).__init__(*args)
-        
+        super(ComboDelegate, self).__init__(*args)
+
     def createEditor(self, parent, option, index):
         cmb = QtGui.QComboBox(parent)
         cmb.addItems(self.opts)
         return cmb
-    
+
     def setEditorData(self, editor, index):
         txt = index.data(QtCore.Qt.EditRole)
         if txt in self.opts:
             editor.setCurrentIndex(self.opts.index(txt))
         else:
-            super(ComboDelegate,self).setEditorData(editor, index)
-        
+            super(ComboDelegate, self).setEditorData(editor, index)
+
     def setModelData(self, editor, model, index):
         model.setData(index, editor.currentText(), QtCore.Qt.EditRole)

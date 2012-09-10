@@ -5,7 +5,7 @@ import sys, os
 
 options = {
     'name':'Aston',
-    'version':'0.2.2',
+    'version':'0.2.3',
     'description':'Mass/UV Spectral Analysis Program',
     'author':'Roderick Bovee',
     'author_email':'bovee@fas.harvard.edu',

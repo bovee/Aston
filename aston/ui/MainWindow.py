@@ -1,7 +1,7 @@
 import os.path as op
 from PyQt4 import QtCore, QtGui
 
-from aston_ui import Ui_MainWindow
+from aston.ui.aston_ui import Ui_MainWindow
 from aston.ui.FilterWindow import FilterWindow
 from aston.ui.MainPlot import Plotter
 from aston.ui.SpecPlot import SpecPlotter
@@ -74,7 +74,7 @@ class AstonWindow(QtGui.QMainWindow):
 
         #set up the list of files in the current directory
         self.directory = self.getPref('Default.FILE_DIRECTORY')
-        
+
         file_db = AstonFileDatabase(op.join(self.directory,'aston.sqlite'))
         self.obj_tab = FileTreeModel(file_db, self.ui.fileTreeView, self)
         self.plotData()
@@ -116,13 +116,13 @@ class AstonWindow(QtGui.QMainWindow):
         folder = str(QtGui.QFileDialog.getExistingDirectory(self,"Open Folder"))
         if folder == '': return
         self.directory = folder
-        
+
         #need to discard old connections
         self.ui.fileTreeView.clicked.disconnect()
         self.ui.fileTreeView.customContextMenuRequested.disconnect()
         self.ui.fileTreeView.header().customContextMenuRequested.disconnect()
         self.ui.fileTreeView.header().sectionMoved.disconnect()
-        
+
         #load everything
         file_db = AstonFileDatabase(op.join(self.directory,'aston.sqlite'))
         self.obj_tab = FileTreeModel(file_db, self.ui.fileTreeView, self)
@@ -153,17 +153,17 @@ class AstonWindow(QtGui.QMainWindow):
         for i in a:
             f.write(','.join(i) + '\n')
         f.close()
-        
+
     def exportChromatogram(self):
         fname = str(QtGui.QFileDialog.getSaveFileName(self,"Save As..."))
         self.plotter.plt.get_figure().savefig(fname,transparent=True)
-        
+
     def exportSpectrum(self):
         fname = str(QtGui.QFileDialog.getSaveFileName(self,"Save As..."))
         self.specplotter.plt.get_figure().savefig(fname, transparent=True)
 
     def exportItems(self):
-        #TODO: options for exporting different delimiters (e.g. tab) or 
+        #TODO: options for exporting different delimiters (e.g. tab) or
         #exporting select items as pictures (e.g. selected spectra)
         fname = str(QtGui.QFileDialog.getSaveFileName(self,"Save As..."))
         f = open(fname,'w')
@@ -173,7 +173,7 @@ class AstonWindow(QtGui.QMainWindow):
 
     def quickIntegrate(self):
         #TODO: group peaks by time
-        dt = self.obj_tab.returnSelFile() 
+        dt = self.obj_tab.returnSelFile()
         ions = [i for i in dt.info['traces'].split(',')]
 
         #add compounds for ions from the first set

@@ -9,9 +9,9 @@ class Plotter(object):
     def __init__(self, masterWindow, style='default', scheme='Default'):
         self.masterWindow = masterWindow
         self.style = style
-        
+
         plotArea = masterWindow.ui.plotArea
-        
+
         #create the plotting canvas and its toolbar and add them
         tfig = Figure()
         tfig.set_facecolor('white')
@@ -19,22 +19,22 @@ class Plotter(object):
         self.navbar = AstonNavBar(self.canvas,masterWindow)
         plotArea.addWidget(self.navbar)
         plotArea.addWidget(self.canvas)
-    
+
         self.plt = tfig.add_subplot(111, frameon=False)
         self.plt.xaxis.set_ticks_position('none')
         self.plt.yaxis.set_ticks_position('none')
-        
+
         #TODO: find a way to make the axes fill the figure properly
         #tfig.subplots_adjust(left=0.05, right=0.95, bottom=0.05, top=0.95)
         tfig.tight_layout(pad = 2)
-        
+
         self.canvas.mpl_connect('button_press_event',self.mousedown)
         self.canvas.mpl_connect('button_release_event',self.mouseup)
         self.canvas.mpl_connect('scroll_event',self.mousescroll)
 
         self.spec_line = None
         self.patches = {}
-        
+
         #These color schemes are modified from ColorBrewer, license as follows:
         #
         #Apache-Style Software License for ColorBrewer software and
@@ -63,41 +63,42 @@ class Plotter(object):
             'Spectral':['#F0F0F0','#D53E4F','#FC8D59','#FEE08B','#FFFFBF','#E6F598','#99D594','#3288BD'],
             'Purple-Green':['#F0F0F0','#762A83','#9970AB','#C2A5CF','#E7D4E8','#A6DBA0','#5AAE61','#1B7837']
             }
-        self._linestyle = ['-','--',':','-.']
+        self._linestyle = ['-', '--', ':', '-.']
         self.setColorScheme(scheme)
 
-    def setColorScheme(self,scheme='Default'):
+    def setColorScheme(self, scheme='Default'):
         self._color = self._colors[str(scheme)][1:]
         self._peakcolor = self._colors[str(scheme)][0]
-        
+
     def availColors(self):
-        return self._colors.keys()
+        return list(self._colors.keys())
 
     def availStyles(self):
         return ['Default','Scaled','Stacked','Scaled Stacked','2D']
 
     def plotData(self, datafiles, updateBounds=True):
         if not updateBounds:
-            bnds = self.plt.get_xlim(),self.plt.get_ylim()
+            bnds = self.plt.get_xlim(), self.plt.get_ylim()
 
         #plot all of the datafiles
         self.plt.cla()
-        if len(datafiles) == 0: return
+        if len(datafiles) == 0:
+            return
         if '2d' in self.style:
             #TODO: too slow
             #TODO: choose colormap
             dt = datafiles[0]
             s_mass = int(float(dt.getInfo('s-mz-min')))
             e_mass = int(float(dt.getInfo('s-mz-max')))
-            X,Y = np.meshgrid(dt.time(), np.arange(s_mass, e_mass+1, 1))
+            X, Y = np.meshgrid(dt.time(), np.arange(s_mass, e_mass + 1, 1))
             Z = np.zeros(X.shape)
             for t in enumerate(dt.time()):
                 d = dt.scan(t[1])
-                for m,v in zip(d.keys(),d.values()):
-                    Z[int(m)-s_mass,t[0]] += v
-            self.plt.contourf(X,Y,Z,30,extend='both')#,cmap=self.plt.cm.jet)
+                for m,v in zip(d.keys(), d.values()):
+                    Z[int(m) - s_mass, t[0]] += v
+            self.plt.contourf(X, Y, Z, 30, extend='both')  # ,cmap=self.plt.cm.jet)
             if 'legend' in self.style:
-                pass #TODO: add color legend
+                pass  # TODO: add color legend
         else:
             #make up a factor to separate traces by
             if 'stacked' in self.style:
@@ -117,8 +118,8 @@ class Plotter(object):
                     if 'stacked' in self.style:
                         trace += tnum * sc_factor
                     c = self._color[int(tnum % 7)]
-                    ls = self._linestyle[int(np.floor((tnum % 28)/7))]
-                    nm = x.getInfo('name')+' '+y
+                    ls = self._linestyle[int(np.floor((tnum % 28) / 7))]
+                    nm = x.getInfo('name') + ' ' + y
                     self.plt.plot(x.time(),trace,color=c,ls=ls,lw=1.2,label=nm)
                     tnum += 1
 
@@ -164,12 +165,12 @@ class Plotter(object):
             self.spec_line = self.plt.axvline(x,color=color,ls=linestyle)
         #redraw the canvas
         self.canvas.draw()
-        
+
     def mousedown(self, event):
         if event.button == 3 and self.navbar.mode in ['peak', 'spectrum']:
             event.button = 1
             self.navbar.press_pan(event)
-        
+
     def mouseup(self, event):
         if event.button == 3 and self.navbar.mode in ['peak', 'spectrum']:
             event.button = 1
@@ -208,7 +209,7 @@ class Plotter(object):
                     patch = self.patches[pk.db_id]
                     self.plt.patches.remove(patch)
         self.redraw()
-        
+
     def addPeaks(self, pks):
         for pk in pks:
             if pk.db_type == 'peak':
