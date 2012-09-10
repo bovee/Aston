@@ -1,8 +1,0 @@
-syntax: glob
-
-.directory
-*.ropeproject/*
-*.sqlite
-*.pyc
-*__pycache__/*
-*data/*
