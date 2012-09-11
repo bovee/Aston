@@ -5,6 +5,7 @@ from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg
 from matplotlib.path import Path
 import matplotlib.patches as patches
 
+
 class Plotter(object):
     def __init__(self, masterWindow, style='default', scheme='Default'):
         self.masterWindow = masterWindow
@@ -16,7 +17,7 @@ class Plotter(object):
         tfig = Figure()
         tfig.set_facecolor('white')
         self.canvas = FigureCanvasQTAgg(tfig)
-        self.navbar = AstonNavBar(self.canvas,masterWindow)
+        self.navbar = AstonNavBar(self.canvas, masterWindow)
         plotArea.addWidget(self.navbar)
         plotArea.addWidget(self.canvas)
 
@@ -26,11 +27,11 @@ class Plotter(object):
 
         #TODO: find a way to make the axes fill the figure properly
         #tfig.subplots_adjust(left=0.05, right=0.95, bottom=0.05, top=0.95)
-        tfig.tight_layout(pad = 2)
+        tfig.tight_layout(pad=2)
 
-        self.canvas.mpl_connect('button_press_event',self.mousedown)
-        self.canvas.mpl_connect('button_release_event',self.mouseup)
-        self.canvas.mpl_connect('scroll_event',self.mousescroll)
+        self.canvas.mpl_connect('button_press_event', self.mousedown)
+        self.canvas.mpl_connect('button_release_event', self.mouseup)
+        self.canvas.mpl_connect('scroll_event', self.mousescroll)
 
         self.spec_line = None
         self.patches = {}
@@ -54,14 +55,14 @@ class Plotter(object):
         #either express or implied. See the License for the specific
         #language governing permissions and limitations under the License.
         self._colors = {
-            'Default':['#F0F0F0','#8DD3C7','#FFFFB3','#BEBADA','#FB8072','#80B1D3','#FDB462','#B3DE69'],
-            'Greys':['#F0F0F0','#D9D9D9','#BDBDBD','#969696','#737373','#525252','#252525','#000000'],
-            'Blue-Green':['#E5F5F9','#CCECE6','#99D8C9','#66C2A4','#41AE76','#238B45','#006D2C','#00441B'],
-            'Blue-Purple':['#E0ECF4','#BFD3E6','#9EBCDA','#8C96C6','#8C6BB1','#88419D','#810F7C','#4D004B'],
-            'Yellow-Red':['#FFEDA0','#FED976','#FEB24C','#FD8D3C','#FC4E2A','#E31A1C','#BD0026','#800026'],
-            'Rainbow':['#F0F0F0','#E41A1C','#FF7F00','#FFFF33','#4DAF4A','#377EB8','#984EA3','#A65628'],
-            'Spectral':['#F0F0F0','#D53E4F','#FC8D59','#FEE08B','#FFFFBF','#E6F598','#99D594','#3288BD'],
-            'Purple-Green':['#F0F0F0','#762A83','#9970AB','#C2A5CF','#E7D4E8','#A6DBA0','#5AAE61','#1B7837']
+            'Default': ['#F0F0F0', '#8DD3C7', '#FFFFB3', '#BEBADA', '#FB8072', '#80B1D3', '#FDB462', '#B3DE69'],
+            'Greys': ['#F0F0F0', '#D9D9D9', '#BDBDBD', '#969696', '#737373', '#525252', '#252525', '#000000'],
+            'Blue-Green': ['#E5F5F9', '#CCECE6', '#99D8C9', '#66C2A4', '#41AE76', '#238B45', '#006D2C', '#00441B'],
+            'Blue-Purple': ['#E0ECF4', '#BFD3E6', '#9EBCDA', '#8C96C6', '#8C6BB1', '#88419D', '#810F7C', '#4D004B'],
+            'Yellow-Red': ['#FFEDA0', '#FED976', '#FEB24C', '#FD8D3C', '#FC4E2A', '#E31A1C', '#BD0026', '#800026'],
+            'Rainbow': ['#F0F0F0', '#E41A1C', '#FF7F00', '#FFFF33', '#4DAF4A', '#377EB8', '#984EA3', '#A65628'],
+            'Spectral': ['#F0F0F0', '#D53E4F', '#FC8D59', '#FEE08B', '#FFFFBF', '#E6F598', '#99D594', '#3288BD'],
+            'Purple-Green': ['#F0F0F0', '#762A83', '#9970AB', '#C2A5CF', '#E7D4E8', '#A6DBA0', '#5AAE61', '#1B7837']
             }
         self._linestyle = ['-', '--', ':', '-.']
         self.setColorScheme(scheme)
@@ -74,7 +75,7 @@ class Plotter(object):
         return list(self._colors.keys())
 
     def availStyles(self):
-        return ['Default','Scaled','Stacked','Scaled Stacked','2D']
+        return ['Default', 'Scaled', 'Stacked', 'Scaled Stacked', '2D']
 
     def plotData(self, datafiles, updateBounds=True):
         if not updateBounds:
@@ -85,54 +86,9 @@ class Plotter(object):
         if len(datafiles) == 0:
             return
         if '2d' in self.style:
-            #TODO: too slow
-            #TODO: choose colormap
-            dt = datafiles[0]
-            s_mass = int(float(dt.getInfo('s-mz-min')))
-            e_mass = int(float(dt.getInfo('s-mz-max')))
-            X, Y = np.meshgrid(dt.time(), np.arange(s_mass, e_mass + 1, 1))
-            Z = np.zeros(X.shape)
-            for t in enumerate(dt.time()):
-                d = dt.scan(t[1])
-                for m,v in zip(d.keys(), d.values()):
-                    Z[int(m) - s_mass, t[0]] += v
-            self.plt.contourf(X, Y, Z, 30, extend='both')  # ,cmap=self.plt.cm.jet)
-            if 'legend' in self.style:
-                pass  # TODO: add color legend
+            self._plot2D(datafiles[0])
         else:
-            #make up a factor to separate traces by
-            if 'stacked' in self.style:
-                ftrace = datafiles[0].trace(datafiles[0].getInfo('traces').split(',')[0])
-                sc_factor = (max(ftrace)-min(ftrace))/5.
-
-            tnum = 0
-            for x in datafiles:
-                for y in x.getInfo('traces').split(','):
-                    if y == '':
-                        continue
-                    trace = x.trace(y)
-                    if 'scaled' in self.style:
-                        trace -= min(trace)
-                        trace /= max(trace)
-                        trace *= 100
-                    if 'stacked' in self.style:
-                        trace += tnum * sc_factor
-                    c = self._color[int(tnum % 7)]
-                    ls = self._linestyle[int(np.floor((tnum % 28) / 7))]
-                    nm = x.getInfo('name') + ' ' + y
-                    self.plt.plot(x.time(),trace,color=c,ls=ls,lw=1.2,label=nm)
-                    tnum += 1
-
-            #add a legend and make it pretty
-            if 'legend' in self.style:
-                leg = self.plt.legend(frameon=False)
-                #leg.get_frame().edgecolor = None
-                clrs = [i.get_color() for i in leg.get_lines()]
-                for i,j in enumerate(clrs):
-                    leg.get_texts()[i].set_color(j)
-                for i in leg.get_lines():
-                    i.set_linestyle('')
-
+            self._plot(datafiles)
 
         #update the view bounds in the navbar's history
         if updateBounds:
@@ -144,25 +100,74 @@ class Plotter(object):
             self.plt.set_ylim(bnds[1])
 
         #draw grid lines
-        self.plt.grid(c='black',ls='-',alpha='0.05')
+        self.plt.grid(c='black', ls='-', alpha='0.05')
 
         #update the canvas
         self.canvas.draw()
 
+    def _plot(self, datafiles):
+        # make up a factor to separate traces by
+        if 'stacked' in self.style:
+            ftrace = datafiles[0].trace(datafiles[0].getInfo('traces').split(',')[0])
+            sc_factor = (max(ftrace) - min(ftrace)) / 5.
+
+        tnum = 0
+        for x in datafiles:
+            for y in x.getInfo('traces').split(','):
+                trace = x.trace(y)
+                if 'scaled' in self.style:
+                    trace -= min(trace)
+                    trace /= max(trace)
+                    trace *= 100
+                if 'stacked' in self.style:
+                    trace += tnum * sc_factor
+                c = self._color[int(tnum % 7)]
+                ls = self._linestyle[int(np.floor((tnum % 28) / 7))]
+                nm = x.getInfo('name') + ' ' + y
+                self.plt.plot(x.time(), trace, color=c, ls=ls, lw=1.2, label=nm)
+                tnum += 1
+
+        #add a legend and make it pretty
+        if 'legend' in self.style:
+            leg = self.plt.legend(frameon=False)
+            #leg.get_frame().edgecolor = None
+            clrs = [i.get_color() for i in leg.get_lines()]
+            for i, j in enumerate(clrs):
+                leg.get_texts()[i].set_color(j)
+            for i in leg.get_lines():
+                i.set_linestyle('')
+
+    def _plot2D(self, dt):
+        #TODO: too slow
+        #TODO: choose colormap
+        s_mass = int(float(dt.getInfo('s-mz-min')))
+        e_mass = int(float(dt.getInfo('s-mz-max')))
+        X, Y = np.meshgrid(dt.time(), np.arange(s_mass, e_mass + 1, 1))
+        Z = np.zeros(X.shape)
+        for t in enumerate(dt.time()):
+            d = dt.scan(t[1])
+            for m, v in zip(d.keys(), d.values()):
+                Z[int(m) - s_mass, t[0]] += v
+        self.plt.contourf(X, Y, Z, 30, extend='both')  # ,cmap=self.plt.cm.jet)
+        if 'legend' in self.style:
+            pass  # TODO: add color legend
+
     def redraw(self):
         self.canvas.draw()
 
-    def drawSpecLine(self,x,color='black',linestyle='-'):
-        '''Draw the line that indicates where the spectrum came from.'''
+    def drawSpecLine(self, x, color='black', linestyle='-'):
+        """
+        Draw the line that indicates where the spectrum came from.
+        """
         #try to remove the line from the previous spectrum (if it exists)
         if self.spec_line is not None:
             try:
                 self.plt.lines.remove(self.spec_line)
             except ValueError:
-                pass #not sure why this happens?
+                pass  # not sure why this happens?
         #draw a new line
         if x is not None:
-            self.spec_line = self.plt.axvline(x,color=color,ls=linestyle)
+            self.spec_line = self.plt.axvline(x, color=color, ls=linestyle)
         #redraw the canvas
         self.canvas.draw()
 
@@ -176,25 +181,26 @@ class Plotter(object):
             event.button = 1
             self.navbar.release_pan(event)
 
-    def mousescroll(self,event):
-        if event.xdata is None or event.ydata is None: return
+    def mousescroll(self, event):
+        if event.xdata is None or event.ydata is None:
+            return
         xmin, xmax = self.plt.get_xlim()
         ymin, ymax = self.plt.get_ylim()
-        if event.button == 'up': #zoom in
-            self.plt.set_xlim(event.xdata-(event.xdata-xmin)/2.,
-                                      event.xdata+(xmax-event.xdata)/2.)
-            self.plt.set_ylim(event.ydata-(event.ydata-ymin)/2.,
-                                      event.ydata+(ymax-event.ydata)/2.)
-        elif event.button == 'down': #zoom out
-            xmin = event.xdata-2*(event.xdata-xmin)
-            xmax = event.xdata+2*(xmax-event.xdata)
-            xmin = max(xmin,self.navbar._views.home()[0][0])
-            xmax = min(xmax,self.navbar._views.home()[0][1])
-            ymin = event.ydata-2*(event.ydata-ymin)
-            ymax = event.ydata+2*(ymax-event.ydata)
-            ymin = max(ymin,self.navbar._views.home()[0][2])
-            ymax = min(ymax,self.navbar._views.home()[0][3])
-            self.plt.axis([xmin,xmax,ymin,ymax])
+        if event.button == 'up':  # zoom in
+            self.plt.set_xlim(event.xdata - (event.xdata - xmin) / 2.,
+              event.xdata + (xmax - event.xdata) / 2.)
+            self.plt.set_ylim(event.ydata - (event.ydata - ymin) / 2.,
+              event.ydata + (ymax - event.ydata) / 2.)
+        elif event.button == 'down':  # zoom out
+            xmin = event.xdata - 2 * (event.xdata - xmin)
+            xmax = event.xdata + 2 * (xmax - event.xdata)
+            xmin = max(xmin, self.navbar._views.home()[0][0])
+            xmax = min(xmax, self.navbar._views.home()[0][1])
+            ymin = event.ydata - 2 * (event.ydata - ymin)
+            ymax = event.ydata + 2 * (ymax - event.ydata)
+            ymin = max(ymin, self.navbar._views.home()[0][2])
+            ymax = min(ymax, self.navbar._views.home()[0][3])
+            self.plt.axis([xmin, xmax, ymin, ymax])
         self.redraw()
 
     def clearPeaks(self):
@@ -214,6 +220,6 @@ class Plotter(object):
         for pk in pks:
             if pk.db_type == 'peak':
                 self.patches[pk.db_id] = patches.PathPatch(Path(pk.data), \
-                                          facecolor=self._peakcolor, lw=0)
+                  facecolor=self._peakcolor, lw=0)
                 self.plt.add_patch(self.patches[pk.db_id])
         self.redraw()

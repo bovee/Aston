@@ -1,5 +1,5 @@
 import os.path as op
-from PyQt4 import QtCore, QtGui
+from PyQt4 import QtGui
 
 from aston.ui.aston_ui import Ui_MainWindow
 from aston.ui.FilterWindow import FilterWindow
@@ -10,7 +10,7 @@ from aston.Database import AstonFileDatabase
 from aston.Database import AstonDatabase
 from aston.FileTable import FileTreeModel
 from aston.Math.Integrators import waveletIntegrate, statSlopeIntegrate
-from aston.Features import Spectrum
+
 
 class AstonWindow(QtGui.QMainWindow):
     def __init__(self, parent=None):
@@ -26,10 +26,10 @@ class AstonWindow(QtGui.QMainWindow):
         self.ui.actionSettings.setMenuRole(QtGui.QAction.NoRole)
 
         #set up the grouping for the dock widgets
-        self.tabifyDockWidget(self.ui.filesDockWidget,self.ui.settingsDockWidget)
-        self.tabifyDockWidget(self.ui.filesDockWidget,self.ui.spectraDockWidget)
-        self.tabifyDockWidget(self.ui.filesDockWidget,self.ui.methodDockWidget)
-        self.tabifyDockWidget(self.ui.filesDockWidget,self.ui.compoundDockWidget)
+        self.tabifyDockWidget(self.ui.filesDockWidget, self.ui.settingsDockWidget)
+        self.tabifyDockWidget(self.ui.filesDockWidget, self.ui.spectraDockWidget)
+        self.tabifyDockWidget(self.ui.filesDockWidget, self.ui.methodDockWidget)
+        self.tabifyDockWidget(self.ui.filesDockWidget, self.ui.compoundDockWidget)
         self.ui.filesDockWidget.raise_()
 
         #connect the menu logic
@@ -75,7 +75,7 @@ class AstonWindow(QtGui.QMainWindow):
         #set up the list of files in the current directory
         self.directory = self.getPref('Default.FILE_DIRECTORY')
 
-        file_db = AstonFileDatabase(op.join(self.directory,'aston.sqlite'))
+        file_db = AstonFileDatabase(op.join(self.directory, 'aston.sqlite'))
         self.obj_tab = FileTreeModel(file_db, self.ui.fileTreeView, self)
         self.plotData()
 
@@ -84,7 +84,9 @@ class AstonWindow(QtGui.QMainWindow):
         self.cmpd_tab = FileTreeModel(cmpd_db, self.ui.compoundTreeView, self)
 
     def updateWindows(self):
-        'Update the tab windows to match the menu.'
+        """
+        Update the tab windows to match the menu.
+        """
         self.ui.filesDockWidget.setVisible(self.ui.actionFiles.isChecked())
         self.ui.settingsDockWidget.setVisible(self.ui.actionSettings.isChecked())
         self.ui.spectraDockWidget.setVisible(self.ui.actionSpectra.isChecked())
@@ -92,7 +94,9 @@ class AstonWindow(QtGui.QMainWindow):
         self.ui.compoundDockWidget.setVisible(self.ui.actionCompounds.isChecked())
 
     def updateWindowsMenu(self):
-        'Update the windows menu to match the tab.'
+        """
+        Update the windows menu to match the tab.
+        """
         self.ui.actionFiles.setChecked(self.ui.filesDockWidget.isVisible())
         self.ui.actionSettings.setChecked(self.ui.settingsDockWidget.isVisible())
         self.ui.actionSpectra.setChecked(self.ui.spectraDockWidget.isVisible())
@@ -108,13 +112,14 @@ class AstonWindow(QtGui.QMainWindow):
             cp = ConfigParser.SafeConfigParser()
         cp.read('./settings.ini')
         try:
-            return cp.get(key.split('.')[0],key.split('.')[1])
+            return cp.get(key.split('.')[0], key.split('.')[1])
         except:
             return ''
 
     def openFolder(self):
-        folder = str(QtGui.QFileDialog.getExistingDirectory(self,"Open Folder"))
-        if folder == '': return
+        folder = str(QtGui.QFileDialog.getExistingDirectory(self, "Open Folder"))
+        if folder == '':
+            return
         self.directory = folder
 
         #need to discard old connections
@@ -124,49 +129,49 @@ class AstonWindow(QtGui.QMainWindow):
         self.ui.fileTreeView.header().sectionMoved.disconnect()
 
         #load everything
-        file_db = AstonFileDatabase(op.join(self.directory,'aston.sqlite'))
+        file_db = AstonFileDatabase(op.join(self.directory, 'aston.sqlite'))
         self.obj_tab = FileTreeModel(file_db, self.ui.fileTreeView, self)
         self.plotData()
 
     def exportChromatogramAsCSV(self):
         #FIXME: obsolete, needs to be in exportChromatogram
-        fname = str(QtGui.QFileDialog.getSaveFileName(self,"Save As..."))
-        f = open(fname,'w')
+        fname = str(QtGui.QFileDialog.getSaveFileName(self, "Save As..."))
+        f = open(fname, 'w')
         dt = self.obj_tab.returnSelFile()
         a = [['"Time"'] + [str(i) for i in dt.time()]]
         for x in dt.info['traces'].split(','):
             if x != '':
-                a += [['"'+x+'"'] + [str(i) for i in cgrm.trace(x)]]
+                a += [['"' + x + '"'] + [str(i) for i in cgrm.trace(x)]]
         for i in zip(*a):
             f.write(','.join(i) + '\n')
         f.close()
 
     def exportSpectrumAsCSV(self):
         #FIXME: obsolete, needs to be integrated into exportSpectrum
-        fname = str(QtGui.QFileDialog.getSaveFileName(self,"Save As..."))
-        f = open(fname,'w')
+        fname = str(QtGui.QFileDialog.getSaveFileName(self, "Save As..."))
+        f = open(fname, 'w')
         cgrm = self.obj_tab.returnSelFile()
         scan = cgrm.scan(self.spec_line.get_xdata()[0])
-        mz,abun = scan.keys(),scan.values()
-        a = [['mz','abun']]
-        a += zip([str(i) for i in mz],[str(i) for i in abun])
+        mz, abun = scan.keys(), scan.values()
+        a = [['mz', 'abun']]
+        a += zip([str(i) for i in mz], [str(i) for i in abun])
         for i in a:
             f.write(','.join(i) + '\n')
         f.close()
 
     def exportChromatogram(self):
-        fname = str(QtGui.QFileDialog.getSaveFileName(self,"Save As..."))
-        self.plotter.plt.get_figure().savefig(fname,transparent=True)
+        fname = str(QtGui.QFileDialog.getSaveFileName(self, "Save As..."))
+        self.plotter.plt.get_figure().savefig(fname, transparent=True)
 
     def exportSpectrum(self):
-        fname = str(QtGui.QFileDialog.getSaveFileName(self,"Save As..."))
+        fname = str(QtGui.QFileDialog.getSaveFileName(self, "Save As..."))
         self.specplotter.plt.get_figure().savefig(fname, transparent=True)
 
     def exportItems(self):
         #TODO: options for exporting different delimiters (e.g. tab) or
         #exporting select items as pictures (e.g. selected spectra)
-        fname = str(QtGui.QFileDialog.getSaveFileName(self,"Save As..."))
-        f = open(fname,'w')
+        fname = str(QtGui.QFileDialog.getSaveFileName(self, "Save As..."))
+        f = open(fname, 'w')
         sel = self.obj_tab.returnSelFiles()
         f.write(self.obj_tab.itemsAsCSV(sel))
         f.close()
@@ -190,12 +195,14 @@ class AstonWindow(QtGui.QMainWindow):
             self.dlg.show()
 
     def revertChromChange(self):
-        'Delete all of the info keys related to display transformations.'
+        """
+        Delete all of the info keys related to display transformations.
+        """
         for dt in self.obj_tab.returnSelFiles('file'):
             dt.delInfo('t-')
         self.plotData()
 
-    def plotData(self,**kwargs):
+    def plotData(self, **kwargs):
         self.plotter.setColorScheme(self.ui.colorSchemeComboBox.currentText())
         self.plotter.style = str(self.ui.styleComboBox.currentText()).lower()
         if self.ui.legendCheckBox.isChecked():
@@ -203,10 +210,12 @@ class AstonWindow(QtGui.QMainWindow):
 
         datafiles = self.obj_tab.returnChkFiles()
         if 'updateBounds' in kwargs:
-            self.plotter.plotData(datafiles,kwargs['updateBounds'])
+            self.plotter.plotData(datafiles, kwargs['updateBounds'])
         else:
             self.plotter.plotData(datafiles)
 
     def updateSearch(self, text):
-        '''If the search box changes, update the file table.'''
+        """
+        If the search box changes, update the file table.
+        """
         self.obj_tab.proxyMod.setFilterFixedString(text)
