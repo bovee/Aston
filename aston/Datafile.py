@@ -32,9 +32,11 @@ class Datafile(DBObject):
         self.data = None
 
     def _getTimeSlice(self, arr, st_time=None, en_time=None):
-        '''Returns a slice of the incoming array filtered between
+        """
+        Returns a slice of the incoming array filtered between
         the two times specified. Assumes the array is the same
-        length as self.data. Acts in the time() and trace() functions.'''
+        length as self.data. Acts in the time() and trace() functions.
+        """
         if self.data.shape[0] == 0:
             return self.data[:, 0]
 
@@ -79,8 +81,10 @@ class Datafile(DBObject):
         return self._getTimeSlice(tme, st_time, en_time)
 
     def trace(self, ion=None, st_time=None, en_time=None):
-        '''Returns an array, either time/ion filtered or not
-        of chromatographic data.'''
+        """
+        Returns an array, either time/ion filtered or not
+        of chromatographic data.
+        """
         if self.data is None:
             self._cacheData()
 
@@ -116,7 +120,9 @@ class Datafile(DBObject):
         return self._getTimeSlice(ic, st_time, en_time)
 
     def _parseIonString(self, istr):
-        '''Recursive string parser that handles "ion" strings.'''
+        """
+        Recursive string parser that handles "ion" strings.
+        """
         #TODO: better error checking in here?
 
         #null case
@@ -124,13 +130,10 @@ class Datafile(DBObject):
             return np.zeros(self.data.shape[0])
 
         #remove any parantheses or pluses around the whole thing
-        if istr[0] in '+':
-            istr = istr[1:]
-        if istr[0] in '(' and istr[-1] in ')':
-            istr = istr[1:-1]
+        istr = istr.lstrip('+(').rstrip(')')
 
         #invert it if preceded by a minus sign
-        if istr[0] in '-':
+        if istr[0] == '-':
             return -1.0 * self._parseIonString(istr[1:])
 
         #this is a function
@@ -168,6 +171,8 @@ class Datafile(DBObject):
                 return np.ones(self.data.shape[0]) * float(istr[1:])
             elif istr == '!pi':
                 return np.ones(self.data.shape[0]) * np.pi
+            elif istr == '!e':
+                return np.ones(self.data.shape[0]) * np.e
             else:
                 return self._getNamedTrace(istr)
 
@@ -208,7 +213,7 @@ class Datafile(DBObject):
     def _getNamedTrace(self, name):
         lookdict = {'temp': 'm-tmp', 'pres': 'm-prs', 'flow': 'm-flw'}
         if name == 't' or name == 'time':
-            return self.data[:, 0].copy()
+            return self.time()
         #elif name == 'b' or name == 'base':
         #    #TODO: create a baseline
         #    pass
@@ -264,7 +269,9 @@ class Datafile(DBObject):
             return self._getOtherTrace(name)
 
     def _applyFxn(self, ic, fxn, *args):
-        '''Apply the function, fxn, to the trace, ic, and returns the result.'''
+        """
+        Apply the function, fxn, to the trace, ic, and returns the result.
+        """
         from aston.Math.Chromatograms import fxns
         if fxn in fxns:
             f = fxns[fxn]
@@ -289,15 +296,14 @@ class Datafile(DBObject):
         times = self.data[:, 0]
         try:
             times = np.array(times.todense())
-        except NameError:
+        except AttributeError:
             times = np.array(times)
         idx = (np.abs(times - time)).argmin()
         ion_abs = self.data[idx, 1:]
         try:
-            ion_abs = np.array(ion_abs.todense())
-        except NameError:
+            ion_abs = np.array(ion_abs.todense())[0]
+        except AttributeError:
             ion_abs = np.array(ion_abs)
-        print(len(self.ions), len(ion_abs))
         return (np.array(self.ions), ion_abs)
 
     def _loadInfo(self, fld):
@@ -342,12 +348,16 @@ class Datafile(DBObject):
     #subclasses that handle the raw datafiles.
 
     def _cacheData(self):
-        '''Load the data into the Datafile for the first time.'''
+        """
+        Load the data into the Datafile for the first time.
+        """
         self.ions = []
         self.data = None
 
     def _getIonTrace(self, val, tol=0.5):
-        '''Return a specific ion trace from the data.'''
+        """
+        Return a specific ion trace from the data.
+        """
         if self.data is None:
             self._cacheData()
         ions = np.array([i for i in self.ions \
@@ -359,16 +369,22 @@ class Datafile(DBObject):
             return self.data[:, rows].sum(axis=1)
 
     def _getOtherTrace(self, name):
-        '''Return a named trace, like pressure or temperature.'''
+        """
+        Return a named trace, like pressure or temperature.
+        """
         return np.zeros(self.data.shape[0])
 
     def _getTotalTrace(self):
-        '''Return the default, total trace.'''
+        """
+        Return the default, total trace.
+        """
         if self.data is None:
             self._cacheData()
         return self.data[:, 1:].sum(axis=1)
         #return np.array([sum(i.values()) for i in self.data])
 
     def _updateInfoFromFile(self):
-        '''Return file information.'''
+        """
+        Return file information.
+        """
         pass
