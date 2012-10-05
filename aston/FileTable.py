@@ -188,10 +188,11 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         elif role == QtCore.Qt.DisplayRole or role == QtCore.Qt.EditRole:
             rslt = f.getInfo(fld)
         elif role == QtCore.Qt.DecorationRole and index.column() == 0:
+            #TODO: icon for method, compound
             fname = {'file': 'file.png', 'peak': 'peak.png', \
-              'spectrum': 'spectrum.png'}
+                    'spectrum': 'spectrum.png'}
             rslt = QtGui.QIcon(op.join(op.curdir, 'aston', 'ui', \
-              'icons', fname[f.db_type]))
+              'icons', fname.get(f.db_type, '')))
         return rslt
 
     def headerData(self, col, orientation, role):

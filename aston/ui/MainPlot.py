@@ -1,4 +1,5 @@
 import numpy as np
+import scipy.interpolate
 from aston.ui.Navbar import AstonNavBar
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg
@@ -138,19 +139,21 @@ class Plotter(object):
                 i.set_linestyle('')
 
     def _plot2D(self, dt):
-        #TODO: too slow
-        #TODO: choose colormap
-        s_mass = int(float(dt.getInfo('s-mz-min')))
-        e_mass = int(float(dt.getInfo('s-mz-max')))
-        X, Y = np.meshgrid(dt.time(), np.arange(s_mass, e_mass + 1, 1))
-        Z = np.zeros(X.shape)
-        for t in enumerate(dt.time()):
-            d = dt.scan(t[1])
-            for m, v in zip(d.keys(), d.values()):
-                Z[int(m) - s_mass, t[0]] += v
-        self.plt.contourf(X, Y, Z, 30, extend='both')  # ,cmap=self.plt.cm.jet)
+        # TODO: too slow
+        # TODO: choose colormap
+        #data = dt.data[:, 1:].transpose().toarray()
+        ext = (dt.data[0, 0], dt.data[-1, 0], min(dt.ions), max(dt.ions))
+        data = dt.data.tocoo()
+        x = dt.data[data.row, 0].toarray()[:, 0].astype(int)
+        import scipy.sparse
+        grid = scipy.sparse.coo_matrix((data.data, (data.col, x))).toarray()
+
+        # TODO: y-axis is completely fucked
+        img = self.plt.imshow(grid, origin='lower', aspect='auto', \
+          extent=ext)
         if 'legend' in self.style:
-            pass  # TODO: add color legend
+            # TODO: remove this after it's shown
+            self.plt.figure.colorbar(img)
 
     def redraw(self):
         self.canvas.draw()

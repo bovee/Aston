@@ -46,10 +46,18 @@ class SpecPlotter(object):
 
         #colors
         clrs = {'': 'black', 'prev': '0.7', 'lib': 'blue'}
+        xmin, xmax = np.inf, -np.inf
+        ymin, ymax = 0, -np.inf
 
         #loop through all of the scans to be displayed
         for scn_nm in self.scansToDisp:
             scn = self.scans[scn_nm]
+
+            xmin = min(min(scn[0]), xmin)
+            xmax = max(max(scn[0]), xmax)
+            ymin = min(min(scn[1]), ymin)
+            ymax = max(max(scn[1]), ymax)
+
             try:
                 clr = clrs[scn_nm]
             except:
@@ -89,7 +97,8 @@ class SpecPlotter(object):
                             'ec': clr, 'lw': 1, 'alpha': '0.25'})
 
         #redraw the canvas
-        self.plt.set_xlim(min(scn[0]), max(scn[0]))
+        self.plt.set_xlim(xmin - 1, xmax + 1)
+        self.plt.set_ylim(ymin, ymax)
         self.canvas.draw()
 
     def specmousedown(self, event):

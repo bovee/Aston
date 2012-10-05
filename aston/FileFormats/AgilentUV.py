@@ -172,7 +172,9 @@ class AgilentDAD(Datafile.Datafile):
 
 
 class AgilentCSDAD(Datafile.Datafile):
-    '''Interpreter for *.UV files from Agilent Chemstation'''
+    """
+    Interpreter for *.UV files from Agilent Chemstation
+    """
     ext = 'UV'
     mgc = 0x233
 
@@ -187,13 +189,14 @@ class AgilentCSDAD(Datafile.Datafile):
         f.seek(0x116)
         nscans = struct.unpack('>i', f.read(4))[0]
 
-        self.times = nscans * [0]
-        self.data = nscans * [{}]
+        times = nscans * [0]
+        data = nscans * [{}]
+        self.ions = []
         npos = 0x202
         for i in range(nscans):
             f.seek(npos)
             npos += struct.unpack('<H', f.read(2))[0]
-            self.times[i] = struct.unpack('<L', f.read(4))[0] / 60000.
+            times[i] = struct.unpack('<L', f.read(4))[0] / 60000.
             nm_srt = struct.unpack('<H', f.read(2))[0] / 20.
             nm_end = struct.unpack('<H', f.read(2))[0] / 20.
             nm_stp = struct.unpack('<H', f.read(2))[0] / 20.
@@ -201,14 +204,24 @@ class AgilentCSDAD(Datafile.Datafile):
             s = {}
             v = struct.unpack('<h', f.read(2))[0] / 2000.
             s[nm_srt] = v
-            for j in range(1, int((nm_end - nm_srt) / nm_stp)):
+            #for j in range(1, int((nm_end - nm_srt) / nm_stp)):
+            for wv in np.arange(nm_srt, nm_end, nm_stp):
                 ov = struct.unpack('<h', f.read(2))[0]
                 if ov == -32768:
                     v = struct.unpack('<i', f.read(4))[0] / 2000.
                 else:
                     v += ov / 2000.
-                s[nm_srt + j * nm_stp] = v
-            self.data[i] = s
+                s[wv] = v
+                if wv not in self.ions:
+                    self.ions.append(wv)
+                #s[nm_srt + j * nm_stp] = v
+            data[i] = s
+
+        self.data = np.zeros((nscans, len(self.ions) + 1))
+        for i, t, d in zip(range(nscans), times, data):
+            self.data[i, 0] = t
+            for ion, abn in d.items():
+                self.data[i, self.ions.index(ion) + 1] = abn
 
     def _updateInfoFromFile(self):
         d = {}

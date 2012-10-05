@@ -40,9 +40,9 @@ class AgilentFID(Datafile.Datafile):
                 inp = struct.unpack('>i', f.read(4))[0]
                 inp2 = struct.unpack('>H', f.read(2))[0]
                 delt = 0
-                data.append(del_ab * (inp * 32767 + inp2))
+                data.append(inp * 65534 + inp2)
             else:
-                delt += del_ab * inp
+                delt += inp
                 data.append(data[-1] + delt)
         f.close()
         # TODO: 0.4/60.0 should be obtained from the file???

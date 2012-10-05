@@ -128,8 +128,14 @@ class AstonDatabase(object):
     def _getObjFromRow(self, row):
         if row is None:
             return None
-        unpack = lambda r: \
-          json.loads(zlib.decompress(r).decode('utf-8'))
+
+        def unpack(r):
+            try:  # TODO: this try is for testing; remove
+                return json.loads(zlib.decompress(r).decode('utf-8'))
+            except:
+                return None
+        #unpack = lambda r: \
+        #  json.loads(zlib.decompress(r).decode('utf-8'))
         info = unpack(row[3])
         if row[0] in ['peak', 'spectrum']:
             data = unpack(row[4])
@@ -145,6 +151,12 @@ class AstonDatabase(object):
         elif row[0] == 'spectrum':
             from aston.Features import Spectrum
             return Spectrum(self, *args)
+        elif row[0] == 'method':
+            from aston.Features import Method
+            return Method(self, *args)
+        elif row[0] == 'compound':
+            from aston.Features import Compound
+            return Compound(self, *args)
         else:
             return DBObject(row[0], self, *args)
 
