@@ -1,14 +1,16 @@
 import numpy as np
 import scipy.interpolate
+import scipy.sparse
 from aston.ui.Navbar import AstonNavBar
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg
 from matplotlib.path import Path
 import matplotlib.patches as patches
+import matplotlib.colors
 
 
 class Plotter(object):
-    def __init__(self, masterWindow, style='default', scheme='Default'):
+    def __init__(self, masterWindow, style='default', scheme='Rainbow'):
         self.masterWindow = masterWindow
         self.style = style
 
@@ -25,6 +27,7 @@ class Plotter(object):
         self.plt = tfig.add_subplot(111, frameon=False)
         self.plt.xaxis.set_ticks_position('none')
         self.plt.yaxis.set_ticks_position('none')
+        self.cb = None
 
         #TODO: find a way to make the axes fill the figure properly
         #tfig.subplots_adjust(left=0.05, right=0.95, bottom=0.05, top=0.95)
@@ -56,7 +59,7 @@ class Plotter(object):
         #either express or implied. See the License for the specific
         #language governing permissions and limitations under the License.
         self._colors = {
-            'Default': ['#F0F0F0', '#8DD3C7', '#FFFFB3', '#BEBADA', '#FB8072', '#80B1D3', '#FDB462', '#B3DE69'],
+            'Pastels': ['#F0F0F0', '#8DD3C7', '#FFFFB3', '#BEBADA', '#FB8072', '#80B1D3', '#FDB462', '#B3DE69'],
             'Greys': ['#F0F0F0', '#D9D9D9', '#BDBDBD', '#969696', '#737373', '#525252', '#252525', '#000000'],
             'Blue-Green': ['#E5F5F9', '#CCECE6', '#99D8C9', '#66C2A4', '#41AE76', '#238B45', '#006D2C', '#00441B'],
             'Blue-Purple': ['#E0ECF4', '#BFD3E6', '#9EBCDA', '#8C96C6', '#8C6BB1', '#88419D', '#810F7C', '#4D004B'],
@@ -68,7 +71,7 @@ class Plotter(object):
         self._linestyle = ['-', '--', ':', '-.']
         self.setColorScheme(scheme)
 
-    def setColorScheme(self, scheme='Default'):
+    def setColorScheme(self, scheme='Rainbow'):
         self._color = self._colors[str(scheme)][1:]
         self._peakcolor = self._colors[str(scheme)][0]
 
@@ -82,8 +85,14 @@ class Plotter(object):
         if not updateBounds:
             bnds = self.plt.get_xlim(), self.plt.get_ylim()
 
-        #plot all of the datafiles
+        # clean up anything on the graph already
         self.plt.cla()
+        if self.cb is not None:
+            self.plt.figure.delaxes(self.cb.ax)
+            self.cb = None
+        self.plt.figure.subplots_adjust(left=0.05, right=0.95)
+
+        #plot all of the datafiles
         if len(datafiles) == 0:
             return
         if '2d' in self.style:
@@ -141,19 +150,33 @@ class Plotter(object):
     def _plot2D(self, dt):
         # TODO: too slow
         # TODO: choose colormap
-        #data = dt.data[:, 1:].transpose().toarray()
-        ext = (dt.data[0, 0], dt.data[-1, 0], min(dt.ions), max(dt.ions))
-        data = dt.data.tocoo()
-        x = dt.data[data.row, 0].toarray()[:, 0].astype(int)
-        import scipy.sparse
-        grid = scipy.sparse.coo_matrix((data.data, (data.col, x))).toarray()
+        if dt.data is None:
+            dt._cacheData()
 
-        # TODO: y-axis is completely fucked
+        ext = (dt.data[0, 0], dt.data[-1, 0], min(dt.ions), max(dt.ions))
+        if type(dt.data) is np.ndarray:
+            grid = dt.data[:, [0] + list(np.argsort(dt.ions) + 1)].transpose()
+        else:
+            data = dt.data[:, 1:].tocoo()
+            data_ions = np.array([dt.ions[i] for i in data.col])
+            grid = scipy.sparse.coo_matrix((data.data, (data_ions, data.row))).toarray()
+
+        # set up the colormap for the graph
+        cdict = {'red': (), 'green': (), 'blue': ()}
+        for i, c in zip(np.linspace(0, 1, len(self._color)), self._color):
+            r = int(c[1:3], 16) / 256.0
+            g = int(c[3:5], 16) / 256.0
+            b = int(c[5:7], 16) / 256.0
+            cdict['red'] += ((i, r, r),)
+            cdict['green'] += ((i, g, g),)
+            cdict['blue'] += ((i, b, b),)
+        cp = matplotlib.colors.LinearSegmentedColormap('x', cdict, 256)
+
         img = self.plt.imshow(grid, origin='lower', aspect='auto', \
-          extent=ext)
+          extent=ext, cmap=cp)
         if 'legend' in self.style:
             # TODO: remove this after it's shown
-            self.plt.figure.colorbar(img)
+            self.cb = self.plt.figure.colorbar(img)
 
     def redraw(self):
         self.canvas.draw()
