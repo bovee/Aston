@@ -12,6 +12,7 @@ class AgilentMS(Datafile.Datafile):
         super(AgilentMS, self).__init__(*args, **kwargs)
 
     def _getTotalTrace(self):
+        #TODO: this no longer does anything
         f = open(self.rawdata, 'rb')
 
         # get number of scans to read in
