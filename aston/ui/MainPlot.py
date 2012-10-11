@@ -6,7 +6,7 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg
 from matplotlib.path import Path
 import matplotlib.patches as patches
-import matplotlib.colors
+import matplotlib.pyplot as plt
 
 
 class Plotter(object):
@@ -40,40 +40,31 @@ class Plotter(object):
         self.spec_line = None
         self.patches = {}
 
-        #These color schemes are modified from ColorBrewer, license as follows:
-        #
-        #Apache-Style Software License for ColorBrewer software and
-        #ColorBrewer Color Schemes
-        #
-        #Copyright (c) 2002 Cynthia Brewer, Mark Harrower, and
-        #The Pennsylvania State University.
-        #
-        #Licensed under the Apache License, Version 2.0 (the "License")','
-        #you may not use this file except in compliance with the License.
-        #You may obtain a copy of the License at
-        #http://www.apache.org/licenses/LICENSE-2.0
-        #
-        #Unless required by applicable law or agreed to in writing,
-        #software distributed under the License is distributed on an
-        #"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
-        #either express or implied. See the License for the specific
-        #language governing permissions and limitations under the License.
         self._colors = {
-            'Pastels': ['#F0F0F0', '#8DD3C7', '#FFFFB3', '#BEBADA', '#FB8072', '#80B1D3', '#FDB462', '#B3DE69'],
-            'Greys': ['#F0F0F0', '#D9D9D9', '#BDBDBD', '#969696', '#737373', '#525252', '#252525', '#000000'],
-            'Blue-Green': ['#E5F5F9', '#CCECE6', '#99D8C9', '#66C2A4', '#41AE76', '#238B45', '#006D2C', '#00441B'],
-            'Blue-Purple': ['#E0ECF4', '#BFD3E6', '#9EBCDA', '#8C96C6', '#8C6BB1', '#88419D', '#810F7C', '#4D004B'],
-            'Yellow-Red': ['#FFEDA0', '#FED976', '#FEB24C', '#FD8D3C', '#FC4E2A', '#E31A1C', '#BD0026', '#800026'],
-            'Rainbow': ['#F0F0F0', '#E41A1C', '#FF7F00', '#FFFF33', '#4DAF4A', '#377EB8', '#984EA3', '#A65628'],
-            'Spectral': ['#F0F0F0', '#D53E4F', '#FC8D59', '#FEE08B', '#FFFFBF', '#E6F598', '#99D594', '#3288BD'],
-            'Purple-Green': ['#F0F0F0', '#762A83', '#9970AB', '#C2A5CF', '#E7D4E8', '#A6DBA0', '#5AAE61', '#1B7837']
+            'Rainbow': 'hsv',
+            'Pastels': 'Accent',
+            'Brown-Bluegreen': 'BrBG',
+            'Red-Blue': 'RdBu',
+            'Red-Yellow-Blue': 'RdYlBu',
+            'Red-Yellow-Green': 'RdYlGn',
+            'Red-Blue': 'RdBu',
+            'Pink-Yellow-Green': 'PiYG',
+            'Spectral': 'Spectral',
+            'Spring': 'spring',
+            'Summer': 'summer',
+            'Autumn': 'autumn',
+            'Winter': 'winter',
+            'Cool': 'cool',
+            'Copper': 'copper',
+            'Jet': 'jet',
+            'Paired': 'Paired'
             }
         self._linestyle = ['-', '--', ':', '-.']
         self.setColorScheme(scheme)
 
     def setColorScheme(self, scheme='Rainbow'):
-        self._color = self._colors[str(scheme)][1:]
-        self._peakcolor = self._colors[str(scheme)][0]
+        self._color = plt.get_cmap(self._colors[str(scheme)])
+        self._peakcolor = self._color(0, 1)
 
     def availColors(self):
         return list(self._colors.keys())
@@ -131,7 +122,7 @@ class Plotter(object):
                     trace *= 100
                 if 'stacked' in self.style:
                     trace += tnum * sc_factor
-                c = self._color[int(tnum % 7)]
+                c = self._color(int(tnum % 7) / 6.0, 1)
                 ls = self._linestyle[int(np.floor((tnum % 28) / 7))]
                 nm = x.getInfo('name') + ' ' + y
                 self.plt.plot(x.time(), trace, color=c, ls=ls, lw=1.2, label=nm)
@@ -148,8 +139,6 @@ class Plotter(object):
                 i.set_linestyle('')
 
     def _plot2D(self, dt):
-        # TODO: too slow
-        # TODO: choose colormap
         if dt.data is None:
             dt._cacheData()
 
@@ -161,21 +150,9 @@ class Plotter(object):
             data_ions = np.array([dt.ions[i] for i in data.col])
             grid = scipy.sparse.coo_matrix((data.data, (data_ions, data.row))).toarray()
 
-        # set up the colormap for the graph
-        cdict = {'red': (), 'green': (), 'blue': ()}
-        for i, c in zip(np.linspace(0, 1, len(self._color)), self._color):
-            r = int(c[1:3], 16) / 256.0
-            g = int(c[3:5], 16) / 256.0
-            b = int(c[5:7], 16) / 256.0
-            cdict['red'] += ((i, r, r),)
-            cdict['green'] += ((i, g, g),)
-            cdict['blue'] += ((i, b, b),)
-        cp = matplotlib.colors.LinearSegmentedColormap('x', cdict, 256)
-
         img = self.plt.imshow(grid, origin='lower', aspect='auto', \
-          extent=ext, cmap=cp)
+          extent=ext, cmap=self._color)
         if 'legend' in self.style:
-            # TODO: remove this after it's shown
             self.cb = self.plt.figure.colorbar(img)
 
     def redraw(self):
