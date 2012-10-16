@@ -220,9 +220,15 @@ class Plotter(object):
         self.redraw()
 
     def addPeaks(self, pks):
+        #TODO: make peaks appropriate colors, but desaturated
         for pk in pks:
             if pk.db_type == 'peak':
                 self.patches[pk.db_id] = patches.PathPatch(Path(pk.data), \
                   facecolor=self._peakcolor, lw=0)
                 self.plt.add_patch(self.patches[pk.db_id])
         self.redraw()
+
+        # def desaturate(c):
+        #     intensity = 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]
+        #     k = 1
+        #     return [intensity * k + i * (1 - l) for i in c]

@@ -11,21 +11,21 @@ class AstonNavBar(NavigationToolbar2QTAgg):
         self.parent = parent
         self.ev_time = 0
         self._xypress = []
-        
+
         #remove the plot adjustment buttons
         self.removeAction(self.actions()[-1])
         self.removeAction(self.actions()[-1])
         self.removeAction(self.actions()[-1])
-        
+
         #add the alignment tool
         path = op.join(op.curdir,'aston','ui','icons','align.png')
         alignToolAct = QtGui.QAction(QtGui.QIcon(path), \
                                          'Align Chromatogram', self)
         self.addAction(alignToolAct)
         alignToolAct.triggered.connect(self.align)
-        
+
         self.addSeparator()
-        
+
         #add the peak tool
         path = op.join(op.curdir,'aston','ui','icons','peak.png')
         peakToolAct = QtGui.QAction(QtGui.QIcon(path), \
@@ -66,32 +66,36 @@ class AstonNavBar(NavigationToolbar2QTAgg):
     def release_peak(self,event):
         if event.button != 1: return
         dt = self.parent.obj_tab.returnSelFile()
-        if dt is None: return
-        if dt.db_type != 'file' or dt.getInfo('vis') == 'n': return
+        if dt is None:
+            return
+        if dt.db_type != 'file' or dt.getInfo('vis') == 'n':
+            return
         if time.time() - self.ev_time < 1:
             self.ev_time = time.time()
-            if abs(self._xypress[0] - event.xdata) > 0.01: return
+            if abs(self._xypress[0] - event.xdata) > 0.01:
+                return
             for pk in dt.getAllChildren('peak'):
                 if pk.contains(event.xdata, event.ydata):
                     self.parent.obj_tab.delObjects([pk])
                     break
         else:
             self.ev_time = time.time()
-            if abs(self._xypress[0] - event.xdata) < 0.01: return
+            if abs(self._xypress[0] - event.xdata) < 0.01:
+                return
             ion = dt.getInfo('traces').split(',')[0]
-            
+
             if self._xypress[0] < event.xdata:
                 pt1 = (self._xypress[0], self._xypress[1])
                 pt2 = (event.xdata, event.ydata)
             else:
                 pt1 = (event.xdata, event.ydata)
                 pt2 = (self._xypress[0], self._xypress[1])
-            
+
             verts = [pt1]
-            verts += zip(dt.time(pt1[0], pt2[0]), \
-                         dt.trace(ion, pt1[0], pt2[0]))
+            tme = dt.time(pt1[0], pt2[0]).transpose()[0]
+            verts += zip(tme, dt.trace(ion, pt1[0], pt2[0]))
             verts += [pt2]
-            
+
             info = {'p-type':'Sample', 'p-created':'manual','p-int':'manual'}
             info['name'] = '{:.2f}-{:.2f}'.format(pt1[0], pt2[0])
             info['p-ion'] = ion
@@ -104,7 +108,7 @@ class AstonNavBar(NavigationToolbar2QTAgg):
 
     def align(self,*args):
         self._active = 'ALIGN'
-        
+
         self.disconnect_all()
 
         #if self._active:
@@ -159,7 +163,7 @@ class AstonNavBar(NavigationToolbar2QTAgg):
         dt.saveChanges()
         self._xypress = []
         self.release(event)
-        
+
     def spec(self, *args):
         self._active = 'SPECTRUM'
 
@@ -174,7 +178,7 @@ class AstonNavBar(NavigationToolbar2QTAgg):
             a.set_navigate_mode(self._active)
 
         self.set_message(self.mode)
-        
+
     def press_spectrum(self, event):
         if event.button != 1: return
         #TODO: enable spectra collection over a range

@@ -40,7 +40,10 @@ class Datafile(DBObject):
         if self.data.shape[0] == 0:
             return self.data[:, 0]
 
-        tme = self.data[:, 0].copy()
+        if type(self.data) == np.ndarray:
+            tme = self.data[:, 0].copy()
+        else:
+            tme = self.data[:, 0].toarray()
         if 't-scale' in self.info:
             tme *= float(self.info['t-scale'])
         if 't-offset' in self.info:
@@ -70,7 +73,7 @@ class Datafile(DBObject):
         #scale and offset the data appropriately
         tme = self.data[:, 0].copy()
         try:  # convert it back if it's sparse
-            tme = np.array(tme.todense())
+            tme = np.array(tme.toarray())
         except:  # it's a regular array, keep it
             pass
         if 't-scale' in self.info:
@@ -295,13 +298,13 @@ class Datafile(DBObject):
 
         times = self.data[:, 0]
         try:
-            times = np.array(times.todense())
+            times = np.array(times.toarray())
         except AttributeError:
             times = np.array(times)
         idx = (np.abs(times - time)).argmin()
         ion_abs = self.data[idx, 1:]
         try:
-            ion_abs = np.array(ion_abs.todense())[0]
+            ion_abs = np.array(ion_abs.toarray())[0]
         except AttributeError:
             ion_abs = np.array(ion_abs)
         return (np.array(self.ions), ion_abs)
