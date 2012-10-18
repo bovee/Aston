@@ -60,12 +60,12 @@ class AstonNavBar(NavigationToolbar2QTAgg):
         self.set_message(self.mode)
 
     def press_peak(self, event):
-        if event.button != 1:
+        if event.button != 1 or self.mode != 'peak':
             return
         self._xypress = event.xdata, event.ydata
 
     def release_peak(self, event):
-        if event.button != 1:
+        if event.button != 1 or self.mode != 'peak':
             return
         dt = self.parent.obj_tab.returnSelFile()
         if dt is None:
@@ -154,7 +154,7 @@ class AstonNavBar(NavigationToolbar2QTAgg):
                 y = float(dt.getInfo('t-yscale')) / event.ydata
             except:
                 y = 1 / event.ydata
-        self._xypress = x,y
+        self._xypress = x, y
 
     def drag_align(self,event):
         if self._xypress is []:
@@ -196,12 +196,12 @@ class AstonNavBar(NavigationToolbar2QTAgg):
         self.set_message(self.mode)
 
     def press_spectrum(self, event):
-        if event.button != 1:
+        if event.button != 1 or self.mode != 'spectrum':
             return
         #TODO: enable spectra collection over a range
 
     def release_spectrum(self, event):
-        if event.button != 1:
+        if event.button != 1 or self.mode != 'spectrum':
             return
         #TODO: figure out how to make shift-click save to database
         #get the specral data of the current point

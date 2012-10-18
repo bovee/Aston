@@ -196,12 +196,14 @@ class Plotter(object):
     def mousedown(self, event):
         if event.button == 3 and self.navbar.mode in ['peak', 'spectrum']:
             event.button = 1
+            self.navbar.mode += '_pan'
             self.navbar.press_pan(event)
 
     def mouseup(self, event):
-        if event.button == 3 and self.navbar.mode in ['peak', 'spectrum']:
+        if event.button == 3 and self.navbar.mode[-4:] == '_pan':
             event.button = 1
             self.navbar.release_pan(event)
+            self.navbar.mode = self.navbar.mode[:-4]
 
     def mousescroll(self, event):
         if event.xdata is None or event.ydata is None:
