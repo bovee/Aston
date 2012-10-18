@@ -62,7 +62,8 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             self.enableComboCols()
 
             #prettify
-            treeView.expandAll()
+            treeView.collapseAll()
+            treeView.expandToDepth(0)
             treeView.resizeColumnToContents(0)
             treeView.resizeColumnToContents(1)
 
@@ -260,10 +261,11 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         sel = self.returnSelFile()
         if sel is not None:
             if sel.db_type == 'file':
-                self.masterWindow.plotter.clearPeaks()
-                if sel.getInfo('vis') == 'y':
-                    self.masterWindow.plotter.addPeaks( \
-                        sel.getAllChildren('peak'))
+            #    self.masterWindow.plotter.clear_peaks()
+            #    if sel.getInfo('vis') == 'y':
+            #        self.masterWindow.plotter.add_peaks( \
+            #            sel.getAllChildren('peak'))
+                pass
             elif sel.db_type == 'spectrum':
                 self.masterWindow.specplotter.addSpec(sel.data, 'lib')
                 self.masterWindow.specplotter.plotSpec()
@@ -431,7 +433,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
                 obj.parent_id = None
             self.db.addObject(obj)
         self.endInsertRows()
-        self.masterWindow.plotter.addPeaks(objs)
+        self.masterWindow.plotter.add_peaks(objs)
 
     def delObjects(self, objs):
         for obj in objs:
@@ -444,7 +446,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             if obj in self.treehead:
                 del self.treehead[self.treehead.index(obj)]
             self.endRemoveRows()
-        self.masterWindow.plotter.removePeaks(objs)
+        self.masterWindow.plotter.remove_peaks(objs)
 
     def _objToIndex(self, obj):
         if obj is None:

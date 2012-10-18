@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 
 
 class Plotter(object):
-    def __init__(self, masterWindow, style='default', scheme='Rainbow'):
+    def __init__(self, masterWindow, style='default', scheme='Spectral'):
         self.masterWindow = masterWindow
         self.style = style
 
@@ -62,7 +62,7 @@ class Plotter(object):
         self._linestyle = ['-', '--', ':', '-.']
         self.setColorScheme(scheme)
 
-    def setColorScheme(self, scheme='Rainbow'):
+    def setColorScheme(self, scheme='Spectral'):
         self._color = plt.get_cmap(self._colors[str(scheme)])
         self._peakcolor = self._color(0, 1)
 
@@ -82,6 +82,7 @@ class Plotter(object):
             self.plt.figure.delaxes(self.cb.ax)
             self.cb = None
         self.plt.figure.subplots_adjust(left=0.05, right=0.95)
+        self.pk_clr_idx = {}
 
         #plot all of the datafiles
         if len(datafiles) == 0:
@@ -107,26 +108,44 @@ class Plotter(object):
         self.canvas.draw()
 
     def _plot(self, datafiles):
+        """
+        Plots 2D times series on the graph.
+        """
+
         # make up a factor to separate traces by
         if 'stacked' in self.style:
             ftrace = datafiles[0].trace(datafiles[0].getInfo('traces').split(',')[0])
             sc_factor = (max(ftrace) - min(ftrace)) / 5.
 
+        # count the number of traces that will be displayed
+        ts = sum(1 for x in datafiles for _ in x.getInfo('traces').split(','))
+        if ts < 6:
+            alpha = 0.75 - ts * 0.1
+        else:
+            alpha = 0.15
+
         tnum = 0
-        for x in datafiles:
-            for y in x.getInfo('traces').split(','):
-                trace = x.trace(y)
+        for dt in datafiles:
+            for y in dt.getInfo('traces').split(','):
+                trace = dt.trace(y)
                 if 'scaled' in self.style:
                     trace -= min(trace)
                     trace /= max(trace)
                     trace *= 100
                 if 'stacked' in self.style:
                     trace += tnum * sc_factor
-                c = self._color(int(tnum % 7) / 6.0, 1)
+                # stretch out the color spectrum if there are under 7
+                if ts > 7:
+                    c = self._color(int(tnum % 7) / 6.0, 1)
+                elif ts == 1:
+                    c = self._color(0, 1)
+                else:
+                    c = self._color(int(tnum % ts) / float(ts - 1), 1)
                 ls = self._linestyle[int(np.floor((tnum % 28) / 7))]
-                nm = x.getInfo('name') + ' ' + y
-                self.plt.plot(x.time(), trace, color=c, ls=ls, lw=1.2, label=nm)
+                nm = dt.getInfo('name') + ' ' + y
+                self.plt.plot(dt.time(), trace, color=c, ls=ls, lw=1.2, label=nm)
                 tnum += 1
+            self.pk_clr_idx[dt.db_id] = (c, alpha)
 
         #add a legend and make it pretty
         if 'legend' in self.style:
@@ -206,12 +225,12 @@ class Plotter(object):
             self.plt.axis([xmin, xmax, ymin, ymax])
         self.redraw()
 
-    def clearPeaks(self):
+    def clear_peaks(self):
         self.plt.patches = []
         self.patches = {}
         self.redraw()
 
-    def removePeaks(self, pks):
+    def remove_peaks(self, pks):
         for pk in pks:
             if pk.db_type == 'peak':
                 if pk.db_id in self.patches:
@@ -219,16 +238,20 @@ class Plotter(object):
                     self.plt.patches.remove(patch)
         self.redraw()
 
-    def addPeaks(self, pks):
-        #TODO: make peaks appropriate colors, but desaturated
+    def add_peaks(self, pks):
+        def desaturate(c, k=0):
+            """
+            Utility function to desaturate a color c by an amount k.
+            """
+            intensity = 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]
+            return [intensity * k + i * (1 - k) for i in c]
+
         for pk in pks:
             if pk.db_type == 'peak':
+                fid = pk.getParentOfType('file').db_id
+                c, a = self.pk_clr_idx[fid]
+
                 self.patches[pk.db_id] = patches.PathPatch(Path(pk.data), \
-                  facecolor=self._peakcolor, lw=0)
+                  facecolor=desaturate(c, 0.2), alpha=a, lw=0)
                 self.plt.add_patch(self.patches[pk.db_id])
         self.redraw()
-
-        # def desaturate(c):
-        #     intensity = 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]
-        #     k = 1
-        #     return [intensity * k + i * (1 - l) for i in c]

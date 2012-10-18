@@ -27,8 +27,18 @@ class Spectrum(DBObject):
         if self.getInfo('sp-type') == 'Isotope Standard':
             return dt.getInfo('r-d13c-std')
 
+        # if there's no reference number, we can't do this
+        try:
+            float(dt.getInfo('r-d13c-std'))
+        except:
+            return ''
+
         r45std = dt.get_point('r45std', float(self.getInfo('sp-time')))
         r46std = dt.get_point('r45std', float(self.getInfo('sp-time')))
+
+        # if no peak has been designated as a isotope std
+        if r45std == 0.0:
+            return ''
 
         A, K = 0.5164, 0.0092
         rcpdb, rosmow = 0.011237, 0.002005

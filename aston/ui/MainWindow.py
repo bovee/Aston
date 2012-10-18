@@ -209,10 +209,17 @@ class AstonWindow(QtGui.QMainWindow):
             self.plotter.style += ' legend'
 
         datafiles = self.obj_tab.returnChkFiles()
+
         if 'updateBounds' in kwargs:
             self.plotter.plotData(datafiles, kwargs['updateBounds'])
         else:
             self.plotter.plotData(datafiles)
+
+        # add all the peaks
+        pks = []
+        for dt in datafiles:
+            pks += dt.getAllChildren('peak')
+        self.plotter.add_peaks(pks)
 
     def updateSearch(self, text):
         """
