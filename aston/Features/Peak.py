@@ -70,7 +70,7 @@ class Peak(DBObject):
         elif fld == 'p-s-pwhm':
             self.info[fld] = str(peakmath.length(self.data, pwhm=True))
 
-    def calcInfo(self, fld):
+    def _calcInfo(self, fld):
         if fld == 'p-s-pkcap':
             prt = self.getParentOfType('file')
             if prt is None:
@@ -78,8 +78,11 @@ class Peak(DBObject):
             t = float(prt.getInfo('s-peaks-en')) - \
                 float(prt.getInfo('s-peaks-st'))
             return str(t / peakmath.length(self.data) + 1)
-        else:
-            return ''
+        elif fld == 'sp-d13c':
+            spcs = self.getAllChildren('spectrum')
+            if len(spcs) > 0:
+                return spcs[0].d13C()
+        return ''
 
     def contains(self,x,y):
         return peakmath.contains(self.data, x, y)
@@ -111,13 +114,10 @@ class Peak(DBObject):
 
             self.delInfo('p-s-')
             if f is not None:
-                params = peakmath.fit_to(f,d[:,0],d[:,1]-d[0,1])
+                params = peakmath.fit_to(f, d[:, 0], d[:, 1] - d[0, 1])
                 self.info['p-s-time'] = str(params[0])
                 self.info['p-s-height'] = str(params[1])
-                self.info['p-s-base'] = str(d[0,1])
+                self.info['p-s-base'] = str(d[0, 1])
                 self.info['p-s-shape'] = ','.join([str(i) for i \
                                                        in params[2:]])
         super(Peak, self).setInfo(fld, key)
-
-    def as_gaussian(self):
-        pass
