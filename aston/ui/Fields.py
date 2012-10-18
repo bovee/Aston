@@ -81,6 +81,7 @@ aston_fields = {
         'p-s-pkcap':'Peak Capacity (# Peaks)',
     #spectrum info
         'sp-type':'Spectrum Type',
+        'sp-time':'Spectrum Time (min)',
         'sp-d13c':u('δ13C Value (‰)'),
        }
 

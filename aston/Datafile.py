@@ -7,6 +7,7 @@ and other instrument specific classes and the rest of the program.
 import os.path as op
 import numpy as np
 from scipy.interpolate import interp1d
+from scipy.optimize import leastsq
 from aston.Database import DBObject
 from aston.FileFormats.FileFormats import ftype_to_class
 
@@ -239,6 +240,30 @@ class Datafile(DBObject):
             # a new data processing algorithm for LC-MS data.
             # Journal of Chromatography A 849.1 (1999) 71-85.
             pass
+        elif name == 'r45std' or name == 'r46std':
+            # calculate isotopic reference for chromatogram
+            if name == 'r45std':
+                topion = 45
+            else:
+                topion = 46
+            std_specs = [o for o in \
+              self.getAllChildren('spectrum') \
+              if o.getInfo('sp-type') == 'Isotope Standard']
+            x = [float(o.getInfo('sp-time')) for o in std_specs]
+            y = [o.ion(topion) / o.ion(44) for o in std_specs]
+
+            tme = self.time()
+            if len(x) == 0:
+                return np.zeros(len(tme))
+
+            p0 = [y[0], 0]
+            errfunc = lambda p, x, y: p[0] + p[1] * x - y
+            try:
+                p, succ = leastsq(errfunc, p0, args=(np.array(x), np.array(y)))
+            except:
+                p = p0
+
+            return np.array(errfunc(p, tme, np.zeros(len(tme))))
         elif name in lookdict:
             #we can store time-series data as a list of timepoints
             #in certain info fields and query it here
@@ -310,6 +335,14 @@ class Datafile(DBObject):
             ion_abs = self.data[idx, 1:].toarray()
 
         return (np.array(self.ions), ion_abs)
+
+    def get_point(self, trace, time):
+        """
+        Return the value of the trace at a certain time.
+        """
+        f = interp1d(self.time(), self.trace(trace), \
+          bounds_error=False, fill_value=0.0)
+        return f(time)
 
     def _loadInfo(self, fld):
         #create the key if it doesn't yet exist
