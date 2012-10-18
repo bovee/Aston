@@ -2,8 +2,8 @@ import time
 import os.path as op
 from PyQt4 import QtGui, QtCore
 from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg
-
 from aston.Features import Peak
+
 
 class AstonNavBar(NavigationToolbar2QTAgg):
     def __init__(self, canvas, parent=None):
@@ -18,7 +18,7 @@ class AstonNavBar(NavigationToolbar2QTAgg):
         self.removeAction(self.actions()[-1])
 
         #add the alignment tool
-        path = op.join(op.curdir,'aston','ui','icons','align.png')
+        path = op.join(op.curdir, 'aston', 'ui', 'icons', 'align.png')
         alignToolAct = QtGui.QAction(QtGui.QIcon(path), \
                                          'Align Chromatogram', self)
         self.addAction(alignToolAct)
@@ -27,14 +27,14 @@ class AstonNavBar(NavigationToolbar2QTAgg):
         self.addSeparator()
 
         #add the peak tool
-        path = op.join(op.curdir,'aston','ui','icons','peak.png')
+        path = op.join(op.curdir, 'aston', 'ui', 'icons', 'peak.png')
         peakToolAct = QtGui.QAction(QtGui.QIcon(path), \
                                     'Add/Delete Peak', self)
         self.addAction(peakToolAct)
         peakToolAct.triggered.connect(self.peak)
 
         #add the spectra tool
-        path = op.join(op.curdir,'aston','ui','icons','spectrum.png')
+        path = op.join(op.curdir, 'aston', 'ui', 'icons', 'spectrum.png')
         specToolAct = QtGui.QAction(QtGui.QIcon(path), \
                                         'Get Spectrum', self)
         self.addAction(specToolAct)
@@ -59,12 +59,14 @@ class AstonNavBar(NavigationToolbar2QTAgg):
 
         self.set_message(self.mode)
 
-    def press_peak(self,event):
-        if event.button != 1: return
+    def press_peak(self, event):
+        if event.button != 1:
+            return
         self._xypress = event.xdata, event.ydata
 
-    def release_peak(self,event):
-        if event.button != 1: return
+    def release_peak(self, event):
+        if event.button != 1:
+            return
         dt = self.parent.obj_tab.returnSelFile()
         if dt is None:
             return
@@ -92,7 +94,7 @@ class AstonNavBar(NavigationToolbar2QTAgg):
                 pt2 = (self._xypress[0], self._xypress[1])
 
             verts = [pt1]
-            tme = [float(i) for i in dt.time(pt1[0], pt2[0])]
+            tme = dt.time(pt1[0], pt2[0])
             verts += zip(tme, dt.trace(ion, pt1[0], pt2[0]))
             verts += [pt2]
 
@@ -106,7 +108,7 @@ class AstonNavBar(NavigationToolbar2QTAgg):
         self._xypress = []
         self.release(event)
 
-    def align(self,*args):
+    def align(self, *args):
         self._active = 'ALIGN'
 
         self.disconnect_all()
@@ -128,27 +130,40 @@ class AstonNavBar(NavigationToolbar2QTAgg):
 
         self.set_message(self.mode)
 
-    def press_align(self,event):
+    def press_align(self, event):
         dt = self.parent.obj_tab.returnSelFile()
-        if dt is None: return
-        if dt.db_type != 'file' or dt.getInfo('vis') == 'n': return
+        if dt is None:
+            return
+        if dt.db_type != 'file' or dt.getInfo('vis') == 'n':
+            return
         if event.button == 1:
-            try: x = float(dt.getInfo('t-offset')) - event.xdata
-            except: x = 0 - event.xdata
-            try: y = float(dt.getInfo('t-yoffset')) - event.ydata
-            except: y = 0 - event.ydata
+            try:
+                x = float(dt.getInfo('t-offset')) - event.xdata
+            except:
+                x = 0 - event.xdata
+            try:
+                y = float(dt.getInfo('t-yoffset')) - event.ydata
+            except:
+                y = 0 - event.ydata
         elif event.button == 3:
-            try: x = float(dt.getInfo('t-scale')) / event.xdata
-            except: x = 1 / event.xdata
-            try: y = float(dt.getInfo('t-yscale')) / event.ydata
-            except: y = 1 / event.ydata
+            try:
+                x = float(dt.getInfo('t-scale')) / event.xdata
+            except:
+                x = 1 / event.xdata
+            try:
+                y = float(dt.getInfo('t-yscale')) / event.ydata
+            except:
+                y = 1 / event.ydata
         self._xypress = x,y
 
     def drag_align(self,event):
-        if self._xypress is []: return
-        if event.xdata is None or event.ydata is None: return
+        if self._xypress is []:
+            return
+        if event.xdata is None or event.ydata is None:
+            return
         dt = self.parent.obj_tab.returnSelFile()
-        if dt is None: return
+        if dt is None:
+            return
         if event.button == 1:
             dt.info['t-offset'] = str(self._xypress[0] + event.xdata)
             dt.info['t-yoffset'] = str(self._xypress[1] + event.ydata)
@@ -157,8 +172,9 @@ class AstonNavBar(NavigationToolbar2QTAgg):
             dt.info['t-yscale'] = str(self._xypress[1] * event.ydata)
         self.parent.plotData(updateBounds=False)
 
-    def release_align(self,event):
-        if self._xypress is None: return
+    def release_align(self, event):
+        if self._xypress is None:
+            return
         dt = self.parent.obj_tab.returnSelFile()
         dt.saveChanges()
         self._xypress = []
@@ -180,16 +196,20 @@ class AstonNavBar(NavigationToolbar2QTAgg):
         self.set_message(self.mode)
 
     def press_spectrum(self, event):
-        if event.button != 1: return
+        if event.button != 1:
+            return
         #TODO: enable spectra collection over a range
 
     def release_spectrum(self, event):
-        if event.button != 1: return
+        if event.button != 1:
+            return
         #TODO: figure out how to make shift-click save to database
         #get the specral data of the current point
         cur_file = self.parent.obj_tab.returnSelFile()
-        if cur_file is None: return
-        if cur_file.getInfo('vis') != 'y': return
+        if cur_file is None:
+            return
+        if cur_file.getInfo('vis') != 'y':
+            return
         scan = cur_file.scan(event.xdata)
 
         self.parent.specplotter.addSpec(scan)

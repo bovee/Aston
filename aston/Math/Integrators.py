@@ -13,7 +13,7 @@ def waveletIntegrate(dt, ion=None):
 
     # fxn to calculate window size based on step
     f = lambda i: int((len(x)**(1./(nstep+2.)))**i) #22*(x+1)
-    
+
     # perform a continuous wavelet transform and save the results in z
     for i in range(0, nstep):
         # how long should the wavelet be?
@@ -31,12 +31,12 @@ def waveletIntegrate(dt, ion=None):
     #xs,ys = np.meshgrid(self.data.time(),np.linspace(self.max_bounds[2],self.max_bounds[3],nstep))
     #self.tplot.contourf(xs,ys,z,300,cmap=cm.binary)
     #self.tcanvas.draw()
-    
+
     max_dists = [f(i) / 4.0 for i in range(0, nstep)]
     ridges = spf._identify_ridge_lines(z, max_dists, np.ceil(f(0)))
     filt_ridges = spf._filter_ridge_lines(z, ridges)
     ridge_locs = sorted(map(lambda x: x[1][0], filt_ridges))
-    
+
     pks = []
     for r in filt_ridges:
         pk_width = int(f(r[0][0]) / 2.0)
@@ -52,7 +52,7 @@ def waveletIntegrate(dt, ion=None):
         info['p-ion'] = ion
         pk = Peak(dt.db, None, dt.db_id, info, verts)
         pks.append(pk)
-    
+
     return pks
     # create an True-False array of the local maxima
     #mx = (z == nd.maximum_filter(z,size=(3,17),mode='nearest')) & (z > 100)
@@ -86,33 +86,34 @@ def statSlopeIntegrate(dt, ion=None):
     #old loop checked for concavity too; prob. not necessary
     #for i in np.arange(len(t))[dx>adx+np.std(dx[abs(dx2)<adx2+np.std(dx2)])]:
 
-    #loop through all of the points that have a slope 
+    #loop through all of the points that have a slope
     #outside of one std. dev. from average
-    for i in np.arange(len(t))[dx>adx+np.std(dx)]:
+    for i in np.arange(len(t))[dx > adx + np.std(dx)]:
         if i - l_i == 1:
             l_i = i
             continue
 
         #track backwards to find where this peak started
         pt1 = ()
-        for j in range(i-1,0,-1):
+        for j in range(i - 1, 0, -1):
             if dx[j] < adx or dx2[j] < adx2:
-                pt1 = (t[j],x[j])
+                pt1 = (t[j], x[j])
                 break
 
         #track forwards to find where it ends
         pt2 = ()
         neg = 0
-        for j in range(i,len(t)):
-            if dx[j] < adx: neg += 1
-            if neg > 3 and dx[j] > adx: # and x[j]<ax:
-                pt2 = (t[j],x[j])
+        for j in range(i, len(t)):
+            if dx[j] < adx:
+                neg += 1
+            if neg > 3 and dx[j] > adx:  # and x[j]<ax:
+                pt2 = (t[j], x[j])
                 break
 
         #create a peak and add it to the peak list
         if pt1 != () and pt2 != ():
             verts = [pt1]
-            verts += zip(dt.time(pt1[0], pt2[0]), \
+            verts += zip([float(i) for i in dt.time(pt1[0], pt2[0])], \
                          dt.trace(ion, pt1[0], pt2[0]))
             verts += [pt2]
             info = {'p-type':'Sample', 'p-created':'integrator', \
@@ -123,3 +124,7 @@ def statSlopeIntegrate(dt, ion=None):
             pks.append(pk)
         l_i = i
     return pks
+
+
+def is_pulse():
+    pass

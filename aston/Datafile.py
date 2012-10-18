@@ -76,7 +76,7 @@ class Datafile(DBObject):
         if type(self.data) == np.ndarray:
             tme = self.data[:, 0].copy()
         else:
-            tme = self.data[:, 0].toarray()
+            tme = self.data[:, 0].astype(float).toarray()[:, 0]
 
         #scale and offset the data appropriately
         if 't-scale' in self.info:
