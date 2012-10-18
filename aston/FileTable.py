@@ -265,7 +265,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
                     self.masterWindow.plotter.addPeaks( \
                         sel.getAllChildren('peak'))
             elif sel.db_type == 'spectrum':
-                self.masterWindow.specplotter.addSpec(dict(sel.data), 'lib')
+                self.masterWindow.specplotter.addSpec(sel.data, 'lib')
                 self.masterWindow.specplotter.plotSpec()
 
     def colsChanged(self, *_):  # don't care about the args

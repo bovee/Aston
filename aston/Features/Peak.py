@@ -11,7 +11,7 @@ class Peak(DBObject):
     def data(self):
         if 'p-model' not in self.info:
             return np.array(self.rawdata)
-        
+
         if self.info['p-model'] == 'Normal':
             f = peakmath.gaussian
         elif self.info['p-model'] == 'Lognormal':
@@ -22,7 +22,7 @@ class Peak(DBObject):
             f = peakmath.lorentzian
         else:
             return np.array(self.rawdata)
-        
+
         times = np.array(self.rawdata)[:,0]
         x0 = float(self.info['p-s-time'])
         y0 = float(self.info['p-s-base'])
@@ -30,11 +30,11 @@ class Peak(DBObject):
         s = [float(i) for i in self.info['p-s-shape'].split(',')]
         y = h*f(s,times-x0)+y0
         return np.column_stack((times,y))
-            
+
     def time(self, st_time = None, en_time = None):
         return self._getTimeSlice(np.array(self.rawdata)[:,0], \
                                   st_time,en_time)
-    
+
     def trace(self, ion=None, st_time = None, en_time = None):
         #TODO: figure out if something should be done with the ion parameter
         return self._getTimeSlice(self.data[:,1],st_time,en_time)
@@ -57,7 +57,7 @@ class Peak(DBObject):
             if en_idx == len(tme)-1:
                 en_idx = len(tme)
         return arr[st_idx:en_idx]
-    
+
     def _loadInfo(self, fld):
         if fld == 'p-s-area':
             self.info[fld] = str(peakmath.area(self.data))
@@ -69,7 +69,7 @@ class Peak(DBObject):
             self.info[fld] = str(peakmath.time(self.data))
         elif fld == 'p-s-pwhm':
             self.info[fld] = str(peakmath.length(self.data, pwhm=True))
-        
+
     def calcInfo(self, fld):
         if fld == 'p-s-pkcap':
             prt = self.getParentOfType('file')
@@ -80,15 +80,17 @@ class Peak(DBObject):
             return str(t / peakmath.length(self.data) + 1)
         else:
             return ''
- 
+
     def contains(self,x,y):
         return peakmath.contains(self.data, x, y)
-    
+
     def createSpectrum(self, method=None):
         prt = self.getParentOfType('file')
         time = peakmath.time(self.data)
         if method is None:
             data = prt.scan(time)
+            listify = lambda l: [float(i) for i in l]
+            data = [listify(data[0]), listify(data[1])]
         info = {'sp-time':str(time)}
         return Spectrum(self.db, None, self.db_id, info, data)
 

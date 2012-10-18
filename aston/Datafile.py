@@ -44,6 +44,7 @@ class Datafile(DBObject):
             tme = self.data[:, 0].copy()
         else:
             tme = self.data[:, 0].toarray()
+
         if 't-scale' in self.info:
             tme *= float(self.info['t-scale'])
         if 't-offset' in self.info:
@@ -70,12 +71,13 @@ class Datafile(DBObject):
         if self.data is None:
             self._cacheData()
 
+        # get out an array of the times
+        if type(self.data) == np.ndarray:
+            tme = self.data[:, 0].copy()
+        else:
+            tme = self.data[:, 0].toarray()
+
         #scale and offset the data appropriately
-        tme = self.data[:, 0].copy()
-        try:  # convert it back if it's sparse
-            tme = np.array(tme.toarray())
-        except:  # it's a regular array, keep it
-            pass
         if 't-scale' in self.info:
             tme *= float(self.info['t-scale'])
         if 't-offset' in self.info:
@@ -296,17 +298,17 @@ class Datafile(DBObject):
         if 't-scale' in self.info:
             time /= float(self.info['t-scale'])
 
-        times = self.data[:, 0]
-        try:
-            times = np.array(times.toarray())
-        except AttributeError:
-            times = np.array(times)
+        if type(self.data) == np.ndarray:
+            times = self.data[:, 0].copy()
+        else:
+            times = self.data[:, 0].toarray()
+
         idx = (np.abs(times - time)).argmin()
-        ion_abs = self.data[idx, 1:]
-        try:
-            ion_abs = np.array(ion_abs.toarray())[0]
-        except AttributeError:
-            ion_abs = np.array(ion_abs)
+        if type(self.data) == np.ndarray:
+            ion_abs = self.data[idx, 1:].copy()
+        else:
+            ion_abs = self.data[idx, 1:].toarray()
+
         return (np.array(self.ions), ion_abs)
 
     def _loadInfo(self, fld):
