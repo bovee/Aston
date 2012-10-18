@@ -127,7 +127,7 @@ class Plotter(object):
         tnum = 0
         for dt in datafiles:
             for y in dt.getInfo('traces').split(','):
-                trace = dt.trace(y)
+                trace = dt.trace(y.strip())
                 if 'scaled' in self.style:
                     trace -= min(trace)
                     trace /= max(trace)
