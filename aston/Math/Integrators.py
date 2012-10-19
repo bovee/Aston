@@ -124,7 +124,3 @@ def statSlopeIntegrate(dt, ion=None):
             pks.append(pk)
         l_i = i
     return pks
-
-
-def is_pulse():
-    pass

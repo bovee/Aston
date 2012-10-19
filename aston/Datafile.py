@@ -326,13 +326,13 @@ class Datafile(DBObject):
         if type(self.data) == np.ndarray:
             times = self.data[:, 0].copy()
         else:
-            times = self.data[:, 0].toarray()
+            times = self.data[:, 0].astype(float).toarray()[:, 0]
 
         idx = (np.abs(times - time)).argmin()
         if type(self.data) == np.ndarray:
             ion_abs = self.data[idx, 1:].copy()
         else:
-            ion_abs = self.data[idx, 1:].toarray()
+            ion_abs = self.data[idx, 1:].astype(float).toarray()[0]
 
         return (np.array(self.ions), ion_abs)
 
@@ -360,12 +360,8 @@ class Datafile(DBObject):
             self.info['s-time-st'] = str(min(time))
             self.info['s-time-en'] = str(max(time))
         elif fld == 's-peaks' or fld == 's-spectra':
-            #fts = self.db.getFeatsByFile(self.fid[1])
-            #self.info['s-peaks'] = \
-            #  str(len([ft for ft in fts if isinstance(ft, Peak)]))
-            #self.info['s-spectra'] = \
-            #  str(len([ft for ft in fts if isinstance(ft, Spectrum)]))
-            pass
+            self.info['s-peaks'] = len(self.getAllChildren('peak'))
+            self.info['s-spectra'] = len(self.getAllChildren('spectrum'))
         elif fld == 's-peaks-st' or fld == 's-peaks-en':
             pks = self.getAllChildren('peak')
             if len(pks) > 0:

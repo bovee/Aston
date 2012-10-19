@@ -60,8 +60,8 @@ aston_fields = {
         's-en-time':'End Time (min)',
         's-peaks':'# of Peaks',
         's-spectra':'# of Spectra',
-        's-st-peaks':'First Peak RT (min)',
-        's-en-peaks':'Last Peak RT (min)',
+        's-peaks-st':'First Peak RT (min)',
+        's-peaks-en':'Last Peak RT (min)',
     # data transformations
         't-scale':'Scale',
         't-offset':'Offset',
