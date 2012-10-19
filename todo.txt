@@ -9,7 +9,7 @@ compound database
 ----ability to compute numerical match score between spectra
 
 format stuff
---figure out MS-MS format
+--figure out MS-MS formats
 --actuals as a trace type (pressure/flow rate/temp)
 --injection size (in file table)
 --display fraction collection data
@@ -22,7 +22,6 @@ chromatogram stuff
 --baseline detection (as a trace type?)
 
 peak stuff
---Gaussian peak types and conversion to/from 
 --adjustable peaks (little selectors on each end of "baseline")
 --highlight selected (in peak table) peak on graph
 
@@ -48,5 +47,6 @@ distribution
 long term
 --allow one datafile object to return multiple time axes depending on trace type (e.g. pressure readings at different times from UV measurements)
 --have datafile return units associated with trace types to allow for multiple y axes
---display x axes in seconds
+--display x axes in seconds (or hours)
 --use hashes of data instead of filenames to match data to database entries
+----but how to handle duplicate files?

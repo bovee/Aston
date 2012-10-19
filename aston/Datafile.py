@@ -174,6 +174,7 @@ class Datafile(DBObject):
             elif all(i in '0123456789.' for i in istr):
                 return self._getIonTrace(float(istr))
             elif istr[0] == '!' and all(i in '0123456789.' for i in istr[1:]):
+                #TODO: should this handle negative numbers?
                 return np.ones(self.data.shape[0]) * float(istr[1:])
             elif istr == '!pi':
                 return np.ones(self.data.shape[0]) * np.pi
@@ -415,7 +416,6 @@ class Datafile(DBObject):
         if self.data is None:
             self._cacheData()
         return self.data[:, 1:].sum(axis=1)
-        #return np.array([sum(i.values()) for i in self.data])
 
     def _updateInfoFromFile(self):
         """
