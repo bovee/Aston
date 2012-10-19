@@ -177,19 +177,23 @@ class Plotter(object):
     def redraw(self):
         self.canvas.draw()
 
-    def drawSpecLine(self, x, color='black', linestyle='-'):
+    def draw_spec_line(self, x1, x2, color='black', linestyle='-'):
         """
         Draw the line that indicates where the spectrum came from.
         """
         #try to remove the line from the previous spectrum (if it exists)
         if self.spec_line is not None:
-            try:
+            if self.spec_line in self.plt.lines:
                 self.plt.lines.remove(self.spec_line)
-            except ValueError:
-                pass  # not sure why this happens?
+            if self.spec_line in self.plt.patches:
+                self.plt.patches.remove(self.spec_line)
         #draw a new line
-        if x is not None:
-            self.spec_line = self.plt.axvline(x, color=color, ls=linestyle)
+        if x1 is None:
+            self.spec_line = None
+        elif x1 == x2:
+            self.spec_line = self.plt.axvline(x1, color=color, ls=linestyle)
+        else:
+            self.spec_line = self.plt.axvspan(x1, x2, alpha=0.25, color=color)
         #redraw the canvas
         self.canvas.draw()
 

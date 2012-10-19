@@ -198,6 +198,7 @@ class AstonNavBar(NavigationToolbar2QTAgg):
     def press_spectrum(self, event):
         if event.button != 1 or self.mode != 'spectrum':
             return
+        self._xypress = event.xdata, event.ydata
         #TODO: enable spectra collection over a range
 
     def release_spectrum(self, event):
@@ -217,7 +218,8 @@ class AstonNavBar(NavigationToolbar2QTAgg):
         self.parent.specplotter.specTime = event.xdata
 
         # draw a line on the main plot for the location
-        self.parent.plotter.drawSpecLine(event.xdata, linestyle='-')
+        self.parent.plotter.draw_spec_line(self._xypress[0], event.xdata, linestyle='-')
+        self._xypress = []
 
     def disconnect_all(self):
         if self._idPress is not None:

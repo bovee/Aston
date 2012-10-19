@@ -254,7 +254,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
     def itemSelected(self):
         #TODO: update an info window?
         #remove the current spectrum
-        self.masterWindow.plotter.drawSpecLine(None)
+        self.masterWindow.plotter.draw_spec_line(None, None)
 
         #remove all of the peak patches from the
         #main plot and add new ones in
