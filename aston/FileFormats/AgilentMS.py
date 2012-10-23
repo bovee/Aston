@@ -2,6 +2,9 @@ from aston import Datafile
 import struct
 import numpy as np
 import scipy
+import sys
+import os.path as op
+from xml.etree import ElementTree
 
 
 class AgilentMS(Datafile.Datafile):
@@ -134,97 +137,89 @@ class AgilentMSMSScan(Datafile.Datafile):
     def __init__(self, *args, **kwargs):
         super(AgilentMSMSScan, self).__init__(*args, **kwargs)
 
-    def _getTotalTrace(self):
-        f = open(self.rawdata, 'rb')
-
-        # get number of scans to read in
-        f.seek(0x5)
-        if f.read(4) == 'GC':
-            f.seek(0x142)
-        else:
-            f.seek(0x118)
-        nscans = struct.unpack('>H', f.read(2))[0]
-
-        # find the starting location of the data
-        f.seek(0x10A)
-        f.seek(2 * struct.unpack('>H', f.read(2))[0] - 2)
-
-        tme = np.zeros(nscans)
-        tic = np.zeros(nscans)
-
-        for i in range(nscans):
-            npos = f.tell() + 2 * struct.unpack('>H', f.read(2))[0]
-            tme[i] = struct.unpack('>I', f.read(4))[0] / 60000.
-            f.seek(npos - 4)
-            tic[i] = struct.unpack('>I', f.read(4))[0]
-            f.seek(npos)
-
-        f.close()
-        return tic
+    #def _getTotalTrace(self):
+    #    pass
 
     def _cacheData(self):
         if self.data is not None:
             return
 
         f = open(self.rawdata, 'rb')
+        r = ElementTree.parse(op.splitext(self.rawdata)[0] + '.xsd').getroot()
 
-        # get number of scans to read in
-        # note that GC and LC chemstation store this in slightly different
-        # places
-        f.seek(0x118)  # TODO: this?
-        nscans = struct.unpack('>H', f.read(2))[0]
+        xml_to_struct = {'xs:int': 'i', 'xs:long': 'q', 'xs:byte': 'b', 'xs:double': 'd'}
+        rfrmt = {}
 
-        # find the starting location of the data
-        f.seek(0x058)
-        f.seek(struct.unpack('>H', f.read(2))[0])
+        for n in r.getchildren():
+            name = n.get('name')
+            for sn in n.getchildren()[0].getchildren():
+                if rfrmt.get(name, None) is None:
+                    rfrmt[name] = []
+                sname = sn.get('name')
+                stype = sn.get('type')
+                rfrmt[name].append((sname, xml_to_struct.get(stype, stype)))
 
-        self.times = []
-        self.data = []
-        for _ in range(nscans):
-            npos = f.tell() + 2*struct.unpack('>H',f.read(2))[0]
-            # the sampling rate is evidentally 1000/60 Hz on all Agilent's MS's
-            self.times.append(struct.unpack('>I',f.read(4))[0] / 60000.)
+        def resolve(lookup, recname):
+            names = [i[0] for i in lookup[recname]]
+            frmts = [i[1] for i in lookup[recname]]
+            flatnames = []
+            flatfrmts = ''
+            for n, f in zip(names, frmts):
+                if len(f) != 1:
+                    n, f = resolve(lookup, f)
+                    flatnames += n
+                else:
+                    flatnames.append(n)
+                flatfrmts += f
+            return flatnames, flatfrmts
 
-            #something is broken about LCMS files that needs this?
-            #if npos == f.tell()-6: break
+        fnames, ffrmts = resolve(rfrmt, 'ScanRecordType')
+        rec_str = '<' + ffrmts
+        sz = struct.calcsize(rec_str)
 
-            f.seek(f.tell()+6)
-            npts = struct.unpack('>H',f.read(2))[0] - 1
+        f.seek(0x0058)
+        start_offset = struct.unpack('<i', f.read(4))[0]
+        f.seek(start_offset)
 
-            s = {}
-            f.seek(f.tell()+6)
-            for _ in range(npts+1):
-                t = struct.unpack('>HH',f.read(4))
-                s[t[1]/20.] = t[0]
+        import gzip
+        import io
+        gzip.GzipFile._read_eof = lambda _: None
+        gzprefix = b'\x1f\x8b\x08\x00\x00\x00\x00\x00\x04\x00'
+        uncompress = lambda d: gzip.GzipFile(fileobj=io.BytesIO(d)).read()
+        f2 = open(op.join(op.split(self.rawdata)[0], 'MSProfile.bin'), 'rb')
 
-            self.data.append(s)
-            f.seek(npos)
+        #TODO: rewrite below to get ions from MSProf.bin instead
+        tloc = fnames.index('ScanTime')
+        zloc = fnames.index('TIC')
+        t = []
+        z = []
+        while True:
+            try:
+                data = struct.unpack(rec_str, f.read(sz))
+                if len(t) < 5:
+                    d = dict(zip(fnames, data))
+                    f2.seek(d['SpectrumOffset'])
+                    profdata = uncompress(gzprefix + f2.read(d['ByteCount']))
+                    pd = struct.unpack('dd' + d['PointCount'] * 'i', profdata)
+                    print(sum(pd[2:]), d['TIC'])
+            except struct.error:
+                break
+            t.append(data[tloc])
+            z.append(data[zloc])
         f.close()
+        f2.close()
+        self.ions = [1]
+        self.data = np.array([t, z]).transpose()
 
     def _updateInfoFromFile(self):
         d = {}
-        f = open(self.rawdata,'rb')
-        f.seek(0x18)
-        d['name'] = str(f.read(struct.unpack('>B',f.read(1))[0]).strip())
-        f.seek(0x94)
-        d['r-opr'] = str(f.read(struct.unpack('>B',f.read(1))[0]))
-        #FIXME: next line isn't proper text?
-        #f.seek(0xE4)
+        #d['name'] = str(f.read(struct.unpack('>B',f.read(1))[0]).strip())
+        #d['r-opr'] = str(f.read(struct.unpack('>B',f.read(1))[0]))
         #d['m'] = str(f.read(struct.unpack('>B',f.read(1))[0]))
-        f.seek(0xB2)
-        d['r-date'] = str(f.read(struct.unpack('>B', f.read(1))[0]))
-        d['r-type'] = 'Sample'
-        f.close()
+        #d['r-date'] = str(f.read(struct.unpack('>B', f.read(1))[0]))
+        #d['r-type'] = 'Sample'
         self.info.update(d)
 
     def _getOtherTrace(self, name):
         #TODO: read from MSPeriodicActuals.bin and TCC.* files
         return np.zeros(len(self.times))
-
-
-class AgilentMSMSProf(Datafile.Datafile):
-    ext = 'BIN'
-    mgc = 0x0201
-
-    def __init__(self, *args, **kwargs):
-        super(AgilentMSMSProf, self).__init__(*args, **kwargs)

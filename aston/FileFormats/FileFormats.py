@@ -1,6 +1,6 @@
 def file_adaptors():
     from aston.FileFormats.AgilentMS \
-      import AgilentMS, AgilentMSMSProf, AgilentMSMSScan
+      import AgilentMS, AgilentMSMSScan
     from aston.FileFormats.Thermo \
       import ThermoCF, ThermoDXF
     from aston.FileFormats.Bruker \
@@ -9,7 +9,7 @@ def file_adaptors():
       import AgilentDAD, AgilentMWD, AgilentCSDAD
     from aston.FileFormats.OtherFiles \
       import AgilentFID, CSVFile
-    return [AgilentMS, AgilentMSMSProf, AgilentMSMSScan, BrukerMSMS, \
+    return [AgilentMS, AgilentMSMSScan, BrukerMSMS, \
       ThermoCF, ThermoDXF, AgilentDAD, AgilentMWD, AgilentCSDAD, \
       AgilentFID, CSVFile]
 
