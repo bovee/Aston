@@ -22,6 +22,7 @@ chromatogram stuff
 --baseline detection (as a trace type?)
 
 peak stuff
+--allow peaks to have multiple polygons associated with them (e.g. for each ion)
 --adjustable peaks (little selectors on each end of "baseline")
 --highlight selected (in peak table) peak on graph
 
