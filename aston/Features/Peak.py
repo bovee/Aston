@@ -3,6 +3,7 @@ from aston.Database import DBObject
 import aston.Math.Peak as peakmath
 from aston.Features.Spectrum import Spectrum
 
+
 class Peak(DBObject):
     def __init__(self, *args, **kwargs):
         super(Peak, self).__init__('peak', *args, **kwargs)
@@ -23,38 +24,38 @@ class Peak(DBObject):
         else:
             return np.array(self.rawdata)
 
-        times = np.array(self.rawdata)[:,0]
+        times = np.array(self.rawdata)[:, 0]
         x0 = float(self.info['p-s-time'])
         y0 = float(self.info['p-s-base'])
         h = float(self.info['p-s-height'])
         s = [float(i) for i in self.info['p-s-shape'].split(',')]
-        y = h*f(s,times-x0)+y0
-        return np.column_stack((times,y))
+        y = h * f(s, times - x0) + y0
+        return np.column_stack((times, y))
 
-    def time(self, st_time = None, en_time = None):
-        return self._getTimeSlice(np.array(self.rawdata)[:,0], \
-                                  st_time,en_time)
+    def time(self, st_time=None, en_time=None):
+        return self._getTimeSlice(np.array(self.rawdata)[:, 0], \
+                                  st_time, en_time)
 
-    def trace(self, ion=None, st_time = None, en_time = None):
+    def trace(self, ion=None, st_time=None, en_time=None):
         #TODO: figure out if something should be done with the ion parameter
-        return self._getTimeSlice(self.data[:,1],st_time,en_time)
+        return self._getTimeSlice(self.data[:, 1], st_time, en_time)
 
     def _getTimeSlice(self, arr, st_time=None, en_time=None):
         '''Returns a slice of the incoming array filtered between
         the two times specified. Assumes the array is the same
         length as self.data. Acts in the time() and trace() functions.'''
-        tme = self.data[:,0].copy()
+        tme = self.data[:, 0].copy()
         if st_time is None:
             st_idx = 0
         else:
-            st_idx = (np.abs(tme-st_time)).argmin()
+            st_idx = (np.abs(tme - st_time)).argmin()
             if st_idx == 1:
                 st_idx = 0
         if en_time is None:
             en_idx = self.data.shape[0]
         else:
-            en_idx = (np.abs(tme-en_time)).argmin()+1
-            if en_idx == len(tme)-1:
+            en_idx = (np.abs(tme - en_time)).argmin() + 1
+            if en_idx == len(tme) - 1:
                 en_idx = len(tme)
         return arr[st_idx:en_idx]
 
@@ -84,7 +85,7 @@ class Peak(DBObject):
                 return spcs[0].d13C()
         return ''
 
-    def contains(self,x,y):
+    def contains(self, x, y):
         return peakmath.contains(self.data, x, y)
 
     def createSpectrum(self, method=None):
@@ -94,7 +95,7 @@ class Peak(DBObject):
             data = prt.scan(time)
             listify = lambda l: [float(i) for i in l]
             data = [listify(data[0]), listify(data[1])]
-        info = {'sp-time':str(time)}
+        info = {'sp-time': str(time)}
         return Spectrum(self.db, None, self.db_id, info, data)
 
     def setInfo(self, fld, key):

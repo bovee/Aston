@@ -113,7 +113,7 @@ class AstonDatabase(object):
         pass
 
     def _getRowFromObj(self, obj):
-        try:
+        try:  # python 2/3 code options
             pack = lambda r: buffer(zlib.compress(json.dumps(r)))
             pack([])  # have to force the call here
         except NameError:
