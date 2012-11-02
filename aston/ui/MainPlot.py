@@ -114,7 +114,7 @@ class Plotter(object):
 
         # make up a factor to separate traces by
         if 'stacked' in self.style:
-            ftrace = datafiles[0].trace(datafiles[0].getInfo('traces').split(',')[0])
+            _, ftrace = datafiles[0].trace(datafiles[0].getInfo('traces').split(',')[0])
             sc_factor = (max(ftrace) - min(ftrace)) / 5.
 
         # count the number of traces that will be displayed
@@ -127,7 +127,7 @@ class Plotter(object):
         tnum = 0
         for dt in datafiles:
             for y in dt.getInfo('traces').split(','):
-                trace = dt.trace(y.strip())
+                t, trace = dt.trace(y.strip())
                 if 'scaled' in self.style:
                     trace -= min(trace)
                     trace /= max(trace)
@@ -143,7 +143,7 @@ class Plotter(object):
                     c = self._color(int(tnum % ts) / float(ts - 1), 1)
                 ls = self._linestyle[int(np.floor((tnum % 28) / 7))]
                 nm = dt.getInfo('name') + ' ' + y
-                self.plt.plot(dt.time(), trace, color=c, ls=ls, lw=1.2, label=nm)
+                self.plt.plot(t, trace, color=c, ls=ls, lw=1.2, label=nm)
                 tnum += 1
             self.pk_clr_idx[dt.db_id] = (c, alpha)
 
@@ -159,7 +159,7 @@ class Plotter(object):
 
     def _plot2D(self, dt):
         if dt.data is None:
-            dt._cacheData()
+            dt._cache_data()
 
         ext = (dt.data[0, 0], dt.data[-1, 0], min(dt.ions), max(dt.ions))
         if type(dt.data) is np.ndarray:

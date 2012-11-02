@@ -1,4 +1,5 @@
 from aston import Datafile
+from aston.TimeSeries import TimeSeries
 import os.path as op
 import numpy as np
 import struct
@@ -15,7 +16,7 @@ class AgilentFID(Datafile.Datafile):
     def __init__(self, *args, **kwargs):
         super(AgilentFID, self).__init__(*args, **kwargs)
 
-    def _cacheData(self):
+    def _cache_data(self):
         if self.data is not None:
             return
         f = open(self.rawdata, 'rb')
@@ -47,10 +48,10 @@ class AgilentFID(Datafile.Datafile):
         f.close()
         # TODO: 0.4/60.0 should be obtained from the file???
         times = np.array(start_time + np.arange(len(data)) * (0.2 / 60.0))
-        self.ions = [1]
-        self.data = np.array([times, data]).T
+        self.data = TimeSeries(np.array([data]).T, times, ['TIC'])
+        self.data.time()
 
-    def _updateInfoFromFile(self):
+    def _update_info_from_file(self):
         pass
 
 
@@ -65,18 +66,18 @@ class CSVFile(Datafile.Datafile):
     def __init__(self, *args, **kwargs):
         super(CSVFile, self).__init__(*args, **kwargs)
 
-    def _cacheData(self):
+    def _cache_data(self):
         delim = ','
         try:  # TODO: better, smarter error checking than this
             with open(self.rawdata, 'r') as f:
                 lns = f.readlines()
-                self.ions = [float(i) for i in lns[0].split(delim)[1:]]
-                self.data = np.array( \
-                    [np.fromstring(ln, sep=delim) for ln in lns[1:]])
+                ions = [float(i) for i in lns[0].split(delim)[1:]]
+                data = np.array([np.fromstring(ln, sep=delim) for ln in lns[1:]])
+                self.data = TimeSeries(data[:, 1:], data[:, 0], ions)
         except:
-            self.data = np.array([])
+            self.data = TimeSeries()
 
-    def _updateInfoFromFile(self):
+    def _update_info_from_file(self):
         d = {}
         d['name'] = op.splitext(op.basename(self.rawdata))[0]
         d['r-type'] = 'Sample'

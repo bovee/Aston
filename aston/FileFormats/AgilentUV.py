@@ -1,37 +1,38 @@
-from aston import Datafile
 import os
 import re
 import struct
 import time
 import numpy as np
 from xml.etree import ElementTree
+from aston import Datafile
+from aston.TimeSeries import TimeSeries
 
 
 class AgilentMWD(Datafile.Datafile):
     ext = 'CH'
-    mgc = '0x0233'
+    mgc = 0x0233
 
     def __init__(self, *args, **kwargs):
         super(AgilentMWD, self).__init__(*args, **kwargs)
         #self.filename = os.path.split(self.filename)[0] + '/mwd.ch'
 
-    def _cacheData(self):
+    def _cache_data(self):
         #Because the spectra are stored in several files in the same
         #directory, we need to loop through them and return them together.
         if self.data is not None:
             return
 
-        self.ions = []
+        ions = []
         dtraces = []
         foldname = os.path.dirname(self.rawdata)
         #if foldname == '': foldname = os.curdir
         for i in [os.path.join(foldname, i) for i \
           in os.listdir(foldname)]:
             if i[-3:].upper() == '.CH':
-                wv, dtrace = self._readIndFile(i)
+                wv, dtrace = self._read_ind_file(i)
 
                 #generate the time points if this is the first trace
-                if len(self.ions) == 0:
+                if len(ions) == 0:
                     f = open(i, 'rb')
 
                     f.seek(0x11A)
@@ -40,15 +41,16 @@ class AgilentMWD(Datafile.Datafile):
                     f.close()
 
                     #TODO: 0.4/60.0 should be obtained from the file???
-                    dtraces.append(start_time + \
-                      np.arange(len(dtrace)) * (0.4 / 60.0))
+                    times = start_time + \
+                      np.arange(len(dtrace)) * (0.4 / 60.0)
 
                 #add the wavelength and trace into the appropriate places
-                self.ions.append(wv)
+                ions.append(wv)
                 dtraces.append(dtrace)
-        self.data = np.array(dtraces).transpose()
+        data = np.array(dtraces).transpose()
+        self.data = TimeSeries(data, times, ions)
 
-    def _readIndFile(self, fname):
+    def _read_ind_file(self, fname):
         f = open(fname, 'rb')
 
         f.seek(0x254)
@@ -121,7 +123,7 @@ class AgilentDAD(Datafile.Datafile):
     def __init__(self, *args, **kwargs):
         super(AgilentDAD, self).__init__(*args, **kwargs)
 
-    def _cacheData(self):
+    def _cache_data(self):
         if self.data is not None:
             return
 
@@ -132,7 +134,7 @@ class AgilentDAD(Datafile.Datafile):
         nscans = struct.unpack('Q', fhead.read(8))[0]
         fhead.seek(0xA4)
 
-        self.ions = []
+        ions = []
         for scn in range(nscans):
             t = struct.unpack('<IdddIQIIdddd', fhead.read(80))
 
@@ -140,19 +142,20 @@ class AgilentDAD(Datafile.Datafile):
             if scn == 0:
                 #TODO: this will fail if the wavelengths collected
                 #change through the run.
-                self.data = np.zeros((nscans, npts + 1))
-                self.ions = [t[8] + x * t[3] for x in range(npts)]
+                data = np.zeros((nscans, npts))
+                times = np.zeros((nscans))
+                ions = [t[8] + x * t[3] for x in range(npts)]
 
-            self.data[scn] = t[1]
+            times[scn] = t[1]
 
             fdata.seek(t[5] + 16)
-            self.data[scn, 1:] = \
-                struct.unpack('<' + npts * 'd', fdata.read(npts * 8))
+            data[scn] = struct.unpack('<' + npts * 'd', fdata.read(npts * 8))
+        self.data = TimeSeries(data, times, ions)
 
         fhead.close()
         fdata.close()
 
-    def _updateInfoFromFile(self):
+    def _update_info_from_file(self):
         d = {}
         tree = ElementTree.parse(os.path.join( \
                 os.path.dirname(self.rawdata), 'sample_info.xml'))
@@ -181,7 +184,7 @@ class AgilentCSDAD(Datafile.Datafile):
     def __init__(self, *args, **kwargs):
         super(AgilentCSDAD, self).__init__(*args, **kwargs)
 
-    def _cacheData(self):
+    def _cache_data(self):
         #TODO: the chromatograms this generates are not exactly the
         #same as the ones in the *.CH files. Maybe they need to be 0'd?
         f = open(self.rawdata, 'rb')
@@ -189,9 +192,9 @@ class AgilentCSDAD(Datafile.Datafile):
         f.seek(0x116)
         nscans = struct.unpack('>i', f.read(4))[0]
 
-        times = nscans * [0]
+        times = np.zeros(nscans)
         data = nscans * [{}]
-        self.ions = []
+        ions = []
         npos = 0x202
         for i in range(nscans):
             f.seek(npos)
@@ -212,18 +215,23 @@ class AgilentCSDAD(Datafile.Datafile):
                 else:
                     v += ov / 2000.
                 s[wv] = v
-                if wv not in self.ions:
-                    self.ions.append(wv)
+                if wv not in ions:
+                    ions.append(wv)
                 #s[nm_srt + j * nm_stp] = v
             data[i] = s
 
-        self.data = np.zeros((nscans, len(self.ions) + 1))
-        for i, t, d in zip(range(nscans), times, data):
-            self.data[i, 0] = t
+        #self.data = np.zeros((nscans, len(self.ions) + 1))
+        #for i, t, d in zip(range(nscans), times, data):
+        #    self.data[i, 0] = t
+        #    for ion, abn in d.items():
+        #        self.data[i, self.ions.index(ion) + 1] = abn
+        ndata = np.zeros((nscans, len(ions)))
+        for i, d in zip(range(nscans), data):
             for ion, abn in d.items():
-                self.data[i, self.ions.index(ion) + 1] = abn
+                ndata[i, ions.index(ion)] = abn
+        self.data = TimeSeries(ndata, times, ions)
 
-    def _updateInfoFromFile(self):
+    def _update_info_from_file(self):
         d = {}
         f = open(self.rawdata, 'rb')
         f.seek(0x18)

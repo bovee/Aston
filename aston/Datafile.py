@@ -10,6 +10,7 @@ from scipy.interpolate import interp1d
 from scipy.optimize import leastsq
 from aston.Database import DBObject
 from aston.FileFormats.FileFormats import ftype_to_class
+from aston.TimeSeries import TimeSeries
 
 
 class Datafile(DBObject):
@@ -26,82 +27,24 @@ class Datafile(DBObject):
 
     def __init__(self, *args, **kwargs):
         super(Datafile, self).__init__('file', *args, **kwargs)
-        #self._updateInfoFromFile()
+        #self._update_info_from_file()
 
         #make stubs for the time array and the data array
-        self.ions = []
         self.data = None
 
-    def _getTimeSlice(self, arr, st_time=None, en_time=None):
-        """
-        Returns a slice of the incoming array filtered between
-        the two times specified. Assumes the array is the same
-        length as self.data. Acts in the time() and trace() functions.
-        """
-        if self.data.shape[0] == 0:
-            return self.data[:, 0]
-
-        if type(self.data) == np.ndarray:
-            tme = self.data[:, 0].copy()
-        else:
-            tme = self.data[:, 0].toarray()
-
-        if 't-scale' in self.info:
-            tme *= float(self.info['t-scale'])
-        if 't-offset' in self.info:
-            tme += float(self.info['t-offset'])
-
-        if st_time is None:
-            st_idx = 0
-        else:
-            st_idx = (np.abs(tme - st_time)).argmin()
-        if en_time is None:
-            en_idx = self.data.shape[0]
-        else:
-            en_idx = (np.abs(tme - en_time)).argmin() + 1
-        return arr[st_idx:en_idx]
-
-    def time(self, st_time=None, en_time=None):
-        """
-        Returns an array with all of the time points at which
-        data was collected
-        """
-        #load the data if it hasn't been already
-        #TODO: this should cache only the times (to speed up access
-        #in case we're looking at something with the _getTotalTrace)
-        if self.data is None:
-            self._cacheData()
-
-        # get out an array of the times
-        if type(self.data) == np.ndarray:
-            tme = self.data[:, 0].copy()
-        else:
-            tme = self.data[:, 0].astype(float).toarray()[:, 0]
-
-        #scale and offset the data appropriately
-        if 't-scale' in self.info:
-            tme *= float(self.info['t-scale'])
-        if 't-offset' in self.info:
-            tme += float(self.info['t-offset'])
-        #return the time series
-        return self._getTimeSlice(tme, st_time, en_time)
-
-    def trace(self, ion=None, st_time=None, en_time=None):
+    def trace(self, ion=None, twin=None):
         """
         Returns an array, either time/ion filtered or not
         of chromatographic data.
         """
-        if self.data is None:
-            self._cacheData()
-
         if type(ion) == str or type(ion) == unicode:
-            ic = self._parseIonString(ion.lower())
+            t, ic = self._parse_ion_string(ion.lower(), twin)
         elif type(ion) == int or type(ion) == float:
             #if the ion is a number, do the straightforward thing
-            ic = self._getIonTrace(ion)
+            t, ic = self._ion_trace(ion, twin=twin)
         else:
             #all other cases, just return the total trace
-            ic = self._getTotalTrace()
+            t, ic = self._total_trace(twin=twin)
 
         if 't-yscale' in self.info:
             ic *= float(self.info['t-yscale'])
@@ -116,16 +59,16 @@ class Datafile(DBObject):
             if self.info['t-smooth'].lower() == 'moving average':
                 wnd = self.info['t-smooth-window']
                 if wnd.isdigit():
-                    ic = self._applyFxn(ic, 'movingaverage', wnd)
+                    t, ic = self._apply_fxn(t, ic, 'movingaverage', wnd)
             elif self.info['t-smooth'].lower() == 'savitsky-golay':
                 wnd = self.info['t-smooth-window']
                 sord = self.info['t-smooth-order']
                 if wnd.isdigit() and sord.isdigit():
-                    ic = self._applyFxn(ic, 'savitskygolay', wnd, sord)
+                    t, ic = self._apply_fxn(t, ic, 'savitskygolay', wnd, sord)
 
-        return self._getTimeSlice(ic, st_time, en_time)
+        return t, ic
 
-    def _parseIonString(self, istr):
+    def _parse_ion_string(self, istr, twin=None):
         """
         Recursive string parser that handles "ion" strings.
         """
@@ -133,14 +76,15 @@ class Datafile(DBObject):
 
         #null case
         if istr.strip() == '':
-            return np.zeros(self.data.shape[0])
+            return self._const(0, twin)
 
         #remove any parantheses or pluses around the whole thing
         istr = istr.lstrip('+(').rstrip(')')
 
         #invert it if preceded by a minus sign
         if istr[0] == '-':
-            return -1.0 * self._parseIonString(istr[1:])
+            t, ic = self._parse_ion_string(istr[1:], twin)
+            return t, -1.0 * ic
 
         #this is a function
         if istr[:istr.find('(')].isalnum() and istr.find('(') != -1:
@@ -149,52 +93,56 @@ class Datafile(DBObject):
                 args = istr[istr.find('(') + 1:-1].split(';')
                 dt = self.database.getFileByName(args[0])
                 if dt is None:
-                    return np.zeros(self.data.shape[0])
+                    return self._const(0, twin)
                 if len(args) > 1:
-                    y = dt.trace(args[1])
+                    ot, y = dt.trace(args[1], twin=twin)
                 else:
-                    y = dt.trace()
-                t = dt.data[:, 0]
-                f = interp1d(t, y, bounds_error=False, fill_value=0.0)
-                return f(self.data[:, 0])
+                    ot, y = dt.trace(twin=twin)
+                f = interp1d(ot, y, bounds_error=False, fill_value=0.0)
+                return self.time(twin), f(t)
             else:
                 args = istr[istr.find('(') + 1:-1].split(';')
-                ic = self._parseIonString(args[0])
-                return self._applyFxn(ic, fxn, *args[1:])
+                t, ic = self._parse_ion_string(args[0], twin)
+                return t, self._apply_fxn(t, ic, fxn, *args[1:])
 
         #have we simplified enough? is all of the tricky math gone?
         if set(istr).intersection(set('+-/*()')) == set():
             if istr == 'x' or istr == 'tic':
-                return self._getTotalTrace()
+                return self._total_trace(twin)
             elif istr.count(':') == 1:
                 #contains an ion range
+                #TODO: shouldn't this be:
+                #ion = sum(float(i) for i in istr.split(':')) / 2.0
                 ion = np.array([float(i) for i in istr.split(':')]).mean()
                 tol = abs(float(istr.split(':')[0]) - ion)
-                return self._getIonTrace(ion, tol)
+                return self._ion_trace(ion, tol, twin=twin)
             elif all(i in '0123456789.' for i in istr):
-                return self._getIonTrace(float(istr))
+                return self._ion_trace(float(istr), twin=twin)
             elif istr[0] == '!' and all(i in '0123456789.' for i in istr[1:]):
                 #TODO: should this handle negative numbers?
-                return np.ones(self.data.shape[0]) * float(istr[1:])
+                return self._const(float(istr[1:]), twin)
             elif istr == '!pi':
-                return np.ones(self.data.shape[0]) * np.pi
+                return self._const(np.pi, twin)
             elif istr == '!e':
-                return np.ones(self.data.shape[0]) * np.e
+                return self._const(np.e, twin)
             else:
-                return self._getNamedTrace(istr)
+                return self._named_trace(istr, twin=twin)
+
+        #TODO: this should make sure that the ICs it's
+        #manipulating have the same t axis or else adjust them
 
         #parse out the additive parts
-        ic = np.zeros(self.data.shape[0])
+        t, ic = self._const(0, twin)
         pa = ''
         for i in istr:
             if i in '+-' and pa[-1] not in '*/+' and \
               pa.count('(') == pa.count(')'):
-                ic += self._parseIonString(pa)
+                ic += self._parse_ion_string(pa, twin)[1]
                 pa = ''
             pa += i
 
         if pa != istr:
-            return ic + self._parseIonString(pa)
+            return t, ic + self._parse_ion_string(pa, twin)[1]
 
         #no additive parts, parse multiplicative/divisive parts
         ic = None
@@ -202,25 +150,26 @@ class Datafile(DBObject):
         for i in istr:
             if i in '*/' and pa.count('(') == pa.count(')'):
                 if ic is None:
-                    ic = self._parseIonString(pa)
+                    ic = self._parse_ion_string(pa, twin)[1]
                 elif pa[0] in '*':
-                    ic *= self._parseIonString(pa[1:])
+                    ic *= self._parse_ion_string(pa[1:], twin)[1]
                 elif pa[0] in '/':
-                    ic /= self._parseIonString(pa[1:])
+                    ic /= self._parse_ion_string(pa[1:], twin)[1]
                 pa = ''
             pa += i
 
         if pa[0] in '*':
-            return ic * self._parseIonString(pa[1:])
+            return t, ic * self._parse_ion_string(pa[1:], twin)[1]
         elif pa[0] in '/':
-            return ic / self._parseIonString(pa[1:])
+            return t, ic / self._parse_ion_string(pa[1:], twin)[1]
         else:
             return 0  # this should never happen?
 
-    def _getNamedTrace(self, name):
+    def _named_trace(self, name, twin=None):
+        t = self.time(twin)
         lookdict = {'temp': 'm-tmp', 'pres': 'm-prs', 'flow': 'm-flw'}
         if name == 't' or name == 'time':
-            return self.time()
+            return t, t
         #elif name == 'b' or name == 'base':
         #    #TODO: create a baseline
         #    pass
@@ -253,9 +202,8 @@ class Datafile(DBObject):
             x = [float(o.getInfo('sp-time')) for o in std_specs]
             y = [o.ion(topion) / o.ion(44) for o in std_specs]
 
-            tme = self.time()
             if len(x) == 0:
-                return np.zeros(len(tme))
+                return self._const(0.0, twin)
 
             p0 = [y[0], 0]
             errfunc = lambda p, x, y: p[0] + p[1] * x - y
@@ -264,7 +212,7 @@ class Datafile(DBObject):
             except:
                 p = p0
 
-            return np.array(errfunc(p, tme, np.zeros(len(tme))))
+            return t, np.array(errfunc(p, t, self._const(0.0)))
         elif name in lookdict:
             #we can store time-series data as a list of timepoints
             #in certain info fields and query it here
@@ -289,63 +237,39 @@ class Datafile(DBObject):
                 srt_ind = np.argsort(x)
                 if 'S' in tpts:
                     #there's a "S"tart value defined
-                    return np.interp(self.data[:, 0], x[srt_ind], \
+                    return t, np.interp(t, x[srt_ind], \
                       y[srt_ind], float(tpts['S']))
                 else:
-                    return np.interp(self.data[:, 0], x[srt_ind], \
-                      y[srt_ind])
+                    return t, np.interp(t, x[srt_ind], y[srt_ind])
             elif is_num(val):
-                return float(val) * np.ones(self.data.shape[0])
+                return t, self._const(float(val))
         else:
-            return self._getOtherTrace(name)
+            return self._other_trace(name)
 
-    def _applyFxn(self, ic, fxn, *args):
+    def _apply_fxn(self, t, ic, fxn, *args):
         """
         Apply the function, fxn, to the trace, ic, and returns the result.
         """
+        #TODO: pass t into functions
         from aston.Math.Chromatograms import fxns
         if fxn in fxns:
             f = fxns[fxn]
             try:
-                return f(ic, *args)
+                return t, f(ic, *args)
             except TypeError:
                 pass
-        return np.zeros(ic.shape[0])
-
-    def scan(self, time):
-        """
-        Returns the spectrum from a specific time.
-        """
-        if self.data is None:
-            self._cacheData()
-
-        if 't-offset' in self.info:
-            time -= float(self.info['t-offset'])
-        if 't-scale' in self.info:
-            time /= float(self.info['t-scale'])
-
-        if type(self.data) == np.ndarray:
-            times = self.data[:, 0].copy()
-        else:
-            times = self.data[:, 0].astype(float).toarray()[:, 0]
-
-        idx = (np.abs(times - time)).argmin()
-        if type(self.data) == np.ndarray:
-            ion_abs = self.data[idx, 1:].copy()
-        else:
-            ion_abs = self.data[idx, 1:].astype(float).toarray()[0]
-
-        return (np.array(self.ions), ion_abs)
+        return t, np.zeros(t.shape[0])
 
     def get_point(self, trace, time):
         """
         Return the value of the trace at a certain time.
         """
-        f = interp1d(self.time(), self.trace(trace), \
+        t = self.time()
+        f = interp1d(*self.trace(trace), \
           bounds_error=False, fill_value=0.0)
-        return f(time)
+        return f(t)
 
-    def _loadInfo(self, fld):
+    def _load_info(self, fld):
         #create the key if it doesn't yet exist
         if fld == 'vis':
             self.info['vis'] = 'n'
@@ -355,9 +279,9 @@ class Datafile(DBObject):
             self.info[fld] = op.join(op.basename( \
               op.dirname(self.rawdata)), op.basename(self.rawdata))
         elif fld == 's-scans':
-            self.info['s-scans'] = str(self.data.shape[0])
+            self.info['s-scans'] = str(len(self.time()))
         elif fld == 's-time-st' or fld == 's-time-en':
-            time = self.data[:, 0]
+            time = self.time()
             self.info['s-time-st'] = str(min(time))
             self.info['s-time-en'] = str(max(time))
         elif fld == 's-peaks' or fld == 's-spectra':
@@ -370,55 +294,94 @@ class Datafile(DBObject):
                 self.info['s-peaks-st'] = str(min(times))
                 self.info['s-peaks-en'] = str(max(times))
         elif fld == 's-mz-min' or fld == 's-mz-max':
-            if self.data is None:
-                self._cacheData()
-            ions = np.array([i for i in self.ions \
+            ions = np.array([i for i in self._ions() \
                              if type(i) is int or type(i) is float])
             self.info['s-mz-min'] = str(min(ions))
             self.info['s-mz-max'] = str(max(ions))
         else:
             pass
 
+    #The follow functions only need to be rewritten in subclasses
+    #if not using the TimeSeries object (i.e. in a large MSMS dataset)
+
+    def time(self, twin=None):
+        """
+        Returns an array with all of the time points at which
+        data was collected
+        """
+        #load the data if it hasn't been already
+        #TODO: this should cache only the times (to speed up access
+        #in case we're looking at something with the _total_trace)
+        if self.data is None:
+            self._cache_data()
+
+        #return the time series
+        return self.data.time(twin)
+
+    def scan(self, time):
+        """
+        Returns the spectrum from a specific time.
+        """
+        if self.data is None:
+            self._cache_data()
+
+        return self.data.scan(time)
+
+    def _const(self, val, twin=None):
+        if self.data is None:
+            self._cache_data()
+
+        t = self.time(twin)
+        return t, val * np.array(self.data.len(twin))
+
+    def _ions(self):
+        if self.data is None:
+            self._cache_data()
+
+        return self.data.ions
+
     #The following function stubs should be filled out in the
     #subclasses that handle the raw datafiles.
 
-    def _cacheData(self):
+    def _cache_data(self):
         """
         Load the data into the Datafile for the first time.
         """
-        self.ions = []
-        self.data = None
-
-    def _getIonTrace(self, val, tol=0.5):
-        """
-        Return a specific ion trace from the data.
-        """
         if self.data is None:
-            self._cacheData()
-        ions = np.array([i for i in self.ions \
-          if type(i) is int or type(i) is float])
-        rows = 1 + np.where(np.abs(ions - val) < tol)[0]
-        if len(rows) == 0:
-            return np.zeros(self.data.shape[0]) * np.nan
-        else:
-            return self.data[:, rows].sum(axis=1)
+            self.data = TimeSeries()
 
-    def _getOtherTrace(self, name):
-        """
-        Return a named trace, like pressure or temperature.
-        """
-        return np.zeros(self.data.shape[0])
+        if 't-offset' in self.info:
+            self.data.offset = float(self.info['t-offset'])
+        if 't-scale' in self.info:
+            self.data.scale = float(self.info['t-scale'])
 
-    def _getTotalTrace(self):
-        """
-        Return the default, total trace.
-        """
-        if self.data is None:
-            self._cacheData()
-        return self.data[:, 1:].sum(axis=1)
-
-    def _updateInfoFromFile(self):
+    def _update_info_from_file(self):
         """
         Return file information.
         """
         pass
+
+    def _total_trace(self, twin=None):
+        """
+        Return the default, total trace.
+        """
+        if self.data is None:
+            self._cache_data()
+
+        return self.data.trace()
+
+    def _ion_trace(self, val, tol=0.5, twin=None):
+        """
+        Return a specific ion trace from the data.
+        """
+        if self.data is None:
+            self._cache_data()
+
+        return self.data.trace(val, tol)
+
+    def _other_trace(self, name, twin=None):
+        """
+        Return a named trace, like pressure or temperature.
+        """
+        return self.time(twin), self.data.const(0.0)
+

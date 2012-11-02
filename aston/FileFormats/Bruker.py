@@ -1,7 +1,8 @@
-from aston import Datafile
 import struct
 import numpy as np
 import scipy.sparse
+from aston import Datafile
+from aston.TimeSeries import TimeSeries
 
 
 class BrukerMSMS(Datafile.Datafile):
@@ -14,7 +15,7 @@ class BrukerMSMS(Datafile.Datafile):
     #def _getTotalTrace(self):
     #    pass
 
-    def _cacheData(self):
+    def _cache_data(self):
         if self.data is not None:
             return
 
@@ -26,8 +27,7 @@ class BrukerMSMS(Datafile.Datafile):
 
         nscans = rd(f, 'ii')[1]
         if nscans == 0:
-            self.ions = []
-            self.data = None
+            self.data = TimeSeries()
             return
         times = np.array(rd(f, nscans * 'd')) / 60.0
         f.seek(f.tell() + 4)  # number of scans again
@@ -43,11 +43,11 @@ class BrukerMSMS(Datafile.Datafile):
             npts = rd(f, 'i')[0]
             #rd(f, npts * 'f' + 'i' + n_pts * 'f')
             f.seek(f.tell() + 8 * npts + 4)
-            tot_pts += npts + 1
+            tot_pts += npts
             indptr[scn + 1] = tot_pts
         f.seek(dpos)
 
-        self.ions = []
+        ions = []
         i_lkup = {}
         idxs = np.empty(tot_pts, dtype=int)
         vals = np.empty(tot_pts, dtype=float)
@@ -60,19 +60,20 @@ class BrukerMSMS(Datafile.Datafile):
 
             nions = set([int(i) for i in rd_ions \
               if int(i) not in i_lkup])
-            i_lkup.update(dict((ion, i + len(self.ions)) \
+            i_lkup.update(dict((ion, i + len(ions)) \
               for i, ion in enumerate(nions)))
-            self.ions += nions
+            ions += nions
 
             idxs[indptr[scn]:indptr[scn + 1]] = \
-                [-1] + [i_lkup[int(i)] for i in rd_ions]
+                [i_lkup[int(i)] for i in rd_ions]
             vals[indptr[scn]:indptr[scn + 1]] = \
-                (times[scn],) + abun
+                abun
 
         idxs += 1
-        self.data = scipy.sparse.csr_matrix((vals, idxs, indptr), \
-                                    shape=(nscans, len(self.ions) + 1), \
+        data = scipy.sparse.csr_matrix((vals, idxs, indptr), \
+                                    shape=(nscans, len(ions)), \
                                     dtype=float)
+        self.data = TimeSeries(data, times, ions)
 
         #self.data = np.zeros((recs, 2))
         #times = rd(f, nscans * 'd')
@@ -89,7 +90,7 @@ class BrukerMSMS(Datafile.Datafile):
         #f.close()
         #self.ions = [1]
 
-    def _updateInfoFromFile(self):
+    def _update_info_from_file(self):
         d = {}
         d['r-type'] = 'Sample'
         self.info.update(d)

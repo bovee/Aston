@@ -1,10 +1,12 @@
-from aston import Datafile
 import struct
 import numpy as np
 import scipy
-import sys
 import os.path as op
+import gzip
+import io
 from xml.etree import ElementTree
+from aston import Datafile
+from aston.TimeSeries import TimeSeries
 
 
 class AgilentMS(Datafile.Datafile):
@@ -14,8 +16,7 @@ class AgilentMS(Datafile.Datafile):
     def __init__(self, *args, **kwargs):
         super(AgilentMS, self).__init__(*args, **kwargs)
 
-    def _getTotalTrace(self):
-        #TODO: this no longer does anything
+    def _total_trace(self, twin=None):
         f = open(self.rawdata, 'rb')
 
         # get number of scans to read in
@@ -32,7 +33,6 @@ class AgilentMS(Datafile.Datafile):
 
         tme = np.zeros(nscans)
         tic = np.zeros(nscans)
-
         for i in range(nscans):
             npos = f.tell() + 2 * struct.unpack('>H', f.read(2))[0]
             tme[i] = struct.unpack('>I', f.read(4))[0] / 60000.
@@ -40,9 +40,9 @@ class AgilentMS(Datafile.Datafile):
             tic[i] = struct.unpack('>I', f.read(4))[0]
             f.seek(npos)
         f.close()
-        return tic
+        return tme, tic
 
-    def _cacheData(self):
+    def _cache_data(self):
         if self.data is not None:
             return
 
@@ -83,37 +83,35 @@ class AgilentMS(Datafile.Datafile):
         idxs = np.empty(tot_pts, dtype=int)
         vals = np.empty(tot_pts, dtype=float)
 
+        times = np.empty(nscans)
         for scn in range(nscans):
             npos = f.tell() + 2 * struct.unpack('>H', f.read(2))[0]
             # the sampling rate is evidentally 60 kHz on all Agilent's MS's
-            tme = struct.unpack('>I', f.read(4))[0] / 60000.
+            times[scn] = struct.unpack('>I', f.read(4))[0] / 60000.
 
             f.seek(f.tell() + 4)
-            npts = indptr[scn + 1] - indptr[scn] - 1
+            npts = indptr[scn + 1] - indptr[scn]
             mzs = struct.unpack('>' + npts * 'HH', f.read(npts * 4))
 
             nions = set([mz for mz in mzs[0::2] if mz not in i_lkup])
             i_lkup.update(dict((ion, i + len(ions)) \
-                                  for i, ion in enumerate(nions)))
+              for i, ion in enumerate(nions)))
             ions += nions
 
             idxs[indptr[scn]:indptr[scn + 1]] = \
-                [-1] + [i_lkup[i] for i in mzs[0::2]]
-            vals[indptr[scn]:indptr[scn + 1]] = \
-                (tme,) + mzs[1::2]
-
+              [i_lkup[i] for i in mzs[0::2]]
+            vals[indptr[scn]:indptr[scn + 1]] = mzs[1::2]
             f.seek(npos)
         f.close()
 
         idxs += 1
-        d = scipy.sparse.csr_matrix((vals, idxs, indptr), \
-                                    shape=(nscans, len(ions) + 1), \
+        data = scipy.sparse.csr_matrix((vals, idxs, indptr), \
+                                    shape=(nscans, len(ions)), \
                                     dtype=float)
+        ions = [i / 20. for i in ions]
+        self.data = TimeSeries(data, times, ions)
 
-        self.ions = [i / 20. for i in ions]
-        self.data = d
-
-    def _updateInfoFromFile(self):
+    def _update_info_from_file(self):
         d = {}
         f = open(self.rawdata, 'rb')
         f.seek(0x18)
@@ -137,13 +135,7 @@ class AgilentMSMSScan(Datafile.Datafile):
     def __init__(self, *args, **kwargs):
         super(AgilentMSMSScan, self).__init__(*args, **kwargs)
 
-    #def _getTotalTrace(self):
-    #    pass
-
-    def _cacheData(self):
-        if self.data is not None:
-            return
-
+    def _msscan_iter(self, keylist):
         f = open(self.rawdata, 'rb')
         r = ElementTree.parse(op.splitext(self.rawdata)[0] + '.xsd').getroot()
 
@@ -181,37 +173,44 @@ class AgilentMSMSScan(Datafile.Datafile):
         start_offset = struct.unpack('<i', f.read(4))[0]
         f.seek(start_offset)
 
-        import gzip
-        import io
-        gzip.GzipFile._read_eof = lambda _: None
-        gzprefix = b'\x1f\x8b\x08\x00\x00\x00\x00\x00\x04\x00'
-        uncompress = lambda d: gzip.GzipFile(fileobj=io.BytesIO(d)).read()
-        f2 = open(op.join(op.split(self.rawdata)[0], 'MSProfile.bin'), 'rb')
-
-        #TODO: rewrite below to get ions from MSProf.bin instead
-        tloc = fnames.index('ScanTime')
-        zloc = fnames.index('TIC')
-        t = []
-        z = []
+        loc = [fnames.index(k) for k in keylist]
+        d = []
         while True:
             try:
                 data = struct.unpack(rec_str, f.read(sz))
-                if len(t) < 5:
-                    d = dict(zip(fnames, data))
-                    f2.seek(d['SpectrumOffset'])
-                    profdata = uncompress(gzprefix + f2.read(d['ByteCount']))
-                    pd = struct.unpack('dd' + d['PointCount'] * 'i', profdata)
-                    print(sum(pd[2:]), d['TIC'])
             except struct.error:
                 break
-            t.append(data[tloc])
-            z.append(data[zloc])
+            yield (data[l] for l in loc)
         f.close()
-        f2.close()
-        self.ions = [1]
-        self.data = np.array([t, z]).transpose()
 
-    def _updateInfoFromFile(self):
+    def _total_trace(self, twin):
+        tme = []
+        tic = []
+        for t, z in self._msscan_iter(['ScanTime', 'TIC']):
+            tme.append(t)
+            tic.append(z)
+        return np.array(tme), np.array(tic)
+
+    def _cache_data(self):
+        if self.data is not None:
+            return
+
+        #super hack-y way to disable checksum and length checking
+        gzip.GzipFile._read_eof = lambda _: None
+        # standard prefix for every zip chunk
+        gzprefix = b'\x1f\x8b\x08\x00\x00\x00\x00\x00\x04\x00'
+        uncompress = lambda d: gzip.GzipFile(fileobj=io.BytesIO(d)).read()
+        f = open(op.join(op.split(self.rawdata)[0], 'MSProfile.bin'), 'rb')
+
+        for off, bc, pc in self._msscan_iter(['SpectrumOffset', \
+          'ByteCount', 'PointCount']):
+            f.seek(off)
+            profdata = uncompress(gzprefix + f.read(bc))
+            pd = struct.unpack('dd' + pc * 'i', profdata)
+            print(sum(pd[2:]))
+        f.close()
+
+    def _update_info_from_file(self):
         d = {}
         #d['name'] = str(f.read(struct.unpack('>B',f.read(1))[0]).strip())
         #d['r-opr'] = str(f.read(struct.unpack('>B',f.read(1))[0]))
@@ -220,6 +219,6 @@ class AgilentMSMSScan(Datafile.Datafile):
         #d['r-type'] = 'Sample'
         self.info.update(d)
 
-    def _getOtherTrace(self, name):
+    def _other_trace(self, name):
         #TODO: read from MSPeriodicActuals.bin and TCC.* files
         return np.zeros(len(self.times))

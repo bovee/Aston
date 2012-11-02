@@ -27,6 +27,7 @@ if len(sys.argv) >= 2 and sys.argv[1] == 'py2exe':
     options['windows'] = ['aston.py']
     options['options'] = {
         'py2exe':{'skip_archive': False,
+        'optimize':'2',
         'dll_excludes':['MSVCP90.dll','tcl85.dll','tk85.dll'],
         'includes':['sip'],
         'excludes':['_gtkagg','_tkagg','tcl','Tkconstants','Tkinter']}

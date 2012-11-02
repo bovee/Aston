@@ -1,8 +1,9 @@
-from aston import Datafile
 import struct
 import time
 import os
 import numpy as np
+from aston import Datafile
+from aston.TimeSeries import TimeSeries
 
 
 class ThermoCF(Datafile.Datafile):
@@ -12,7 +13,7 @@ class ThermoCF(Datafile.Datafile):
     def __init__(self, *args, **kwargs):
         super(ThermoCF, self).__init__(*args, **kwargs)
 
-    def _cacheData(self):
+    def _cache_data(self):
         if self.data is not None:
             return
 
@@ -30,16 +31,17 @@ class ThermoCF(Datafile.Datafile):
         nscans = struct.unpack('H', f.read(2))[0]
 
         #TODO: this shouldn't be hardcoded
-        self.ions = [44, 45, 46]
-        ni = len(self.ions)
+        ions = [44, 45, 46]
+        ni = len(ions)
 
         f.seek(f.tell() + 35)
-        self.data = np.array([struct.unpack('<f' + ni * 'd', \
+        data = np.array([struct.unpack('<f' + ni * 'd', \
           f.read(4 + ni * 8)) for _ in range(nscans)])
-        self.data[:, 0] /= 60.  # convert time to minutes
+        data[:, 0] /= 60.  # convert time to minutes
+        self.data = TimeSeries(data[:, 1:], data[:, 0], ions)
         f.close()
 
-    def _updateInfoFromFile(self):
+    def _update_info_from_file(self):
         d = {}
         d['r-opr'] = ''
         d['m'] = ''
@@ -60,7 +62,7 @@ class ThermoDXF(Datafile.Datafile):
     def __init__(self, *args, **kwargs):
         super(ThermoDXF, self).__init__(*args, **kwargs)
 
-    def _cacheData(self):
+    def _cache_data(self):
         if self.data is not None:
             return
 
@@ -77,19 +79,20 @@ class ThermoDXF(Datafile.Datafile):
         f.read(4)  # not sure what this value means?
 
         #TODO: this shouldn't be hardcoded
-        self.ions = [44, 45, 46]
-        ni = len(self.ions)
+        ions = [44, 45, 46]
+        ni = len(ions)
 
         #bytes until the end converted to # of records
         nscans = int(struct.unpack('<I', f.read(4))[0] / \
                 (4.0 + ni * 8.0))
 
-        self.data = np.array([struct.unpack('<f' + ni * 'd', \
+        data = np.array([struct.unpack('<f' + ni * 'd', \
           f.read(4 + ni * 8)) for _ in range(nscans)])
-        self.data[:, 0] /= 60.  # convert time to minutes
+        data[:, 0] /= 60.  # convert time to minutes
+        self.data = TimeSeries(data[:, 1:], data[:, 0], ions)
         f.close()
 
-    def _updateInfoFromFile(self):
+    def _update_info_from_file(self):
         d = {}
         d['r-opr'] = ''
         d['m'] = ''
