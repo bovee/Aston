@@ -118,7 +118,6 @@ class Datafile(DBObject):
                 return ts.retime(self.time(twin))
             else:
                 args = istr[istr.find('(') + 1:].split(';')
-                print(istr, args)
                 ts = self._parse_ion_string(args[0], twin)
                 return self._apply_fxn(ts, fxn, *args[1:])
 

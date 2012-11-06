@@ -110,7 +110,6 @@ class TimeSeries(object):
             nargs = 1
         if nargs == 1:
             new_data = np.apply_along_axis(f, 0, self.data)
-            print new_data[0]
             return TimeSeries(new_data, self.times, self.ions)
         else:
             d = np.vstack(self.times, self.data.T)
