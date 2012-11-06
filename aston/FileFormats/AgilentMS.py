@@ -40,7 +40,7 @@ class AgilentMS(Datafile.Datafile):
             tic[i] = struct.unpack('>I', f.read(4))[0]
             f.seek(npos)
         f.close()
-        return tme, tic
+        return TimeSeries(tic, tme, ['TIC'])
 
     def _cache_data(self):
         if self.data is not None:
@@ -189,7 +189,7 @@ class AgilentMSMSScan(Datafile.Datafile):
         for t, z in self._msscan_iter(['ScanTime', 'TIC']):
             tme.append(t)
             tic.append(z)
-        return np.array(tme), np.array(tic)
+        return TimeSeries(np.array(tic), np.array(tme), ['TIC'])
 
     def _cache_data(self):
         if self.data is not None:
@@ -207,7 +207,6 @@ class AgilentMSMSScan(Datafile.Datafile):
             f.seek(off)
             profdata = uncompress(gzprefix + f.read(bc))
             pd = struct.unpack('dd' + pc * 'i', profdata)
-            print(sum(pd[2:]))
         f.close()
 
     def _update_info_from_file(self):

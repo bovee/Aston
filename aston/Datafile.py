@@ -32,24 +32,42 @@ class Datafile(DBObject):
         #make stubs for the time array and the data array
         self.data = None
 
+    def _sc_off(self, t):
+        """
+        Scale and offset a time.
+        """
+        if t is None:
+            return None
+        else:
+            scale = float(self.info.get('t-scale', 1.0))
+            offset = float(self.info.get('t-offset', 0.0))
+            return (t - offset) / scale
+
     def trace(self, ion=None, twin=None):
         """
         Returns an array, either time/ion filtered or not
         of chromatographic data.
         """
+        if twin is not None:
+            twin = (self._sc_off(twin[0]), self._sc_off(twin[1]))
+
         if type(ion) == str or type(ion) == unicode:
-            t, ic = self._parse_ion_string(ion.lower(), twin)
+            ts = self._parse_ion_string(ion.lower(), twin)
         elif type(ion) == int or type(ion) == float:
             #if the ion is a number, do the straightforward thing
-            t, ic = self._ion_trace(ion, twin=twin)
+            ts = self._ion_trace(ion, twin=twin)
         else:
             #all other cases, just return the total trace
-            t, ic = self._total_trace(twin=twin)
+            ts = self._total_trace(twin=twin)
 
+        if 't-scale' in self.info:
+            ts.times *= float(self.info['t-scale'])
+        if 't-offset' in self.info:
+            ts.times += float(self.info['t-offset'])
         if 't-yscale' in self.info:
-            ic *= float(self.info['t-yscale'])
+            ts *= float(self.info['t-yscale'])
         if 't-yoffset' in self.info:
-            ic += float(self.info['t-yoffset'])
+            ts += float(self.info['t-yoffset'])
 
         if 'remove noise' in self.info:
             #TODO: LOESS (local regression) filter
@@ -59,14 +77,13 @@ class Datafile(DBObject):
             if self.info['t-smooth'].lower() == 'moving average':
                 wnd = self.info['t-smooth-window']
                 if wnd.isdigit():
-                    t, ic = self._apply_fxn(t, ic, 'movingaverage', wnd)
+                    ts = self._apply_fxn(ts, 'movingaverage', wnd)
             elif self.info['t-smooth'].lower() == 'savitsky-golay':
                 wnd = self.info['t-smooth-window']
                 sord = self.info['t-smooth-order']
                 if wnd.isdigit() and sord.isdigit():
-                    t, ic = self._apply_fxn(t, ic, 'savitskygolay', wnd, sord)
-
-        return t, ic
+                    ts = self._apply_fxn(ts, 'savitskygolay', wnd, sord)
+        return ts
 
     def _parse_ion_string(self, istr, twin=None):
         """
@@ -83,27 +100,27 @@ class Datafile(DBObject):
 
         #invert it if preceded by a minus sign
         if istr[0] == '-':
-            t, ic = self._parse_ion_string(istr[1:], twin)
-            return t, -1.0 * ic
+            ts = self._parse_ion_string(istr[1:], twin)
+            return -ts
 
         #this is a function
         if istr[:istr.find('(')].isalnum() and istr.find('(') != -1:
             fxn = istr[:istr.find('(')]
             if fxn == 'file' or fxn == 'f':
-                args = istr[istr.find('(') + 1:-1].split(';')
+                args = istr[istr.find('(') + 1:].split(';')
                 dt = self.database.getFileByName(args[0])
                 if dt is None:
                     return self._const(0, twin)
                 if len(args) > 1:
-                    ot, y = dt.trace(args[1], twin=twin)
+                    ts = dt.trace(args[1], twin=twin)
                 else:
-                    ot, y = dt.trace(twin=twin)
-                f = interp1d(ot, y, bounds_error=False, fill_value=0.0)
-                return self.time(twin), f(t)
+                    ts = dt.trace(twin=twin)
+                return ts.retime(self.time(twin))
             else:
-                args = istr[istr.find('(') + 1:-1].split(';')
-                t, ic = self._parse_ion_string(args[0], twin)
-                return t, self._apply_fxn(t, ic, fxn, *args[1:])
+                args = istr[istr.find('(') + 1:].split(';')
+                print(istr, args)
+                ts = self._parse_ion_string(args[0], twin)
+                return self._apply_fxn(ts, fxn, *args[1:])
 
         #have we simplified enough? is all of the tricky math gone?
         if set(istr).intersection(set('+-/*()')) == set():
@@ -128,48 +145,47 @@ class Datafile(DBObject):
             else:
                 return self._named_trace(istr, twin=twin)
 
-        #TODO: this should make sure that the ICs it's
-        #manipulating have the same t axis or else adjust them
-
         #parse out the additive parts
-        t, ic = self._const(0, twin)
+        ts = self._const(0, twin)
         pa = ''
         for i in istr:
             if i in '+-' and pa[-1] not in '*/+' and \
               pa.count('(') == pa.count(')'):
-                ic += self._parse_ion_string(pa, twin)[1]
+                ts += self._parse_ion_string(pa, twin)
                 pa = ''
             pa += i
 
         if pa != istr:
-            return t, ic + self._parse_ion_string(pa, twin)[1]
+            return ts + self._parse_ion_string(pa, twin)
+
+        #TODO: exponents?
 
         #no additive parts, parse multiplicative/divisive parts
-        ic = None
+        ts = None
         pa = ''
         for i in istr:
             if i in '*/' and pa.count('(') == pa.count(')'):
-                if ic is None:
-                    ic = self._parse_ion_string(pa, twin)[1]
+                if ts is None:
+                    ts = self._parse_ion_string(pa, twin)
                 elif pa[0] in '*':
-                    ic *= self._parse_ion_string(pa[1:], twin)[1]
+                    ts *= self._parse_ion_string(pa[1:], twin)
                 elif pa[0] in '/':
-                    ic /= self._parse_ion_string(pa[1:], twin)[1]
+                    ts /= self._parse_ion_string(pa[1:], twin)
                 pa = ''
             pa += i
 
         if pa[0] in '*':
-            return t, ic * self._parse_ion_string(pa[1:], twin)[1]
+            return ts * self._parse_ion_string(pa[1:], twin)
         elif pa[0] in '/':
-            return t, ic / self._parse_ion_string(pa[1:], twin)[1]
+            return ts / self._parse_ion_string(pa[1:], twin)
         else:
             return 0  # this should never happen?
 
     def _named_trace(self, name, twin=None):
-        t = self.time(twin)
+        t = self.time(twin, adjust=False)
         lookdict = {'temp': 'm-tmp', 'pres': 'm-prs', 'flow': 'm-flw'}
         if name == 't' or name == 'time':
-            return t, t
+            return TimeSeries(t, t, [name])
         #elif name == 'b' or name == 'base':
         #    #TODO: create a baseline
         #    pass
@@ -211,8 +227,7 @@ class Datafile(DBObject):
                 p, succ = leastsq(errfunc, p0, args=(np.array(x), np.array(y)))
             except:
                 p = p0
-
-            return t, np.array(errfunc(p, t, self._const(0.0)))
+            return TimeSeries(np.array(errfunc(p, t, self._const(0.0))), t, [name])
         elif name in lookdict:
             #we can store time-series data as a list of timepoints
             #in certain info fields and query it here
@@ -240,30 +255,36 @@ class Datafile(DBObject):
                     return t, np.interp(t, x[srt_ind], \
                       y[srt_ind], float(tpts['S']))
                 else:
-                    return t, np.interp(t, x[srt_ind], y[srt_ind])
+                    return TimeSeries(np.interp(t, x[srt_ind], \
+                      y[srt_ind]), t, [name])
             elif is_num(val):
-                return t, self._const(float(val))
+                return self._const(float(val))
         else:
             return self._other_trace(name)
 
-    def _apply_fxn(self, t, ic, fxn, *args):
+    def _apply_fxn(self, ts, fxn, *args):
         """
         Apply the function, fxn, to the trace, ic, and returns the result.
         """
-        #TODO: pass t into functions
+        #TODO: broken
         from aston.Math.Chromatograms import fxns
         if fxn in fxns:
             f = fxns[fxn]
-            try:
-                return t, f(ic, *args)
-            except TypeError:
-                pass
-        return t, np.zeros(t.shape[0])
+            return ts.apply_fxn(f)
+            #try:
+            #    return t, f(ic, *args)
+            #except TypeError:
+            #    pass
+        return self._const(0.0)
+        #return TimeSeries(np.zeros(t.shape[0]), t, [fxn])
 
     def get_point(self, trace, time):
         """
         Return the value of the trace at a certain time.
         """
+        time = self._sc_off(time)
+
+        #TODO: broken?
         t = self.time()
         f = interp1d(*self.trace(trace), \
           bounds_error=False, fill_value=0.0)
@@ -304,35 +325,50 @@ class Datafile(DBObject):
     #The follow functions only need to be rewritten in subclasses
     #if not using the TimeSeries object (i.e. in a large MSMS dataset)
 
-    def time(self, twin=None):
+    def time(self, twin=None, adjust=True):
         """
         Returns an array with all of the time points at which
         data was collected
         """
         #load the data if it hasn't been already
-        #TODO: this should cache only the times (to speed up access
-        #in case we're looking at something with the _total_trace)
         if self.data is None:
             self._cache_data()
+
+        if twin is not None:
+            twin = (self._sc_off(twin[0]), self._sc_off(twin[1]))
 
         #return the time series
-        return self.data.time(twin)
+        t = self.data.time(twin)
+        if adjust and 't-scale' in self.info:
+            t *= float(self.info['t-scale'])
+        if adjust and 't-offset' in self.info:
+            t += float(self.info['t-offset'])
+        return t
 
-    def scan(self, time):
+    def scan(self, time, to_time=None):
         """
         Returns the spectrum from a specific time.
+        (or range of times if to_time is specified).
         """
         if self.data is None:
             self._cache_data()
 
+        time = self._sc_off(time)
         return self.data.scan(time)
 
     def _const(self, val, twin=None):
+        """
+        Return a TimeSeries with the times of the current
+        chromatogram, but constant values of val.
+        """
         if self.data is None:
             self._cache_data()
 
-        t = self.time(twin)
-        return t, val * np.array(self.data.len(twin))
+        if twin is not None:
+            twin = (self._sc_off(twin[0]), self._sc_off(twin[1]))
+
+        return TimeSeries(val * np.ones(self.data.len(twin)), \
+          self.time(twin, adjust=False), ['!' + str(val)])
 
     def _ions(self):
         if self.data is None:
@@ -340,31 +376,18 @@ class Datafile(DBObject):
 
         return self.data.ions
 
-    #The following function stubs should be filled out in the
-    #subclasses that handle the raw datafiles.
-
-    def _cache_data(self):
+    def _2D(self, twin=None):
         """
-        Load the data into the Datafile for the first time.
+        Returns a TimeSeries object summarizing all of the data.
         """
-        if self.data is None:
-            self.data = TimeSeries()
-
-        if 't-offset' in self.info:
-            self.data.offset = float(self.info['t-offset'])
-        if 't-scale' in self.info:
-            self.data.scale = float(self.info['t-scale'])
-
-    def _update_info_from_file(self):
-        """
-        Return file information.
-        """
-        pass
+        raise NotImplementedError
 
     def _total_trace(self, twin=None):
         """
         Return the default, total trace.
         """
+        #Note: it's useful to override this to speed up
+        #display of the TIC if it can be calculated easily.
         if self.data is None:
             self._cache_data()
 
@@ -383,5 +406,20 @@ class Datafile(DBObject):
         """
         Return a named trace, like pressure or temperature.
         """
-        return self.time(twin), self.data.const(0.0)
+        return self._const(0.0, twin=twin)
 
+    #The following function stubs should be filled out in the
+    #subclasses that handle the raw datafiles.
+
+    def _cache_data(self):
+        """
+        Load the data into the Datafile for the first time.
+        """
+        if self.data is None:
+            self.data = TimeSeries()
+
+    def _update_info_from_file(self):
+        """
+        Return file information.
+        """
+        pass
