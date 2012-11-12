@@ -11,6 +11,7 @@ compound database
 
 format stuff
 --figure out MS-MS formats
+----figure out where MSMS spectra are in Bruker
 --finish Agilent MSMS format work
 ----MSPeak format
 ----display spectra
