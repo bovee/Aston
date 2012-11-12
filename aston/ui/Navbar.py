@@ -70,7 +70,7 @@ class AstonNavBar(NavigationToolbar2QTAgg):
         dt = self.parent.obj_tab.returnSelFile()
         if dt is None:
             return
-        if dt.db_type != 'file' or dt.getInfo('vis') == 'n':
+        if dt.db_type != 'file' or dt.get_info('vis') == 'n':
             return
         if time.time() - self.ev_time < 1:
             self.ev_time = time.time()
@@ -84,7 +84,7 @@ class AstonNavBar(NavigationToolbar2QTAgg):
             self.ev_time = time.time()
             if abs(self._xypress[0] - event.xdata) < 0.01:
                 return
-            ion = dt.getInfo('traces').split(',')[0]
+            ion = dt.get_info('traces').split(',')[0]
 
             if self._xypress[0] < event.xdata:
                 pt1 = (self._xypress[0], self._xypress[1])
@@ -103,7 +103,7 @@ class AstonNavBar(NavigationToolbar2QTAgg):
             info['p-ion'] = ion
             pk = Peak(dt.db, None, dt.db_id, info, verts)
             self.parent.obj_tab.addObjects(dt, [pk])
-            dt.delInfo('s-peaks')
+            dt.del_info('s-peaks')
 
         self._xypress = []
         self.release(event)
@@ -134,24 +134,24 @@ class AstonNavBar(NavigationToolbar2QTAgg):
         dt = self.parent.obj_tab.returnSelFile()
         if dt is None:
             return
-        if dt.db_type != 'file' or dt.getInfo('vis') == 'n':
+        if dt.db_type != 'file' or dt.get_info('vis') == 'n':
             return
         if event.button == 1:
             try:
-                x = float(dt.getInfo('t-offset')) - event.xdata
+                x = float(dt.get_info('t-offset')) - event.xdata
             except:
                 x = 0 - event.xdata
             try:
-                y = float(dt.getInfo('t-yoffset')) - event.ydata
+                y = float(dt.get_info('t-yoffset')) - event.ydata
             except:
                 y = 0 - event.ydata
         elif event.button == 3:
             try:
-                x = float(dt.getInfo('t-scale')) / event.xdata
+                x = float(dt.get_info('t-scale')) / event.xdata
             except:
                 x = 1 / event.xdata
             try:
-                y = float(dt.getInfo('t-yscale')) / event.ydata
+                y = float(dt.get_info('t-yscale')) / event.ydata
             except:
                 y = 1 / event.ydata
         self._xypress = x, y
@@ -209,7 +209,7 @@ class AstonNavBar(NavigationToolbar2QTAgg):
         cur_file = self.parent.obj_tab.returnSelFile()
         if cur_file is None:
             return
-        if cur_file.getInfo('vis') != 'y':
+        if cur_file.get_info('vis') != 'y':
             return
         scan = cur_file.scan(event.xdata)
 

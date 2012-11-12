@@ -9,9 +9,11 @@ def file_adaptors():
       import AgilentDAD, AgilentMWD, AgilentCSDAD
     from aston.FileFormats.OtherFiles \
       import AgilentFID, CSVFile
+    from aston.FileFormats.Waters \
+      import WatersAutospec
     return [AgilentMS, AgilentMSMSScan, BrukerMSMS, \
       ThermoCF, ThermoDXF, AgilentDAD, AgilentMWD, AgilentCSDAD, \
-      AgilentFID, CSVFile]
+      AgilentFID, CSVFile, WatersAutospec]
 
     #for cls_str in dir(fl):
     #    cls = fl.__dict__[cls_str]

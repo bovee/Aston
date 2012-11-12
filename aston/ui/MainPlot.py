@@ -114,11 +114,11 @@ class Plotter(object):
 
         # make up a factor to separate traces by
         if 'stacked' in self.style:
-            fts = datafiles[0].trace(datafiles[0].getInfo('traces').split(',')[0])
+            fts = datafiles[0].trace(datafiles[0].get_info('traces').split(',')[0])
             sc_factor = (max(fts.data[:, 0]) - min(fts.data[:, 0])) / 5.
 
         # count the number of traces that will be displayed
-        ts = sum(1 for x in datafiles for _ in x.getInfo('traces').split(','))
+        ts = sum(1 for x in datafiles for _ in x.get_info('traces').split(','))
         if ts < 6:
             alpha = 0.75 - ts * 0.1
         else:
@@ -126,7 +126,7 @@ class Plotter(object):
 
         tnum = 0
         for dt in datafiles:
-            for y in dt.getInfo('traces').split(','):
+            for y in dt.get_info('traces').split(','):
                 ts = dt.trace(y.strip())
                 trace = ts.data
                 if 'scaled' in self.style:
@@ -143,7 +143,7 @@ class Plotter(object):
                 else:
                     c = self._color(int(tnum % ts) / float(ts - 1), 1)
                 ls = self._linestyle[int(np.floor((tnum % 28) / 7))]
-                nm = dt.getInfo('name') + ' ' + y
+                nm = dt.get_info('name') + ' ' + y
                 self.plt.plot(ts.times, trace, color=c, \
                   ls=ls, lw=1.2, label=nm)
                 tnum += 1

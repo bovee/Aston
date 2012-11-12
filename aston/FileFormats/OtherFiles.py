@@ -79,6 +79,5 @@ class CSVFile(Datafile.Datafile):
 
     def _update_info_from_file(self):
         d = {}
-        d['name'] = op.splitext(op.basename(self.rawdata))[0]
         d['r-type'] = 'Sample'
         self.info.update(d)

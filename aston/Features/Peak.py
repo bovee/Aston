@@ -59,7 +59,7 @@ class Peak(DBObject):
                 en_idx = len(tme)
         return arr[st_idx:en_idx]
 
-    def _loadInfo(self, fld):
+    def _load_info(self, fld):
         if fld == 'p-s-area':
             self.info[fld] = str(peakmath.area(self.data))
         elif fld == 'p-s-length':
@@ -71,7 +71,7 @@ class Peak(DBObject):
         elif fld == 'p-s-pwhm':
             self.info[fld] = str(peakmath.length(self.data, pwhm=True))
 
-    def _calcInfo(self, fld):
+    def _calc_info(self, fld):
         if fld == 'p-s-pkcap':
             prt = self.getParentOfType('file')
             if prt is None:
@@ -98,7 +98,7 @@ class Peak(DBObject):
         info = {'sp-time': str(time)}
         return Spectrum(self.db, None, self.db_id, info, data)
 
-    def setInfo(self, fld, key):
+    def set_info(self, fld, key):
         if fld == 'p-model':
             d = np.array(self.rawdata)
             self.info['p-model'] = key
@@ -121,4 +121,4 @@ class Peak(DBObject):
                 self.info['p-s-base'] = str(d[0, 1])
                 self.info['p-s-shape'] = ','.join([str(i) for i \
                                                        in params[2:]])
-        super(Peak, self).setInfo(fld, key)
+        super(Peak, self).set_info(fld, key)

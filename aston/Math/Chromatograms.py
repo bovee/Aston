@@ -3,13 +3,14 @@ import numpy as np
 #we don't need to reinvent the wheel, so we can straight up use some
 #of numpy's default functions and pass our array directly in
 from numpy import abs, sin, cos, tan, gradient
- 
-def fft(ic):
-    #FIXME: "time" of FFT axis doesn't match time of ic axis
+
+def fft(t, ic):
     oc = np.abs(np.fft.fftshift(np.fft.fft(ic))) / len(ic)
+    t = np.fft.fftshift(np.fft.fftfreq(len(oc), d=t[1] - t[0]))
 #elif fxn == 'ifft':
 #    ic = np.fft.ifft(np.fft.fftshift(ic * len(ic)))# / len(ic)
-    
+    return t, oc
+
 def noisefilter(ic, bandwidth):
     #adapted from http://glowingpython.blogspot.com/
     #2011/08/fourier-transforms-and-image-filtering.html
@@ -22,7 +23,7 @@ def noisefilter(ic, bandwidth):
     for i in range(c1-r, c1+r):
         P[i] = I[i] # frequency cutting
     oc = np.real(np.fft.ifft(np.fft.ifftshift(P)))
-    
+
 def base(ic):
     #INSPIRED by Algorithm A12 from Zupan
     #5 point pre-smoothing
@@ -48,7 +49,7 @@ def base(ic):
     oc[mn[pi]:mn[-1]] = \
       np.linspace(ic[mn[pi]],ic[mn[-1]],mn[-1]-mn[pi])
     oc[-1] = oc[-2] #FIXME: there's definitely a bug in here somewhere
-    
+
 def movingaverage(ic, window):
     x = int(window)
     half_wind = (x-1) // 2

@@ -109,12 +109,11 @@ class TimeSeries(object):
             #passing in the data (no times)
             nargs = 1
         if nargs == 1:
-            new_data = np.apply_along_axis(f, 0, self.data)
-            return TimeSeries(new_data, self.times, self.ions)
+            t = self.times
+            d = f(self.data)
         else:
-            d = np.vstack(self.times, self.data.T)
-            nd = np.array([f(*i) for i in d])
-            return TimeSeries(nd[:, 0], nd[:, 1:], self.ions)
+            t, d = f(self.times, self.data)
+        return TimeSeries(d, t, self.ions)
 
     def _apply_data(self, f, ts):
         """

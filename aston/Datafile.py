@@ -213,8 +213,8 @@ class Datafile(DBObject):
                 topion = 46
             std_specs = [o for o in \
               self.getAllChildren('spectrum') \
-              if o.getInfo('sp-type') == 'Isotope Standard']
-            x = [float(o.getInfo('sp-time')) for o in std_specs]
+              if o.get_info('sp-type') == 'Isotope Standard']
+            x = [float(o.get_info('sp-time')) for o in std_specs]
             y = [o.ion(topion) / o.ion(44) for o in std_specs]
 
             if len(x) == 0:
@@ -238,11 +238,11 @@ class Datafile(DBObject):
                 except:
                     return False
 
-            val = self.getInfo(lookdict[name])
+            val = self.get_info(lookdict[name])
             if ',' in val:
                 #turn the time list into a dictionary
                 tpts = dict([tpt.split(':') for tpt in \
-                  self.getInfo(lookdict[name]).split(',')])
+                  self.get_info(lookdict[name]).split(',')])
                 #get the valid times out
                 valid_x = [v for v in tpts if is_num(v)]
                 #generate arrays from them
@@ -265,17 +265,12 @@ class Datafile(DBObject):
         """
         Apply the function, fxn, to the trace, ic, and returns the result.
         """
-        #TODO: broken
-        from aston.Math.Chromatograms import fxns
-        if fxn in fxns:
+        from aston.Math.Chromatograms import fxns as math_fxns
+
+        if fxn in math_fxns:
             f = fxns[fxn]
             return ts.apply_fxn(f)
-            #try:
-            #    return t, f(ic, *args)
-            #except TypeError:
-            #    pass
         return self._const(0.0)
-        #return TimeSeries(np.zeros(t.shape[0]), t, [fxn])
 
     def get_point(self, trace, time):
         """
@@ -283,10 +278,9 @@ class Datafile(DBObject):
         """
         time = self._sc_off(time)
 
-        #TODO: broken?
         t = self.time()
-        f = interp1d(*self.trace(trace), \
-          bounds_error=False, fill_value=0.0)
+        f = interp1d(*self.trace(trace), bounds_error=False, \
+          fill_value=0.0)
         return f(t)
 
     def _load_info(self, fld):
@@ -310,7 +304,7 @@ class Datafile(DBObject):
         elif fld == 's-peaks-st' or fld == 's-peaks-en':
             pks = self.getAllChildren('peak')
             if len(pks) > 0:
-                times = [float(pk.getInfo('p-s-time')) for pk in pks]
+                times = [float(pk.get_info('p-s-time')) for pk in pks]
                 self.info['s-peaks-st'] = str(min(times))
                 self.info['s-peaks-en'] = str(max(times))
         elif fld == 's-mz-min' or fld == 's-mz-max':

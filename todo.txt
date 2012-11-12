@@ -1,15 +1,19 @@
 method database
 --method editor
+--automatically load parameters from method if not present in file
 
 compound database
 --spectra tool
-----ability to select ranges of spectra
+----when selecting range of spectra, return average spectra
 ----shift-click with tool to save spectra to current file
 --compound identification
 ----ability to compute numerical match score between spectra
 
 format stuff
 --figure out MS-MS formats
+--finish Agilent MSMS format work
+----MSPeak format
+----display spectra
 --actuals as a trace type (pressure/flow rate/temp)
 --injection size (in file table)
 --display fraction collection data
@@ -20,6 +24,7 @@ chromatogram stuff
 --wavelet integrator
 --remove noise
 --baseline detection (as a trace type?)
+--2D plotting
 
 peak stuff
 --allow peaks to have multiple polygons associated with them (e.g. for each ion)
@@ -38,7 +43,6 @@ user interface
 
 optimization
 --separate thread for database updating
---faster 2D plots (better binning?)
 
 distribution
 --package size on Macs

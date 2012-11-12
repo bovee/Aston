@@ -84,7 +84,7 @@ class AgilentMWD(Datafile.Datafile):
         f.close()
         return wv, data
 
-    def _updateInfoFromFile(self):
+    def _update_info_from_file(self):
         d = {}
         #TODO: fix this so that it doesn't rely upon MWD1A.CH?
         f = open(self.rawdata, 'rb')

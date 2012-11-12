@@ -123,7 +123,7 @@ class AstonDatabase(object):
             data = pack(obj.rawdata)
         else:
             data = obj.rawdata
-        return (obj.type, obj.parent_id, obj.getInfo('name'), info, data)
+        return (obj.type, obj.parent_id, obj.get_info('name'), info, data)
 
     def _getObjFromRow(self, row):
         if row is None:
@@ -137,28 +137,29 @@ class AstonDatabase(object):
         #unpack = lambda r: \
         #  json.loads(zlib.decompress(r).decode('utf-8'))
         info = unpack(row[3])
-        if row[0] in ['peak', 'spectrum']:
+        otype = str(row[0])
+        if otype in ['peak', 'spectrum']:
             data = unpack(row[4])
         else:
             data = str(row[4])
         args = (row[1], row[2], info, data)
-        if row[0] == 'file':
+        if otype == 'file':
             from aston.Datafile import Datafile
             return Datafile(self, *args)
-        elif row[0] == 'peak':
+        elif otype == 'peak':
             from aston.Features import Peak
             return Peak(self, *args)
-        elif row[0] == 'spectrum':
+        elif otype == 'spectrum':
             from aston.Features import Spectrum
             return Spectrum(self, *args)
-        elif row[0] == 'method':
+        elif otype == 'method':
             from aston.Features import Method
             return Method(self, *args)
-        elif row[0] == 'compound':
+        elif otype == 'compound':
             from aston.Features import Compound
             return Compound(self, *args)
         else:
-            return DBObject(row[0], self, *args)
+            return DBObject(otype, self, *args)
 
     def _getDefaultKey(self, key):
         if key == 'main_cols':
@@ -224,9 +225,10 @@ class AstonFileDatabase(AstonDatabase):
         #add the new files into the database
         #TODO: generate projects and project_ids based on folder names?
         for fn in set(datafiles.keys()).difference(dnames):
-            info = {'s-file-type': datafiles[fn], 'traces': 'TIC'}
+            info = {'s-file-type': datafiles[fn], 'traces': 'TIC', \
+              'name': os.path.splitext(os.path.basename(fn))[0]}
             obj = Datafile(self, None, None, info, fn)
-            obj._updateInfoFromFile()
+            obj._update_info_from_file()
             self.addObject(obj)
 
         #TODO: update old database entries with new metadata
@@ -254,19 +256,19 @@ class DBObject(object):
             self.info = info
         self.rawdata = data
 
-    def getInfo(self, fld):
+    def get_info(self, fld):
         if fld not in self.info.keys():
-            self._loadInfo(fld)
+            self._load_info(fld)
 
         if fld in self.info.keys():
             if self.info[fld] != '':
                 return self.info[fld]
-        return self._calcInfo(fld)
+        return self._calc_info(fld)
 
-    def setInfo(self, fld, key):
+    def set_info(self, fld, key):
         self.info[fld] = key
 
-    def delInfo(self, fld):
+    def del_info(self, fld):
         for key in self.info.keys():
             if fld in key:
                 del self.info[key]
@@ -316,8 +318,8 @@ class DBObject(object):
             self.db.addObject(self)
 
     #override in subclasses
-    def _loadInfo(self, fld):
+    def _load_info(self, fld):
         pass
 
-    def _calcInfo(self, fld):
+    def _calc_info(self, fld):
         return ''

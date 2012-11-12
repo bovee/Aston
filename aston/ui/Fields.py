@@ -6,7 +6,6 @@ except:
     u = lambda s: s
     u('')
 
-#TODO: for Python 3, remove all u' prefixes
 aston_groups = {'m':'Method',
           'r':'Run',
           's':'Stats',
