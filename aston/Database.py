@@ -123,7 +123,7 @@ class AstonDatabase(object):
             data = pack(obj.rawdata)
         else:
             data = obj.rawdata
-        return (obj.type, obj.parent_id, obj.get_info('name'), info, data)
+        return (obj.type, obj.parent_id, obj.info['name'], info, data)
 
     def _getObjFromRow(self, row):
         if row is None:
@@ -250,29 +250,8 @@ class DBObject(object):
         self.db_id = db_id
         self.parent_id = parent_id
         self.type = db_type
-        if info is None:
-            self.info = {'name': ''}
-        else:
-            self.info = info
+        self.info = DBDict(self, info)
         self.rawdata = data
-
-    def get_info(self, fld):
-        if fld not in self.info.keys():
-            self._load_info(fld)
-
-        if fld in self.info.keys():
-            if self.info[fld] != '':
-                return self.info[fld]
-        return self._calc_info(fld)
-
-    def set_info(self, fld, key):
-        self.info[fld] = key
-
-    def del_info(self, fld):
-        for key in self.info.keys():
-            if fld in key:
-                del self.info[key]
-        self.saveChanges()
 
     @property
     def parent(self):
@@ -303,7 +282,7 @@ class DBObject(object):
             child_list += child.getAllChildren(cls)
         return child_list
 
-    def saveChanges(self):
+    def save_changes(self):
         """
         Save any changes in this object back to the database.
         """
@@ -323,3 +302,36 @@ class DBObject(object):
 
     def _calc_info(self, fld):
         return ''
+
+
+class DBDict(dict):
+    def __init__(self, dbobj, *args, **kwargs):
+        self._dbobj = dbobj
+        #TODO: check that this next part works
+        if args == [None]:
+            args = [{'name': ''}]
+        return super(DBDict, self).__init__(*args, **kwargs)
+
+    def get(self, key, d=None):
+        if key not in self.keys():
+            self._dbobj._load_info(key)
+
+        if key in self.keys():
+            data = super(DBDict, self).get(key)
+            if data != '':
+                return data
+        data = self._dbobj._calc_info(key)
+        if data != '':
+            return data
+        else:
+            return d
+
+    def __getitem__(self, key):
+        return self.get(key, '')
+
+    def __setitem__(self, key, val):
+        return super(DBDict, self).__setitem__(key, val)
+
+    def __delitem__(self, key):
+        self._dbobj.save_changes()
+        return super(DBDict, self).__delitem__(key)

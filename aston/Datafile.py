@@ -213,8 +213,8 @@ class Datafile(DBObject):
                 topion = 46
             std_specs = [o for o in \
               self.getAllChildren('spectrum') \
-              if o.get_info('sp-type') == 'Isotope Standard']
-            x = [float(o.get_info('sp-time')) for o in std_specs]
+              if o.info['sp-type'] == 'Isotope Standard']
+            x = [float(o.info['sp-time']) for o in std_specs]
             y = [o.ion(topion) / o.ion(44) for o in std_specs]
 
             if len(x) == 0:
@@ -238,11 +238,11 @@ class Datafile(DBObject):
                 except:
                     return False
 
-            val = self.get_info(lookdict[name])
+            val = self.info[lookdict[name]]
             if ',' in val:
                 #turn the time list into a dictionary
                 tpts = dict([tpt.split(':') for tpt in \
-                  self.get_info(lookdict[name]).split(',')])
+                  self.info[lookdict[name]].split(',')])
                 #get the valid times out
                 valid_x = [v for v in tpts if is_num(v)]
                 #generate arrays from them
@@ -304,7 +304,7 @@ class Datafile(DBObject):
         elif fld == 's-peaks-st' or fld == 's-peaks-en':
             pks = self.getAllChildren('peak')
             if len(pks) > 0:
-                times = [float(pk.get_info('p-s-time')) for pk in pks]
+                times = [float(pk.info['p-s-time']) for pk in pks]
                 self.info['s-peaks-st'] = str(min(times))
                 self.info['s-peaks-en'] = str(max(times))
         elif fld == 's-mz-min' or fld == 's-mz-max':

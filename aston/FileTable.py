@@ -93,7 +93,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
                 col_lst = []
                 for col in flds:
                     if col not in ['vis']:
-                        col_lst.append(i.internalPointer().get_info(col))
+                        col_lst.append(i.internalPointer().info[col])
                 row_lst.append('\t'.join(col_lst))
         data = QtCore.QMimeData()
         if incHeaders:
@@ -116,7 +116,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             if obj in self.treehead and new_parent_id is not None:
                 del self.treehead[self.treehead.index(obj)]
             obj.parent_id = new_parent_id
-            obj.saveChanges()
+            obj.save_changes()
         self.endResetModel()
         return True
 
@@ -182,12 +182,12 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             rslt = None
         elif fld == 'vis' and f.db_type == 'file':
             if role == QtCore.Qt.CheckStateRole:
-                if f.get_info('vis') == 'y':
+                if f.info['vis'] == 'y':
                     rslt = QtCore.Qt.Checked
                 else:
                     rslt = QtCore.Qt.Unchecked
         elif role == QtCore.Qt.DisplayRole or role == QtCore.Qt.EditRole:
-            rslt = f.get_info(fld)
+            rslt = f.info[fld]
         elif role == QtCore.Qt.DecorationRole and index.column() == 0:
             #TODO: icon for method, compound
             fname = {'file': 'file.png', 'peak': 'peak.png', \
@@ -216,18 +216,18 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             self.masterWindow.plotData()
         elif col == 'traces' or col[:2] == 't-':
             obj.info[col] = data
-            if obj.get_info('vis') == 'y':
+            if obj.info['vis'] == 'y':
                 self.masterWindow.plotData()
         elif col == 'p-model':
-            obj.set_info(col, data)
+            obj.info[col] = data
             #TODO: update the graph window in place
             #prt = obj.getParentOfType('file')
             #if prt is not None:
             #    if prt.getInfo('vis') == 'y':
             #        self.masterWindow.plotData()
         else:
-            obj.set_info(col, data)
-        obj.saveChanges()
+            obj.info[col] = data
+        obj.save_changes()
         self.dataChanged.emit(index, index)
         return True
 
@@ -345,7 +345,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
 
             pks = []
             dt = pk.parent
-            pk.del_info('p-s-')
+            del pk.info['p-s-']
             info = pk.info
             info['p-int'] = 'split'
             while t < te:
@@ -364,7 +364,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
                 t += SPL
             self.delObjects([pk])
             self.addObjects(dt, pks)
-            dt.del_info('s-peaks')
+            del dt.info['s-peaks']
 
     def rClickHead(self, point):
         menu = QtGui.QMenu(self.treeView)
@@ -468,7 +468,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         for i in range(self.proxyMod.rowCount(node)):
             prjNode = self.proxyMod.index(i, 0, node)
             f = self.proxyMod.mapToSource(prjNode).internalPointer()
-            if f.get_info('vis') == 'y':
+            if f.info['vis'] == 'y':
                 chkFiles.append(f)
             if self.proxyMod.rowCount(prjNode) > 0:
                 chkFiles += self.returnChkFiles(prjNode)
@@ -509,7 +509,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             col_lst = []
             for col in flds:
                 if col not in ['vis']:
-                    col_lst.append(i.get_info(col))
+                    col_lst.append(i.info[col])
             row_lst.append(delim.join(col_lst))
 
         if incHeaders:
