@@ -115,6 +115,8 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             obj = self.db.getObjectByID(db_id)
             if obj in self.treehead and new_parent_id is not None:
                 del self.treehead[self.treehead.index(obj)]
+            if obj not in self.treehead and new_parent_id is None:
+                self.treehead.append(obj)
             obj.parent_id = new_parent_id
             obj.save_changes()
         self.endResetModel()

@@ -93,10 +93,10 @@ class AstonNavBar(NavigationToolbar2QTAgg):
                 pt1 = (event.xdata, event.ydata)
                 pt2 = (self._xypress[0], self._xypress[1])
 
-            verts = [pt1]
             #tme = dt.time(twin=(pt1[0], pt2[0]))
             #verts += zip(tme, dt.trace(ion, twin=(pt1[0], pt2[0])))
             ts = dt.trace(ion, twin=(pt1[0], pt2[0]))
+            verts = [pt1]
             verts += zip(ts.times, ts.data)
             verts += [pt2]
 
