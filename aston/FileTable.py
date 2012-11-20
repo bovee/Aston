@@ -277,31 +277,33 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         sel = self.returnSelFiles()
 
         #Things we can do with peaks
-        peaks = [s for s in sel if s.db_type == 'peak']
-        if len(peaks) > 0:
-            ac = menu.addAction(self.tr('Create Spec.'), self.createSpec)
-            ac.setData(','.join([str(o.db_id) for o in peaks]))
-            ac = menu.addAction(self.tr('Split Peak'), self.splitPeaks)
-            ac.setData(','.join([str(o.db_id) for o in peaks]))
+        fts = [s for s in sel if s.db_type == 'peak']
+        if len(fts) > 0:
+            self._addMenuOpt(self.tr('Create Spec.'), self.createSpec, fts, menu)
+            self._addMenuOpt(self.tr('Split Peak'), self.splitPeaks, fts, menu)
+
+        #Things we can do with files
+        fts = [s for s in sel if s.db_type == 'file']
+        if len(fts) > 0:
+            self._addMenuOpt(self.tr('Copy Method'), self.makeMethod, fts, menu)
 
         #Things we can do with everything
         if len(sel) > 0:
-            ac = menu.addAction(self.tr('Delete Items'), self.deleteItem)
-            ac.setData(','.join([str(o.db_id) for o in sel]))
-            #ac = menu.addAction(self.tr('Debug'), self.debug)
-            #ac.setData(','.join([str(o.db_id) for o in sel]))
+            self._addMenuOpt(self.tr('Delete Items'), self.delObjects, sel, menu)
+            #self._addMenuOpt(self.tr('Debug'), self.debug, sel)
 
         if not menu.isEmpty():
             menu.exec_(self.treeView.mapToGlobal(point))
 
-    def deleteItem(self):
-        db_list = str(self.sender().data()).split(',')
-        objs = [self.db.getObjectByID(int(obj)) for obj in db_list]
-        self.delObjects(objs)
+    def _addMenuOpt(self, name, func, objs, menu):
+        ac = menu.addAction(name, self.rClickMenuHandler)
+        ac.setData((func, objs))
 
-    def debug(self):
-        db_list = str(self.sender().data()).split(',')
-        objs = [self.db.getObjectByID(int(obj)) for obj in db_list]
+    def rClickMenuHandler(self):
+        func, objs = self.sender().data()
+        func(objs)
+
+    def debug(self, objs):
         pks = [o for o in objs if o.db_type == 'peak']
         for pk in pks:
             x = pk.data[:, 0]
@@ -310,16 +312,17 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             plt.plot(x, y, '-')
             self.masterWindow.plotter.canvas.draw()
 
-    def createSpec(self):
-        db_list = str(self.sender().data()).split(',')
-        objs = [self.db.getObjectByID(int(obj)) for obj in db_list]
+    def makeMethod(self, objs):
+        self.masterWindow.cmpd_tab.addObjects(None, objs)
+
+    def createSpec(self, objs):
         for obj in objs:
             self.addObjects(obj, [obj.createSpectrum()])
 
-    def splitPeaks(self):
+    def splitPeaks(self, pks):
         from aston.Features.Peak import Peak
-        db_list = str(self.sender().data()).split(',')
-        pks = [self.db.getObjectByID(int(o)) for o in db_list]
+        #db_list = str(self.sender().data()).split(',')
+        #pks = [self.db.getObjectByID(int(o)) for o in db_list]
         SPO, Cancel = QtGui.QInputDialog.getDouble(self.masterWindow, "Aston", "Slice Offset", 0.0)
         if not Cancel:
             return
@@ -372,10 +375,10 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             grp = fld.split('-')[0]
             if grp in subs:
                 ac = subs[grp].addAction(aston_fields[fld], \
-                                         self.rClickHeadHandler)
+                  self.rClickHeadHandler)
             else:
                 ac = menu.addAction(aston_fields[fld], \
-                                    self.rClickHeadHandler)
+                  self.rClickHeadHandler)
             ac.setData(fld)
             ac.setCheckable(True)
             if fld in self.fields:
@@ -412,8 +415,8 @@ class FileTreeModel(QtCore.QAbstractItemModel):
                 self.endInsertColumns()
         self.enableComboCols()
         self.colsChanged()
-            #FIXME: selection needs to be updated to new col too?
-            #self.treeView.selectionModel().selectionChanged.emit()
+        #FIXME: selection needs to be updated to new col too?
+        #self.treeView.selectionModel().selectionChanged.emit()
 
     def addObjects(self, head, objs):
         if head is None:
