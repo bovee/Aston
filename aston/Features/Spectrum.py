@@ -1,5 +1,5 @@
 import math
-from aston.Database import DBObject
+from aston.Features.DBObject import DBObject
 
 class Spectrum(DBObject):
     def __init__(self, *args, **kwargs):

@@ -19,7 +19,6 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         QtCore.QAbstractItemModel.__init__(self, *args)
 
         self.db = database
-        self.treehead = self.db.getChildren()  # TODO: can this be removed?
         self.masterWindow = masterWindow
         self.fields = json.loads(self.db.getKey('main_cols'))
 
@@ -68,8 +67,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             treeView.resizeColumnToContents(1)
 
     def dragMoveEvent(self, event):
-        #TODO: files should be able to be under peaks
-        #(9/12 - don't understand why this is anymore?)
+        #TODO: files shouldn't be able to be under peaks
         #index = self.proxyMod.mapToSource(self.treeView.indexAt(event.pos()))
         if event.mimeData().hasFormat('application/x-aston-file'):
             QtGui.QTreeView.dragMoveEvent(self.treeView, event)
@@ -113,10 +111,6 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         self.beginResetModel()
         for db_id in [int(i) for i in fids.split(',')]:
             obj = self.db.getObjectByID(db_id)
-            if obj in self.treehead and new_parent_id is not None:
-                del self.treehead[self.treehead.index(obj)]
-            if obj not in self.treehead and new_parent_id is None:
-                self.treehead.append(obj)
             obj.parent_id = new_parent_id
             obj.save_changes()
         self.endResetModel()
@@ -141,8 +135,8 @@ class FileTreeModel(QtCore.QAbstractItemModel):
     def index(self, row, column, parent):
         if row < 0 or column < 0 or column > len(self.fields):
             return QtCore.QModelIndex()
-        elif not parent.isValid() and row < len(self.treehead):
-            return self.createIndex(row, column, self.treehead[row])
+        elif not parent.isValid() and row < len(self.db.root):
+            return self.createIndex(row, column, self.db.root[row])
         elif parent.column() == 0:
             sibs = parent.internalPointer().children
             if row > len(sibs):
@@ -153,21 +147,21 @@ class FileTreeModel(QtCore.QAbstractItemModel):
     def parent(self, index):
         if not index.isValid():
             return QtCore.QModelIndex()
-        elif index.internalPointer() in self.treehead or \
+        elif index.internalPointer() in self.db.root or \
           index.internalPointer() is None:
             return QtCore.QModelIndex()
         else:
             me = index.internalPointer()
             pa = me.parent
             if pa is None:
-                row = self.treehead.index(me)
+                row = self.db.root.index(me)
             else:
                 row = pa.children.index(me)
             return self.createIndex(row, 0, pa)
 
     def rowCount(self, parent):
         if not parent.isValid():
-            return len(self.treehead)
+            return len(self.db.root)
         elif parent.column() == 0:
             return len(parent.internalPointer().children)
         else:
@@ -400,21 +394,21 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         if fld in self.fields:
             indx = self.fields.index(fld)
             self.beginRemoveColumns(QtCore.QModelIndex(), indx, indx)
-            for i in range(len(self.treehead)):
+            for i in range(len(self.db.root)):
                 self.beginRemoveColumns( \
                   self.index(i, 0, QtCore.QModelIndex()), indx, indx)
             self.fields.remove(fld)
-            for i in range(len(self.treehead) + 1):
+            for i in range(len(self.db.root) + 1):
                 self.endRemoveColumns()
         else:
             cols = len(self.fields)
             self.beginInsertColumns(QtCore.QModelIndex(), cols, cols)
-            for i in range(len(self.treehead)):
+            for i in range(len(self.db.root)):
                 self.beginInsertColumns( \
                   self.index(i, 0, QtCore.QModelIndex()), cols, cols)
             self.treeView.resizeColumnToContents(len(self.fields) - 1)
             self.fields.append(fld)
-            for i in range(len(self.treehead) + 1):
+            for i in range(len(self.db.root) + 1):
                 self.endInsertColumns()
         self.enableComboCols()
         self.colsChanged()
@@ -423,7 +417,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
 
     def addObjects(self, head, objs):
         if head is None:
-            row = len(self.treehead)
+            row = len(self.db.root)
         else:
             row = len(head.children)
         self.beginInsertRows(self._objToIndex(head), \
@@ -439,22 +433,20 @@ class FileTreeModel(QtCore.QAbstractItemModel):
 
     def delObjects(self, objs):
         for obj in objs:
-            if obj in self.treehead:
-                row = self.treehead.index(obj)
+            if obj in self.db.root:
+                row = self.db.root.index(obj)
             else:
                 row = obj.parent.children.index(obj)
             self.beginRemoveRows(self._objToIndex(obj.parent), row, row)
             self.db.deleteObject(obj)
-            if obj in self.treehead:
-                del self.treehead[self.treehead.index(obj)]
             self.endRemoveRows()
         self.masterWindow.plotter.remove_peaks(objs)
 
     def _objToIndex(self, obj):
         if obj is None:
             return QtCore.QModelIndex()
-        elif obj in self.treehead:
-            row = self.treehead.index(obj)
+        elif obj in self.db.root:
+            row = self.db.root.index(obj)
         else:
             row = obj.parent.children.index(obj)
         return self.createIndex(row, 0, obj)

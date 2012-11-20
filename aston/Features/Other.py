@@ -1,4 +1,4 @@
-from aston.Database import DBObject
+from aston.Features.DBObject import DBObject
 
 class Method(DBObject):
     def __init__(self, *args, **kwargs):

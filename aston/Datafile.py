@@ -8,7 +8,7 @@ import os.path as op
 import numpy as np
 from scipy.interpolate import interp1d
 from scipy.optimize import leastsq
-from aston.Database import DBObject
+from aston.Features import DBObject
 from aston.FileFormats.FileFormats import ftype_to_class
 from aston.TimeSeries import TimeSeries
 

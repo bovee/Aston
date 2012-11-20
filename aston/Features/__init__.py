@@ -4,3 +4,4 @@
 from aston.Features.Peak import Peak
 from aston.Features.Spectrum import Spectrum
 from aston.Features.Other import Method, Compound
+from aston.Features.DBObject import DBObject

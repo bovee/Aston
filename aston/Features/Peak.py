@@ -1,5 +1,5 @@
 import numpy as np
-from aston.Database import DBObject
+from aston.Features.DBObject import DBObject
 import aston.Math.Peak as peakmath
 from aston.Features.Spectrum import Spectrum
 

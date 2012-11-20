@@ -90,6 +90,10 @@ class AstonDatabase(object):
         c.close()
         del self.objects[self.objects.index(obj)]
 
+    @property
+    def root(self):
+        return self.getChildren()
+
     def getChildren(self, db_id=None):
         if self.objects is None:
             self.reload()
@@ -159,6 +163,7 @@ class AstonDatabase(object):
             from aston.Features import Compound
             return Compound(self, *args)
         else:
+            from aston.Features import DBObject
             return DBObject(otype, self, *args)
 
     def _getDefaultKey(self, key):
@@ -170,9 +175,9 @@ class AstonDatabase(object):
 class AstonFileDatabase(AstonDatabase):
     def __init__(self, *args, **kwargs):
         super(AstonFileDatabase, self).__init__(*args, **kwargs)
-        self.updateFileList(self.database_path)
+        self.update_file_list(self.database_path)
 
-    def updateFileList(self, path):
+    def update_file_list(self, path):
         """
         Makes sure the database is in sync with the file system.
         """
@@ -239,99 +244,8 @@ class AstonFileDatabase(AstonDatabase):
         return ''
 
 
-class DBObject(object):
-    """
-    Master class for peaks, features, and datafiles.
-    """
-    def __init__(self, db_type='none', db=None, db_id=None, \
-      parent_id=None, info=None, data=None):
-        self.db_type = db_type
-        self.db = db
-        self.db_id = db_id
-        self.parent_id = parent_id
-        self.type = db_type
-        self.info = DBDict(self, info)
-        self.rawdata = data
-
-    @property
-    def parent(self):
-        return self.db.getObjectByID(self.parent_id)
-
-    @property
-    def children(self):
-        return self.db.getChildren(self.db_id)
-
-    def getParentOfType(self, cls=None):
-        prt = self.parent
-        if cls is None:
-            return prt
-        while True:
-            if prt is None:
-                return None
-            elif prt.db_type == cls:
-                return prt
-            prt = prt.parent
-
-    def getAllChildren(self, cls=None):
-        if len(self.children) == 0:
-            return []
-        child_list = []
-        for child in self.children:
-            if child.db_type == cls:
-                child_list += [child]
-            child_list += child.getAllChildren(cls)
-        return child_list
-
-    def save_changes(self):
-        """
-        Save any changes in this object back to the database.
-        """
-        if self.db is None:
-            return
-
-        if self.db_id is not None:
-            #update object
-            self.db.updateObject(self)
-        else:
-            #create object
-            self.db.addObject(self)
-
-    #override in subclasses
-    def _load_info(self, fld):
-        pass
-
-    def _calc_info(self, fld):
+class AstonMethodDB(AstonDatabase):
+    def _getDefaultKey(self, key):
+        if key == 'main_cols':
+            return json.dumps(['name'])
         return ''
-
-
-class DBDict(dict):
-    def __init__(self, dbobj, *args, **kwargs):
-        self._dbobj = dbobj
-        #TODO: check that this next part works
-        if args == [None]:
-            args = [{'name': ''}]
-        return super(DBDict, self).__init__(*args, **kwargs)
-
-    def get(self, key, d=None):
-        if key not in self.keys():
-            self._dbobj._load_info(key)
-
-        if key in self.keys():
-            data = super(DBDict, self).get(key)
-            if data != '':
-                return data
-        data = self._dbobj._calc_info(key)
-        if data != '':
-            return data
-        else:
-            return d
-
-    def __getitem__(self, key):
-        return self.get(key, '')
-
-    def __setitem__(self, key, val):
-        return super(DBDict, self).__setitem__(key, val)
-
-    def __delitem__(self, key):
-        self._dbobj.save_changes()
-        return super(DBDict, self).__delitem__(key)
