@@ -1,6 +1,9 @@
 """
 
 """
+import json
+import zlib
+import struct
 import numpy as np
 from scipy.interpolate import interp1d
 
@@ -170,3 +173,27 @@ class TimeSeries(object):
         ions = self.ions + ts.ions
         ts = TimeSeries(data, self.times, ions)
         return ts
+
+    def compress(self):
+        if type(self.data) != np.ndarray:
+            d = self.data.astype(float).toarray().tostring()
+        else:
+            d = self.data.astype(float).tostring()
+        t = self.times.astype(float).tostring()
+        lt = struct.pack('<L', len(t))
+        i = json.dumps(self.ions).encode('utf-8')
+        li = struct.pack('<L', len(i))
+        try:  # python 2
+            return buffer(zlib.compress(li + lt + i + t + d))
+        except NameError:  # python 3
+            return zlib.compress(li + lt + i + t + d)
+
+
+def uncompress_to_ts(zdata):
+    data = zlib.decompress(zdata)
+    li = struct.unpack('<L', data[0:4])[0]
+    lt = struct.unpack('<L', data[4:8])[0]
+    i = json.loads(data[8:8 + li].decode('utf-8'))
+    t = np.fromstring(data[8 + li:8 + li + lt])
+    d = np.fromstring(data[8 + li + lt:])
+    return TimeSeries(d, t, i)

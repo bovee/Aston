@@ -1,8 +1,10 @@
 import time
 import os.path as op
+import numpy as np
 from PyQt4 import QtGui, QtCore
 from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg
 from aston.Features import Peak
+from aston.TimeSeries import TimeSeries
 
 
 class AstonNavBar(NavigationToolbar2QTAgg):
@@ -96,14 +98,14 @@ class AstonNavBar(NavigationToolbar2QTAgg):
             #tme = dt.time(twin=(pt1[0], pt2[0]))
             #verts += zip(tme, dt.trace(ion, twin=(pt1[0], pt2[0])))
             ts = dt.trace(ion, twin=(pt1[0], pt2[0]))
-            verts = [pt1]
-            verts += zip(ts.times, ts.data)
-            verts += [pt2]
+            d = np.vstack([pt1[1], ts.data, pt2[1]])
+            t = np.hstack([pt1[0], ts.times, pt2[0]])
+            new_ts = TimeSeries(d, t, ts.ions)
 
-            info = {'p-type':'Sample', 'p-created':'manual','p-int':'manual'}
+            info = {'p-type': 'Sample', 'p-created': 'manual', 'p-int': 'manual'}
             info['name'] = '{:.2f}-{:.2f}'.format(pt1[0], pt2[0])
             info['p-ion'] = ion
-            pk = Peak(dt.db, None, dt.db_id, info, verts)
+            pk = Peak(dt.db, None, dt.db_id, info, new_ts)
             self.parent.obj_tab.addObjects(dt, [pk])
             del dt.info['s-peaks']
 

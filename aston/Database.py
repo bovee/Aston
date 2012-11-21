@@ -8,6 +8,7 @@ import struct
 import sqlite3
 import json
 import zlib
+from aston.TimeSeries import uncompress_to_ts
 
 
 class AstonDatabase(object):
@@ -118,13 +119,11 @@ class AstonDatabase(object):
 
     def _getRowFromObj(self, obj):
         try:  # python 2/3 code options
-            pack = lambda r: buffer(zlib.compress(json.dumps(r)))
-            pack([])  # have to force the call here
+            info = buffer(zlib.compress(json.dumps(obj.info)))
         except NameError:
-            pack = lambda r: zlib.compress(json.dumps(r).encode('utf-8'))
-        info = pack(obj.info)
+            info = zlib.compress(json.dumps(obj.info).encode('utf-8'))
         if obj.type in ['peak', 'spectrum']:
-            data = pack(obj.rawdata)
+            data = obj.rawdata.compress()
         else:
             data = obj.rawdata
         return (obj.type, obj.parent_id, obj.info['name'], info, data)
@@ -133,17 +132,10 @@ class AstonDatabase(object):
         if row is None:
             return None
 
-        def unpack(r):
-            try:  # TODO: this try is for testing; remove
-                return json.loads(zlib.decompress(r).decode('utf-8'))
-            except:
-                return None
-        #unpack = lambda r: \
-        #  json.loads(zlib.decompress(r).decode('utf-8'))
-        info = unpack(row[3])
+        info = json.loads(zlib.decompress(row[3]).decode('utf-8'))
         otype = str(row[0])
         if otype in ['peak', 'spectrum']:
-            data = unpack(row[4])
+            data = uncompress_to_ts(row[4])
         else:
             data = str(row[4])
         args = (row[1], row[2], info, data)
