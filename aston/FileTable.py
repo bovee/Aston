@@ -215,12 +215,9 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             if obj.info['vis'] == 'y':
                 self.masterWindow.plotData()
         elif col == 'p-model':
-            obj.info[col] = data
-            #TODO: update the graph window in place
-            #prt = obj.getParentOfType('file')
-            #if prt is not None:
-            #    if prt.getInfo('vis') == 'y':
-            #        self.masterWindow.plotData()
+            obj.update_model(data)
+            self.masterWindow.plotter.remove_peaks([obj])
+            self.masterWindow.plotter.add_peaks([obj])
         else:
             obj.info[col] = data
         obj.save_changes()

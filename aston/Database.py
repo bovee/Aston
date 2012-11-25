@@ -8,7 +8,8 @@ import struct
 import sqlite3
 import json
 import zlib
-from aston.TimeSeries import uncompress_to_ts
+from aston.TimeSeries import decompress_to_ts
+from aston.Features.Spectrum import decompress_to_spec
 
 
 class AstonDatabase(object):
@@ -122,8 +123,10 @@ class AstonDatabase(object):
             info = buffer(zlib.compress(json.dumps(obj.info)))
         except NameError:
             info = zlib.compress(json.dumps(obj.info).encode('utf-8'))
-        if obj.type in ['peak', 'spectrum']:
+        if obj.type == 'peak':
             data = obj.rawdata.compress()
+        elif obj.type == 'spectrum':
+            data = obj.compress()
         else:
             data = obj.rawdata
         return (obj.type, obj.parent_id, obj.info['name'], info, data)
@@ -134,8 +137,10 @@ class AstonDatabase(object):
 
         info = json.loads(zlib.decompress(row[3]).decode('utf-8'))
         otype = str(row[0])
-        if otype in ['peak', 'spectrum']:
-            data = uncompress_to_ts(row[4])
+        if otype == 'peak':
+            data = decompress_to_ts(row[4])
+        elif otype == 'spectrum':
+            data = decompress_to_spec(row[4])
         else:
             data = str(row[4])
         args = (row[1], row[2], info, data)

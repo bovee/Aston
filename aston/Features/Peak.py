@@ -2,6 +2,7 @@ import numpy as np
 from aston.Features.DBObject import DBObject
 import aston.Math.Peak as peakmath
 from aston.Features.Spectrum import Spectrum
+from aston.TimeSeries import TimeSeries
 
 
 class Peak(DBObject):
@@ -11,7 +12,7 @@ class Peak(DBObject):
     @property
     def data(self):
         if 'p-model' not in self.info:
-            return np.array(self.rawdata)
+            return self.rawdata
 
         if self.info['p-model'] == 'Normal':
             f = peakmath.gaussian
@@ -22,15 +23,17 @@ class Peak(DBObject):
         elif self.info['p-model'] == 'Lorentzian':
             f = peakmath.lorentzian
         else:
-            return np.array(self.rawdata)
+            return self.rawdata
 
-        times = np.array(self.rawdata)[:, 0]
-        x0 = float(self.info['p-s-time'])
+        times = self.rawdata.times
         y0 = float(self.info['p-s-base'])
+        x0 = float(self.info['p-s-time'])
         h = float(self.info['p-s-height'])
         s = [float(i) for i in self.info['p-s-shape'].split(',')]
         y = h * f(s, times - x0) + y0
-        return np.column_stack((times, y))
+        y[0] = self.rawdata.data[0, 0]
+        y[-1] = self.rawdata.data[-1, 0]
+        return TimeSeries(y, times, ['X'])
 
     def time(self, st_time=None, en_time=None):
         return self._getTimeSlice(np.array(self.rawdata)[:, 0], \
@@ -61,15 +64,15 @@ class Peak(DBObject):
 
     def _load_info(self, fld):
         if fld == 'p-s-area':
-            self.info[fld] = str(peakmath.area(self.data))
+            self.info[fld] = str(peakmath.area(self.as_poly()))
         elif fld == 'p-s-length':
-            self.info[fld] = str(peakmath.length(self.data))
+            self.info[fld] = str(peakmath.length(self.as_poly()))
         elif fld == 'p-s-height':
-            self.info[fld] = str(peakmath.height(self.data))
+            self.info[fld] = str(peakmath.height(self.as_poly()))
         elif fld == 'p-s-time':
-            self.info[fld] = str(peakmath.time(self.data))
+            self.info[fld] = str(peakmath.time(self.as_poly()))
         elif fld == 'p-s-pwhm':
-            self.info[fld] = str(peakmath.length(self.data, pwhm=True))
+            self.info[fld] = str(peakmath.length(self.as_poly(), pwhm=True))
 
     def _calc_info(self, fld):
         if fld == 'p-s-pkcap':
@@ -86,39 +89,42 @@ class Peak(DBObject):
         return ''
 
     def contains(self, x, y):
-        return peakmath.contains(self.data, x, y)
+        return peakmath.contains(self.as_poly(), x, y)
+
+    def as_poly(self):
+        return np.vstack([self.data.times, self.data.data.T]).T
 
     def createSpectrum(self, method=None):
         prt = self.getParentOfType('file')
-        time = peakmath.time(self.data)
+        time = peakmath.time(self.as_poly())
         if method is None:
             data = prt.scan(time)
-            listify = lambda l: [float(i) for i in l]
-            data = [listify(data[0]), listify(data[1])]
+            #listify = lambda l: [float(i) for i in l]
+            #data = listify(data[0]), listify(data[1])
         info = {'sp-time': str(time)}
         return Spectrum(self.db, None, self.db_id, info, data)
 
-    def set_info(self, fld, key):
-        if fld == 'p-model':
-            d = np.array(self.rawdata)
-            self.info['p-model'] = key
-            if key == 'Normal':
-                f = peakmath.gaussian
-            elif key == 'Lognormal':
-                f = peakmath.lognormal
-            elif key == 'Exp Mod Normal':
-                f = peakmath.exp_mod_gaussian
-            elif key == 'Lorentzian':
-                f = peakmath.lorentzian
-            else:
-                f = None
+    def update_model(self, key):
+        t = self.rawdata.times
+        d = self.rawdata.data[:, 0]
+        self.info['p-model'] = key
+        if key == 'Normal':
+            f = peakmath.gaussian
+        elif key == 'Lognormal':
+            f = peakmath.lognormal
+        elif key == 'Exp Mod Normal':
+            f = peakmath.exp_mod_gaussian
+        elif key == 'Lorentzian':
+            f = peakmath.lorentzian
+        else:
+            f = None
 
-            self.delInfo('p-s-')
-            if f is not None:
-                params = peakmath.fit_to(f, d[:, 0], d[:, 1] - d[0, 1])
-                self.info['p-s-time'] = str(params[0])
-                self.info['p-s-height'] = str(params[1])
-                self.info['p-s-base'] = str(d[0, 1])
-                self.info['p-s-shape'] = ','.join([str(i) for i \
-                                                       in params[2:]])
-        super(Peak, self).set_info(fld, key)
+        self.info.del_items('p-s-')
+        if f is not None:
+            base = min(d)
+            params = peakmath.fit_to(f, t, d - base)
+            self.info['p-s-time'] = str(params[0])
+            self.info['p-s-height'] = str(params[1])
+            self.info['p-s-base'] = str(base)
+            self.info['p-s-shape'] = ','.join( \
+              [str(i) for i in params[2:]])

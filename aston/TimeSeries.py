@@ -5,6 +5,7 @@ import json
 import zlib
 import struct
 import numpy as np
+from scipy.sparse import coo_matrix
 from scipy.interpolate import interp1d
 
 
@@ -78,19 +79,30 @@ class TimeSeries(object):
                 data = np.zeros(en_idx - st_idx) * np.nan
             else:
                 data = self.data[st_idx:en_idx, rows].sum(axis=1)
-        return TimeSeries(data, self.times, [val])
+        return TimeSeries(data, self.times[st_idx:en_idx], [val])
 
     def scan(self, time):
         """
         Returns the spectrum from a specific time.
         """
-        times = self.times.copy()
-        idx = (np.abs(times - time)).argmin()
+        idx = (np.abs(self.times - time)).argmin()
         if type(self.data) == np.ndarray:
             ion_abs = self.data[idx, :].copy()
         else:
             ion_abs = self.data[idx, :].astype(float).toarray()[0]
-        return np.array(self.ions), ion_abs
+        #return np.array(self.ions), ion_abs
+        return np.vstack([np.array([float(i) for i in self.ions]), \
+          ion_abs])
+
+    def as_2D(self):
+        ext = (self.times[0], self.times[-1], min(self.ions), max(self.ions))
+        if type(self.data) == np.ndarray:
+            grid = self.data[:, np.argsort(self.ions)].transpose()
+        else:
+            data = self.data[:, 1:].tocoo()
+            data_ions = np.array([self.ions[i] for i in data.col])
+            grid = coo_matrix((data.data, (data_ions, data.row))).toarray()
+        return ext, grid
 
     def retime(self, new_times):
         return TimeSeries(self._retime(self.data), new_times, self.ions)
@@ -189,7 +201,7 @@ class TimeSeries(object):
             return zlib.compress(li + lt + i + t + d)
 
 
-def uncompress_to_ts(zdata):
+def decompress_to_ts(zdata):
     data = zlib.decompress(zdata)
     li = struct.unpack('<L', data[0:4])[0]
     lt = struct.unpack('<L', data[4:8])[0]

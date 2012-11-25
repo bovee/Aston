@@ -369,11 +369,11 @@ class Datafile(DBObject):
 
         return self.data.ions
 
-    def _2D(self, twin=None):
+    def as_2D(self, twin=None):
         """
-        Returns a TimeSeries object summarizing all of the data.
+        Returns a array summarizing all of the data.
         """
-        raise NotImplementedError
+        return self.data.as_2D()
 
     def _total_trace(self, twin=None):
         """
@@ -384,7 +384,7 @@ class Datafile(DBObject):
         if self.data is None:
             self._cache_data()
 
-        return self.data.trace()
+        return self.data.trace(twin=twin)
 
     def _ion_trace(self, val, tol=0.5, twin=None):
         """
@@ -393,7 +393,7 @@ class Datafile(DBObject):
         if self.data is None:
             self._cache_data()
 
-        return self.data.trace(val, tol)
+        return self.data.trace(val, tol, twin=twin)
 
     def _other_trace(self, name, twin=None):
         """

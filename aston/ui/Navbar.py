@@ -95,8 +95,6 @@ class AstonNavBar(NavigationToolbar2QTAgg):
                 pt1 = (event.xdata, event.ydata)
                 pt2 = (self._xypress[0], self._xypress[1])
 
-            #tme = dt.time(twin=(pt1[0], pt2[0]))
-            #verts += zip(tme, dt.trace(ion, twin=(pt1[0], pt2[0])))
             ts = dt.trace(ion, twin=(pt1[0], pt2[0]))
             d = np.vstack([pt1[1], ts.data, pt2[1]])
             t = np.hstack([pt1[0], ts.times, pt2[0]])
@@ -107,7 +105,7 @@ class AstonNavBar(NavigationToolbar2QTAgg):
             info['p-ion'] = ion
             pk = Peak(dt.db, None, dt.db_id, info, new_ts)
             self.parent.obj_tab.addObjects(dt, [pk])
-            del dt.info['s-peaks']
+            dt.info.del_items('s-peaks')
 
         self._xypress = []
         self.release(event)

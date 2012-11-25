@@ -90,6 +90,13 @@ class DBDict(dict):
         else:
             return d
 
+    def del_items(self, fld):
+        #TODO: does invoking del so many times cause a
+        #performance hit because of the save_changes in it?
+        for key in self.keys():
+            if key.startswith(fld):
+                del self[key]
+
     def __getitem__(self, key):
         return self.get(key, '')
 

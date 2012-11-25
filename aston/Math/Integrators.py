@@ -73,7 +73,7 @@ def waveletIntegrate(dt, ion=None):
 
 def statSlopeIntegrate(dt, ion=None):
     t = dt.time()
-    x = dt.trace(ion)
+    x = dt.trace(ion).data.T[0]
     pks = []
 
     dx = np.gradient(x)
@@ -112,15 +112,16 @@ def statSlopeIntegrate(dt, ion=None):
 
         #create a peak and add it to the peak list
         if pt1 != () and pt2 != ():
-            verts = [pt1]
-            verts += zip([float(i) for i in dt.time(pt1[0], pt2[0])], \
-                         dt.trace(ion, pt1[0], pt2[0]))
-            verts += [pt2]
-            info = {'p-type':'Sample', 'p-created':'integrator', \
-                    'p-int':'statslope'}
+            ts = dt.trace(ion, twin=(pt1[0], pt2[0]))
+            #verts = [pt1]
+            #verts += zip([float(i) for i in dt.time(pt1[0], pt2[0])], \
+            #             dt.trace(ion, pt1[0], pt2[0]))
+            #verts += [pt2]
+            info = {'p-type': 'Sample', 'p-created': 'integrator', \
+                    'p-int': 'statslope'}
             info['name'] = '{:.2f}-{:.2f}'.format(pt1[0], pt2[0])
             info['p-ion'] = ion
-            pk = Peak(dt.db, None, dt.db_id, info, verts)
+            pk = Peak(dt.db, None, dt.db_id, info, ts)
             pks.append(pk)
         l_i = i
     return pks

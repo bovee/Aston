@@ -1,6 +1,5 @@
 import numpy as np
 import scipy.interpolate
-import scipy.sparse
 from aston.ui.Navbar import AstonNavBar
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg
@@ -163,13 +162,7 @@ class Plotter(object):
         if dt.data is None:
             dt._cache_data()
 
-        ext = (dt.data[0, 0], dt.data[-1, 0], min(dt.ions), max(dt.ions))
-        if type(dt.data) is np.ndarray:
-            grid = dt.data[:, [0] + list(np.argsort(dt.ions) + 1)].transpose()
-        else:
-            data = dt.data[:, 1:].tocoo()
-            data_ions = np.array([dt.ions[i] for i in data.col])
-            grid = scipy.sparse.coo_matrix((data.data, (data_ions, data.row))).toarray()
+        ext, grid = dt.as_1D()
 
         img = self.plt.imshow(grid, origin='lower', aspect='auto', \
           extent=ext, cmap=self._color)
@@ -259,7 +252,7 @@ class Plotter(object):
                 fid = pk.getParentOfType('file').db_id
                 c, a = self.pk_clr_idx[fid]
 
-                self.patches[pk.db_id] = patches.PathPatch(Path(pk.data), \
+                self.patches[pk.db_id] = patches.PathPatch(Path(pk.as_poly()), \
                   facecolor=desaturate(c, 0.2), alpha=a, lw=0)
                 self.plt.add_patch(self.patches[pk.db_id])
         self.redraw()

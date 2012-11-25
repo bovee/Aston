@@ -186,7 +186,7 @@ class AstonWindow(QtGui.QMainWindow):
             #pks = waveletIntegrate(dt, ion)
             pks = statSlopeIntegrate(dt, ion)
             self.obj_tab.addObjects(dt, pks)
-        dt.delInfo('s-peaks')
+        dt.info.del_items('s-peaks')
         self.plotter.redraw()
 
     def showFilterWindow(self):
