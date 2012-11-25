@@ -451,6 +451,23 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             row = obj.parent.children.index(obj)
         return self.createIndex(row, 0, obj)
 
+    def active_file(self):
+        """
+        Returns the file currently selected in the file list.
+        If that file is not visible, return the topmost visible file.
+        Used for determing which spectra to display on right click, etc.
+        """
+        dt = self.returnSelFile()
+        if dt is not None:
+            if dt.db_type == 'file' and dt.info['vis'] == 'y':
+                return dt
+
+        dts = self.returnChkFiles()
+        if len(dts) == 0:
+            return None
+        else:
+            return dts[0]
+
     def returnChkFiles(self, node=None):
         """
         Returns the files checked as visible in the file list.

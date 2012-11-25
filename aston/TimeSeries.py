@@ -115,6 +115,10 @@ class TimeSeries(object):
               bounds_error=False, fill_value=0.0)(new_times)
             return np.apply_along_axis(f, 0, self.data)
 
+    def adjust_time(self, offset=0.0, scale=1.0):
+        t = scale * self.times + offset
+        return TimeSeries(self.data, t, self.ions)
+
     def apply_fxn(self, f):
         import inspect
         try:

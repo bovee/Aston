@@ -60,10 +60,6 @@ class Datafile(DBObject):
             #all other cases, just return the total trace
             ts = self._total_trace(twin=twin)
 
-        if 't-scale' in self.info:
-            ts.times *= float(self.info['t-scale'])
-        if 't-offset' in self.info:
-            ts.times += float(self.info['t-offset'])
         if 't-yscale' in self.info:
             ts *= float(self.info['t-yscale'])
         if 't-yoffset' in self.info:
@@ -83,7 +79,10 @@ class Datafile(DBObject):
                 sord = self.info['t-smooth-order']
                 if wnd.isdigit() and sord.isdigit():
                     ts = self._apply_fxn(ts, 'savitskygolay', wnd, sord)
-        return ts
+
+        offset = float(self.info.get('t-offset', 0.0))
+        scale = float(self.info.get('t-scale', 1.0))
+        return ts.adjust_time(offset, scale)
 
     def _parse_ion_string(self, istr, twin=None):
         """

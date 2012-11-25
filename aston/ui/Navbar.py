@@ -1,7 +1,7 @@
 import time
 import os.path as op
 import numpy as np
-from PyQt4 import QtGui, QtCore
+from PyQt4 import QtGui #, QtCore
 from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg
 from aston.Features import Peak
 from aston.TimeSeries import TimeSeries
@@ -69,10 +69,8 @@ class AstonNavBar(NavigationToolbar2QTAgg):
     def release_peak(self, event):
         if event.button != 1 or self.mode != 'peak':
             return
-        dt = self.parent.obj_tab.returnSelFile()
+        dt = self.parent.obj_tab.active_file()
         if dt is None:
-            return
-        if dt.db_type != 'file' or dt.info['vis'] == 'n':
             return
         if time.time() - self.ev_time < 1:
             self.ev_time = time.time()
@@ -133,10 +131,8 @@ class AstonNavBar(NavigationToolbar2QTAgg):
         self.set_message(self.mode)
 
     def press_align(self, event):
-        dt = self.parent.obj_tab.returnSelFile()
+        dt = self.parent.obj_tab.active_file()
         if dt is None:
-            return
-        if dt.db_type != 'file' or dt.info['vis'] == 'n':
             return
         if event.button == 1:
             try:
@@ -158,27 +154,27 @@ class AstonNavBar(NavigationToolbar2QTAgg):
                 y = 1 / event.ydata
         self._xypress = x, y
 
-    def drag_align(self,event):
-        if self._xypress is []:
+    def drag_align(self, event):
+        if self._xypress == []:
             return
         if event.xdata is None or event.ydata is None:
             return
-        dt = self.parent.obj_tab.returnSelFile()
-        if dt is None:
-            return
+        dt = self.parent.obj_tab.active_file()
         if event.button == 1:
             dt.info['t-offset'] = str(self._xypress[0] + event.xdata)
             dt.info['t-yoffset'] = str(self._xypress[1] + event.ydata)
         elif event.button == 3:
             dt.info['t-scale'] = str(self._xypress[0] * event.xdata)
             dt.info['t-yscale'] = str(self._xypress[1] * event.ydata)
+        print dt.info['t-offset'], dt.info['t-yoffset']
         self.parent.plotData(updateBounds=False)
 
     def release_align(self, event):
-        if self._xypress is None:
+        if self._xypress == []:
             return
-        dt = self.parent.obj_tab.returnSelFile()
-        dt.saveChanges()
+        print 'release'
+        dt = self.parent.obj_tab.active_file()
+        dt.save_changes()
         self._xypress = []
         self.release(event)
 
@@ -208,10 +204,8 @@ class AstonNavBar(NavigationToolbar2QTAgg):
             return
         #TODO: figure out how to make shift-click save to database
         #get the specral data of the current point
-        cur_file = self.parent.obj_tab.returnSelFile()
+        cur_file = self.parent.obj_tab.active_file()
         if cur_file is None:
-            return
-        if cur_file.info['vis'] != 'y':
             return
         scan = cur_file.scan(event.xdata)
 

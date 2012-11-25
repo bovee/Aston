@@ -96,6 +96,13 @@ def lognormal(p, t):
 
 def exp_mod_gaussian(p, t):
     #http://en.wikipedia.org/wiki/Exponentially_modified_Gaussian_distribution
+
+    #FIXME: this
+    #/home/roderick/Documents/2012/Aston/aston/Math/Peak.py:105: RuntimeWarning: invalid value encountered in double_scalars
+    #  return (w ** 1.5) / (1.414214 * s) * exp_t * erf_t
+    #/usr/lib/python2.7/site-packages/scipy/optimize/minpack.py:393: RuntimeWarning: Number of calls to function has reached maxfev = 1000.
+    #  warnings.warn(errors[info][0], RuntimeWarning)
+    #
     from scipy.special import erfc
     w = p[0]
     s = p[1]

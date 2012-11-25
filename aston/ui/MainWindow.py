@@ -199,7 +199,7 @@ class AstonWindow(QtGui.QMainWindow):
         Delete all of the info keys related to display transformations.
         """
         for dt in self.obj_tab.returnSelFiles('file'):
-            dt.delInfo('t-')
+            dt.info.del_items('t-')
         self.plotData()
 
     def plotData(self, **kwargs):
