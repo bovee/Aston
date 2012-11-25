@@ -191,10 +191,10 @@ class AgilentMSMSScan(Datafile.Datafile):
             tic.append(z)
         return TimeSeries(np.array(tic), np.array(tme), ['TIC'])
 
-    def _cache_data(self):
-        if self.data is not None:
-            return
+    def _ion_trace(self, val, tol=0.5, twin=None):
+        pass
 
+    def scan(self, time, to_time=None):
         #super hack-y way to disable checksum and length checking
         gzip.GzipFile._read_eof = lambda _: None
         # standard prefix for every zip chunk
@@ -202,12 +202,22 @@ class AgilentMSMSScan(Datafile.Datafile):
         uncompress = lambda d: gzip.GzipFile(fileobj=io.BytesIO(d)).read()
         f = open(op.join(op.split(self.rawdata)[0], 'MSProfile.bin'), 'rb')
 
-        for off, bc, pc in self._msscan_iter(['SpectrumOffset', \
-          'ByteCount', 'PointCount']):
-            f.seek(off)
-            profdata = uncompress(gzprefix + f.read(bc))
-            pd = struct.unpack('dd' + pc * 'i', profdata)
+        time_dist = np.inf
+        for t, off, bc, pc, minx, maxx in self._msscan_iter( \
+          ['ScanTime', 'SpectrumOffset', 'ByteCount', \
+          'PointCount', 'MinX', 'MaxX']):
+            if time_dist > np.abs(t - time):
+                time_dist = np.abs(t - time)
+                s_p = (off, bc, pc, minx, maxx)
+            else:
+                off, bc, pc, minx, maxx = s_p
+                f.seek(off)
+                profdata = uncompress(gzprefix + f.read(bc))
+                pd = struct.unpack('dd' + pc * 'i', profdata)
+                break
         f.close()
+        ions = np.linspace(minx, maxx, len(pd) - 2)
+        return np.vstack([ions, pd[2:]])
 
     def _update_info_from_file(self):
         d = {}

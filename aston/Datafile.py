@@ -345,8 +345,7 @@ class Datafile(DBObject):
         if self.data is None:
             self._cache_data()
 
-        time = self._sc_off(time)
-        return self.data.scan(time)
+        return self.data.scan(self._sc_off(time))
 
     def _const(self, val, twin=None):
         """

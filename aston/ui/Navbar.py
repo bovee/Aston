@@ -166,13 +166,11 @@ class AstonNavBar(NavigationToolbar2QTAgg):
         elif event.button == 3:
             dt.info['t-scale'] = str(self._xypress[0] * event.xdata)
             dt.info['t-yscale'] = str(self._xypress[1] * event.ydata)
-        print dt.info['t-offset'], dt.info['t-yoffset']
         self.parent.plotData(updateBounds=False)
 
     def release_align(self, event):
         if self._xypress == []:
             return
-        print 'release'
         dt = self.parent.obj_tab.active_file()
         dt.save_changes()
         self._xypress = []
