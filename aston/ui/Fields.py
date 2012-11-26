@@ -4,7 +4,6 @@ try:
     u('')
 except:
     u = lambda s: s
-    u('')
 
 aston_groups = {'m':'Method',
           'r':'Run',
@@ -34,9 +33,9 @@ aston_fields = {
         'm-slv-B':'Solvent B',
         'm-slv-B-per':'% Solvent B', #type = time-dict
         'm-slv-C':'Solvent C',
-        'm-slv-B-per':'% Solvent C', #type = time-dict
+        'm-slv-C-per':'% Solvent C', #type = time-dict
         'm-slv-D':'Solvent D',
-        'm-slv-B-per':'% Solvent D', #type = time-dict
+        'm-slv-D-per':'% Solvent D', #type = time-dict
         'm-detect':'Detector Type',
         'm-uv':'UV Wavelengths',
         'm-ms-int-mode':'MS Interface Mode',

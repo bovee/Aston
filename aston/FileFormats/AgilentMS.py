@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import struct
 import numpy as np
 import scipy
@@ -174,7 +175,6 @@ class AgilentMSMSScan(Datafile.Datafile):
         f.seek(start_offset)
 
         loc = [fnames.index(k) for k in keylist]
-        d = []
         while True:
             try:
                 data = struct.unpack(rec_str, f.read(sz))
@@ -221,11 +221,34 @@ class AgilentMSMSScan(Datafile.Datafile):
 
     def _update_info_from_file(self):
         d = {}
-        #d['name'] = str(f.read(struct.unpack('>B',f.read(1))[0]).strip())
-        #d['r-opr'] = str(f.read(struct.unpack('>B',f.read(1))[0]))
-        #d['m'] = str(f.read(struct.unpack('>B',f.read(1))[0]))
-        #d['r-date'] = str(f.read(struct.unpack('>B', f.read(1))[0]))
-        #d['r-type'] = 'Sample'
+        try:
+            u = lambda s: s.decode('utf-8')
+            u('')
+        except:
+            u = lambda s: s
+
+        xml_file = op.join(op.dirname(self.rawdata), 'sample_info.xml')
+        r = ElementTree.parse(xml_file).getroot()
+        info = dict((i.find('Name').text, i.find('Value').text) \
+          for i in r.findall('Field'))
+        d['name'] = info.get('Sample Name', '')
+        d['r-vial-pos'] = info.get('Sample Position', '')
+        d['r-inst'] = info.get('InstrumentName', '')
+        d['r-opr'] = info.get('OperatorName', '')
+        d['r-date'] = info.get('AcqTime', '')
+        d['m-inj-size'] = info.get(u('Inj Vol (µl)'), '')
+
+        xml_file = op.join(op.dirname(self.rawdata), 'acqmethod.xml')
+        r = ElementTree.parse(xml_file).getroot()
+        d['m-len'] = r.find('.//CapPump//Stoptime').text
+        d['m-flw'] = r.find('.//CapPump//Flow').text
+        d['m-slv'] = r.find('.//CapPump//SolvNameA').text
+        d['m-slv-B'] = r.find('.//CapPump//SolvNameB').text
+        d['m-slv-B-per'] = r.find('.//CapPump//SolvRatioB').text
+        d['m-slv-C'] = r.find('.//CapPump//SolvNameC').text
+        d['m-slv-D'] = r.find('.//CapPump//SolvNameD').text
+        d['m-tmp'] = r.find('.//TCC//LeftTemp').text
+
         self.info.update(d)
 
     def _other_trace(self, name):
