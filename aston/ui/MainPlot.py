@@ -162,7 +162,7 @@ class Plotter(object):
         if dt.data is None:
             dt._cache_data()
 
-        ext, grid = dt.as_1D()
+        ext, grid = dt.as_2D()
 
         img = self.plt.imshow(grid, origin='lower', aspect='auto', \
           extent=ext, cmap=self._color)

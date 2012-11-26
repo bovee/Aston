@@ -63,15 +63,19 @@ class SpecPlotter(object):
             except:
                 clr = 'black'
 
-            #TODO: display UV spectra as continuous lines
             #add the spectral lines (and little points!)
-            try:
-                #FIXME: this crashes on Windows unless the user has clicked on
-                #the spectrum graph previously. Matplotlib bug, needs workaround
-                self.plt.vlines(scn[0], 0, scn[1], color=clr, alpha=0.5)
-            except:
-                pass
-            self.plt.plot(scn[0], scn[1], ',', color=clr)
+            if scn.shape[1] > 10 and np.all(np.diff(scn[0]) - \
+              (scn[0, 1] - scn[0, 0]) < 1e-9):
+                #if the spacing between all the points is equal, plot as a line
+                self.plt.plot(scn[0], scn[1], '-', color=clr)
+            else:
+                try:
+                    #FIXME: this crashes on Windows unless the user has clicked on
+                    #the spectrum graph previously. Matplotlib bug, needs workaround
+                    self.plt.vlines(scn[0], 0, scn[1], color=clr, alpha=0.5)
+                except:
+                    pass
+                self.plt.plot(scn[0], scn[1], ',', color=clr)
 #            self.plt.set_ylim(bottom=0)
 
             if scn_nm in self.scansToLbl:
