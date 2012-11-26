@@ -178,7 +178,7 @@ class AstonWindow(QtGui.QMainWindow):
 
     def quickIntegrate(self):
         #TODO: group peaks by time
-        dt = self.obj_tab.returnSelFile()
+        dt = self.obj_tab.active_file()
         ions = [i for i in dt.info['traces'].split(',')]
 
         #add compounds for ions from the first set

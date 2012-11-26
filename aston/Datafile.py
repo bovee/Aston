@@ -217,7 +217,7 @@ class Datafile(DBObject):
                 p, succ = leastsq(errfunc, p0, args=(np.array(x), np.array(y)))
             except:
                 p = p0
-            return TimeSeries(np.array(errfunc(p, t, self._const(0.0))), t, [name])
+            return TimeSeries(np.array(errfunc(p, t, np.zeros(len(t)))), t, [name])
         elif name in lookdict:
             #we can store time-series data as a list of timepoints
             #in certain info fields and query it here
@@ -269,10 +269,10 @@ class Datafile(DBObject):
         """
         time = self._sc_off(time)
 
-        t = self.time()
-        f = interp1d(*self.trace(trace), bounds_error=False, \
-          fill_value=0.0)
-        return f(t)
+        ts = self.trace(trace)
+        f = interp1d(ts.times, ts.data.T, \
+          bounds_error=False, fill_value=0.0)
+        return f(time)[0]
 
     def _load_info(self, fld):
         #create the key if it doesn't yet exist

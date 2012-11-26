@@ -33,17 +33,17 @@ class Spectrum(DBObject):
 
     def d13C(self):
         dt = self.getParentOfType('file')
-        if self.getInfo('sp-type') == 'Isotope Standard':
+        if self.info['sp-type'] == 'Isotope Standard':
             return dt.info['r-d13c-std']
 
         # if there's no reference number, we can't do this
         try:
-            float(dt.getInfo('r-d13c-std'))
+            float(dt.info['r-d13c-std'])
         except:
             return ''
 
         r45std = dt.get_point('r45std', float(self.info['sp-time']))
-        r46std = dt.get_point('r45std', float(self.info['sp-time']))
+        r46std = dt.get_point('r46std', float(self.info['sp-time']))
 
         # if no peak has been designated as a isotope std
         if r45std == 0.0:
