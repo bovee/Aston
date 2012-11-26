@@ -9,7 +9,6 @@ import numpy as np
 from scipy.interpolate import interp1d
 from scipy.optimize import leastsq
 from aston.Features import DBObject
-from aston.FileFormats.FileFormats import ftype_to_class
 from aston.TimeSeries import TimeSeries
 
 
@@ -18,13 +17,6 @@ class Datafile(DBObject):
     Generic chromatography data containter. This abstacts away
     the implementation details of the specific file formats.
     """
-    def __new__(cls, db, db_id, parent_id, info, data):
-        if 's-file-type' not in info:
-            return None
-        ncls = ftype_to_class(info['s-file-type'])
-        args = (db, db_id, parent_id, info, data)
-        return super(Datafile, cls).__new__(ncls, *args)
-
     def __init__(self, *args, **kwargs):
         super(Datafile, self).__init__('file', *args, **kwargs)
         #self._update_info_from_file()

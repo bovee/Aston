@@ -1,5 +1,4 @@
 import numpy as np
-import scipy.interpolate
 from aston.ui.Navbar import AstonNavBar
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg
@@ -30,7 +29,7 @@ class Plotter(object):
 
         #TODO: find a way to make the axes fill the figure properly
         #tfig.subplots_adjust(left=0.05, right=0.95, bottom=0.05, top=0.95)
-        tfig.tight_layout(pad=2)
+        #tfig.tight_layout(pad=2)
 
         self.canvas.mpl_connect('button_press_event', self.mousedown)
         self.canvas.mpl_connect('button_release_event', self.mouseup)
@@ -78,7 +77,15 @@ class Plotter(object):
         # clean up anything on the graph already
         self.plt.cla()
         if self.cb is not None:
-            self.plt.figure.delaxes(self.cb.ax)
+            #TODO: make this not horrific!
+            #the next two lines used to work?
+            #self.plt.figure.delaxes(self.cb.ax)
+            #self.cb = None
+            tfig = self.plt.figure
+            tfig.clf()
+            self.plt = tfig.add_subplot(111, frameon=False)
+            self.plt.xaxis.set_ticks_position('none')
+            self.plt.yaxis.set_ticks_position('none')
             self.cb = None
         self.plt.figure.subplots_adjust(left=0.05, right=0.95)
         self.pk_clr_idx = {}
@@ -108,7 +115,7 @@ class Plotter(object):
 
     def _plot(self, datafiles):
         """
-        Plots 2D times series on the graph.
+        Plots times series on the graph.
         """
 
         # make up a factor to separate traces by
@@ -117,9 +124,9 @@ class Plotter(object):
             sc_factor = (max(fts.data[:, 0]) - min(fts.data[:, 0])) / 5.
 
         # count the number of traces that will be displayed
-        ts = sum(1 for x in datafiles for _ in x.info['traces'].split(','))
-        if ts < 6:
-            alpha = 0.75 - ts * 0.1
+        trs = sum(1 for x in datafiles for _ in x.info['traces'].split(','))
+        if trs < 6:
+            alpha = 0.75 - trs * 0.1
         else:
             alpha = 0.15
 
@@ -135,14 +142,14 @@ class Plotter(object):
                 if 'stacked' in self.style:
                     trace += tnum * sc_factor
                 # stretch out the color spectrum if there are under 7
-                if ts > 7:
+                if trs > 7:
                     c = self._color(int(tnum % 7) / 6.0, 1)
-                elif ts == 1:
+                elif trs == 1:
                     c = self._color(0, 1)
                 else:
-                    c = self._color(int(tnum % ts) / float(ts - 1), 1)
+                    c = self._color(int(tnum % trs) / float(trs - 1), 1)
                 ls = self._linestyle[int(np.floor((tnum % 28) / 7))]
-                nm = dt.info['name'] + ' ' + y
+                nm = dt.info['name'].strip('_') + ' ' + y
                 self.plt.plot(ts.times, trace, color=c, \
                   ls=ls, lw=1.2, label=nm)
                 tnum += 1
@@ -151,7 +158,6 @@ class Plotter(object):
         #add a legend and make it pretty
         if 'legend' in self.style:
             leg = self.plt.legend(frameon=False)
-            #leg.get_frame().edgecolor = None
             clrs = [i.get_color() for i in leg.get_lines()]
             for i, j in enumerate(clrs):
                 leg.get_texts()[i].set_color(j)

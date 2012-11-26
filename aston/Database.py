@@ -8,6 +8,7 @@ import struct
 import sqlite3
 import json
 import zlib
+from aston.FileFormats.FileFormats import ftype_to_class
 from aston.TimeSeries import decompress_to_ts
 from aston.Features.Spectrum import decompress_to_spec
 
@@ -145,8 +146,7 @@ class AstonDatabase(object):
             data = str(row[4])
         args = (row[1], row[2], info, data)
         if otype == 'file':
-            from aston.Datafile import Datafile
-            return Datafile(self, *args)
+            return ftype_to_class(info['s-file-type'])(self, *args)
         elif otype == 'peak':
             from aston.Features import Peak
             return Peak(self, *args)
@@ -179,7 +179,6 @@ class AstonFileDatabase(AstonDatabase):
         Makes sure the database is in sync with the file system.
         """
         from aston.FileFormats.FileFormats import guess_filetype
-        from aston.Datafile import Datafile
 
         #TODO: this needs to run in a separate thread
         #extract a list of lists of file names in my directory
@@ -229,7 +228,8 @@ class AstonFileDatabase(AstonDatabase):
         for fn in set(datafiles.keys()).difference(dnames):
             info = {'s-file-type': datafiles[fn], 'traces': 'TIC', \
               'name': os.path.splitext(os.path.basename(fn))[0]}
-            obj = Datafile(self, None, None, info, fn)
+            args = (None, None, info, fn)
+            obj = ftype_to_class(info['s-file-type'])(self, *args)
             obj._update_info_from_file()
             self.addObject(obj)
 
