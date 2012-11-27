@@ -170,7 +170,7 @@ class AgilentMSMSScan(Datafile.Datafile):
         rec_str = '<' + ffrmts
         sz = struct.calcsize(rec_str)
 
-        f.seek(0x0058)
+        f.seek(0x58)
         start_offset = struct.unpack('<i', f.read(4))[0]
         f.seek(start_offset)
 
@@ -192,9 +192,35 @@ class AgilentMSMSScan(Datafile.Datafile):
         return TimeSeries(np.array(tic), np.array(tme), ['TIC'])
 
     def _ion_trace(self, val, tol=0.5, twin=None):
-        pass
+        #super hack-y way to disable checksum and length checking
+        gzip.GzipFile._read_eof = lambda _: None
+        # standard prefix for every zip chunk
+        gzprefix = b'\x1f\x8b\x08\x00\x00\x00\x00\x00\x04\x00'
+        uncompress = lambda d: gzip.GzipFile(fileobj=io.BytesIO(d)).read()
+        f = open(op.join(op.split(self.rawdata)[0], 'MSProfile.bin'), 'rb')
+
+        tme = []
+        ic = []
+        sminx, smaxx = np.inf, np.inf
+        for t, off, bc, pc, minx, maxx in self._msscan_iter( \
+          ['ScanTime', 'SpectrumOffset', 'ByteCount', \
+          'PointCount', 'MinX', 'MaxX']):
+            tme.append(t)
+            f.seek(off)
+            profdata = uncompress(gzprefix + f.read(bc))
+            pd = np.array(struct.unpack('dd' + pc * 'i', profdata)[2:])
+            if sminx != minx or smaxx != maxx:
+                ions = np.linspace(minx, maxx, len(pd))
+                ion_loc = np.logical_and(ions > val - tol, \
+                  ions < val + tol)
+                sminx, smaxx = minx, maxx
+            ic.append(sum(pd[ion_loc]))
+
+        f.close()
+        return TimeSeries(np.array(ic), np.array(tme), [val])
 
     def scan(self, time, to_time=None):
+        #TODO: support time ranges
         #super hack-y way to disable checksum and length checking
         gzip.GzipFile._read_eof = lambda _: None
         # standard prefix for every zip chunk
@@ -213,11 +239,11 @@ class AgilentMSMSScan(Datafile.Datafile):
                 off, bc, pc, minx, maxx = s_p
                 f.seek(off)
                 profdata = uncompress(gzprefix + f.read(bc))
-                pd = struct.unpack('dd' + pc * 'i', profdata)
+                pd = struct.unpack('dd' + pc * 'i', profdata)[2:]
                 break
         f.close()
-        ions = np.linspace(minx, maxx, len(pd) - 2)
-        return np.vstack([ions, pd[2:]])
+        ions = np.linspace(minx, maxx, len(pd))
+        return np.vstack([ions, pd])
 
     def _update_info_from_file(self):
         d = {}
