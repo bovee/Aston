@@ -41,10 +41,10 @@ class FileTreeModel(QtCore.QAbstractItemModel):
 
             #set up right-clicking
             treeView.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-            treeView.customContextMenuRequested.connect(self.rClickMenu)
+            treeView.customContextMenuRequested.connect(self.click_main)
             treeView.header().setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
             treeView.header().customContextMenuRequested.connect( \
-              self.rClickHead)
+              self.click_head)
             treeView.header().setStretchLastSection(False)
 
             #set up drag and drop
@@ -80,24 +80,13 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         types.append('application/x-aston-file')
         return types
 
-    def mimeData(self, indexList, incHeaders=False):
-        row_lst = []
-        id_lst = []
-        flds = [self.fields[self.treeView.header().logicalIndex(fld)] \
-                    for fld in range(len(self.fields))]
-        for i in indexList:
-            if i.column() == 0:
-                id_lst.append(str(i.internalPointer().db_id))
-                col_lst = []
-                for col in flds:
-                    if col not in ['vis']:
-                        col_lst.append(i.internalPointer().info[col])
-                row_lst.append('\t'.join(col_lst))
+    def mimeData(self, indexList):
         data = QtCore.QMimeData()
-        if incHeaders:
-            data.setText(','.join(flds) + '\n' + '\n'.join(row_lst))
-        else:
-            data.setText('\n'.join(row_lst))
+        objs = [i.internalPointer() for i in indexList \
+          if i.column() == 0]
+        data.setText(self.items_as_csv(objs))
+
+        id_lst = [str(o.db_id) for o in objs]
         data.setData('application/x-aston-file', ','.join(id_lst))
         return data
 
@@ -194,7 +183,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
 
     def headerData(self, col, orientation, role):
         if orientation == QtCore.Qt.Horizontal and \
-                  role == QtCore.Qt.DisplayRole:
+          role == QtCore.Qt.DisplayRole:
             if self.fields[col] in aston_fields:
                 return aston_fields[self.fields[col]]
             else:
@@ -268,7 +257,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
                     for fld in range(len(self.fields))]
         self.db.setKey('main_cols', json.dumps(flds))
 
-    def rClickMenu(self, point):
+    def click_main(self, point):
         #index = self.proxyMod.mapToSource(self.treeView.indexAt(point))
         menu = QtGui.QMenu(self.treeView)
         sel = self.returnSelFiles()
@@ -276,27 +265,27 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         #Things we can do with peaks
         fts = [s for s in sel if s.db_type == 'peak']
         if len(fts) > 0:
-            self._addMenuOpt(self.tr('Create Spec.'), self.createSpec, fts, menu)
-            self._addMenuOpt(self.tr('Split Peak'), self.splitPeaks, fts, menu)
+            self._add_menu_opt(self.tr('Create Spec.'), self.createSpec, fts, menu)
+            self._add_menu_opt(self.tr('Split Peak'), self.splitPeaks, fts, menu)
 
         #Things we can do with files
         fts = [s for s in sel if s.db_type == 'file']
         if len(fts) > 0:
-            self._addMenuOpt(self.tr('Copy Method'), self.makeMethod, fts, menu)
+            self._add_menu_opt(self.tr('Copy Method'), self.makeMethod, fts, menu)
 
         #Things we can do with everything
         if len(sel) > 0:
-            self._addMenuOpt(self.tr('Delete Items'), self.delObjects, sel, menu)
-            #self._addMenuOpt(self.tr('Debug'), self.debug, sel)
+            self._add_menu_opt(self.tr('Delete Items'), self.delObjects, sel, menu)
+            #self._add_menu_opt(self.tr('Debug'), self.debug, sel)
 
         if not menu.isEmpty():
             menu.exec_(self.treeView.mapToGlobal(point))
 
-    def _addMenuOpt(self, name, func, objs, menu):
-        ac = menu.addAction(name, self.rClickMenuHandler)
+    def _add_menu_opt(self, name, func, objs, menu):
+        ac = menu.addAction(name, self.click_handler)
         ac.setData((func, objs))
 
-    def rClickMenuHandler(self):
+    def click_handler(self):
         func, objs = self.sender().data()
         func(objs)
 
@@ -362,7 +351,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             self.addObjects(dt, pks)
             del dt.info['s-peaks']
 
-    def rClickHead(self, point):
+    def click_head(self, point):
         menu = QtGui.QMenu(self.treeView)
         subs = dict([(n, QtGui.QMenu(menu)) for n in aston_groups])
 
@@ -372,10 +361,10 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             grp = fld.split('-')[0]
             if grp in subs:
                 ac = subs[grp].addAction(aston_fields[fld], \
-                  self.rClickHeadHandler)
+                  self.click_head_handler)
             else:
                 ac = menu.addAction(aston_fields[fld], \
-                  self.rClickHeadHandler)
+                  self.click_head_handler)
             ac.setData(fld)
             ac.setCheckable(True)
             if fld in self.fields:
@@ -387,7 +376,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
 
         menu.exec_(self.treeView.mapToGlobal(point))
 
-    def rClickHeadHandler(self):
+    def click_head_handler(self):
         fld = str(self.sender().data())
         if fld == 'name':
             return
@@ -512,15 +501,14 @@ class FileTreeModel(QtCore.QAbstractItemModel):
                 files.append(obj)
         return files
 
-    def itemsAsCSV(self, itms, delim=',', incHeaders=True):
+    def items_as_csv(self, itms, delim=',', incHeaders=True):
         flds = [self.fields[self.treeView.header().logicalIndex(fld)] \
-                    for fld in range(len(self.fields))]
+          for fld in range(len(self.fields))]
         row_lst = []
+        block_col = ['vis']
         for i in itms:
-            col_lst = []
-            for col in flds:
-                if col not in ['vis']:
-                    col_lst.append(i.info[col])
+            col_lst = [i.info[col] for col in flds \
+              if col not in block_col]
             row_lst.append(delim.join(col_lst))
 
         if incHeaders:
