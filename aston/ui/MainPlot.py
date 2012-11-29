@@ -11,6 +11,7 @@ class Plotter(object):
     def __init__(self, masterWindow, style='default', scheme='Spectral'):
         self.masterWindow = masterWindow
         self.style = style
+        self.legend = False
 
         plotArea = masterWindow.ui.plotArea
 
@@ -156,7 +157,7 @@ class Plotter(object):
             self.pk_clr_idx[dt.db_id] = (c, alpha)
 
         #add a legend and make it pretty
-        if 'legend' in self.style:
+        if self.legend:
             leg = self.plt.legend(frameon=False)
             clrs = [i.get_color() for i in leg.get_lines()]
             for i, j in enumerate(clrs):
@@ -172,7 +173,7 @@ class Plotter(object):
 
         img = self.plt.imshow(grid, origin='lower', aspect='auto', \
           extent=ext, cmap=self._color)
-        if 'legend' in self.style:
+        if self.legend:
             self.cb = self.plt.figure.colorbar(img)
 
     def redraw(self):

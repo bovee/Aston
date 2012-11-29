@@ -53,6 +53,7 @@ class AstonWindow(QtGui.QMainWindow):
         self.ui.spectraDockWidget.visibilityChanged.connect(self.updateWindowsMenu)
         self.ui.methodDockWidget.visibilityChanged.connect(self.updateWindowsMenu)
         self.ui.compoundDockWidget.visibilityChanged.connect(self.updateWindowsMenu)
+        self.ui.settingsDockWidget.setVisible(False)
         self.ui.compoundDockWidget.setVisible(False)
         self.ui.methodDockWidget.setVisible(False)
 
@@ -63,14 +64,18 @@ class AstonWindow(QtGui.QMainWindow):
         self.plotter = Plotter(self)
         self.specplotter = SpecPlotter(self)
 
-        #add stuff to the combo boxes
-        self.ui.colorSchemeComboBox.addItems(self.plotter.availColors())
-        self.ui.styleComboBox.addItems(self.plotter.availStyles())
+        #flesh out the settings menu
+        color_menu = QtGui.QMenu(self.ui.menuSettings)
+        self._add_opts_to_menu(color_menu, \
+          self.plotter.availColors(), self.set_color_scheme)
+        self.ui.actionColor_Scheme.setMenu(color_menu)
 
-        #make the buttons update the graph
-        self.ui.legendCheckBox.clicked.connect(self.plotData)
-        self.ui.colorSchemeComboBox.currentIndexChanged.connect(self.plotData)
-        self.ui.styleComboBox.currentIndexChanged.connect(self.plotData)
+        self.ui.actionLegend.triggered.connect(self.set_legend)
+
+        style_menu = QtGui.QMenu(self.ui.menuSettings)
+        self._add_opts_to_menu(style_menu, \
+          self.plotter.availStyles(), self.set_graph_style)
+        self.ui.actionGraph_Style.setMenu(style_menu)
 
         #set up the list of files in the current directory
         self.directory = self.getPref('Default.FILE_DIRECTORY')
@@ -82,6 +87,17 @@ class AstonWindow(QtGui.QMainWindow):
         #set up the compound database
         cmpd_db = AstonDatabase(self.getPref('Default.COMPOUND_DB'))
         self.cmpd_tab = FileTreeModel(cmpd_db, self.ui.compoundTreeView, self)
+
+    def _add_opts_to_menu(self, menu, opts, fxn):
+        menu_gp = QtGui.QActionGroup(self)
+        for opt in opts:
+            act = menu.addAction(opt, fxn)
+            act.setData(opt)
+            act.setCheckable(True)
+            if opts.index(opt) == 0:
+                act.setChecked(True)
+            menu_gp.addAction(act)
+        pass
 
     def updateWindows(self):
         """
@@ -133,18 +149,17 @@ class AstonWindow(QtGui.QMainWindow):
         self.obj_tab = FileTreeModel(file_db, self.ui.fileTreeView, self)
         self.plotData()
 
-    def exportChromatogramAsCSV(self):
-        #FIXME: obsolete, needs to be in exportChromatogram
-        fname = str(QtGui.QFileDialog.getSaveFileName(self, "Save As..."))
-        f = open(fname, 'w')
-        dt = self.obj_tab.returnSelFile()
-        a = [['"Time"'] + [str(i) for i in dt.time()]]
-        for x in dt.info['traces'].split(','):
-            if x != '':
-                a += [['"' + x + '"'] + [str(i) for i in cgrm.trace(x)]]
-        for i in zip(*a):
-            f.write(','.join(i) + '\n')
-        f.close()
+    def set_color_scheme(self):
+        self.plotter.setColorScheme(self.sender().data())
+        self.plotData()
+
+    def set_legend(self):
+        self.plotter.legend = self.ui.actionLegend.isChecked()
+        self.plotData()
+
+    def set_graph_style(self):
+        self.plotter.style = str(self.sender().data()).lower()
+        self.plotData()
 
     def exportSpectrumAsCSV(self):
         #FIXME: obsolete, needs to be integrated into exportSpectrum
@@ -216,11 +231,6 @@ class AstonWindow(QtGui.QMainWindow):
         self.plotData()
 
     def plotData(self, **kwargs):
-        self.plotter.setColorScheme(self.ui.colorSchemeComboBox.currentText())
-        self.plotter.style = str(self.ui.styleComboBox.currentText()).lower()
-        if self.ui.legendCheckBox.isChecked():
-            self.plotter.style += ' legend'
-
         datafiles = self.obj_tab.returnChkFiles()
 
         if 'updateBounds' in kwargs:

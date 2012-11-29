@@ -94,10 +94,20 @@
     <addaction name="actionMethods"/>
     <addaction name="actionCompounds"/>
    </widget>
+   <widget class="QMenu" name="menuSettings">
+    <property name="title">
+     <string>Settings</string>
+    </property>
+    <addaction name="actionGraph_Style"/>
+    <addaction name="actionLegend"/>
+    <addaction name="actionColor_Scheme"/>
+    <addaction name="actionPeak_Labels"/>
+   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuIntegrate"/>
    <addaction name="menuSpectrum"/>
    <addaction name="menuPeaks"/>
+   <addaction name="menuSettings"/>
    <addaction name="menuWindows"/>
    <addaction name="menuHelp"/>
   </widget>
@@ -147,57 +157,6 @@
        <property name="fieldGrowthPolicy">
         <enum>QFormLayout::ExpandingFieldsGrow</enum>
        </property>
-       <item row="1" column="0">
-        <widget class="QLabel" name="label_2">
-         <property name="text">
-          <string>Legend</string>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="1">
-        <widget class="QCheckBox" name="legendCheckBox">
-         <property name="text">
-          <string/>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="0">
-        <widget class="QLabel" name="styleLabel">
-         <property name="text">
-          <string>Graph Style</string>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="1">
-        <widget class="QComboBox" name="styleComboBox">
-         <property name="duplicatesEnabled">
-          <bool>false</bool>
-         </property>
-         <property name="frame">
-          <bool>true</bool>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="1">
-        <widget class="QComboBox" name="colorSchemeComboBox"/>
-       </item>
-       <item row="2" column="0">
-        <widget class="QLabel" name="colorSchemeLabel">
-         <property name="text">
-          <string>Color Scheme</string>
-         </property>
-        </widget>
-       </item>
-       <item row="3" column="1">
-        <widget class="QComboBox" name="labelPeaksComboBox"/>
-       </item>
-       <item row="3" column="0">
-        <widget class="QLabel" name="labelPeaksLabel">
-         <property name="text">
-          <string>Label Peaks</string>
-         </property>
-        </widget>
-       </item>
       </layout>
      </item>
     </layout>
@@ -432,7 +391,7 @@
     <bool>true</bool>
    </property>
    <property name="checked">
-    <bool>true</bool>
+    <bool>false</bool>
    </property>
    <property name="text">
     <string>Settings</string>
@@ -479,6 +438,32 @@
   <action name="actionAll_Items_as_CSV">
    <property name="text">
     <string>All Items as CSV</string>
+   </property>
+  </action>
+  <action name="actionGraph_Style">
+   <property name="text">
+    <string>Graph Style</string>
+   </property>
+  </action>
+  <action name="actionLegend">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Legend</string>
+   </property>
+  </action>
+  <action name="actionColor_Scheme">
+   <property name="text">
+    <string>Color Scheme</string>
+   </property>
+  </action>
+  <action name="actionPeak_Labels">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Peak Labels</string>
    </property>
   </action>
  </widget>
