@@ -161,7 +161,20 @@ class AstonWindow(QtGui.QMainWindow):
 
     def exportChromatogram(self):
         fname = str(QtGui.QFileDialog.getSaveFileName(self, "Save As..."))
-        self.plotter.plt.get_figure().savefig(fname, transparent=True)
+        if fname[-4:].lower() == '.csv':
+            #TODO: fix exporting chromatograms as CSV
+            dt = self.obj_tab.active_file()
+            f = open(fname, 'w')
+            a = [['"Time"'] + [str(i) for i in dt.time()]]
+            for ion in dt.info['traces'].split(','):
+                if ion != '':
+                    a += [['"' + ion + '"'] + [str(i) for ion in dt.trace(ion)]]
+            for i in zip(*a):
+                f.write(','.join(i) + '\n')
+            f.close()
+            pass
+        else:
+            self.plotter.plt.get_figure().savefig(fname, transparent=True)
 
     def exportSpectrum(self):
         fname = str(QtGui.QFileDialog.getSaveFileName(self, "Save As..."))
