@@ -18,9 +18,9 @@ class AstonWindow(QtGui.QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
-        ##my icon! TODO: make an icon
-        #icn_path = op.join(op.curdir,'aston','ui','icons','aston.png')
-        #self.setIcon(QtGui.QIcon(icn_path))
+        #my icon!
+        icn_path = op.join(op.curdir, 'aston', 'ui', 'icons', 'logo.png')
+        self.setWindowIcon(QtGui.QIcon(icn_path))
 
         #quick fix for Mac OS menus
         self.ui.actionSettings.setMenuRole(QtGui.QAction.NoRole)
