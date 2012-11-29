@@ -10,17 +10,21 @@
 0.5 Checklist
 *************
 
-* icon for Aston
 * AIA/CDF and RAW file support
 * Agilent .REG scraping
-  - fraction collection display
+  - fraction collection
   - pressure/flow rate/temp
-* MSMS points on graph / MSMS data display
+* display extras on graph
+  - fraction collection windows
+  - MSMS points on graph / MSMS data display
+  - test descriptions of method params on graph?
 * Agilent MSMS Peak file format
 * Bruker MSMS spectra
 * Method Database
 * setting to allow run info to be loaded from method DB
-* wavelet integration
+* more integrators
+  - wavelet integration
+  - integrate by fraction collection windows
 * finish trace selector dialog
   - delete items from ion list
   - low-high error checking for ranges, make sure ions are numbers, etc
