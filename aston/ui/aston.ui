@@ -50,12 +50,19 @@
     <property name="title">
      <string>Chromatogram</string>
     </property>
-    <addaction name="actionIntegrate"/>
-    <addaction name="actionIntegrate_2"/>
+    <widget class="QMenu" name="menuIntegrator">
+     <property name="title">
+      <string>Integrate</string>
+     </property>
+     <addaction name="actionIntegrateSimple"/>
+     <addaction name="actionIntegrateStatSlope"/>
+     <addaction name="actionIntegrateWavelet"/>
+    </widget>
+    <addaction name="actionQuickIntegrate"/>
+    <addaction name="menuIntegrator"/>
     <addaction name="actionIntegration_Parameters"/>
     <addaction name="separator"/>
     <addaction name="actionAutoAlignChromatogram"/>
-    <addaction name="actionSubtractAddChromatogram"/>
     <addaction name="actionEditFilters"/>
     <addaction name="actionRevert"/>
    </widget>
@@ -76,14 +83,6 @@
      <string>Help</string>
     </property>
    </widget>
-   <widget class="QMenu" name="menuPeaks">
-    <property name="title">
-     <string>Peaks</string>
-    </property>
-    <addaction name="actionCalculate_Isotopic"/>
-    <addaction name="actionExport_Peak_List"/>
-    <addaction name="actionIdentify"/>
-   </widget>
    <widget class="QMenu" name="menuWindows">
     <property name="title">
      <string>Windows</string>
@@ -98,15 +97,37 @@
     <property name="title">
      <string>Settings</string>
     </property>
+    <widget class="QMenu" name="menuPeaks">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="title">
+      <string>Peaks</string>
+     </property>
+     <addaction name="actionPeaksHide"/>
+     <addaction name="actionPeaksShow"/>
+     <addaction name="actionPeaksShowLabels"/>
+    </widget>
+    <widget class="QMenu" name="menuExtras">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="title">
+      <string>Extras</string>
+     </property>
+     <addaction name="actionGraphFxnCollection"/>
+     <addaction name="actionGraphMSMS"/>
+     <addaction name="actionGraphMethodDetails"/>
+    </widget>
     <addaction name="actionGraph_Style"/>
     <addaction name="actionLegend"/>
     <addaction name="actionColor_Scheme"/>
-    <addaction name="actionPeak_Labels"/>
+    <addaction name="menuPeaks"/>
+    <addaction name="menuExtras"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuIntegrate"/>
    <addaction name="menuSpectrum"/>
-   <addaction name="menuPeaks"/>
    <addaction name="menuSettings"/>
    <addaction name="menuWindows"/>
    <addaction name="menuHelp"/>
@@ -153,11 +174,37 @@
    <widget class="QWidget" name="dockWidgetContents_3">
     <layout class="QHBoxLayout" name="horizontalLayout_4">
      <item>
-      <layout class="QFormLayout" name="filterLayout">
-       <property name="fieldGrowthPolicy">
-        <enum>QFormLayout::ExpandingFieldsGrow</enum>
+      <widget class="QToolBox" name="toolBox">
+       <property name="currentIndex">
+        <number>1</number>
        </property>
-      </layout>
+       <widget class="QWidget" name="page">
+        <property name="geometry">
+         <rect>
+          <x>0</x>
+          <y>0</y>
+          <width>72</width>
+          <height>159</height>
+         </rect>
+        </property>
+        <attribute name="label">
+         <string>Integration</string>
+        </attribute>
+       </widget>
+       <widget class="QWidget" name="page_2">
+        <property name="geometry">
+         <rect>
+          <x>0</x>
+          <y>0</y>
+          <width>72</width>
+          <height>159</height>
+         </rect>
+        </property>
+        <attribute name="label">
+         <string>File Locations</string>
+        </attribute>
+       </widget>
+      </widget>
      </item>
     </layout>
    </widget>
@@ -254,25 +301,12 @@
     <string>Quit</string>
    </property>
   </action>
-  <action name="actionIntegrate">
-   <property name="text">
-    <string>Quick Integrate</string>
-   </property>
-  </action>
   <action name="actionIntegration_Parameters">
    <property name="enabled">
     <bool>false</bool>
    </property>
    <property name="text">
     <string>Integration Parameters</string>
-   </property>
-  </action>
-  <action name="actionIntegrate_2">
-   <property name="enabled">
-    <bool>false</bool>
-   </property>
-   <property name="text">
-    <string>Integrate</string>
    </property>
   </action>
   <action name="actionSearch_Database">
@@ -458,12 +492,72 @@
     <string>Color Scheme</string>
    </property>
   </action>
-  <action name="actionPeak_Labels">
+  <action name="actionIntegrateStatSlope">
+   <property name="text">
+    <string>StatSlope</string>
+   </property>
+  </action>
+  <action name="actionIntegrateWavelet">
+   <property name="text">
+    <string>Wavelet</string>
+   </property>
+  </action>
+  <action name="actionPeaksHide">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Hide</string>
+   </property>
+  </action>
+  <action name="actionPeaksShow">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show</string>
+   </property>
+  </action>
+  <action name="actionPeaksShowLabels">
+   <property name="text">
+    <string>Show with Labels</string>
+   </property>
+  </action>
+  <action name="actionGraphFxnCollection">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Fraction Collection</string>
+   </property>
+  </action>
+  <action name="actionGraphMSMS">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>MS-MS</string>
+   </property>
+  </action>
+  <action name="actionIntegrateSimple">
    <property name="enabled">
     <bool>false</bool>
    </property>
    <property name="text">
-    <string>Peak Labels</string>
+    <string>Simple</string>
+   </property>
+  </action>
+  <action name="actionGraphMethodDetails">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Method Details</string>
+   </property>
+  </action>
+  <action name="actionQuickIntegrate">
+   <property name="text">
+    <string>Quick Integrate</string>
    </property>
   </action>
  </widget>

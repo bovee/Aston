@@ -37,7 +37,7 @@ class AstonWindow(QtGui.QMainWindow):
         self.ui.actionExportChromatogram.triggered.connect(self.exportChromatogram)
         self.ui.actionExportSpectra.triggered.connect(self.exportSpectrum)
         self.ui.actionExportSelectedItems.triggered.connect(self.exportItems)
-        self.ui.actionIntegrate.triggered.connect(self.quickIntegrate)
+        self.ui.actionQuickIntegrate.triggered.connect(self.quickIntegrate)
         self.ui.actionEditFilters.triggered.connect(self.showFilterWindow)
         self.ui.actionRevert.triggered.connect(self.revertChromChange)
         self.ui.actionQuit.triggered.connect(QtGui.qApp.quit)
