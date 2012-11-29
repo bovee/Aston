@@ -105,10 +105,10 @@ class TimeSeries(object):
         return ext, grid
 
     def retime(self, new_times):
-        return TimeSeries(self._retime(self.data), new_times, self.ions)
+        return TimeSeries(self._retime(new_times), new_times, self.ions)
 
     def _retime(self, new_times):
-        if new_times == self.times:
+        if np.all(np.equal(new_times, self.times)):
             return self.data
         else:
             f = lambda d: interp1d(self.times, d, \
@@ -184,6 +184,8 @@ class TimeSeries(object):
         return self._apply_data(lambda x, y: abs(x), None)
 
     def __and__(self, ts):
+        if ts is None:
+            return self
         #TODO: merge the ions together if they're the same
         data = np.hstack([self.data, ts._retime(self.times)])
         ions = self.ions + ts.ions

@@ -161,39 +161,44 @@ class AstonWindow(QtGui.QMainWindow):
         self.plotter.style = str(self.sender().data()).lower()
         self.plotData()
 
-    def exportSpectrumAsCSV(self):
-        #FIXME: obsolete, needs to be integrated into exportSpectrum
-        fname = str(QtGui.QFileDialog.getSaveFileName(self, "Save As..."))
-        f = open(fname, 'w')
-        cgrm = self.obj_tab.returnSelFile()
-        scan = cgrm.scan(self.spec_line.get_xdata()[0])
-        mz, abun = scan.keys(), scan.values()
-        a = [['mz', 'abun']]
-        a += zip([str(i) for i in mz], [str(i) for i in abun])
-        for i in a:
-            f.write(','.join(i) + '\n')
-        f.close()
-
     def exportChromatogram(self):
-        fname = str(QtGui.QFileDialog.getSaveFileName(self, "Save As..."))
-        if fname[-4:].lower() == '.csv':
-            #TODO: fix exporting chromatograms as CSV
+        fopts = self.tr("Bitmap Image (*.png *.pgf *.raw *rgba);;Vector Image (*.svg *.emf *.eps *.pdf *.ps *.svgz);;Comma-Delimited Text (*.csv)")
+        fname = str(QtGui.QFileDialog.getSaveFileName(self, self.tr("Save As..."), filter=fopts))
+        if fname == '':
+            return
+        elif fname[-4:].lower() == '.csv':
             dt = self.obj_tab.active_file()
-            f = open(fname, 'w')
-            a = [['"Time"'] + [str(i) for i in dt.time()]]
+            ts = None
             for ion in dt.info['traces'].split(','):
-                if ion != '':
-                    a += [['"' + ion + '"'] + [str(i) for ion in dt.trace(ion)]]
-            for i in zip(*a):
-                f.write(','.join(i) + '\n')
-            f.close()
-            pass
+                if ts is None:
+                    ts = dt.trace(ion)
+                else:
+                    ts &= dt.trace(ion)
+
+            with open(fname, 'w') as f:
+                f.write('Time,' + ','.join(ts.ions) + ',\n')
+                for t, d in zip(ts.times, ts.data):
+                    f.write(str(t) + ',' + ','.join(str(i) \
+                      for i in d) + '\n')
         else:
             self.plotter.plt.get_figure().savefig(fname, transparent=True)
 
     def exportSpectrum(self):
-        fname = str(QtGui.QFileDialog.getSaveFileName(self, "Save As..."))
-        self.specplotter.plt.get_figure().savefig(fname, transparent=True)
+        #TODO: this needs to be updated when SpecPlot becomes better
+        fopts = self.tr("Bitmap Image (*.png *.pgf *.raw *rgba);;Vector Image (*.svg *.emf *.eps *.pdf *.ps *.svgz);;Comma-Delimited Text (*.csv)")
+        fname = str(QtGui.QFileDialog.getSaveFileName(self, self.tr("Save As..."), filter=fopts))
+        if fname == '':
+            return
+        elif fname[-4:].lower() == '.csv':
+            if '' not in self.specplotter.scans:
+                return
+            with open(fname, 'w') as f:
+                scan = self.specplotter.scans['']
+                f.write('mz,abun\n')
+                for mz, abun in scan.T:
+                    f.write(str(mz) + ',' + str(abun) + '\n')
+        else:
+            self.specplotter.plt.get_figure().savefig(fname, transparent=True)
 
     def exportItems(self):
         #TODO: options for exporting different delimiters (e.g. tab) or
@@ -201,7 +206,7 @@ class AstonWindow(QtGui.QMainWindow):
         fname = str(QtGui.QFileDialog.getSaveFileName(self, "Save As..."))
         f = open(fname, 'w')
         sel = self.obj_tab.returnSelFiles()
-        f.write(self.obj_tab.itemsAsCSV(sel))
+        f.write(self.obj_tab.items_as_csv(sel))
         f.close()
 
     def quickIntegrate(self):
