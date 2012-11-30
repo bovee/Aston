@@ -62,9 +62,8 @@ class FileTreeModel(QtCore.QAbstractItemModel):
 
             #prettify
             treeView.collapseAll()
-            treeView.expandToDepth(0)
-            treeView.resizeColumnToContents(0)
-            treeView.resizeColumnToContents(1)
+            treeView.setColumnWidth(0, 300)
+            treeView.setColumnWidth(1, 60)
 
     def dragMoveEvent(self, event):
         #TODO: files shouldn't be able to be under peaks

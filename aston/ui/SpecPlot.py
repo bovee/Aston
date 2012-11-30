@@ -19,6 +19,7 @@ class SpecPlotter(object):
         self.canvas = FigureCanvasQTAgg(bfig)
         specArea.addWidget(self.canvas)
 
+        #TODO: next line is slowest in module
         self.plt = bfig.add_subplot(111, frameon=False)
         self.plt.xaxis.set_ticks_position('bottom')
         self.plt.yaxis.set_ticks_position('none')

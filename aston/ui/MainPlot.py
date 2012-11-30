@@ -23,6 +23,7 @@ class Plotter(object):
         plotArea.addWidget(self.navbar)
         plotArea.addWidget(self.canvas)
 
+        #TODO this next line is the slowest in this module
         self.plt = tfig.add_subplot(111, frameon=False)
         self.plt.xaxis.set_ticks_position('none')
         self.plt.yaxis.set_ticks_position('none')

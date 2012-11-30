@@ -1,7 +1,6 @@
 0.4 Checklist
 *************
 
-* fix CSV export of chromatograms and spectra
 * open mzML & mzXML
 * save mzML & mzXML
 * allow selection of spectra ranges (by averaging)

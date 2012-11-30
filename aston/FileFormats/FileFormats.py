@@ -1,3 +1,12 @@
+#TODO:.BAF : Bruker instrument data format
+#TODO:.FID : Bruker instrument data format
+#TODO:.PKL : MassLynx associated format
+#TODO:.RAW : Micromass MassLynx directory format
+#TODO:.WIFF: ABI/Sciex (QSTAR and QTRAP instrument) format
+#TODO:.YEP : Bruker instrument data format
+#TODO:.RAW : PerkinElmer TurboMass file format
+
+
 def file_adaptors():
     from aston.FileFormats.AgilentMS \
       import AgilentMS, AgilentMSMSScan
@@ -29,16 +38,11 @@ def ftype_to_class(ftype):
     return None
 
 
-def guess_filetype(ext, magic=None):
-    #TODO:.BAF : Bruker instrument data format
-    #TODO:.FID : Bruker instrument data format
-    #TODO:.PKL : MassLynx associated format
-    #TODO:.RAW : Micromass MassLynx directory format
-    #TODO:.WIFF: ABI/Sciex (QSTAR and QTRAP instrument) format
-    #TODO:.YEP : Bruker instrument data format
-    #TODO:.RAW : PerkinElmer TurboMass file format
-
+def ext_to_classtable():
+    lookup = {}
     for cls in file_adaptors():
-        if ext == cls.ext and (magic == cls.mgc or cls.mgc is None):
-            return cls.__name__
-    return None
+        if cls.mgc is None:
+            lookup[cls.ext] = cls.__name__
+        else:
+            lookup[cls.ext + '.' + str(cls.mgc)] = cls.__name__
+    return lookup

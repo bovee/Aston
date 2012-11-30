@@ -91,6 +91,4 @@ class BrukerMSMS(Datafile.Datafile):
         #self.ions = [1]
 
     def _update_info_from_file(self):
-        d = {}
-        d['r-type'] = 'Sample'
-        self.info.update(d)
+        self.info.update({'r-type': 'Sample'})

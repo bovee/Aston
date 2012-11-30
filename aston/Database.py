@@ -11,6 +11,7 @@ import zlib
 from aston.FileFormats.FileFormats import ftype_to_class
 from aston.TimeSeries import decompress_to_ts
 from aston.Features.Spectrum import decompress_to_spec
+from aston.FileFormats.FileFormats import ext_to_classtable
 
 
 class AstonDatabase(object):
@@ -178,7 +179,7 @@ class AstonFileDatabase(AstonDatabase):
         """
         Makes sure the database is in sync with the file system.
         """
-        from aston.FileFormats.FileFormats import guess_filetype
+        ext2ftype = ext_to_classtable()
 
         #TODO: this needs to run in a separate thread
         #extract a list of lists of file names in my directory
@@ -204,7 +205,11 @@ class AstonFileDatabase(AstonDatabase):
                 except IOError:
                     ext = ''
 
-                ftype = guess_filetype(ext, magic)
+                #ftype = guess_filetype(ext, magic)
+                if magic is not None:
+                    if ext + '.' + str(magic) in ext2ftype:
+                        ftype = ext2ftype[ext + '.' + str(magic)]
+                ftype = ext2ftype.get(ext, None)
 
                 #if it's a supported file, add it in
                 if ftype is not None:
