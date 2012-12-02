@@ -59,7 +59,9 @@ class Plotter(object):
             'Cool': 'cool',
             'Copper': 'copper',
             'Jet': 'jet',
-            'Paired': 'Paired'
+            'Paired': 'Paired',
+            'White-Black': 'binary',
+            'Black-White': 'gray'
             }
         self._linestyle = ['-', '--', ':', '-.']
         self.setColorScheme(scheme)
