@@ -5,6 +5,7 @@ from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg
 from matplotlib.path import Path
 import matplotlib.patches as patches
 import matplotlib.pyplot as plt
+from PyQt4.QtCore import Qt
 
 
 class Plotter(object):
@@ -33,6 +34,7 @@ class Plotter(object):
         #tfig.subplots_adjust(left=0.05, right=0.95, bottom=0.05, top=0.95)
         #tfig.tight_layout(pad=2)
 
+        self.canvas.setFocusPolicy(Qt.ClickFocus)
         self.canvas.mpl_connect('button_press_event', self.mousedown)
         self.canvas.mpl_connect('button_release_event', self.mouseup)
         self.canvas.mpl_connect('scroll_event', self.mousescroll)

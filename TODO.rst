@@ -3,8 +3,6 @@
 
 * open mzML & mzXML
 * save mzML & mzXML
-* allow selection of spectra ranges (by averaging)
-* shift-click save spectra to current file
 
 0.5 Checklist
 *************

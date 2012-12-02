@@ -229,6 +229,7 @@ class AgilentMSMSScan(Datafile.Datafile):
         f = open(op.join(op.split(self.rawdata)[0], 'MSProfile.bin'), 'rb')
 
         time_dist = np.inf
+        time = self._sc_off(time)
         for t, off, bc, pc, minx, maxx in self._msscan_iter( \
           ['ScanTime', 'SpectrumOffset', 'ByteCount', \
           'PointCount', 'MinX', 'MaxX']):

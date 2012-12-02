@@ -1,9 +1,9 @@
 import time
 import os.path as op
 import numpy as np
-from PyQt4 import QtGui #, QtCore
+from PyQt4 import QtGui  # , QtCore
 from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg
-from aston.Features import Peak
+from aston.Features import Peak, Spectrum
 from aston.TimeSeries import TimeSeries
 
 
@@ -195,17 +195,18 @@ class AstonNavBar(NavigationToolbar2QTAgg):
         if event.button != 1 or self.mode != 'spectrum':
             return
         self._xypress = event.xdata, event.ydata
-        #TODO: enable spectra collection over a range
 
     def release_spectrum(self, event):
         if event.button != 1 or self.mode != 'spectrum':
             return
-        #TODO: figure out how to make shift-click save to database
         #get the specral data of the current point
-        cur_file = self.parent.obj_tab.active_file()
-        if cur_file is None:
+        dt = self.parent.obj_tab.active_file()
+        if dt is None:
             return
-        scan = cur_file.scan(event.xdata)
+        if event.xdata == self._xypress[0]:
+            scan = dt.scan(self._xypress[0])
+        else:
+            scan = dt.scan(self._xypress[0], to_time=event.xdata)
 
         self.parent.specplotter.addSpec(scan)
         self.parent.specplotter.plotSpec()
@@ -213,6 +214,10 @@ class AstonNavBar(NavigationToolbar2QTAgg):
 
         # draw a line on the main plot for the location
         self.parent.plotter.draw_spec_line(self._xypress[0], event.xdata, linestyle='-')
+        if event.key == 'shift':
+            info = {'name': str(self._xypress[0])}
+            spc = Spectrum(dt.db, None, dt.db_id, info, scan)
+            self.parent.obj_tab.addObjects(dt, [spc])
         self._xypress = []
 
     def disconnect_all(self):

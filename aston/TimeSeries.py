@@ -81,18 +81,28 @@ class TimeSeries(object):
                 data = self.data[st_idx:en_idx, rows].sum(axis=1)
         return TimeSeries(data, self.times[st_idx:en_idx], [val])
 
-    def scan(self, time):
+    def scan(self, time, to_time=None):
         """
         Returns the spectrum from a specific time.
         """
         idx = (np.abs(self.times - time)).argmin()
-        if type(self.data) == np.ndarray:
-            ion_abs = self.data[idx, :].copy()
+        if to_time is None:
+            if type(self.data) == np.ndarray:
+                ion_abs = self.data[idx, :].copy()
+            else:
+                ion_abs = self.data[idx, :].astype(float).toarray()[0]
+            #return np.array(self.ions), ion_abs
+            return np.vstack([np.array([float(i) for i in self.ions]), \
+              ion_abs])
         else:
-            ion_abs = self.data[idx, :].astype(float).toarray()[0]
-        #return np.array(self.ions), ion_abs
-        return np.vstack([np.array([float(i) for i in self.ions]), \
-          ion_abs])
+            en_idx = (np.abs(self.times - to_time)).argmin()
+            idx, en_idx = min(idx, en_idx), max(idx, en_idx)
+            if type(self.data) == np.ndarray:
+                ion_abs = self.data[idx:en_idx + 1, :].copy()
+            else:
+                ion_abs = self.data[idx:en_idx + 1, :].astype(float).toarray()[0]
+            return np.vstack([np.array([float(i) for i in self.ions]), \
+              ion_abs.sum(axis=0)])
 
     def as_2D(self):
         ext = (self.times[0], self.times[-1], min(self.ions), max(self.ions))

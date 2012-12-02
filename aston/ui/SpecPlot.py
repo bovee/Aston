@@ -160,7 +160,7 @@ class SpecPlotter(object):
         info = {'name': scn_nm}
         if dt is None:
             spc = Spectrum(self.masterWindow.obj_tab.db, \
-                           None, None, info, scn)
+              None, None, info, scn)
         else:
             spc = Spectrum(dt.db, None, dt.db_id, info, scn)
         self.masterWindow.obj_tab.addObjects(dt, [spc])
