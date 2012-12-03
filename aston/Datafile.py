@@ -259,7 +259,7 @@ class Datafile(DBObject):
         from aston.Math.Chromatograms import fxns as math_fxns
 
         if fxn in math_fxns:
-            f = fxns[fxn]
+            f = math_fxns[fxn]
             return ts.apply_fxn(f)
         return self._const(0.0)
 

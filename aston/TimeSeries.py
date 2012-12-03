@@ -130,18 +130,7 @@ class TimeSeries(object):
         return TimeSeries(self.data, t, self.ions)
 
     def apply_fxn(self, f):
-        import inspect
-        try:
-            nargs = inspect.getargspec(f)
-        except TypeError:
-            #it's probably a Scipy fxn, so default to just
-            #passing in the data (no times)
-            nargs = 1
-        if nargs == 1:
-            t = self.times
-            d = f(self.data)
-        else:
-            t, d = f(self.times, self.data)
+        d, t = f(self.data.T[0], self.times)
         return TimeSeries(d, t, self.ions)
 
     def _apply_data(self, f, ts):
