@@ -1,5 +1,7 @@
 *.py[co]
+*.qm
 *.sqlite
+.directory
 
 # Packages
 *.egg

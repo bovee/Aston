@@ -1,13 +1,8 @@
-0.4 Checklist
-*************
-
-* open mzML & mzXML
-* save mzML & mzXML
-
 0.5 Checklist
 *************
 
-* AIA/CDF and RAW file support
+* AIA/CDF, RAW, mzML, & mzXML file support
+* save mzML & mzXML
 * Agilent .REG scraping
   - fraction collection
   - pressure/flow rate/temp
@@ -54,6 +49,7 @@
   - seperate thread for database updating
   - tune MSMS file format performance (rewrites in C?)
 * have multiple plots and allow user to choose which plot each trace goes on?
+  - have datafile return units associated with trace types to allow for multiple y axes
 * display x axes in seconds (or hours)
 
 
@@ -64,4 +60,3 @@ Indefinite
 * setup/disttools? need better versioning
 * use hashes of data instead of filenames to match data to database entries
   - but how to handle duplicate files?
-* have datafile return units associated with trace types to allow for multiple y axes

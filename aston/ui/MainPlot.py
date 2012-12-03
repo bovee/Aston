@@ -9,9 +9,8 @@ from PyQt4.QtCore import Qt
 
 
 class Plotter(object):
-    def __init__(self, masterWindow, style='default', scheme='Spectral'):
+    def __init__(self, masterWindow, style=None, scheme=None):
         self.masterWindow = masterWindow
-        self.style = style
         self.legend = False
 
         plotArea = masterWindow.ui.plotArea
@@ -42,39 +41,61 @@ class Plotter(object):
         self.spec_line = None
         self.patches = {}
 
+        tr = self.masterWindow.tr
         self._colors = {
-            'Rainbow': 'hsv',
-            'Pastels': 'Accent',
-            'Brown-Bluegreen': 'BrBG',
-            'Red-Blue': 'RdBu',
-            'Red-Yellow-Blue': 'RdYlBu',
-            'Red-Yellow-Green': 'RdYlGn',
-            'Red-Blue': 'RdBu',
-            'Pink-Yellow-Green': 'PiYG',
-            'Spectral': 'Spectral',
-            'Spring': 'spring',
-            'Summer': 'summer',
-            'Autumn': 'autumn',
-            'Winter': 'winter',
-            'Cool': 'cool',
-            'Copper': 'copper',
-            'Jet': 'jet',
-            'Paired': 'Paired',
-            'White-Black': 'binary',
-            'Black-White': 'gray'
+            'hsv': tr('Rainbow'),
+            'Accent': tr('Pastels'),
+            'BrBG': tr('Brown-Bluegreen'),
+            'RdBu': tr('Red-Blue'),
+            'RdYlBu': tr('Red-Yellow-Blue'),
+            'RdYlGn': tr('Red-Yellow-Green'),
+            'RdBu': tr('Red-Blue'),
+            'PiYG': tr('Pink-Yellow-Green'),
+            'Spectral': tr('Spectral'),
+            'spring': tr('Spring'),
+            'summer': tr('Summer'),
+            'autumn': tr('Autumn'),
+            'winter': tr('Winter'),
+            'cool': tr('Cool'),
+            'copper': tr('Copper'),
+            'jet': tr('Jet'),
+            'Paired': tr('Paired'),
+            'binary': tr('White-Black'),
+            'gray': tr('Black-White')
             }
+        self._styles = {
+            'default': tr('Default'),
+            'scaled': tr('Scaled'),
+            'stacked': tr('Stacked'),
+            'scaled stacked': tr('Scaled Stacked'),
+            '2d': tr('2D')}
         self._linestyle = ['-', '--', ':', '-.']
         self.setColorScheme(scheme)
+        self.setStyle(style)
 
-    def setColorScheme(self, scheme='Spectral'):
-        self._color = plt.get_cmap(self._colors[str(scheme)])
+    def setColorScheme(self, scheme=None):
+        colors = dict((str(self._colors[k]), k) for k in self._colors)
+        if scheme is None:
+            self._color = plt.get_cmap('Spectral')
+        else:
+            self._color = plt.get_cmap(colors[str(scheme)])
         self._peakcolor = self._color(0, 1)
 
     def availColors(self):
-        return list(self._colors.keys())
+        l = [self._colors['Spectral']]
+        l += [self._colors[c] for c in self._colors if c != 'Spectral']
+        return l
+
+    def setStyle(self, style=None):
+        styles = dict((str(self._styles[k]), k) for k in self._styles)
+        if style is None:
+            self._style = 'default'
+        else:
+            self._style = styles[str(style)]
 
     def availStyles(self):
-        return ['Default', 'Scaled', 'Stacked', 'Scaled Stacked', '2D']
+        l_ord = ['default', 'scaled', 'stacked', 'scaled stacked', '2d']
+        return [self._styles[s] for s in l_ord]
 
     def plotData(self, datafiles, updateBounds=True):
         if not updateBounds:
@@ -99,7 +120,7 @@ class Plotter(object):
         #plot all of the datafiles
         if len(datafiles) == 0:
             return
-        if '2d' in self.style:
+        if '2d' in self._style:
             self._plot2D(datafiles[0])
         else:
             self._plot(datafiles)
@@ -125,7 +146,7 @@ class Plotter(object):
         """
 
         # make up a factor to separate traces by
-        if 'stacked' in self.style:
+        if 'stacked' in self._style:
             fts = datafiles[0].trace(datafiles[0].info['traces'].split(',')[0])
             sc_factor = (max(fts.data[:, 0]) - min(fts.data[:, 0])) / 5.
 
@@ -141,11 +162,12 @@ class Plotter(object):
             for y in dt.info['traces'].split(','):
                 ts = dt.trace(y.strip())
                 trace = ts.data
-                if 'scaled' in self.style:
+                if 'scaled' in self._style:
+                    #TODO: fails at negative chromatograms
                     trace -= min(trace)
                     trace /= max(trace)
                     trace *= 100
-                if 'stacked' in self.style:
+                if 'stacked' in self._style:
                     trace += tnum * sc_factor
                 # stretch out the color spectrum if there are under 7
                 if trs > 7:

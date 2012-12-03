@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 #    Copyright 2011, 2012 Roderick Bovee
-#   
+#
 #    This file is part of Aston.
 #
 #    Aston is free software: you can redistribute it and/or modify
@@ -29,9 +29,21 @@ sip.setapi('QVariant', 2)
 import sys
 import PyQt4
 from aston.ui.MainWindow import AstonWindow
-
-#standard QT stuff to set up
 qt = PyQt4.QtGui.QApplication(sys.argv)
+
+# translation stuff
+import locale
+try:
+    locale.setlocale(locale.LC_ALL, '')
+    if locale.getlocale()[0] is not None:
+        lang = locale.getlocale()[0]
+        tlate = PyQt4.QtCore.QTranslator(qt)
+        tlate.load('aston_' + lang + '.qm', 'aston/i18n')
+        qt.installTranslator(tlate)
+except locale.Error:
+    pass
+
+# set up the main window and start
 aston = AstonWindow()
 aston.show()
 sys.exit(qt.exec_())

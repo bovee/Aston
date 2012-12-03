@@ -133,7 +133,7 @@ class AstonWindow(QtGui.QMainWindow):
             return ''
 
     def openFolder(self):
-        folder = str(QtGui.QFileDialog.getExistingDirectory(self, "Open Folder"))
+        folder = str(QtGui.QFileDialog.getExistingDirectory(self, self.tr("Open Folder")))
         if folder == '':
             return
         self.directory = folder
@@ -158,7 +158,7 @@ class AstonWindow(QtGui.QMainWindow):
         self.plotData()
 
     def set_graph_style(self):
-        self.plotter.style = str(self.sender().data()).lower()
+        self.plotter.setStyle(self.sender().data())
         self.plotData()
 
     def exportChromatogram(self):
@@ -176,7 +176,7 @@ class AstonWindow(QtGui.QMainWindow):
                     ts &= dt.trace(ion)
 
             with open(fname, 'w') as f:
-                f.write('Time,' + ','.join(ts.ions) + ',\n')
+                f.write(self.tr('Time') + ',' + ','.join(ts.ions) + ',\n')
                 for t, d in zip(ts.times, ts.data):
                     f.write(str(t) + ',' + ','.join(str(i) \
                       for i in d) + '\n')
@@ -194,7 +194,7 @@ class AstonWindow(QtGui.QMainWindow):
                 return
             with open(fname, 'w') as f:
                 scan = self.specplotter.scans['']
-                f.write('mz,abun\n')
+                f.write(self.tr('mz') + ',' + self.tr('abun') + '\n')
                 for mz, abun in scan.T:
                     f.write(str(mz) + ',' + str(abun) + '\n')
         else:
@@ -203,7 +203,7 @@ class AstonWindow(QtGui.QMainWindow):
     def exportItems(self):
         #TODO: options for exporting different delimiters (e.g. tab) or
         #exporting select items as pictures (e.g. selected spectra)
-        fname = str(QtGui.QFileDialog.getSaveFileName(self, "Save As..."))
+        fname = str(QtGui.QFileDialog.getSaveFileName(self, self.tr("Save As...")))
         f = open(fname, 'w')
         sel = self.obj_tab.returnSelFiles()
         f.write(self.obj_tab.items_as_csv(sel))

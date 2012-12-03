@@ -1,14 +1,15 @@
 import numpy as np
 import scipy.ndimage as nd
+import scipy.signal._peak_finding as spf
 from aston.Features import Peak
-from aston.Math import scipy_peak_finding as spf
+
 
 def waveletIntegrate(dt, ion=None):
     #TODO: make this an integration option
     x = dt.trace(ion)
     t = dt.time()
 
-    nstep = 20 # number of frequencies to analyse at
+    nstep = 20  # number of frequencies to analyse at
     z = np.zeros((nstep, len(x)))
 
     # fxn to calculate window size based on step
