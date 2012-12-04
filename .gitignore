@@ -33,3 +33,6 @@ pip-log.txt
 
 #Extra Programs
 /data/*
+/Aston.egg-info/*
+/build/*
+/dist/*
