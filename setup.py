@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-#inspired by http://warp.byu.edu/site/content/128
-#from distutils.core import setup
 from setuptools import setup
 import matplotlib
 import sys
@@ -48,11 +46,12 @@ if len(sys.argv) >= 2 and sys.argv[1] == 'py2exe':
         sys.exit(0)
 
     options['windows'] = ['aston.py']
+    # scipy...._validation is only needed because of bug in scipy
     options['options'] = {
         'py2exe': {'skip_archive': False,
         'optimize': '2',
         'dll_excludes': ['MSVCP90.dll', 'tcl85.dll', 'tk85.dll'],
-        'includes': ['sip'],
+        'includes': ['sip', 'scipy.sparse.csgraph._validation'],
         'excludes': ['_gtkagg', '_tkagg', 'tcl', 'Tkconstants', 'Tkinter']}
     }
 
@@ -88,28 +87,29 @@ elif len(sys.argv) >= 2 and sys.argv[1] == 'py2app':
 #all the magic happens right here
 setup(**options)
 
-#if len(sys.argv) >= 2 and sys.argv[1] == 'py2exe':
-#    os.system('rmdir build /s /q')
-#    os.system('mkdir dist\\aston')
-#    os.system('mkdir dist\\aston\\ui')
-#    os.system('mkdir dist\\aston\\ui\\icons')
-#    os.system('copy aston\\ui\\icons\\*.png dist\\aston\\ui\\icons\\')
-#    #TODO: create an install wizard
-#elif len(sys.argv) >= 2 and sys.argv[1] == 'py2app':
-#    os.system('rm -rf build')
-#    os.system('cp -rf data/dist-files/qt_menu.nib dist/Aston.app/Contents/Resources/')
-#    os.system('cp data/dist-files/qt.conf dist/Aston.app/Contents/Resources/')
-#    os.system('mkdir dist/Aston.app/Contents/Resources/aston')
-#    os.system('mkdir dist/Aston.app/Contents/Resources/aston/ui')
-#    os.system('mkdir dist/Aston.app/Contents/Resources/aston/ui/icons')
-#    os.system('cp aston/ui/icons/*.png dist/Aston.app/Contents/Resources/aston/ui/icons/')
-#    #TODO: remove stuff from "dist/Aston.app/Contents/Resources/lib/python2.7"
-#    #matplotlib.tests, scipy.weave, numpy.f2py
-#    #libQtNetwork.4.dylib, libQtXmlPatterns.4.dylib, libtcl8.5.dylib
-#    #libtk8.dylib, libQtDeclarative.dylib, libQtScript, libQtScriptTools
-#    #libQtSql, libX11
-#
-#    #The following doesn't seem to work?
-#    #os.system('rm -rf dist_mac')
-#    #os.system('mkdir dist_mac')
-#    #os.system('hdiutil create -fs HFS+ -volname "Aston" -srcfolder dist dist_mac/Aston.dmg')
+if len(sys.argv) >= 2 and sys.argv[1] == 'py2exe':
+    os.system('rmdir build /s /q')
+    os.system('mkdir dist\\aston')
+    os.system('mkdir dist\\aston\\ui')
+    os.system('mkdir dist\\aston\\ui\\icons')
+    os.system('copy aston\\ui\\icons\\*.png dist\\aston\\ui\\icons\\')
+    os.system('copy aston\\ui\\icons\\*.ico dist\\aston\\ui\\icons\\')
+    #TODO: create an install wizard
+elif len(sys.argv) >= 2 and sys.argv[1] == 'py2app':
+    os.system('rm -rf build')
+    os.system('cp -rf data/dist-files/qt_menu.nib dist/Aston.app/Contents/Resources/')
+    os.system('cp data/dist-files/qt.conf dist/Aston.app/Contents/Resources/')
+    os.system('mkdir dist/Aston.app/Contents/Resources/aston')
+    os.system('mkdir dist/Aston.app/Contents/Resources/aston/ui')
+    os.system('mkdir dist/Aston.app/Contents/Resources/aston/ui/icons')
+    os.system('cp aston/ui/icons/*.png dist/Aston.app/Contents/Resources/aston/ui/icons/')
+    #TODO: remove stuff from "dist/Aston.app/Contents/Resources/lib/python2.7"
+    #matplotlib.tests, scipy.weave, numpy.f2py
+    #libQtNetwork.4.dylib, libQtXmlPatterns.4.dylib, libtcl8.5.dylib
+    #libtk8.dylib, libQtDeclarative.dylib, libQtScript, libQtScriptTools
+    #libQtSql, libX11
+
+    #The following doesn't seem to work?
+    #os.system('rm -rf dist_mac')
+    #os.system('mkdir dist_mac')
+    #os.system('hdiutil create -fs HFS+ -volname "Aston" -srcfolder dist dist_mac/Aston.dmg')
