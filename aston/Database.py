@@ -205,11 +205,12 @@ class AstonFileDatabase(AstonDatabase):
                 except IOError:
                     ext = ''
 
-                #ftype = guess_filetype(ext, magic)
+                ftype = None
                 if magic is not None:
                     if ext + '.' + str(magic) in ext2ftype:
                         ftype = ext2ftype[ext + '.' + str(magic)]
-                ftype = ext2ftype.get(ext, None)
+                if ftype is None:
+                    ftype = ext2ftype.get(ext, None)
 
                 #if it's a supported file, add it in
                 if ftype is not None:
