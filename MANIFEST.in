@@ -6,5 +6,6 @@ include aston/i18n/*.qm
 include aston/i18n/*.ts
 include aston/i18n/aston.pro
 include *.rst
+include *.nsi
 include COPYING.txt
 include settings.ini 
