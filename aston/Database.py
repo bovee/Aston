@@ -8,6 +8,7 @@ import struct
 import sqlite3
 import json
 import zlib
+import binascii
 from aston.FileFormats.FileFormats import ftype_to_class
 from aston.TimeSeries import decompress_to_ts
 from aston.Features.Spectrum import decompress_to_spec
@@ -198,10 +199,10 @@ class AstonFileDatabase(AstonDatabase):
                 ext = os.path.splitext(filename)[1].upper()[1:]
                 try:
                     f = open(os.path.join(fold, filename), mode='rb')
-                    magic = struct.unpack('>H', f.read(2))[0]
+                    magic = binascii.b2a_hex(f.read(2)).decode('ascii')
                     f.close()
                 except struct.error:
-                    magic = 0
+                    magic = None
                 except IOError:
                     ext = ''
 

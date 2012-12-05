@@ -11,7 +11,7 @@ class AgilentFID(Datafile.Datafile):
     Reads a Agilent FID *.ch file.
     """
     ext = 'CH'
-    mgc = 0x0238
+    mgc = '0238'
 
     def __init__(self, *args, **kwargs):
         super(AgilentFID, self).__init__(*args, **kwargs)

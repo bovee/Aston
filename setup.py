@@ -10,7 +10,7 @@ def read(fname):
 
 options = {
     'name': 'Aston',
-    'version': '0.4.0',
+    'version': '0.4.2',
     'description': 'Mass/UV Spectral Analysis Program',
     'author': 'Roderick Bovee',
     'author_email': 'bovee@fas.harvard.edu',

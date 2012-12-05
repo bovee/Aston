@@ -10,7 +10,7 @@ from aston.TimeSeries import TimeSeries
 
 class AgilentMWD(Datafile.Datafile):
     ext = 'CH'
-    mgc = 0x0233
+    mgc = '0233'
 
     def __init__(self, *args, **kwargs):
         super(AgilentMWD, self).__init__(*args, **kwargs)
@@ -179,7 +179,7 @@ class AgilentCSDAD(Datafile.Datafile):
     Interpreter for *.UV files from Agilent Chemstation
     """
     ext = 'UV'
-    mgc = 0x233
+    mgc = '0233'
 
     def __init__(self, *args, **kwargs):
         super(AgilentCSDAD, self).__init__(*args, **kwargs)

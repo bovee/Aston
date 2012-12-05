@@ -8,7 +8,7 @@ from aston.TimeSeries import TimeSeries
 
 class ThermoCF(Datafile.Datafile):
     ext = 'CF'
-    mgc = 0xFFFF
+    mgc = 'FFFF'
 
     def __init__(self, *args, **kwargs):
         super(ThermoCF, self).__init__(*args, **kwargs)
@@ -57,7 +57,7 @@ class ThermoCF(Datafile.Datafile):
 
 class ThermoDXF(Datafile.Datafile):
     ext = 'DXF'
-    mgc = 0xFFFF
+    mgc = 'FFFF'
 
     def __init__(self, *args, **kwargs):
         super(ThermoDXF, self).__init__(*args, **kwargs)

@@ -44,5 +44,5 @@ def ext_to_classtable():
         if cls.mgc is None:
             lookup[cls.ext] = cls.__name__
         else:
-            lookup[cls.ext + '.' + str(cls.mgc)] = cls.__name__
+            lookup[cls.ext + '.' + cls.mgc] = cls.__name__
     return lookup

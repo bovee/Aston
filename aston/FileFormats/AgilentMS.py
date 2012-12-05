@@ -12,7 +12,7 @@ from aston.TimeSeries import TimeSeries
 
 class AgilentMS(Datafile.Datafile):
     ext = 'MS'
-    mgc = 0x0132
+    mgc = '0132'
 
     def __init__(self, *args, **kwargs):
         super(AgilentMS, self).__init__(*args, **kwargs)
@@ -131,7 +131,7 @@ class AgilentMS(Datafile.Datafile):
 
 class AgilentMSMSScan(Datafile.Datafile):
     ext = 'BIN'
-    mgc = 0x0101
+    mgc = '0101'
 
     def __init__(self, *args, **kwargs):
         super(AgilentMSMSScan, self).__init__(*args, **kwargs)
