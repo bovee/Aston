@@ -10,9 +10,9 @@ import json
 import zlib
 import binascii
 from aston.FileFormats.FileFormats import ftype_to_class
+from aston.FileFormats.FileFormats import ext_to_classtable
 from aston.TimeSeries import decompress_to_ts
 from aston.Features.Spectrum import decompress_to_spec
-from aston.FileFormats.FileFormats import ext_to_classtable
 
 
 class AstonDatabase(object):
@@ -188,7 +188,7 @@ class AstonFileDatabase(AstonDatabase):
         if foldname == '':
             foldname = os.curdir
         datafiles = {}
-        for fold, _, files in os.walk(foldname):
+        for fold, dirs, files in os.walk(foldname):
             for filename in files:
                 #TODO: this MWD stuff is kludgy and will probably break
                 if filename[:3].upper() == 'MWD' and \
@@ -216,6 +216,9 @@ class AstonFileDatabase(AstonDatabase):
                 #if it's a supported file, add it in
                 if ftype is not None:
                     datafiles[os.path.join(fold, filename)] = ftype
+            for d in dirs:
+                if d.startswith('.') or d.startswith('_'):
+                    dirs.remove(d)
 
         #extract a list of files from the database
         c = self.db.cursor()
