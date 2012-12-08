@@ -34,15 +34,12 @@ class AgilentMWD(Datafile.Datafile):
                 #generate the time points if this is the first trace
                 if len(ions) == 0:
                     f = open(i, 'rb')
-
                     f.seek(0x11A)
-                    start_time = struct.unpack('>i', f.read(4))[0] / 60000.
-                    #end_time 0x11E '>i'
+                    st_t = struct.unpack('>i', f.read(4))[0] / 60000.
+                    en_t = struct.unpack('>i', f.read(4))[0] / 60000.
                     f.close()
 
-                    #TODO: 0.4/60.0 should be obtained from the file???
-                    times = start_time + \
-                      np.arange(len(dtrace)) * (0.4 / 60.0)
+                    times = np.linspace(st_t, en_t, len(dtrace))
 
                 #add the wavelength and trace into the appropriate places
                 ions.append(wv)
@@ -103,6 +100,98 @@ class AgilentMWD(Datafile.Datafile):
         f.seek(0x254)
         #TODO: replace signal name with reference_wavelength?
         d['signal name'] = f.read(struct.unpack('>B', f.read(1))[0]).decode()
+        d['r-type'] = 'Sample'
+        f.close()
+        self.info.update(d)
+
+
+class AgilentMWD2(Datafile.Datafile):
+    ext = 'CH'
+    mgc = '0331'
+
+    def __init__(self, *args, **kwargs):
+        super(AgilentMWD2, self).__init__(*args, **kwargs)
+
+    def _cache_data(self):
+        #Because the spectra are stored in several files in the same
+        #directory, we need to loop through them and return them together.
+        if self.data is not None:
+            return
+
+        ions = []
+        dtraces = []
+        foldname = os.path.dirname(self.rawdata)
+        for i in [os.path.join(foldname, i) for i \
+          in os.listdir(foldname)]:
+            if i[-3:].upper() == '.CH':
+                wv, dtrace = self._read_ind_file(i)
+
+                #generate the time points if this is the first trace
+                if len(ions) == 0:
+                    f = open(i, 'rb')
+                    f.seek(0x11A)
+                    st_t = struct.unpack('>i', f.read(4))[0] / 60000.
+                    en_t = struct.unpack('>i', f.read(4))[0] / 60000.
+                    f.close()
+
+                    times = np.linspace(st_t, en_t, len(dtrace))
+
+                #add the wavelength and trace into the appropriate places
+                ions.append(wv)
+                dtraces.append(dtrace)
+        data = np.array(dtraces).transpose()
+        self.data = TimeSeries(data, times, ions)
+
+    def _read_ind_file(self, fname):
+        f = open(fname, 'rb')
+
+        f.seek(0x1075)
+        sig_name = f.read(2 * struct.unpack('>B', f.read(1))[0]).decode('utf-16')
+        #wavelength the file was collected at
+        wv = float(re.search("Sig=(\d+),(\d+)", sig_name).group(1))
+
+        f.seek(0x127C)
+        del_ab = struct.unpack('>d', f.read(8))[0]
+
+        #data = np.array([])
+        data = []
+
+        f.seek(0x1800)
+        while True:
+            x, nrecs = struct.unpack('>BB', f.read(2))
+            if x == 0 and nrecs == 0:
+                break
+            for _ in range(nrecs):
+                inp = struct.unpack('>h', f.read(2))[0]
+                if inp == -32768:
+                    inp = struct.unpack('>i', f.read(4))[0]
+                    data.append(del_ab * inp)
+                elif len(data) == 0:
+                    data.append(del_ab * inp)
+                else:
+                    data.append(data[-1] + del_ab * inp)
+        f.close()
+        return wv, np.array(data)
+
+    def _update_info_from_file(self):
+        d = {}
+        #TODO: fix this so that it doesn't rely upon MWD1A.CH?
+
+        def get_str(f, off):
+            """
+            Convenience function to quickly pull out strings.
+            """
+            f.seek(off)
+            return f.read(2 * struct.unpack('>B', f.read(1))[0]).decode('utf-16')
+
+        f = open(self.rawdata, 'rb')
+        d['name'] = get_str(f, 0x35A)
+        d['r-opr'] = get_str(f, 0x758)
+        d['m'] = get_str(f, 0xA0E)
+        d['r-date'] = get_str(f, 0x957)
+        d['m-y-units'] = get_str(f, 0x104C)
+        #TODO: replace signal name with reference_wavelength?
+        #d['signal name'] = f.read(struct.unpack('>B', f.read(1))[0]).decode()
         d['r-type'] = 'Sample'
         f.close()
         self.info.update(d)

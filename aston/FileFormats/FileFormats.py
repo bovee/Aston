@@ -15,14 +15,14 @@ def file_adaptors():
     from aston.FileFormats.Bruker \
       import BrukerMSMS
     from aston.FileFormats.AgilentUV \
-      import AgilentDAD, AgilentMWD, AgilentCSDAD
+      import AgilentDAD, AgilentMWD, AgilentMWD2, AgilentCSDAD
     from aston.FileFormats.OtherFiles \
       import AgilentFID, CSVFile
     from aston.FileFormats.Waters \
       import WatersAutospec
     return [AgilentMS, AgilentMSMSScan, BrukerMSMS, \
-      ThermoCF, ThermoDXF, AgilentDAD, AgilentMWD, AgilentCSDAD, \
-      AgilentFID, CSVFile, WatersAutospec]
+      ThermoCF, ThermoDXF, AgilentDAD, AgilentMWD, AgilentMWD2, \
+      AgilentCSDAD, AgilentFID, CSVFile, WatersAutospec]
 
     #for cls_str in dir(fl):
     #    cls = fl.__dict__[cls_str]
@@ -43,6 +43,9 @@ def ext_to_classtable():
     for cls in file_adaptors():
         if cls.mgc is None:
             lookup[cls.ext] = cls.__name__
+        elif type(cls.mgc) == tuple:
+            for mgc in cls.mgc:
+                lookup[cls.ext + '.' + mgc] = cls.__name__
         else:
             lookup[cls.ext + '.' + cls.mgc] = cls.__name__
     return lookup
