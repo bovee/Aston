@@ -63,7 +63,17 @@ class Peak(DBObject):
         return arr[st_idx:en_idx]
 
     def _load_info(self, fld):
-        if fld == 'p-s-area':
+        if fld == 's-mzs':
+            ions = self.data.ions
+            if len(ions) < 10:
+                self.info[fld] = ','.join(str(i) for i in ions)
+            else:
+                # only display a range of the numeric ions
+                ions = [i for i in ions \
+                  if type(i) is int or type(i) is float]
+                if len(ions) > 0:
+                    self.info['s-mzs'] = str(min(ions)) + '-' + str(max(ions))
+        elif fld == 'p-s-area':
             self.info[fld] = str(peakmath.area(self.as_poly()))
         elif fld == 'p-s-length':
             self.info[fld] = str(peakmath.length(self.as_poly()))

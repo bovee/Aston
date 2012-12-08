@@ -3,7 +3,6 @@
 """
 Model for handling display of open files.
 """
-
 import os.path as op
 import json
 import numpy as np

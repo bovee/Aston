@@ -285,6 +285,18 @@ class Datafile(DBObject):
               op.dirname(self.rawdata)), op.basename(self.rawdata))
         elif fld == 's-scans':
             self.info['s-scans'] = str(len(self.time()))
+        elif fld == 's-mzs':
+            # this isn't exactly the same as the code in Peak
+            # because a datafile could inject another trace type
+            # (i.e. pressure) into self._ions that's not in self.data
+            ions = self._ions()
+            if len(ions) < 10:
+                self.info['s-mzs'] = ','.join(str(i) for i in ions)
+            else:
+                ions = [i for i in ions \
+                  if type(i) is int or type(i) is float]
+                if len(ions) > 0:
+                    self.info['s-mzs'] = str(min(ions)) + '-' + str(max(ions))
         elif fld == 's-time-st' or fld == 's-time-en':
             time = self.time()
             self.info['s-time-st'] = str(min(time))
@@ -298,11 +310,6 @@ class Datafile(DBObject):
                 times = [float(pk.info['p-s-time']) for pk in pks]
                 self.info['s-peaks-st'] = str(min(times))
                 self.info['s-peaks-en'] = str(max(times))
-        elif fld == 's-mz-min' or fld == 's-mz-max':
-            ions = np.array([i for i in self._ions() \
-                             if type(i) is int or type(i) is float])
-            self.info['s-mz-min'] = str(min(ions))
-            self.info['s-mz-max'] = str(max(ions))
         else:
             pass
 

@@ -69,6 +69,11 @@ class AstonNavBar(NavigationToolbar2QTAgg):
     def release_peak(self, event):
         if event.button != 1 or self.mode != 'peak':
             return
+        if event.xdata is None or event.ydata is None or \
+          self._xypress[0] is None or self._xypress[1] is None:
+            # if the user clicks just off the plot,
+            # the x/y will be None
+            return
         dt = self.parent.obj_tab.active_file()
         if dt is None:
             return
@@ -100,7 +105,7 @@ class AstonNavBar(NavigationToolbar2QTAgg):
 
             info = {'p-type': 'Sample', 'p-created': 'manual', 'p-int': 'manual'}
             info['name'] = '{:.2f}-{:.2f}'.format(pt1[0], pt2[0])
-            info['p-ion'] = ion
+            info['traces'] = ion
             pk = Peak(dt.db, None, dt.db_id, info, new_ts)
             self.parent.obj_tab.addObjects(dt, [pk])
             dt.info.del_items('s-peaks')
