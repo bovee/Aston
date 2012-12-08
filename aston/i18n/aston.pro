@@ -1,6 +1,7 @@
 SOURCES = ../FileTable.py \
 ../ui/MainWindow.py \
 ../ui/MainPlot.py \
+../ui/Fields.py \
 ../ui/aston_ui.py \
 ../ui/aston_filterwindow_ui.py
 

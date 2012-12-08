@@ -5,7 +5,7 @@ from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg
 from matplotlib.path import Path
 import matplotlib.patches as patches
 import matplotlib.pyplot as plt
-from PyQt4.QtCore import Qt
+from PyQt4.QtCore import Qt, QCoreApplication
 
 
 class Plotter(object):
@@ -41,7 +41,7 @@ class Plotter(object):
         self.spec_line = None
         self.patches = {}
 
-        tr = self.masterWindow.tr
+        tr = lambda s: QCoreApplication.translate('', s)
         self._colors = {
             'hsv': tr('Rainbow'),
             'Accent': tr('Pastels'),

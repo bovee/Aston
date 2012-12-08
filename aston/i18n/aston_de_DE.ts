@@ -117,6 +117,311 @@
         <source>2D</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <location filename="../ui/Fields.py" line="12"/>
+        <source>Method</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="13"/>
+        <source>Run</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="14"/>
+        <source>Stats</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="15"/>
+        <source>Transforms</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="16"/>
+        <source>Peaks</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="17"/>
+        <source>Spectra</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="21"/>
+        <source>Name</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="22"/>
+        <source>Vis?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="23"/>
+        <source>Traces</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="25"/>
+        <source>Method Name</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="26"/>
+        <source>Chromatography Type</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="27"/>
+        <source>Column Name</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="28"/>
+        <source>Column Phase</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="29"/>
+        <source>Column Dimensions (mm x mm)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="31"/>
+        <source>Run Length (min)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="34"/>
+        <source>Pressure (kbar)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="36"/>
+        <source>Solvent/Carrier</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="37"/>
+        <source>Solvent B</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="38"/>
+        <source>% Solvent B</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="39"/>
+        <source>Solvent C</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="40"/>
+        <source>% Solvent C</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="41"/>
+        <source>Solvent D</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="42"/>
+        <source>% Solvent D</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="43"/>
+        <source>Detector Type</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="44"/>
+        <source>UV Wavelengths</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="45"/>
+        <source>MS Interface Mode</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="46"/>
+        <source>Units</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="48"/>
+        <source>File Name</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="49"/>
+        <source>Sample</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="50"/>
+        <source>Sample Concentration</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="51"/>
+        <source>Date</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="52"/>
+        <source>Operator</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="53"/>
+        <source>Type</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="54"/>
+        <source>Vial Position</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="55"/>
+        <source>Sequence Number</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="56"/>
+        <source>Instrument</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="59"/>
+        <source>File Type</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="60"/>
+        <source>Scans</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="61"/>
+        <source>Start Time (min)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="62"/>
+        <source>End Time (min)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="63"/>
+        <source># of Peaks</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="64"/>
+        <source># of Spectra</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="65"/>
+        <source>First Peak RT (min)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="66"/>
+        <source>Last Peak RT (min)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="68"/>
+        <source>Scale</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="69"/>
+        <source>Offset</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="70"/>
+        <source>Smoothing Method</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="71"/>
+        <source>Smoothing Order</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="72"/>
+        <source>Smoothing Window</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="73"/>
+        <source>Noise Removal Method</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="75"/>
+        <source>Peak Ion</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="76"/>
+        <source>Peak Type</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="77"/>
+        <source>Peak Model</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="78"/>
+        <source>Peak Area</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="79"/>
+        <source>Peak Width (min)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="80"/>
+        <source>Peak Height</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="81"/>
+        <source>Peak Retention Time (min)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="82"/>
+        <source>Peak Width Half-Max (min)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="83"/>
+        <source>Peak Capacity (# Peaks)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="85"/>
+        <source>Spectrum Type</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/Fields.py" line="86"/>
+        <source>Spectrum Time (min)</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>AstonWindow</name>
@@ -154,22 +459,22 @@
 <context>
     <name>FileTreeModel</name>
     <message>
-        <location filename="../FileTable.py" line="267"/>
+        <location filename="../FileTable.py" line="266"/>
         <source>Create Spec.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../FileTable.py" line="268"/>
+        <location filename="../FileTable.py" line="267"/>
         <source>Split Peak</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../FileTable.py" line="273"/>
+        <location filename="../FileTable.py" line="272"/>
         <source>Copy Method</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../FileTable.py" line="277"/>
+        <location filename="../FileTable.py" line="276"/>
         <source>Delete Items</source>
         <translation type="unfinished"></translation>
     </message>
