@@ -13,7 +13,7 @@ def waveletIntegrate(dt, ion=None):
     z = np.zeros((nstep, len(x)))
 
     # fxn to calculate window size based on step
-    f = lambda i: int((len(x)**(1./(nstep+2.)))**i) #22*(x+1)
+    f = lambda i: int((len(x) ** (1. / (nstep + 2.))) ** i)  # 22*(x+1)
 
     # perform a continuous wavelet transform and save the results in z
     for i in range(0, nstep):
@@ -23,7 +23,7 @@ def waveletIntegrate(dt, ion=None):
         #rng = np.linspace(-5,5,hat_len)
         # create an array with a mexican hat
         #hat =  1/np.sqrt(hat_len) * (1 - rng**2) * np.exp(-rng**2 / 2)
-        hat = spf.ricker(min(10*hat_len, len(x)), hat_len)
+        hat = spf.ricker(min(10 * hat_len, len(x)), hat_len)
         # convolve the wavelet with the signal at this scale levelax2.
         z[i] = np.convolve(x, hat, mode='same')
 
@@ -47,8 +47,8 @@ def waveletIntegrate(dt, ion=None):
         verts += zip(dt.time(pt1[0], pt2[0]), \
                      dt.trace(ion, pt1[0], pt2[0]))
         verts += [pt2]
-        info = {'p-type':'Sample', 'p-created':'integrator', \
-                'p-int':'wavelet'}
+        info = {'p-type': 'Sample', 'p-created': 'integrator', \
+                'p-int': 'wavelet'}
         info['name'] = '{:.2f}-{:.2f}'.format(pt1[0], pt2[0])
         info['p-ion'] = ion
         pk = Peak(dt.db, None, dt.db_id, info, verts)
@@ -114,15 +114,15 @@ def statSlopeIntegrate(dt, ion=None):
         #create a peak and add it to the peak list
         if pt1 != () and pt2 != ():
             ts = dt.trace(ion, twin=(pt1[0], pt2[0]))
-            #verts = [pt1]
-            #verts += zip([float(i) for i in dt.time(pt1[0], pt2[0])], \
-            #             dt.trace(ion, pt1[0], pt2[0]))
-            #verts += [pt2]
             info = {'p-type': 'Sample', 'p-created': 'integrator', \
                     'p-int': 'statslope'}
             info['name'] = '{:.2f}-{:.2f}'.format(pt1[0], pt2[0])
-            info['p-ion'] = ion
+            info['traces'] = ion
             pk = Peak(dt.db, None, dt.db_id, info, ts)
             pks.append(pk)
         l_i = i
     return pks
+
+def mergeIons(pks):
+    for pk in pks:
+        pass

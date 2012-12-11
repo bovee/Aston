@@ -129,8 +129,8 @@ class TimeSeries(object):
         t = scale * self.times + offset
         return TimeSeries(self.data, t, self.ions)
 
-    def apply_fxn(self, f):
-        d, t = f(self.data.T[0], self.times)
+    def apply_fxn(self, f, *args):
+        d, t = f(self.data.T[0], self.times, *args)
         return TimeSeries(d, t, self.ions)
 
     def _apply_data(self, f, ts):

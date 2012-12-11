@@ -3,6 +3,8 @@ import numpy as np
 #we don't need to reinvent the wheel, so we can straight up use some
 #of numpy's default functions and pass our array directly in
 from numpy import abs, sin, cos, tan, gradient
+from scipy.stats import gaussian_kde
+from scipy.optimize import fmin, brentq
 
 
 def fft(ic, t):
@@ -27,7 +29,37 @@ def noisefilter(ic, t, bandwidth):
     oc = np.real(np.fft.ifft(np.fft.ifftshift(P)))
 
 
-def base(ic, t):
+def base(ic, t, slope_tol='5.0', off_tol='5.0'):
+    ic = savitzkygolay(ic, t, 5, 3)[0]
+    slopes = np.diff(ic) / np.diff(t)
+    wind = np.array([0.5, 0.5])
+    offsets = np.convolve(ic, wind, mode='valid') - \
+      slopes * np.convolve(t, wind, mode='valid')
+
+    sl_kern = gaussian_kde(slopes)
+    base_slope = fmin(lambda x: -sl_kern(x), 0, disp=False)
+    k_h = sl_kern(base_slope) * (1.0 - 10 ** -float(slope_tol))
+    s1 = brentq(lambda x: sl_kern(x) - k_h, \
+      min(slopes), base_slope)
+    s2 = brentq(lambda x: sl_kern(x) - k_h, \
+      base_slope, max(slopes))
+
+    valid = np.logical_and(slopes > s1, slopes < s2)
+    off_kern = gaussian_kde(offsets[valid])
+    base_off = fmin(lambda x: -off_kern(x), 0, disp=False)
+    k_h = off_kern(base_off) * (1.0 - 10 ** -float(off_tol))
+    o1 = brentq(lambda x: off_kern(x) - k_h, \
+      min(offsets), base_off)
+    o2 = brentq(lambda x: off_kern(x) - k_h, \
+      base_off, max(offsets))
+
+    msk = np.logical_and(valid, offsets > o1)
+    msk = np.logical_and(valid, offsets < o2)
+    new_ic = np.interp(t, t[msk], ic[msk])
+    return new_ic, t
+
+
+def base2(ic, t):
     #INSPIRED by Algorithm A12 from Zupan
     #5 point pre-smoothing
     sc = np.convolve(np.ones(5) / 5.0, ic, mode='same')
@@ -79,7 +111,7 @@ def _smooth(ic, half_wind, m):
     firstvals = ic[0] - np.abs(ic[1:half_wind + 1][::-1] - ic[0])
     lastvals = ic[-1] + np.abs(ic[-half_wind - 1:-1][::-1] - ic[-1])
     y = np.concatenate((firstvals, ic, lastvals))
-    oc = np.convolve(m, y, mode='same')
+    oc = np.convolve(m, y, mode='valid')
     return oc
 
 
