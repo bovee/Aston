@@ -7,6 +7,7 @@ import os
 import sqlite3
 import json
 import zlib
+from datetime import datetime
 from aston.FileFormats.FileFormats import ftype_to_class
 from aston.FileFormats.FileFormats import ext_to_classtable
 from aston.FileFormats.FileFormats import get_magic
@@ -227,8 +228,11 @@ class AstonFileDatabase(AstonDatabase):
         #add the new files into the database
         #TODO: generate projects and project_ids based on folder names?
         for fn in set(datafiles.keys()).difference(dnames):
+            fdate = datetime.fromtimestamp(os.path.getctime(fn)\
+              ).replace(microsecond=0).isoformat(' ')
             info = {'s-file-type': datafiles[fn], 'traces': 'TIC', \
-              'name': os.path.splitext(os.path.basename(fn))[0]}
+              'name': os.path.splitext(os.path.basename(fn))[0], \
+              'r-date': fdate}
             args = (None, None, info, fn)
             obj = ftype_to_class(info['s-file-type'])(self, *args)
             obj._update_info_from_file()

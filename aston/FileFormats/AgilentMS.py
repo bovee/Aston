@@ -5,6 +5,7 @@ import scipy
 import os.path as op
 import gzip
 import io
+from datetime import datetime
 from xml.etree import ElementTree
 from aston import Datafile
 from aston.TimeSeries import TimeSeries
@@ -122,7 +123,9 @@ class AgilentMS(Datafile.Datafile):
         f.seek(0xE4)
         d['m'] = f.read(struct.unpack('>B', f.read(1))[0]).decode().strip()
         f.seek(0xB2)
-        d['r-date'] = f.read(struct.unpack('>B', f.read(1))[0]).decode()
+        rawdate = f.read(struct.unpack('>B', f.read(1))[0]).decode()
+        d['r-date'] = datetime.strptime(rawdate, \
+          "%d %b %y %H:%M %p").isoformat(' ')
         d['r-type'] = 'Sample'
         #TODO: vial number in here too?
         f.close()
@@ -262,7 +265,7 @@ class AgilentMSMSScan(Datafile.Datafile):
         d['r-vial-pos'] = info.get('Sample Position', '')
         d['r-inst'] = info.get('InstrumentName', '')
         d['r-opr'] = info.get('OperatorName', '')
-        d['r-date'] = info.get('AcqTime', '')
+        d['r-date'] = info.get('AcqTime', '').replace('T',' ').rstrip('Z')
         d['m-inj-size'] = info.get(u('Inj Vol (µl)'), '')
 
         xml_file = op.join(op.dirname(self.rawdata), 'acqmethod.xml')

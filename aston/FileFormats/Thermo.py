@@ -1,5 +1,4 @@
 import struct
-import time
 import os
 import numpy as np
 from aston import Datafile
@@ -45,10 +44,6 @@ class ThermoCF(Datafile.Datafile):
         d = {}
         d['r-opr'] = ''
         d['m'] = ''
-        #try: #TODO: this crashes in python 3; not clear why?
-        d['r-date'] = time.ctime(os.path.getctime(self.rawdata))
-        #except:
-        #    pass
         #info['file name'] = os.path.basename(self.filename)
         d['name'] = os.path.splitext(os.path.basename(self.rawdata))[0]
         d['r-type'] = 'Sample'
@@ -97,7 +92,6 @@ class ThermoDXF(Datafile.Datafile):
         d['r-opr'] = ''
         d['m'] = ''
         #try: #TODO: this crashes in python 3; not clear why?
-        d['date'] = time.ctime(os.path.getctime(self.rawdata))
         #except:
         #    pass
         #info['file name'] = os.path.basename(self.filename)

@@ -2,6 +2,7 @@ import os
 import re
 import struct
 import time
+from datetime import datetime
 import numpy as np
 from xml.etree import ElementTree
 from aston import Datafile
@@ -93,7 +94,9 @@ class AgilentMWD(Datafile.Datafile):
         d['m'] = f.read(struct.unpack('>B', f.read(1))[0]).decode()
         #try:
         f.seek(0xB2)
-        d['r-date'] = f.read(struct.unpack('>B', f.read(1))[0]).decode()
+        rawdate = f.read(struct.unpack('>B', f.read(1))[0]).decode()
+        d['r-date'] = datetime.strptime(rawdate, \
+          "%d-%b-%y, %H:%M:%S").isoformat(' ')
         #except: pass #TODO: find out why this chokes
         f.seek(0x244)
         d['m-y-units'] = f.read(struct.unpack('>B', f.read(1))[0]).decode()
@@ -188,7 +191,9 @@ class AgilentMWD2(Datafile.Datafile):
         d['name'] = get_str(f, 0x35A)
         d['r-opr'] = get_str(f, 0x758)
         d['m'] = get_str(f, 0xA0E)
-        d['r-date'] = get_str(f, 0x957)
+        rawdate = get_str(f, 0x957)
+        d['r-date'] = datetime.strptime(rawdate, \
+          "%d-%b-%y, %H:%M:%S").isoformat(' ')
         d['m-y-units'] = get_str(f, 0x104C)
         #TODO: replace signal name with reference_wavelength?
         #d['signal name'] = f.read(struct.unpack('>B', f.read(1))[0]).decode()
@@ -258,7 +263,6 @@ class AgilentDAD(Datafile.Datafile):
             elif tagname == 'Method':
                 d['m'] = tagvalue.split('/')[-1]
         d['r-opr'] = ''
-        d['r-date'] = time.ctime(os.path.getctime(self.rawdata))
         d['r-type'] = 'Sample'
         self.info.update(d)
 
@@ -330,7 +334,9 @@ class AgilentCSDAD(Datafile.Datafile):
         f.seek(0xE4)
         d['m'] = f.read(struct.unpack('>B', f.read(1))[0]).decode().strip()
         f.seek(0xB2)
-        d['r-date'] = f.read(struct.unpack('>B', f.read(1))[0]).decode()
+        rawdate = f.read(struct.unpack('>B', f.read(1))[0]).decode()
+        d['r-date'] = datetime.strptime(rawdate, \
+          "%d-%b-%y, %H:%M:%S").isoformat(' ')
         f.seek(0x146)
         d['m-y-units'] = f.read(struct.unpack('>B', f.read(1))[0]).decode()
         f.seek(0xD0)
