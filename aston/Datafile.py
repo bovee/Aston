@@ -1,6 +1,7 @@
 """
-This module acts as an intermediary between the Agilent, Thermo,
-and other instrument specific classes and the rest of the program.
+This module allows Agilent, Thermo, and other instrument
+specific file formats to be accessed through the same
+interface.
 """
 #pylint: disable=C0103
 
@@ -19,6 +20,14 @@ class Datafile(DBObject):
     """
     Generic chromatography data containter. This abstacts away
     the implementation details of the specific file formats.
+
+    An example of its usage:
+    >>> from aston.Datafile import Datafile
+    >>> from matplotlib.pyplot import plot, show
+    >>> dt = Datafile('/path/to/filename.csv')
+    >>> ts = dt.trace('TIC')
+    >>> plot(ts.times, ts.y)
+    >>> show()
     """
     def __init__(self, *args, **kwargs):
         if len(args) == 1:
@@ -59,8 +68,14 @@ class Datafile(DBObject):
 
     def trace(self, ion=None, twin=None):
         """
-        Returns an array, either time/ion filtered or not
-        of chromatographic data.
+        Returns a TimeSeries object derived from this Datafile.
+
+        Example 'ions's:
+            "TIC" or "X": sum of all of mzs/wavelengths
+            "280": either the trace at 280 nm or mz 280
+            "X/!2": half of the TIC trace
+            "SIN(X)": sin of the TIC trace
+        twin is a tuple of the range of the trace to return.
         """
         if twin is not None:
             twin = (self._sc_off(twin[0]), self._sc_off(twin[1]))
@@ -390,13 +405,15 @@ class Datafile(DBObject):
 
     def as_2D(self, twin=None):
         """
-        Returns a array summarizing all of the data.
+        Returns a tuple of ranges and a 2D array summarizing
+        the data that can be plotted.
         """
         return self.data.as_2D()
 
     def _total_trace(self, twin=None):
         """
-        Return the default, total trace.
+        Return the default, total trace. This is the
+        sum of the individual traces.
         """
         #Note: it's useful to override this to speed up
         #display of the TIC if it can be calculated easily.
@@ -407,7 +424,7 @@ class Datafile(DBObject):
 
     def _ion_trace(self, val, tol=0.5, twin=None):
         """
-        Return a specific ion trace from the data.
+        Return a specific mz/wavelength trace from the data.
         """
         if self.data is None:
             self._cache_data()
@@ -432,6 +449,7 @@ class Datafile(DBObject):
 
     def _update_info_from_file(self):
         """
-        Return file information.
+        Loads my property "data" with a dictionary
+        derived from method/run information in the file.
         """
         pass
