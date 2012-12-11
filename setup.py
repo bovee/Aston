@@ -10,7 +10,7 @@ def read(fname):
 
 options = {
     'name': 'Aston',
-    'version': '0.4.2',
+    'version': '0.4.3',
     'description': 'Mass/UV Spectral Analysis Program',
     'author': 'Roderick Bovee',
     'author_email': 'bovee@fas.harvard.edu',
@@ -33,7 +33,7 @@ options = {
     'package_data': {'aston': \
       ['i18n/*.qm', 'ui/icons/*.png']},
     'include_package_data': True,
-    'install_requires': ['numpy', 'scipy', 'matplotlib', 'PyQt4'],
+    'install_requires': ['numpy', 'scipy', 'matplotlib'],
     'test_suite': 'nose.collector'
 }
 
