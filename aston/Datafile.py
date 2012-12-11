@@ -10,6 +10,9 @@ from scipy.interpolate import interp1d
 from scipy.optimize import leastsq
 from aston.Features import DBObject
 from aston.TimeSeries import TimeSeries
+from aston.FileFormats.FileFormats import get_magic
+from aston.FileFormats.FileFormats import ext_to_classtable
+from aston.FileFormats.FileFormats import ftype_to_class
 
 
 class Datafile(DBObject):
@@ -18,11 +21,30 @@ class Datafile(DBObject):
     the implementation details of the specific file formats.
     """
     def __init__(self, *args, **kwargs):
-        super(Datafile, self).__init__('file', *args, **kwargs)
-        #self._update_info_from_file()
+        if len(args) == 1:
+            # this section allows Datafiles to be used outside of
+            # the UI
+            fname = args[0]
+            ext2ftype = ext_to_classtable()
+            ext, magic = get_magic(fname)
 
-        #make stubs for the time array and the data array
-        self.data = None
+            ftype = None
+            if magic is not None:
+                ftype = ext2ftype.get(ext + '.' + magic, None)
+            if ftype is None:
+                ftype = ext2ftype.get(ext, None)
+            info = {'s-file-type': ftype}
+            args = (None, None, None, info, fname)
+
+            super(Datafile, self).__init__('file', *args, **kwargs)
+            self.data = None
+
+            self.__class__ = ftype_to_class(ftype)
+            self._cache_data()
+            self._update_info_from_file()
+        else:
+            super(Datafile, self).__init__('file', *args, **kwargs)
+            self.data = None
 
     def _sc_off(self, t):
         """
