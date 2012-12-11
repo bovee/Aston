@@ -19,10 +19,14 @@ class DBObject(object):
 
     @property
     def parent(self):
+        if self.db is None:
+            return None
         return self.db.getObjectByID(self.parent_id)
 
     @property
     def children(self):
+        if self.db is None:
+            return None
         return self.db.getChildren(self.db_id)
 
     def getParentOfType(self, cls=None):

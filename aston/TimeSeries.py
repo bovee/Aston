@@ -191,6 +191,10 @@ class TimeSeries(object):
         ts = TimeSeries(data, self.times, ions)
         return ts
 
+    @property
+    def y(self):
+        return self.data.T[0]
+
     def compress(self):
         if type(self.data) != np.ndarray:
             d = self.data.astype(float).toarray().tostring()
