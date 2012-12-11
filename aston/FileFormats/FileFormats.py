@@ -6,6 +6,8 @@
 #TODO:.YEP : Bruker instrument data format
 #TODO:.RAW : PerkinElmer TurboMass file format
 
+import os
+import binascii
 
 def file_adaptors():
     from aston.FileFormats.AgilentMS \
@@ -49,3 +51,17 @@ def ext_to_classtable():
         else:
             lookup[cls.ext + '.' + cls.mgc] = cls.__name__
     return lookup
+
+
+def get_magic(filename):
+    ext = os.path.splitext(filename)[1].upper()[1:]
+
+    #guess the file type
+    try:
+        f = open(filename, mode='rb')
+        magic = binascii.b2a_hex(f.read(2)).decode('ascii').upper()
+        f.close()
+    except IOError:
+        magic = None
+
+    return ext, magic

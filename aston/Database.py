@@ -4,13 +4,12 @@ This module handles database access for Aston.
 #pylint: disable=C0103
 
 import os
-import struct
 import sqlite3
 import json
 import zlib
-import binascii
 from aston.FileFormats.FileFormats import ftype_to_class
 from aston.FileFormats.FileFormats import ext_to_classtable
+from aston.FileFormats.FileFormats import get_magic
 from aston.TimeSeries import decompress_to_ts
 from aston.Features.Spectrum import decompress_to_spec
 
@@ -190,26 +189,18 @@ class AstonFileDatabase(AstonDatabase):
         datafiles = {}
         for fold, dirs, files in os.walk(foldname):
             for filename in files:
+                ext, magic = get_magic(os.path.join(fold, filename))
+
                 #TODO: this MWD stuff is kludgy and will probably break
-                if filename[:3].upper() == 'MWD' and \
-                    filename[-3:].upper() == '.CH': filename = 'mwd1A.ch'
-                if filename[:3].upper() == 'DAD' and \
-                    filename[-3:].upper() == '.CH': filename = 'dad1A.ch'
-                #guess the file type
-                ext = os.path.splitext(filename)[1].upper()[1:]
-                try:
-                    f = open(os.path.join(fold, filename), mode='rb')
-                    magic = binascii.b2a_hex(f.read(2)).decode('ascii')
-                    f.close()
-                except struct.error:
-                    magic = None
-                except IOError:
-                    ext = ''
+                if ext == 'CH':
+                    if filename[:3].upper() == 'MWD':
+                        filename = 'mwd1A.ch'
+                    elif filename[:3].upper() == 'DAD':
+                        filename = 'dad1A.ch'
 
                 ftype = None
                 if magic is not None:
-                    if ext + '.' + str(magic) in ext2ftype:
-                        ftype = ext2ftype[ext + '.' + str(magic)]
+                    ftype = ext2ftype.get(ext + '.' + magic, None)
                 if ftype is None:
                     ftype = ext2ftype.get(ext, None)
 
