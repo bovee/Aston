@@ -97,8 +97,8 @@ if len(sys.argv) >= 2 and sys.argv[1] == 'py2exe':
     #TODO: create an install wizard
 elif len(sys.argv) >= 2 and sys.argv[1] == 'py2app':
     os.system('rm -rf build')
-    os.system('cp -rf data/dist-files/qt_menu.nib dist/Aston.app/Contents/Resources/')
-    os.system('cp data/dist-files/qt.conf dist/Aston.app/Contents/Resources/')
+    os.system('cp -rf ui/mac/qt_menu.nib dist/Aston.app/Contents/Resources/')
+    os.system('cp ui/mac/qt.conf dist/Aston.app/Contents/Resources/')
     os.system('mkdir dist/Aston.app/Contents/Resources/aston')
     os.system('mkdir dist/Aston.app/Contents/Resources/aston/ui')
     os.system('mkdir dist/Aston.app/Contents/Resources/aston/ui/icons')
