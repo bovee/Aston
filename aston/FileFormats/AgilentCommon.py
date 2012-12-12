@@ -104,5 +104,10 @@ def read_masshunter_info(folder):
         d['m-tmp'] = r.find('.//TCC//LeftTemp').text
     except IOError:
         pass
+    except AttributeError:
+        #e.g. if LeftTemp is not set, find will
+        #return None and None has no attribute text
+        #TODO: better fix for this
+        pass
 
     return d
