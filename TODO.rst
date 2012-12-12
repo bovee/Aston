@@ -20,7 +20,6 @@
 * finish trace selector dialog
   - delete items from ion list
   - low-high error checking for ranges, make sure ions are numbers, etc
-* make sure all dates are in consistent format (in file table)
 * better spectra display
   - display range as average for Agilent MSMS
 

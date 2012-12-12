@@ -1,12 +1,11 @@
 import os
 import re
 import struct
-import time
 from datetime import datetime
 import numpy as np
-from xml.etree import ElementTree
 from aston import Datafile
 from aston.TimeSeries import TimeSeries
+from aston.FileFormats.AgilentCommon import read_masshunter_info
 
 
 class AgilentMWD(Datafile.Datafile):
@@ -149,7 +148,8 @@ class AgilentMWD2(Datafile.Datafile):
         f = open(fname, 'rb')
 
         f.seek(0x1075)
-        sig_name = f.read(2 * struct.unpack('>B', f.read(1))[0]).decode('utf-16')
+        sig_name = f.read(2 * struct.unpack('>B', \
+          f.read(1))[0]).decode('utf-16')
         #wavelength the file was collected at
         wv = float(re.search("Sig=(\d+),(\d+)", sig_name).group(1))
 
@@ -185,7 +185,8 @@ class AgilentMWD2(Datafile.Datafile):
             Convenience function to quickly pull out strings.
             """
             f.seek(off)
-            return f.read(2 * struct.unpack('>B', f.read(1))[0]).decode('utf-16')
+            return f.read(2 * struct.unpack('>B', \
+              f.read(1))[0]).decode('utf-16')
 
         f = open(self.rawdata, 'rb')
         d['name'] = get_str(f, 0x35A)
@@ -250,19 +251,8 @@ class AgilentDAD(Datafile.Datafile):
         fdata.close()
 
     def _update_info_from_file(self):
-        d = {}
-        tree = ElementTree.parse(os.path.join( \
-                os.path.dirname(self.rawdata), 'sample_info.xml'))
-        for i in tree.iterfind('Field'):
-            tagname = i.find('Name').text
-            tagvalue = i.find('Value').text
-            if tagname == 'Sample Name':
-                d['name'] = tagvalue
-            elif tagname == 'Sample Position':
-                d['r-vial-pos'] = tagvalue
-            elif tagname == 'Method':
-                d['m'] = tagvalue.split('/')[-1]
-        d['r-opr'] = ''
+        folder = os.path.dirname(self.rawdata)
+        d = read_masshunter_info(folder)
         d['r-type'] = 'Sample'
         self.info.update(d)
 
