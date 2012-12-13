@@ -15,7 +15,7 @@ class mzML(Datafile):
     def _cache_data(self):
         r = ElementTree.parse(self.rawdata).getroot()
         s = r.findall('*//{http://psi.hupo.org/ms/mzml}spectrumList/')
-        d =
+        d = None
         data = zlib.decompress(base64.b64decode(d))
         self.data = TimeSeries()
 

@@ -14,7 +14,7 @@ UninstPage instfiles
 Section "Aston (required)"
   SectionIn RO
   SetOutPath "$INSTDIR"
-  File /r "dist"
+  File /r "../../dist"
   WriteUninstaller "uninstall.exe"
 SectionEnd
 

@@ -28,8 +28,8 @@ options = {
     'long_description': read('README.rst'),
     'packages': ['aston', 'aston.ui', 'aston.Features', \
                 'aston.FileFormats', 'aston.Math'],
-    'scripts': ['aston.py'],
-    'data_files': matplotlib.get_py2exe_datafiles(),
+    'scripts': ['astonx.py'],
+    #'data_files': matplotlib.get_py2exe_datafiles(),
     'package_data': {'aston': \
       ['i18n/*.qm', 'ui/icons/*.png']},
     'include_package_data': True,
@@ -45,7 +45,7 @@ if len(sys.argv) >= 2 and sys.argv[1] == 'py2exe':
         print('Could not import py2exe. Windows exe could not be built.')
         sys.exit(0)
 
-    options['windows'] = ['aston.py']
+    options['windows'] = ['astonx.py']
     # scipy...._validation is only needed because of bug in scipy
     options['options'] = {
         'py2exe': {'skip_archive': False,
@@ -68,8 +68,9 @@ elif len(sys.argv) >= 2 and sys.argv[1] == 'py2app':
         print('Could not import py2app. Mac bundle could not be built.')
         sys.exit(0)
 
-    options['app'] = ['aston.py']
+    options['app'] = ['astonx.py']
     options['setup_requires'] = ['py2app']
+    #options['iconfile'] = ''
     options['options'] = {'py2app': {
         'argv_emulation': False,
         'includes': ['sip', 'PyQt4', 'PyQt4.QtCore', \
@@ -92,17 +93,19 @@ if len(sys.argv) >= 2 and sys.argv[1] == 'py2exe':
     os.system('mkdir dist\\aston')
     os.system('mkdir dist\\aston\\ui')
     os.system('mkdir dist\\aston\\ui\\icons')
+    #TODO: delete matplotlib sample data
     os.system('copy aston\\ui\\icons\\*.png dist\\aston\\ui\\icons\\')
-    os.system('copy aston\\ui\\icons\\*.ico dist\\aston\\ui\\icons\\')
-    #TODO: create an install wizard
+    os.system('copy platform\\win\\*.ico dist\\aston\\ui\\icons\\')
+    #TODO: run the aston.nsi
 elif len(sys.argv) >= 2 and sys.argv[1] == 'py2app':
     os.system('rm -rf build')
-    os.system('cp -rf aston/ui/mac/qt_menu.nib dist/Aston.app/Contents/Resources/')
-    os.system('cp aston/ui/mac/qt.conf dist/Aston.app/Contents/Resources/')
+    os.system('cp -rf platform/mac/qt_menu.nib dist/Aston.app/Contents/Resources/')
+    os.system('cp platform/mac/qt.conf dist/Aston.app/Contents/Resources/')
     os.system('mkdir dist/Aston.app/Contents/Resources/aston')
     os.system('mkdir dist/Aston.app/Contents/Resources/aston/ui')
     os.system('mkdir dist/Aston.app/Contents/Resources/aston/ui/icons')
     os.system('cp aston/ui/icons/*.png dist/Aston.app/Contents/Resources/aston/ui/icons/')
+    #TODO: copy icon.icns into *.app
     #TODO: remove stuff from "dist/Aston.app/Contents/Resources/lib/python2.7"
     #matplotlib.tests, scipy.weave, numpy.f2py
     #libQtNetwork.4.dylib, libQtXmlPatterns.4.dylib, libtcl8.5.dylib

@@ -1,4 +1,5 @@
 import os.path as op
+import pkg_resources
 from PyQt4 import QtGui
 
 from aston.ui.aston_ui import Ui_MainWindow
@@ -19,7 +20,8 @@ class AstonWindow(QtGui.QMainWindow):
         self.ui.setupUi(self)
 
         #my icon!
-        icn_path = op.join(op.curdir, 'aston', 'ui', 'icons', 'logo.png')
+        icn_path = pkg_resources.resource_filename(__name__, \
+          op.join('icons', 'logo.png'))
         self.setWindowIcon(QtGui.QIcon(icn_path))
 
         #quick fix for Mac OS menus
@@ -78,7 +80,7 @@ class AstonWindow(QtGui.QMainWindow):
         self.ui.actionGraph_Style.setMenu(style_menu)
 
         #set up the list of files in the current directory
-        self.directory = self.getPref('Default.FILE_DIRECTORY')
+        self.directory = op.expanduser(self.getPref('Default.FILE_DIRECTORY'))
 
         file_db = AstonFileDatabase(op.join(self.directory, 'aston.sqlite'))
         self.obj_tab = FileTreeModel(file_db, self.ui.fileTreeView, self)
@@ -126,7 +128,13 @@ class AstonWindow(QtGui.QMainWindow):
         except:
             import ConfigParser
             cp = ConfigParser.SafeConfigParser()
-        cp.read('./settings.ini')
+        for cfg in (op.expanduser('~/.aston.ini'), './aston.ini'):
+            if op.exists(cfg):
+                cp.readfp(open(cfg))
+                break
+        else:
+            pass
+            #TODO: write out this file?
         try:
             return cp.get(key.split('.')[0], key.split('.')[1])
         except:

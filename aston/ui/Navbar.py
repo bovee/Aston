@@ -1,5 +1,6 @@
 import time
 import os.path as op
+import pkg_resources
 import numpy as np
 from PyQt4 import QtGui  # , QtCore
 from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg
@@ -14,14 +15,17 @@ class AstonNavBar(NavigationToolbar2QTAgg):
         self.ev_time = 0
         self._xypress = []
 
+        #quick function to return icon locs
+        icon = lambda l: pkg_resources.resource_filename( \
+          __name__, op.join('icons', l + '.png'))
+
         #remove the plot adjustment buttons
         self.removeAction(self.actions()[-1])
         self.removeAction(self.actions()[-1])
         self.removeAction(self.actions()[-1])
 
         #add the alignment tool
-        path = op.join(op.curdir, 'aston', 'ui', 'icons', 'align.png')
-        alignToolAct = QtGui.QAction(QtGui.QIcon(path), \
+        alignToolAct = QtGui.QAction(QtGui.QIcon(icon('align')), \
                                          'Align Chromatogram', self)
         self.addAction(alignToolAct)
         alignToolAct.triggered.connect(self.align)
@@ -29,15 +33,13 @@ class AstonNavBar(NavigationToolbar2QTAgg):
         self.addSeparator()
 
         #add the peak tool
-        path = op.join(op.curdir, 'aston', 'ui', 'icons', 'peak.png')
-        peakToolAct = QtGui.QAction(QtGui.QIcon(path), \
+        peakToolAct = QtGui.QAction(QtGui.QIcon(icon('peak')), \
                                     'Add/Delete Peak', self)
         self.addAction(peakToolAct)
         peakToolAct.triggered.connect(self.peak)
 
         #add the spectra tool
-        path = op.join(op.curdir, 'aston', 'ui', 'icons', 'spectrum.png')
-        specToolAct = QtGui.QAction(QtGui.QIcon(path), \
+        specToolAct = QtGui.QAction(QtGui.QIcon(icon('spectrum')), \
                                         'Get Spectrum', self)
         self.addAction(specToolAct)
         specToolAct.triggered.connect(self.spec)
