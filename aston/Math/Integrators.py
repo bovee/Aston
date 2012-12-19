@@ -1,76 +1,56 @@
 import numpy as np
 import scipy.ndimage as nd
 import scipy.signal._peak_finding as spf
+from scipy.optimize import leastsq, fmin
 from aston.Features import Peak
 
 
-def waveletIntegrate(dt, ion=None):
+def waveletIntegrate(dt, ion=None, plotter=None):
     #TODO: make this an integration option
-    x = dt.trace(ion)
-    t = dt.time()
+    x = dt.trace(ion).y
+    times = dt.trace(ion).times
 
-    nstep = 20  # number of frequencies to analyse at
-    z = np.zeros((nstep, len(x)))
+    widths = np.linspace(1, 100, 200)
+    cwtm = spf.cwt(x, spf.ricker, widths)
+    ridges = spf._identify_ridge_lines(cwtm, widths / 4.0, 1)
+    filt_ridges = spf._filter_ridge_lines(cwtm, ridges, min_snr=3)
 
-    # fxn to calculate window size based on step
-    f = lambda i: int((len(x) ** (1. / (nstep + 2.))) ** i)  # 22*(x+1)
+    #peaks_w, peaks_t, peaks_amp = [], [], []
+    p0 = [0, 0]
+    for l in filt_ridges:
+        pl = np.argmax([cwtm[x, y] for x, y in zip(l[0], l[1])])
+        peak_amp = cwtm[l[0][pl], l[1][pl]]
+        peak_w = widths[l[0][pl]] * 0.5 * (times[1] - times[0])
+        peak_t = times[l[1][pl]]
+        p0 += [peak_t, peak_amp, peak_w]
 
-    # perform a continuous wavelet transform and save the results in z
-    for i in range(0, nstep):
-        # how long should the wavelet be?
-        hat_len = f(i)
-        # determine the support of the mexican hat
-        #rng = np.linspace(-5,5,hat_len)
-        # create an array with a mexican hat
-        #hat =  1/np.sqrt(hat_len) * (1 - rng**2) * np.exp(-rng**2 / 2)
-        hat = spf.ricker(min(10 * hat_len, len(x)), hat_len)
-        # convolve the wavelet with the signal at this scale levelax2.
-        z[i] = np.convolve(x, hat, mode='same')
+    def gauss(t, h, w):
+        return h * np.exp(-t ** 2 / (2 * w ** 2))
 
-    # plot the wavelet coefficients
-    #from matplotlib import cm
-    #xs,ys = np.meshgrid(self.data.time(),np.linspace(self.max_bounds[2],self.max_bounds[3],nstep))
-    #self.tplot.contourf(xs,ys,z,300,cmap=cm.binary)
-    #self.tcanvas.draw()
+    def sim_chr(p, times):
+        c = p[0] + times * p[1]
+        for i in range(int((len(p) - 2) / 3)):
+            t, h, w = p[2 + 3 * i:5 + 3 * i]
+            c += gauss(times - t, h, w)
+        return c
 
-    max_dists = [f(i) / 4.0 for i in range(0, nstep)]
-    ridges = spf._identify_ridge_lines(z, max_dists, np.ceil(f(0)))
-    filt_ridges = spf._filter_ridge_lines(z, ridges)
-    ridge_locs = sorted(map(lambda x: x[1][0], filt_ridges))
+    def errf(p, y, t):
+        return sim_chr(p, t) - y
 
-    pks = []
-    for r in filt_ridges:
-        pk_width = int(f(r[0][0]) / 2.0)
-        pt1 = (t[r[1][0] - pk_width], x[r[1][0] - pk_width])
-        pt2 = (t[r[1][0] + pk_width], x[r[1][0] + pk_width])
-        verts = [pt1]
-        verts += zip(dt.time(pt1[0], pt2[0]), \
-                     dt.trace(ion, pt1[0], pt2[0]))
-        verts += [pt2]
-        info = {'p-type': 'Sample', 'p-created': 'integrator', \
-                'p-int': 'wavelet'}
-        info['name'] = '{:.2f}-{:.2f}'.format(pt1[0], pt2[0])
-        info['p-ion'] = ion
-        pk = Peak(dt.db, None, dt.db_id, info, verts)
-        pks.append(pk)
+    p, r1, r2, r3, r4 = leastsq(errf, p0[:], args=(x, times), full_output=True, maxfev=10)
+    print(r2['nfev'], r3, r4)
+    plotter.plt.plot(times, x - sim_chr(p0, times), 'r-')
+    plotter.plt.plot(times, x - sim_chr(p, times), 'k-')
 
-    return pks
-    # create an True-False array of the local maxima
-    #mx = (z == nd.maximum_filter(z,size=(3,17),mode='nearest')) & (z > 100)
-    # get the indices of the local maxima
-    #inds = np.array([i[mx] for i in np.indices(mx.shape)]).T
 
-    #for i in inds:
-        #get peak time, width and "area"
-        #pk_t, pk_w, pk_a = t[i[1]], f(i[0]), z[i[0],i[1]]
-        #print pk_t, pk_w, pk_a
-        #try:
-        #rng = np.linspace(t[int(i[1]-i[0]/2.)], t[int(i[1]+i[0]/2.)], i[0])
-        #verts = z[i[0],i[1]]/np.sqrt(2*np.pi) * np.exp(np.linspace(-5.,5.,i[0])**2/-2.)
-        #verts += x[i[1]] - verts[int(i[0]/2)]
-        #y = patches.PathPatch(Path(zip(rng,verts)),facecolor='red',lw=0)
-        #ptab.masterWindow.tplot.add_patch(y)
-        #except:
+    #import matplotlib.pyplot as plt
+    #plt.imshow(cwtm, extent=(t[0], t[-1], widths[0], widths[-1]))
+    #for l in filt_ridges:
+    #    plt.plot(l[1], l[0])
+    #plt.plot(peaks_t, peaks_w, 'k*')
+    #plt.show()
+
+
 
 def statSlopeIntegrate(dt, ion=None):
     t = dt.time()

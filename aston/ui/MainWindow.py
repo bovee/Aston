@@ -40,6 +40,7 @@ class AstonWindow(QtGui.QMainWindow):
         self.ui.actionExportSpectra.triggered.connect(self.exportSpectrum)
         self.ui.actionExportSelectedItems.triggered.connect(self.exportItems)
         self.ui.actionQuickIntegrate.triggered.connect(self.quickIntegrate)
+        self.ui.actionIntegrateWavelet.triggered.connect(self.wavelet)
         self.ui.actionEditFilters.triggered.connect(self.showFilterWindow)
         self.ui.actionRevert.triggered.connect(self.revertChromChange)
         self.ui.actionQuit.triggered.connect(QtGui.qApp.quit)
@@ -229,6 +230,11 @@ class AstonWindow(QtGui.QMainWindow):
             self.obj_tab.addObjects(dt, pks)
         dt.info.del_items('s-peaks')
         self.plotter.redraw()
+
+    def wavelet(self):
+        dt = self.obj_tab.active_file()
+        ions = [i for i in dt.info['traces'].split(',')]
+        waveletIntegrate(dt, ions[0], self.plotter)
 
     def showFilterWindow(self):
         if self.obj_tab.returnSelFile() is not None:
