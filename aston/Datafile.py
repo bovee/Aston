@@ -440,6 +440,21 @@ class Datafile(DBObject):
     #The following function stubs should be filled out in the
     #subclasses that handle the raw datafiles.
 
+    def events(self):
+        """
+        Returns events that happen during a run, like FIA injections
+        or fraction collections windows. These happen at one (or over
+        a range of) time.
+        """
+        return []
+
+    def points(self):
+        """
+        Retuns an array of points, their intensity and an associated
+        MZ for each. This is principally used for MSMS points right now.
+        """
+        return []
+
     def _cache_data(self):
         """
         Load the data into the Datafile for the first time.

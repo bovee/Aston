@@ -110,7 +110,7 @@
     </widget>
     <widget class="QMenu" name="menuExtras">
      <property name="enabled">
-      <bool>false</bool>
+      <bool>true</bool>
      </property>
      <property name="title">
       <string>Extras</string>
@@ -119,7 +119,12 @@
      <addaction name="actionGraphMSMS"/>
      <addaction name="actionGraphMethodDetails"/>
     </widget>
-    <addaction name="actionGraph_Style"/>
+    <widget class="QMenu" name="menuGraph_Style">
+     <property name="title">
+      <string>Graph Style</string>
+     </property>
+    </widget>
+    <addaction name="menuGraph_Style"/>
     <addaction name="actionLegend"/>
     <addaction name="actionColor_Scheme"/>
     <addaction name="menuPeaks"/>
@@ -474,11 +479,6 @@
     <string>All Items as CSV</string>
    </property>
   </action>
-  <action name="actionGraph_Style">
-   <property name="text">
-    <string>Graph Style</string>
-   </property>
-  </action>
   <action name="actionLegend">
    <property name="checkable">
     <bool>true</bool>
@@ -528,7 +528,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Fraction Collection</string>
+    <string>Fxn Collection/FIA</string>
    </property>
   </action>
   <action name="actionGraphMSMS">
@@ -558,6 +558,14 @@
   <action name="actionQuickIntegrate">
    <property name="text">
     <string>Quick Integrate</string>
+   </property>
+  </action>
+  <action name="actionFIA">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>FIA</string>
    </property>
   </action>
  </widget>
