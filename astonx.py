@@ -44,7 +44,7 @@ try:
         lang = locale.getlocale()[0]
         tlate = PyQt4.QtCore.QTranslator(qt)
         tlate.load('aston_' + lang + '.qm', \
-          pkg_resources.resource_filename('aston/i18n'))
+            pkg_resources.resource_filename('aston', 'i18n'))
         qt.installTranslator(tlate)
 except locale.Error:
     pass

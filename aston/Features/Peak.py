@@ -115,6 +115,8 @@ class Peak(DBObject):
         return Spectrum(self.db, None, self.db_id, info, data)
 
     def update_model(self, key):
+        # TODO: the model should be applied to *all* of the
+        # ions in self.rawdata
         t = self.rawdata.times
         d = self.rawdata.data[:, 0]
         self.info['p-model'] = key

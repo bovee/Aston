@@ -42,6 +42,7 @@
      <addaction name="actionExportSelectedItems"/>
     </widget>
     <addaction name="actionOpen"/>
+    <addaction name="actionCopy_Settings_from_Other_DB"/>
     <addaction name="menuExport"/>
     <addaction name="separator"/>
     <addaction name="actionQuit"/>
@@ -566,6 +567,11 @@
    </property>
    <property name="text">
     <string>FIA</string>
+   </property>
+  </action>
+  <action name="actionCopy_Settings_from_Other_DB">
+   <property name="text">
+    <string>Load Settings from DB</string>
    </property>
   </action>
  </widget>

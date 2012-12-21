@@ -1,15 +1,8 @@
 # -*- coding: utf-8 -*-
-#from PyQt4.QtCore import QCoreApplication
+from __future__ import unicode_literals
+from PyQt4.QtCore import QObject
 
-try:
-    #tr = lambda s: QCoreApplication.tr(s.decode('utf-8'))
-    tr = lambda s: s.decode('utf-8')
-    tr('')
-except:
-    #tr = lambda s: QCoreApplication.tr(s)
-    tr = lambda s: s
-
-#FIXME: tr is no compatible with u
+tr = lambda s: QObject().trUtf8(s)
 
 aston_groups = {'m': tr('Method'),
           'r': tr('Run'),
