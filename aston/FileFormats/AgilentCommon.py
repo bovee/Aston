@@ -14,53 +14,95 @@ def read_chemstation_info(folder):
     pass
 
 
+def get_FIA(folder):
+    d = read_reg_file(open(op.join(folder, 'ACQRES.REG'), 'rb'))
+    if not d.get('FIARun', False):
+        return []
+    fis = []
+    prev_f = d['FIASeriesInfo'][1][1]
+    for f in d['FIASeriesInfo'][1][2:]:
+        fis.append([prev_f[0], f[0], prev_f[2]])
+        prev_f = f
+    else:
+        if len(fis) > 0:
+            print(fis[-1])
+            off_t = fis[-1][1] - fis[-1][0]
+            fis.append([prev_f[0], prev_f[0] + off_t, prev_f[2]])
+    return fis
+
+
 def read_reg_file(f):
+    """
+    Given a file handle for an Agilent *.REG file, this will parse
+    that file into a dictonary of key/value pairs (including any
+    tables that are in the *.REG file, which will be parsed into
+    lists of lists).
+    """
     # convenience function for reading in data
     rd = lambda st: struct.unpack(st, f.read(struct.calcsize(st)))
 
     f.seek(0x2D)
-    nrecs = rd('<I')[0]  #TODO: should be '<H'
+    nrecs = rd('<I')[0]  # TODO: should be '<H'
     if nrecs == 0:
         raise TypeError("Version of REG file is too new.")
     rec_tab = [rd('<HHIII') for n in range(nrecs)]
 
+    names = {}
     f.seek(0x31 + 20 * nrecs)
+    for r in rec_tab:
+        d = f.read(r[2])
+        if r[1] == 1539:  # '0306'
+            # this is part of the linked list too, but contains a
+            # reference to a table
+            cd = struct.unpack('<HIII21sI', d)
+            names[cd[5]] = cd[4].decode('iso8859').strip('\x00')
+            #except:
+            #    pass
+        elif r[1] == 32774:  # b'0680'
+            names[r[4]] = d[2:-1].decode('iso8859')
+    #return names
+
     data = {}
-    table_names = {}
+    f.seek(0x31 + 20 * nrecs)
     for r in rec_tab:
         d = f.read(r[2])
         if r[1] == 1538:  # '0206'
             # this is part of a linked list
             if len(d) == 43:
                 cd = struct.unpack('<HIII21sd', d)
-                data[cd[4].decode('ascii').strip('\x00')] = cd[5]
+                data[cd[4].decode('iso8859').strip('\x00')] = cd[5]
             else:
                 pass
-        elif r[1] == 1539:  # '0306'
-            # this is part of the linked list too, but contains a
-            # reference to a table
-            cd = struct.unpack('<HIII21sI', d)
-            table_names[cd[5]] = cd[4].decode('ascii').strip('\x00')
         elif r[1] == 1793:  # b'0107'
             #try:
-            #TODO: doesn't work on tables that contain text
             nrow = struct.unpack('<H', d[4:6])[0]
             ncol = struct.unpack('<H', d[16:18])[0]
-            if nrow * ncol != 0:
-                colnamelocs = [slice(20 + 30 * i, 36 + 30 * i)
-                               for i in range(ncol)]
-                colnames = [d[i].split(b'\x00')[0].decode('ascii')
-                            for i in colnamelocs]
-                tab = struct.unpack('f' * nrow * ncol,
-                                    d[-4 * nrow * ncol:])
-                data[table_names[r[4]]] = \
-                    [colnames, np.array(tab).reshape((nrow, ncol))]
-            #except:
-            #    pass
-        elif r[1] == 32774:  # b'0680'
-            #TODO: these are strings referenced in tables
-            #print(d[2:-1].decode('ascii'))
-            pass
+            if ncol != 0:
+                cols = [struct.unpack('<16sHHHHHI', \
+                        d[20 + 30 * i:50 + 30 * i])
+                        for i in range(ncol)]
+                colnames = [c[0].split(b'\x00')[0].decode('iso8859')
+                            for c in cols]
+                # TODO: type 2 is not a constant size? 31, 17
+                rty2sty = {1: 'H', 3: 'I', 4: 'f', 5: 'H', \
+                           7: 'H', 8: 'd', 11: 'H', 12: 'H', \
+                           13: 'I', 14: 'I', 16: 'H'}
+                coltype = '<' + ''.join([rty2sty.get(c[3], \
+                  str(c[2]) + 's') for c in cols])
+                lencol = struct.calcsize(coltype)
+                tab = []
+                for i in reversed(range(2, nrow + 2)):
+                    rawrow = struct.unpack(coltype, \
+                      d[-i * lencol: (1 - i) * lencol])
+                    row = []
+                    for j, p in enumerate(rawrow):
+                        if cols[j][3] == 3:
+                            row.append(names.get(p, str(p)))
+                        else:
+                            row.append(p)
+                    tab.append(row)
+                data[names[r[4]]] = \
+                    [colnames, tab]
     return data
 
 
