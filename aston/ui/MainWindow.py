@@ -27,13 +27,6 @@ class AstonWindow(QtGui.QMainWindow):
         #quick fix for Mac OS menus
         self.ui.actionSettings.setMenuRole(QtGui.QAction.NoRole)
 
-        #set up the grouping for the dock widgets
-        self.tabifyDockWidget(self.ui.filesDockWidget, self.ui.settingsDockWidget)
-        self.tabifyDockWidget(self.ui.filesDockWidget, self.ui.spectraDockWidget)
-        self.tabifyDockWidget(self.ui.filesDockWidget, self.ui.methodDockWidget)
-        self.tabifyDockWidget(self.ui.filesDockWidget, self.ui.compoundDockWidget)
-        self.ui.filesDockWidget.raise_()
-
         #connect the menu logic
         self.ui.actionOpen.triggered.connect(self.openFolder)
         self.ui.actionExportChromatogram.triggered.connect(self.exportChromatogram)
@@ -46,16 +39,19 @@ class AstonWindow(QtGui.QMainWindow):
         self.ui.actionQuit.triggered.connect(QtGui.qApp.quit)
 
         #hook up the windows to the menu
-        self.ui.actionFiles.triggered.connect(self.updateWindows)
-        self.ui.actionSettings.triggered.connect(self.updateWindows)
-        self.ui.actionSpectra.triggered.connect(self.updateWindows)
-        self.ui.actionMethods.triggered.connect(self.updateWindows)
-        self.ui.actionCompounds.triggered.connect(self.updateWindows)
-        self.ui.filesDockWidget.visibilityChanged.connect(self.updateWindowsMenu)
-        self.ui.settingsDockWidget.visibilityChanged.connect(self.updateWindowsMenu)
-        self.ui.spectraDockWidget.visibilityChanged.connect(self.updateWindowsMenu)
-        self.ui.methodDockWidget.visibilityChanged.connect(self.updateWindowsMenu)
-        self.ui.compoundDockWidget.visibilityChanged.connect(self.updateWindowsMenu)
+        for ac in [self.ui.actionFiles, self.ui.actionSettings, \
+          self.ui.actionSpectra, self.ui.actionMethods, \
+          self.ui.actionCompounds]:
+            ac.triggered.connect(self.updateWindows)
+        #set up the grouping for the dock widgets and
+        #hook the menus up to the windows
+        for ac in [self.ui.filesDockWidget, self.ui.spectraDockWidget, \
+          self.ui.settingsDockWidget, self.ui.methodDockWidget,
+          self.ui.compoundDockWidget]:
+            if ac is not self.ui.filesDockWidget:
+                self.tabifyDockWidget(self.ui.filesDockWidget, ac)
+            ac.visibilityChanged.connect(self.updateWindowsMenu)
+        self.ui.filesDockWidget.raise_()
         self.ui.settingsDockWidget.setVisible(False)
         self.ui.compoundDockWidget.setVisible(False)
         self.ui.methodDockWidget.setVisible(False)
@@ -124,11 +120,10 @@ class AstonWindow(QtGui.QMainWindow):
 
     def getPref(self, key):
         try:
-            import configparser
-            cp = configparser.SafeConfigParser()
+            import configparser as cfg_parse
         except:
-            import ConfigParser
-            cp = ConfigParser.SafeConfigParser()
+            import ConfigParser as cfg_parse
+        cp = cfg_parse.SafeConfigParser()
         for cfg in (op.expanduser('~/.aston.ini'), './aston.ini'):
             if op.exists(cfg):
                 cp.readfp(open(cfg))
@@ -142,7 +137,8 @@ class AstonWindow(QtGui.QMainWindow):
             return ''
 
     def openFolder(self):
-        folder = str(QtGui.QFileDialog.getExistingDirectory(self, self.tr("Open Folder")))
+        folder = str(QtGui.QFileDialog.getExistingDirectory(self, \
+          self.tr("Open Folder")))
         if folder == '':
             return
         self.directory = folder
