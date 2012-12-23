@@ -123,8 +123,11 @@ class AgilentMS(Datafile.Datafile):
         d['m'] = f.read(struct.unpack('>B', f.read(1))[0]).decode().strip()
         f.seek(0xB2)
         rawdate = f.read(struct.unpack('>B', f.read(1))[0]).decode()
-        d['r-date'] = datetime.strptime(rawdate, \
-          "%d %b %y %H:%M %p").isoformat(' ')
+        try:
+            d['r-date'] = datetime.strptime(rawdate, \
+            "%d %b %y %H:%M %p").isoformat(' ')
+        except ValueError:
+            pass  # date is not in correct format to parse?
         d['r-type'] = 'Sample'
         #TODO: vial number in here too?
         f.close()

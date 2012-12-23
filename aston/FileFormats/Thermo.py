@@ -98,3 +98,10 @@ class ThermoDXF(Datafile.Datafile):
         d['name'] = os.path.splitext(os.path.basename(self.rawdata))[0]
         d['r-type'] = 'Sample'
         self.info.update(d)
+
+
+class ThermoRAW(Datafile.Datafile):
+    ext = 'RAW'
+    mgc = '01A1'
+
+    #TODO: write the rest of this!

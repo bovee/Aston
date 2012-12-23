@@ -92,3 +92,10 @@ class BrukerMSMS(Datafile.Datafile):
 
     def _update_info_from_file(self):
         self.info.update({'r-type': 'Sample'})
+
+
+class BrukerBAF(Datafile.Datafile):
+    ext = 'BAF'
+    mgc = '2400'
+    pass
+    #TODO: implement this
