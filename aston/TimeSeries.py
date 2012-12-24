@@ -62,6 +62,12 @@ class TimeSeries(object):
             # if a TIC is being requested and we don't have
             # a prebuilt one, sum up the axes
             data = self.data[st_idx:en_idx, :].sum(axis=1)
+        elif val == '!':
+            # this is for peaks, where we return the first
+            # ion by default; should be accessible from the
+            # ions dialog box because !'s are stripped out
+            data = self.data[st_idx:en_idx, 0]
+            val = self.ions[0]
         else:
             # depending on the val, find the rows differently
             if type(val) is int or type(val) is float:
@@ -118,12 +124,12 @@ class TimeSeries(object):
         return TimeSeries(self._retime(new_times), new_times, self.ions)
 
     def _retime(self, new_times):
-        if np.all(np.equal(new_times, self.times)):
-            return self.data
-        else:
-            f = lambda d: interp1d(self.times, d, \
-              bounds_error=False, fill_value=0.0)(new_times)
-            return np.apply_along_axis(f, 0, self.data)
+        if new_times.shape == self.times.shape:
+            if np.all(np.equal(new_times, self.times)):
+                return self.data
+        f = lambda d: interp1d(self.times, d, \
+            bounds_error=False, fill_value=0.0)(new_times)
+        return np.apply_along_axis(f, 0, self.data)
 
     def adjust_time(self, offset=0.0, scale=1.0):
         t = scale * self.times + offset
@@ -185,7 +191,8 @@ class TimeSeries(object):
     def __and__(self, ts):
         if ts is None:
             return self
-        #TODO: merge the ions together if they're the same
+        # TODO: shouldn't this use the times of the longest
+        #timeseries and not just the first one?
         data = np.hstack([self.data, ts._retime(self.times)])
         ions = self.ions + ts.ions
         ts = TimeSeries(data, self.times, ions)

@@ -35,32 +35,11 @@ class Peak(DBObject):
         y[-1] = self.rawdata.data[-1, 0]
         return TimeSeries(y, times, ['X'])
 
-    def time(self, st_time=None, en_time=None):
-        return self._getTimeSlice(np.array(self.rawdata)[:, 0], \
-                                  st_time, en_time)
+    def time(self, twin=None):
+        return self.rawdata.trace('!', twin=twin).time
 
-    def trace(self, ion=None, st_time=None, en_time=None):
-        #TODO: figure out if something should be done with the ion parameter
-        return self._getTimeSlice(self.data[:, 1], st_time, en_time)
-
-    def _getTimeSlice(self, arr, st_time=None, en_time=None):
-        '''Returns a slice of the incoming array filtered between
-        the two times specified. Assumes the array is the same
-        length as self.data. Acts in the time() and trace() functions.'''
-        tme = self.data[:, 0].copy()
-        if st_time is None:
-            st_idx = 0
-        else:
-            st_idx = (np.abs(tme - st_time)).argmin()
-            if st_idx == 1:
-                st_idx = 0
-        if en_time is None:
-            en_idx = self.data.shape[0]
-        else:
-            en_idx = (np.abs(tme - en_time)).argmin() + 1
-            if en_idx == len(tme) - 1:
-                en_idx = len(tme)
-        return arr[st_idx:en_idx]
+    def trace(self, ion='!', twin=None):
+        return self.rawdata.trace(ion, twin=twin).y
 
     def _load_info(self, fld):
         if fld == 's-mzs':
@@ -91,7 +70,7 @@ class Peak(DBObject):
                 return ''
             t = float(prt.getInfo('s-peaks-en')) - \
                 float(prt.getInfo('s-peaks-st'))
-            return str(t / peakmath.length(self.data) + 1)
+            return str(t / peakmath.length(self.as_poly()) + 1)
         elif fld == 'sp-d13c':
             spcs = self.getAllChildren('spectrum')
             if len(spcs) > 0:
@@ -101,8 +80,14 @@ class Peak(DBObject):
     def contains(self, x, y):
         return peakmath.contains(self.as_poly(), x, y)
 
-    def as_poly(self):
-        return np.vstack([self.data.times, self.data.data.T]).T
+    def as_poly(self, ion=None):
+        if ion is None:
+            row = 0
+        elif ion not in self.data.ions:
+            row = 0
+        else:
+            row = self.data.ions.index(ion)
+        return np.vstack([self.data.times, self.data.data.T[row]]).T
 
     def createSpectrum(self, method=None):
         prt = self.getParentOfType('file')

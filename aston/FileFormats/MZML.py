@@ -5,7 +5,8 @@ from aston import Datafile
 
 
 class mzXML(Datafile):
-    pass
+    ext = 'MZXML'
+    mgc = None
 
 
 class mzML(Datafile):
@@ -21,3 +22,7 @@ class mzML(Datafile):
 
     def _update_info_from_file(self):
         self.info.update({'r-type': 'Sample'})
+
+
+class NetCDF(Datafile):
+    pass

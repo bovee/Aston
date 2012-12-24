@@ -76,10 +76,10 @@ class Plotter(object):
     def setColorScheme(self, scheme=None):
         colors = dict((str(self._colors[k]), k) for k in self._colors)
         if scheme is None:
-            self._color = plt.get_cmap('Spectral')
-        else:
-            self._color = plt.get_cmap(colors[str(scheme)])
+            scheme = self._colors['Spectral']
+        self._color = plt.get_cmap(colors[str(scheme)])
         self._peakcolor = self._color(0, 1)
+        return colors[str(scheme)]
 
     def availColors(self):
         l = [self._colors['Spectral']]
@@ -92,6 +92,7 @@ class Plotter(object):
             self._style = 'default'
         else:
             self._style = styles[str(style)]
+        return self._style
 
     def availStyles(self):
         l_ord = ['default', 'scaled', 'stacked', 'scaled stacked', '2d']

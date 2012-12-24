@@ -27,13 +27,17 @@ class AstonWindow(QtGui.QMainWindow):
         #quick fix for Mac OS menus
         self.ui.actionSettings.setMenuRole(QtGui.QAction.NoRole)
 
+        #set up the list of files in the current directory
+        self.directory = op.expanduser(self.getPref('Default.FILE_DIRECTORY'))
+        file_db = AstonFileDatabase(op.join(self.directory, 'aston.sqlite'))
+        self.obj_tab = FileTreeModel(file_db, self.ui.fileTreeView, self)
+
         #connect the menu logic
         self.ui.actionOpen.triggered.connect(self.openFolder)
         self.ui.actionExportChromatogram.triggered.connect(self.exportChromatogram)
         self.ui.actionExportSpectra.triggered.connect(self.exportSpectrum)
         self.ui.actionExportSelectedItems.triggered.connect(self.exportItems)
-        self.ui.actionQuickIntegrate.triggered.connect(self.quickIntegrate)
-        self.ui.actionIntegrateWavelet.triggered.connect(self.wavelet)
+        self.ui.actionIntegrate.triggered.connect(self.integrate)
         self.ui.actionEditFilters.triggered.connect(self.showFilterWindow)
         self.ui.actionRevert.triggered.connect(self.revertChromChange)
         self.ui.actionQuit.triggered.connect(QtGui.qApp.quit)
@@ -43,6 +47,7 @@ class AstonWindow(QtGui.QMainWindow):
           self.ui.actionSpectra, self.ui.actionMethods, \
           self.ui.actionCompounds]:
             ac.triggered.connect(self.updateWindows)
+
         #set up the grouping for the dock widgets and
         #hook the menus up to the windows
         for ac in [self.ui.filesDockWidget, self.ui.spectraDockWidget, \
@@ -63,37 +68,47 @@ class AstonWindow(QtGui.QMainWindow):
         self.plotter = Plotter(self)
         self.specplotter = SpecPlotter(self)
 
+        #make integrator options groups
+        menu_gp = QtGui.QActionGroup(self)
+        for ac in self.ui.menuIntegrator.actions():
+            menu_gp.addAction(ac)
+        menu_gp = QtGui.QActionGroup(self)
+        for ac in self.ui.menuIntegrand.actions():
+            menu_gp.addAction(ac)
+
         #flesh out the settings menu
         color_menu = QtGui.QMenu(self.ui.menuSettings)
+        v = self.obj_tab.db.get_key('color_scheme', dflt='Spectral')
+        v = self.plotter._colors[v]
+        self.plotter.setColorScheme(v)
         self._add_opts_to_menu(color_menu, \
-          self.plotter.availColors(), self.set_color_scheme)
+          self.plotter.availColors(), self.set_color_scheme, v)
         self.ui.actionColor_Scheme.setMenu(color_menu)
 
         self.ui.actionLegend.triggered.connect(self.set_legend)
 
         style_menu = QtGui.QMenu(self.ui.menuSettings)
+        v = self.obj_tab.db.get_key('graph_style', dflt='default')
+        v = self.plotter._styles[v]
+        self.plotter.setStyle(v)
         self._add_opts_to_menu(style_menu, \
-          self.plotter.availStyles(), self.set_graph_style)
+          self.plotter.availStyles(), self.set_graph_style, v)
         self.ui.actionGraph_Style.setMenu(style_menu)
 
-        #set up the list of files in the current directory
-        self.directory = op.expanduser(self.getPref('Default.FILE_DIRECTORY'))
-
-        file_db = AstonFileDatabase(op.join(self.directory, 'aston.sqlite'))
-        self.obj_tab = FileTreeModel(file_db, self.ui.fileTreeView, self)
+        #plot data
         self.plotData()
 
         #set up the compound database
         cmpd_db = AstonDatabase(self.getPref('Default.COMPOUND_DB'))
         self.cmpd_tab = FileTreeModel(cmpd_db, self.ui.compoundTreeView, self)
 
-    def _add_opts_to_menu(self, menu, opts, fxn):
+    def _add_opts_to_menu(self, menu, opts, fxn, dflt=None):
         menu_gp = QtGui.QActionGroup(self)
         for opt in opts:
             act = menu.addAction(opt, fxn)
             act.setData(opt)
             act.setCheckable(True)
-            if opts.index(opt) == 0:
+            if opt == dflt:
                 act.setChecked(True)
             menu_gp.addAction(act)
         pass
@@ -117,6 +132,9 @@ class AstonWindow(QtGui.QMainWindow):
         self.ui.actionSpectra.setChecked(self.ui.spectraDockWidget.isVisible())
         self.ui.actionMethods.setChecked(self.ui.methodDockWidget.isVisible())
         self.ui.actionCompounds.setChecked(self.ui.compoundDockWidget.isVisible())
+
+    def show_status(self, msg):
+        self.statusBar().showMessage(msg, 2000)
 
     def getPref(self, key):
         try:
@@ -155,7 +173,8 @@ class AstonWindow(QtGui.QMainWindow):
         self.plotData()
 
     def set_color_scheme(self):
-        self.plotter.setColorScheme(self.sender().data())
+        v = self.plotter.setColorScheme(self.sender().data())
+        self.obj_tab.db.set_key('color_scheme', v)
         self.plotData()
 
     def set_legend(self):
@@ -163,7 +182,8 @@ class AstonWindow(QtGui.QMainWindow):
         self.plotData()
 
     def set_graph_style(self):
-        self.plotter.setStyle(self.sender().data())
+        v = self.plotter.setStyle(self.sender().data())
+        self.obj_tab.db.set_key('graph_style', v)
         self.plotData()
 
     def exportChromatogram(self):
@@ -208,29 +228,45 @@ class AstonWindow(QtGui.QMainWindow):
     def exportItems(self):
         #TODO: options for exporting different delimiters (e.g. tab) or
         #exporting select items as pictures (e.g. selected spectra)
-        fname = str(QtGui.QFileDialog.getSaveFileName(self, self.tr("Save As...")))
+        fname = str(QtGui.QFileDialog.getSaveFileName(self, \
+          self.tr("Save As...")))
         f = open(fname, 'w')
         sel = self.obj_tab.returnSelFiles()
         f.write(self.obj_tab.items_as_csv(sel))
         f.close()
 
-    def quickIntegrate(self):
+    def integrate(self):
         #TODO: group peaks by time
         dt = self.obj_tab.active_file()
         ions = [i for i in dt.info['traces'].split(',')]
 
-        #add compounds for ions from the first set
-        for ion in ions:
-            #pks = waveletIntegrate(dt, ion)
-            pks = statSlopeIntegrate(dt, ion)
+        if self.ui.actionIntegrateSimple.isChecked():
+            integrate = lambda f: None
+            int_name = 'simple'
+        elif self.ui.actionIntegrateStatSlope.isChecked():
+            integrate = statSlopeIntegrate
+            int_name = 'statslope'
+        elif self.ui.actionIntegrateWavelet.isChecked():
+            integrate = waveletIntegrate
+            int_name = 'wavelet'
+
+        if self.ui.actionTop_Trace.isChecked():
+            tss = [dt.trace(ions[0])]
+        elif self.ui.actionVis_Traces_in_Top_File.isChecked():
+            tss = [dt.trace(i) for i in ions]
+        elif self.ui.actionAll_Traces_in_Top_File.isChecked():
+            tss = []  # TODO: pass in all of the ions
+
+        for ts in tss:
+            pks = integrate(ts, plotter=self.plotter)
+            for pk in pks:
+                pk.db, pk.parent_id = dt.db, dt.db_id
+                pk.info['traces'] = str(ts.ions[0])
+                pk.info['p-created'] = int_name
+                pk.info['p-type'] = 'Sample'
             self.obj_tab.addObjects(dt, pks)
         dt.info.del_items('s-peaks')
         self.plotter.redraw()
-
-    def wavelet(self):
-        dt = self.obj_tab.active_file()
-        ions = [i for i in dt.info['traces'].split(',')]
-        waveletIntegrate(dt, ions[0], self.plotter)
 
     def showFilterWindow(self):
         if self.obj_tab.returnSelFile() is not None:

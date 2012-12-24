@@ -46,18 +46,18 @@ class AstonDatabase(object):
             self.objects.append(self._getObjFromRow(i))
         c.close()
 
-    def getKey(self, key):
+    def get_key(self, key, dflt=''):
         c = self.db.cursor()
         c.execute('SELECT * FROM prefs WHERE key = ?', (key,))
         res = c.fetchone()
         c.close()
 
         if res is None:
-            return self._getDefaultKey(key)
+            return dflt
         else:
             return res[1]
 
-    def setKey(self, key, val):
+    def set_key(self, key, val):
         c = self.db.cursor()
         c.execute('SELECT * FROM prefs WHERE key = ?', (key,))
         if c.fetchone() is not None:
@@ -164,11 +164,6 @@ class AstonDatabase(object):
         else:
             from aston.Features import DBObject
             return DBObject(otype, self, *args)
-
-    def _getDefaultKey(self, key):
-        if key == 'main_cols':
-            return json.dumps(['name'])
-        return ''
 
 
 class AstonFileDatabase(AstonDatabase):

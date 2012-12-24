@@ -53,15 +53,23 @@
     </property>
     <widget class="QMenu" name="menuIntegrator">
      <property name="title">
-      <string>Integrate</string>
+      <string>Integrator</string>
      </property>
      <addaction name="actionIntegrateSimple"/>
      <addaction name="actionIntegrateStatSlope"/>
      <addaction name="actionIntegrateWavelet"/>
     </widget>
-    <addaction name="actionQuickIntegrate"/>
+    <widget class="QMenu" name="menuIntegrand">
+     <property name="title">
+      <string>Integrand</string>
+     </property>
+     <addaction name="actionTop_Trace"/>
+     <addaction name="actionVis_Traces_in_Top_File"/>
+     <addaction name="actionAll_Traces_in_Top_File"/>
+    </widget>
+    <addaction name="actionIntegrate"/>
     <addaction name="menuIntegrator"/>
-    <addaction name="actionIntegration_Parameters"/>
+    <addaction name="menuIntegrand"/>
     <addaction name="separator"/>
     <addaction name="actionAutoAlignChromatogram"/>
     <addaction name="actionEditFilters"/>
@@ -120,12 +128,7 @@
      <addaction name="actionGraphMSMS"/>
      <addaction name="actionGraphMethodDetails"/>
     </widget>
-    <widget class="QMenu" name="menuGraph_Style">
-     <property name="title">
-      <string>Graph Style</string>
-     </property>
-    </widget>
-    <addaction name="menuGraph_Style"/>
+    <addaction name="actionGraph_Style"/>
     <addaction name="actionLegend"/>
     <addaction name="actionColor_Scheme"/>
     <addaction name="menuPeaks"/>
@@ -189,8 +192,8 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>72</width>
-          <height>159</height>
+          <width>100</width>
+          <height>30</height>
          </rect>
         </property>
         <attribute name="label">
@@ -305,14 +308,6 @@
   <action name="actionQuit">
    <property name="text">
     <string>Quit</string>
-   </property>
-  </action>
-  <action name="actionIntegration_Parameters">
-   <property name="enabled">
-    <bool>false</bool>
-   </property>
-   <property name="text">
-    <string>Integration Parameters</string>
    </property>
   </action>
   <action name="actionSearch_Database">
@@ -494,11 +489,20 @@
    </property>
   </action>
   <action name="actionIntegrateStatSlope">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>StatSlope</string>
    </property>
   </action>
   <action name="actionIntegrateWavelet">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Wavelet</string>
    </property>
@@ -541,8 +545,11 @@
    </property>
   </action>
   <action name="actionIntegrateSimple">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="enabled">
-    <bool>false</bool>
+    <bool>true</bool>
    </property>
    <property name="text">
     <string>Simple</string>
@@ -556,9 +563,9 @@
     <string>Method Details</string>
    </property>
   </action>
-  <action name="actionQuickIntegrate">
+  <action name="actionIntegrate">
    <property name="text">
-    <string>Quick Integrate</string>
+    <string>Integrate</string>
    </property>
   </action>
   <action name="actionFIA">
@@ -572,6 +579,38 @@
   <action name="actionCopy_Settings_from_Other_DB">
    <property name="text">
     <string>Load Settings from DB</string>
+   </property>
+  </action>
+  <action name="actionTop_Trace">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Top Trace</string>
+   </property>
+  </action>
+  <action name="actionVis_Traces_in_Top_File">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Vis. Traces in Top File</string>
+   </property>
+  </action>
+  <action name="actionAll_Traces_in_Top_File">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>All Traces in Top File</string>
+   </property>
+  </action>
+  <action name="actionGraph_Style">
+   <property name="text">
+    <string>Graph Style</string>
    </property>
   </action>
  </widget>

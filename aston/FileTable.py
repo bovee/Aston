@@ -20,7 +20,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
 
         self.db = database
         self.masterWindow = masterWindow
-        self.fields = json.loads(self.db.getKey('main_cols'))
+        self.fields = json.loads(self.db.get_key('main_cols', dflt='["name"]'))
 
         if treeView is not None:
             self.treeView = treeView
@@ -251,11 +251,13 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             elif sel.db_type == 'spectrum':
                 self.masterWindow.specplotter.addSpec(sel.data, 'lib')
                 self.masterWindow.specplotter.plotSpec()
+        objs_sel = len(self.returnSelFiles())
+        self.masterWindow.show_status(str(objs_sel) + ' items selected')
 
     def colsChanged(self, *_):  # don't care about the args
         flds = [self.fields[self.treeView.header().logicalIndex(fld)] \
                     for fld in range(len(self.fields))]
-        self.db.setKey('main_cols', json.dumps(flds))
+        self.db.set_key('main_cols', json.dumps(flds))
 
     def click_main(self, point):
         #index = self.proxyMod.mapToSource(self.treeView.indexAt(point))
@@ -267,6 +269,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         if len(fts) > 0:
             self._add_menu_opt(self.tr('Create Spec.'), self.createSpec, fts, menu)
             self._add_menu_opt(self.tr('Split Peak'), self.splitPeaks, fts, menu)
+            self._add_menu_opt(self.tr('Merge Peaks'), self.merge_peaks, fts, menu)
 
         #Things we can do with files
         fts = [s for s in sel if s.db_type == 'file']
@@ -297,6 +300,11 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             plt = self.masterWindow.plotter.plt
             plt.plot(x, y, '-')
             self.masterWindow.plotter.canvas.draw()
+
+    def merge_peaks(self, objs):
+        from aston.Math.Integrators import merge_ions
+        new_objs = merge_ions(objs)
+        self.delObjects([o for o in objs if o not in new_objs])
 
     def makeMethod(self, objs):
         self.masterWindow.cmpd_tab.addObjects(None, objs)
