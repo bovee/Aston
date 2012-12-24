@@ -10,7 +10,7 @@ from aston.ui.SpecPlot import SpecPlotter
 from aston.Database import AstonFileDatabase
 from aston.Database import AstonDatabase
 from aston.FileTable import FileTreeModel
-from aston.Math.Integrators import waveletIntegrate, statSlopeIntegrate
+from aston.Math.Integrators import waveletIntegrate, statSlopeIntegrate, merge_ions
 
 
 class AstonWindow(QtGui.QMainWindow):
@@ -236,7 +236,6 @@ class AstonWindow(QtGui.QMainWindow):
         f.close()
 
     def integrate(self):
-        #TODO: group peaks by time
         dt = self.obj_tab.active_file()
         ions = [i for i in dt.info['traces'].split(',')]
 
@@ -255,8 +254,9 @@ class AstonWindow(QtGui.QMainWindow):
         elif self.ui.actionVis_Traces_in_Top_File.isChecked():
             tss = [dt.trace(i) for i in ions]
         elif self.ui.actionAll_Traces_in_Top_File.isChecked():
-            tss = []  # TODO: pass in all of the ions
+            tss = [dt.trace(i) for i in dt.data.ions]
 
+        all_pks = []
         for ts in tss:
             pks = integrate(ts, plotter=self.plotter)
             for pk in pks:
@@ -264,7 +264,9 @@ class AstonWindow(QtGui.QMainWindow):
                 pk.info['traces'] = str(ts.ions[0])
                 pk.info['p-created'] = int_name
                 pk.info['p-type'] = 'Sample'
-            self.obj_tab.addObjects(dt, pks)
+            all_pks += pks
+        mrg_pks = merge_ions(all_pks)
+        self.obj_tab.addObjects(dt, mrg_pks)
         dt.info.del_items('s-peaks')
         self.plotter.redraw()
 

@@ -9,6 +9,7 @@ import pkg_resources
 import numpy as np
 from PyQt4 import QtGui, QtCore
 from aston.ui.Fields import aston_fields, aston_groups, aston_field_opts
+from aston.Database import AstonFileDatabase
 
 
 class FileTreeModel(QtCore.QAbstractItemModel):
@@ -20,7 +21,11 @@ class FileTreeModel(QtCore.QAbstractItemModel):
 
         self.db = database
         self.masterWindow = masterWindow
-        self.fields = json.loads(self.db.get_key('main_cols', dflt='["name"]'))
+        if type(database) == AstonFileDatabase:
+            def_fields = '["name", "vis", "traces", "r-filename"]'
+        else:
+            def_fields = '["name"]'
+        self.fields = json.loads(self.db.get_key('main_cols', dflt=def_fields))
 
         if treeView is not None:
             self.treeView = treeView

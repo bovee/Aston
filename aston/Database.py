@@ -235,11 +235,6 @@ class AstonFileDatabase(AstonDatabase):
 
         #TODO: update old database entries with new metadata
 
-    def _getDefaultKey(self, key):
-        if key == 'main_cols':
-            return json.dumps(['name', 'vis', 'traces', 'r-filename'])
-        return ''
-
 
 class AstonMethodDB(AstonDatabase):
     def _getDefaultKey(self, key):

@@ -4,6 +4,7 @@ import scipy.signal._peak_finding as spf
 from scipy.optimize import leastsq, fmin, minimize
 from aston.Features import Peak
 from aston.TimeSeries import TimeSeries
+from aston.Math.Peak import time
 
 
 def waveletIntegrate(ts, plotter=None, **kwargs):
@@ -138,14 +139,14 @@ def statSlopeIntegrate(ts, **kwargs):
 
 
 def merge_ions(pks):
-    from aston.Math.Peak import time
     cleaned_pks = []
     for pk in pks:
         for c_pk in cleaned_pks:
             if np.abs(time(c_pk.as_poly()) - time(pk.as_poly())) < 0.01 \
               and c_pk.data.ions[0] != pk.data.ions[0]:
                 c_pk.rawdata = c_pk.rawdata & pk.rawdata
-                del c_pk.info['s-mzs']
+                if 's-mzs' in c_pk.info:
+                    del c_pk.info['s-mzs']
                 break
         else:
             cleaned_pks.append(pk)
