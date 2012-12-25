@@ -3,6 +3,7 @@ from aston.Features.DBObject import DBObject
 import aston.Math.Peak as peakmath
 from aston.Features.Spectrum import Spectrum
 from aston.TimeSeries import TimeSeries
+from aston.Math.Other import delta13C
 
 
 class Peak(DBObject):
@@ -53,7 +54,7 @@ class Peak(DBObject):
                 if len(ions) > 0:
                     self.info['s-mzs'] = str(min(ions)) + '-' + str(max(ions))
         elif fld == 'p-s-area':
-            self.info[fld] = str(peakmath.area(self.as_poly()))
+            self.info[fld] = str(self.area('!'))
         elif fld == 'p-s-length':
             self.info[fld] = str(peakmath.length(self.as_poly()))
         elif fld == 'p-s-height':
@@ -72,9 +73,10 @@ class Peak(DBObject):
                 float(prt.getInfo('s-peaks-st'))
             return str(t / peakmath.length(self.as_poly()) + 1)
         elif fld == 'sp-d13c':
-            spcs = self.getAllChildren('spectrum')
-            if len(spcs) > 0:
-                return spcs[0].d13C()
+            return self.d13C()
+            #spcs = self.getAllChildren('spectrum')
+            #if len(spcs) > 0:
+            #    return spcs[0].d13C()
         return ''
 
     def contains(self, x, y):
@@ -88,6 +90,43 @@ class Peak(DBObject):
         else:
             row = self.data.ions.index(ion)
         return np.vstack([self.data.times, self.data.data.T[row]]).T
+
+    def area(self, ion=None):
+        if ion == '!':
+            return peakmath.area(self.as_poly())
+        elif ion not in self.data.ions:
+            return 0
+        else:
+            return peakmath.area(self.as_poly(ion))
+
+    def d13C(self):
+        dt = self.getParentOfType('file')
+        #TODO: not sure if we should do this or not
+        # by not doing it, we can show relative error
+        # between standard peaks
+        #if self.info['p-type'] == 'Isotope Standard':
+        #    return dt.info['r-d13c-std']
+
+        # if there's no reference number, we can't do this
+        try:
+            float(dt.info['r-d13c-std'])
+        except:
+            return ''
+
+        r45std = dt.get_point('r45std', peakmath.time(self.as_poly(44)))
+        r46std = dt.get_point('r46std', peakmath.time(self.as_poly(44)))
+
+        # if no peak has been designated as a isotope std
+        if r45std == 0.0:
+            return ''
+
+        i44, i45, i46 = self.area(44), self.area(45), self.area(46)
+        # if one of the areas is 0, clearly there's a problem
+        if i44 * i45 * i46 == 0:
+            return ''
+        d = delta13C(i45 / i44, i46 / i44, \
+          float(dt.info['r-d13c-std']), r45std, r46std)
+        return str(d)
 
     def createSpectrum(self, method=None):
         prt = self.getParentOfType('file')

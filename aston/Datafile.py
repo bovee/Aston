@@ -235,16 +235,16 @@ class Datafile(DBObject):
             pass
         elif name == 'r45std' or name == 'r46std':
             # calculate isotopic reference for chromatogram
+            from aston.Math.Peak import area
             if name == 'r45std':
                 topion = 45
             else:
                 topion = 46
             std_specs = [o for o in \
-              self.getAllChildren('spectrum') \
-              if o.info['sp-type'] == 'Isotope Standard']
-            x = [float(o.info['sp-time']) for o in std_specs]
-            y = [o.ion(topion) / o.ion(44) for o in std_specs]
-
+              self.getAllChildren('peak') \
+              if o.info['p-type'] == 'Isotope Standard']
+            x = [float(o.info['p-s-time']) for o in std_specs]
+            y = [o.area(topion) / o.area(44) for o in std_specs]
             if len(x) == 0:
                 return self._const(0.0, twin)
 

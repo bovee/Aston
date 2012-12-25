@@ -88,7 +88,7 @@ aston_fields = {
 
 aston_field_opts = {
     'r-type': ['None', 'Sample', 'Standard'],
-    'p-type': ['None', 'Sample', 'Standard'],
+    'p-type': ['None', 'Sample', 'Standard', 'Isotope Standard'],
     'p-model': ['None', 'Normal', 'Lognormal', 'Exp Mod Normal', 'Lorentzian'],
     'sp-type': ['None', 'Sample', 'Standard', 'Isotope Standard'],
     't-smooth': ['None', 'Moving Average', 'Savitsky-Golay'],
