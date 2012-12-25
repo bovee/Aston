@@ -100,12 +100,23 @@ class AstonNavBar(NavigationToolbar2QTAgg):
                 pt1 = (event.xdata, event.ydata)
                 pt2 = (self._xypress[0], self._xypress[1])
 
-            ts = dt.trace(ion, twin=(pt1[0], pt2[0]))
-            d = np.vstack([pt1[1], ts.data, pt2[1]])
-            t = np.hstack([pt1[0], ts.times, pt2[0]])
-            new_ts = TimeSeries(d, t, ts.ions)
+            if event.key == 'shift':
+                new_ts = None
+                for i in dt.info['traces'].split(','):
+                    ts = dt.trace(i, twin=(pt1[0], pt2[0]))
+                    d = np.vstack([pt1[1], ts.data, pt2[1]])
+                    t = np.hstack([pt1[0], ts.times, pt2[0]])
+                    if new_ts is None:
+                        new_ts = TimeSeries(d, t, ts.ions)
+                    else:
+                        new_ts = new_ts & TimeSeries(d, t, ts.ions)
+            else:
+                ts = dt.trace(ion, twin=(pt1[0], pt2[0]))
+                d = np.vstack([pt1[1], ts.data, pt2[1]])
+                t = np.hstack([pt1[0], ts.times, pt2[0]])
+                new_ts = TimeSeries(d, t, ts.ions)
 
-            info = {'p-type': 'Sample', 'p-created': 'manual', 'p-int': 'manual'}
+            info = {'p-type': 'Sample', 'p-created': 'manual'}
             info['name'] = '{:.2f}-{:.2f}'.format(pt1[0], pt2[0])
             info['traces'] = ion
             pk = Peak(dt.db, None, dt.db_id, info, new_ts)
