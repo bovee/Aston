@@ -25,24 +25,36 @@ class AstonNavBar(NavigationToolbar2QTAgg):
         self.removeAction(self.actions()[-1])
 
         #add the alignment tool
-        alignToolAct = QtGui.QAction(QtGui.QIcon(icon('align')), \
+        self._actions['align'] = QtGui.QAction(QtGui.QIcon(icon('align')), \
                                          'Align Chromatogram', self)
-        self.addAction(alignToolAct)
-        alignToolAct.triggered.connect(self.align)
+        self._actions['align'].setCheckable(True)
+        self.addAction(self._actions['align'])
+        self._actions['align'].triggered.connect(self.align)
 
         self.addSeparator()
 
         #add the peak tool
-        peakToolAct = QtGui.QAction(QtGui.QIcon(icon('peak')), \
+        self._actions['peak'] = QtGui.QAction(QtGui.QIcon(icon('peak')), \
                                     'Add/Delete Peak', self)
-        self.addAction(peakToolAct)
-        peakToolAct.triggered.connect(self.peak)
+        self._actions['peak'].setCheckable(True)
+        self.addAction(self._actions['peak'])
+        self._actions['peak'].triggered.connect(self.peak)
 
         #add the spectra tool
-        specToolAct = QtGui.QAction(QtGui.QIcon(icon('spectrum')), \
+        self._actions['spectrum'] = QtGui.QAction(QtGui.QIcon(icon('spectrum')), \
                                         'Get Spectrum', self)
-        self.addAction(specToolAct)
-        specToolAct.triggered.connect(self.spec)
+        self._actions['spectrum'].setCheckable(True)
+        self.addAction(self._actions['spectrum'])
+        self._actions['spectrum'].triggered.connect(self.spec)
+
+    def _update_buttons_checked(self):
+        #sync button checkstates to match active mode
+        self._actions['pan'].setChecked(self._active == 'PAN')
+        self._actions['zoom'].setChecked(self._active == 'ZOOM')
+        self._actions['peak'].setChecked(self._active == 'PEAK')
+        self._actions['spectrum'].setChecked(self._active == 'SPECTRUM')
+        self._actions['align'].setChecked(self._active == 'ALIGN')
+
 
     def peak(self, *args):
         self._active = 'PEAK'
@@ -54,9 +66,7 @@ class AstonNavBar(NavigationToolbar2QTAgg):
         self._idRelease = self.canvas.mpl_connect( \
             'button_release_event', self.release_peak)
         self.mode = 'peak'
-        #self.canvas.widgetlock(self)
-        #else:
-        #    self.canvas.widgetlock.release(self)
+        self._update_buttons_checked()
 
         for a in self.canvas.figure.get_axes():
             a.set_navigate_mode(self._active)
@@ -131,7 +141,6 @@ class AstonNavBar(NavigationToolbar2QTAgg):
 
         self.disconnect_all()
 
-        #if self._active:
         self._idPress = self.canvas.mpl_connect( \
             'button_press_event', self.press_align)
         self._idDrag = self.canvas.mpl_connect( \
@@ -139,9 +148,7 @@ class AstonNavBar(NavigationToolbar2QTAgg):
         self._idRelease = self.canvas.mpl_connect( \
             'button_release_event', self.release_align)
         self.mode = 'align'
-        #self.canvas.widgetlock(self)
-        #else:
-        #    self.canvas.widgetlock.release(self)
+        self._update_buttons_checked()
 
         for a in self.canvas.figure.get_axes():
             a.set_navigate_mode(self._active)
@@ -203,6 +210,7 @@ class AstonNavBar(NavigationToolbar2QTAgg):
         self._idRelease = self.canvas.mpl_connect( \
             'button_release_event', self.release_spectrum)
         self.mode = 'spectrum'
+        self._update_buttons_checked()
 
         for a in self.canvas.figure.get_axes():
             a.set_navigate_mode(self._active)
