@@ -224,4 +224,5 @@ def decompress_to_ts(zdata):
     i = json.loads(data[8:8 + li].decode('utf-8'))
     t = np.fromstring(data[8 + li:8 + li + lt])
     d = np.fromstring(data[8 + li + lt:])
-    return TimeSeries(d, t, i)
+
+    return TimeSeries(d.reshape(len(t), len(i)), t, i)
