@@ -22,7 +22,3 @@ class mzML(Datafile):
 
     def _update_info_from_file(self):
         self.info.update({'r-type': 'Sample'})
-
-
-class NetCDF(Datafile):
-    pass
