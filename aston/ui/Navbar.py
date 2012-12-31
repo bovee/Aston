@@ -114,12 +114,12 @@ class AstonNavBar(NavigationToolbar2QTAgg):
                 new_ts = None
                 for i in dt.info['traces'].split(','):
                     ts = dt.trace(i, twin=(pt1[0], pt2[0]))
-                    d = np.vstack([pt1[1], ts.data, pt2[1]])
-                    t = np.hstack([pt1[0], ts.times, pt2[0]])
+                    #d = np.vstack([pt1[1], ts.data, pt2[1]])
+                    #t = np.hstack([pt1[0], ts.times, pt2[0]])
                     if new_ts is None:
-                        new_ts = TimeSeries(d, t, ts.ions)
+                        new_ts = ts
                     else:
-                        new_ts = new_ts & TimeSeries(d, t, ts.ions)
+                        new_ts = new_ts & ts
             else:
                 ts = dt.trace(ion, twin=(pt1[0], pt2[0]))
                 d = np.vstack([pt1[1], ts.data, pt2[1]])

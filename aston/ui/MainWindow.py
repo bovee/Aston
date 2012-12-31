@@ -271,7 +271,7 @@ class AstonWindow(QtGui.QMainWindow):
         self.plotter.redraw()
 
     def showFilterWindow(self):
-        if self.obj_tab.returnSelFile() is not None:
+        if self.obj_tab.active_file() is not None:
             self.dlg = FilterWindow(self)
             self.dlg.show()
 
