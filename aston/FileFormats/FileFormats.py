@@ -1,7 +1,7 @@
+#TODO:.RAW : Micromass MassLynx directory format
 #TODO:.BAF : Bruker instrument data format
 #TODO:.FID : Bruker instrument data format
 #TODO:.PKL : MassLynx associated format
-#TODO:.RAW : Micromass MassLynx directory format
 #TODO:.WIFF: ABI/Sciex (QSTAR and QTRAP instrument) format
 #TODO:.YEP : Bruker instrument data format
 #TODO:.RAW : PerkinElmer TurboMass file format

@@ -15,6 +15,7 @@ def read_chemstation_info(folder):
 
 
 def get_FIA(folder):
+    #TODO: get fia from new-style *.REG files.
     d = read_reg_file(open(op.join(folder, 'ACQRES.REG'), 'rb'))
     if not d.get('FIARun', False):
         return []
@@ -25,7 +26,6 @@ def get_FIA(folder):
         prev_f = f
     else:
         if len(fis) > 0:
-            print(fis[-1])
             off_t = fis[-1][1] - fis[-1][0]
             fis.append([prev_f[0], prev_f[0] + off_t, prev_f[2]])
     return fis
@@ -33,10 +33,10 @@ def get_FIA(folder):
 
 def read_reg_file(f):
     """
-    Given a file handle for an Agilent *.REG file, this will parse
-    that file into a dictonary of key/value pairs (including any
-    tables that are in the *.REG file, which will be parsed into
-    lists of lists).
+    Given a file handle for an old-style Agilent *.REG file, this
+    will parse that file into a dictonary of key/value pairs
+    (including any tables that are in the *.REG file, which will
+    be parsed into lists of lists).
     """
     # convenience function for reading in data
     rd = lambda st: struct.unpack(st, f.read(struct.calcsize(st)))
@@ -109,6 +109,7 @@ def read_reg_file(f):
 def parse_c_serialized(f):
     """
     Reads in a binary file created by a C++ serializer (prob. MFC?)
+    and returns tuples of (header name, data following the header).
     These are used by Thermo for *.CF and *.DXF files and by Agilent
     for new-style *.REG files.
     """
