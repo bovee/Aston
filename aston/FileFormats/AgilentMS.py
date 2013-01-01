@@ -19,6 +19,7 @@ class AgilentMS(Datafile.Datafile):
         super(AgilentMS, self).__init__(*args, **kwargs)
 
     def _total_trace(self, twin=None):
+        #TODO: use twin?
         f = open(self.rawdata, 'rb')
 
         # get number of scans to read in
@@ -65,14 +66,14 @@ class AgilentMS(Datafile.Datafile):
         f.seek(2 * struct.unpack('>H', f.read(2))[0] - 2)
 
         tot_pts = 0
-        indptr = np.empty(nscans + 1, dtype=int)
-        indptr[0] = 0
+        rowst = np.empty(nscans + 1, dtype=int)
+        rowst[0] = 0
         for scn in range(nscans):
             npos = f.tell() + 2 * struct.unpack('>H', f.read(2))[0]
             #f.seek(f.tell()+10)
             #tot_pts += 1+struct.unpack('>H',f.read(2))[0]
             tot_pts += (npos - f.tell() - 22) / 4
-            indptr[scn + 1] = tot_pts
+            rowst[scn + 1] = tot_pts
             f.seek(npos)
 
         # find the starting location of the data
@@ -82,7 +83,7 @@ class AgilentMS(Datafile.Datafile):
 
         ions = []
         i_lkup = {}
-        idxs = np.empty(tot_pts, dtype=int)
+        cols = np.empty(tot_pts, dtype=int)
         vals = np.empty(tot_pts, dtype=float)
 
         times = np.empty(nscans)
@@ -92,7 +93,7 @@ class AgilentMS(Datafile.Datafile):
             times[scn] = struct.unpack('>I', f.read(4))[0] / 60000.
 
             f.seek(f.tell() + 4)
-            npts = indptr[scn + 1] - indptr[scn]
+            npts = rowst[scn + 1] - rowst[scn]
             mzs = struct.unpack('>' + npts * 'HH', f.read(npts * 4))
 
             nions = set([mz for mz in mzs[0::2] if mz not in i_lkup])
@@ -100,14 +101,14 @@ class AgilentMS(Datafile.Datafile):
               for i, ion in enumerate(nions)))
             ions += nions
 
-            idxs[indptr[scn]:indptr[scn + 1]] = \
+            cols[rowst[scn]:rowst[scn + 1]] = \
               [i_lkup[i] for i in mzs[0::2]]
-            vals[indptr[scn]:indptr[scn + 1]] = mzs[1::2]
+            vals[rowst[scn]:rowst[scn + 1]] = mzs[1::2]
             f.seek(npos)
         f.close()
 
-        idxs += 1
-        data = scipy.sparse.csr_matrix((vals, idxs, indptr), \
+        cols += 1
+        data = scipy.sparse.csr_matrix((vals, cols, rowst), \
           shape=(nscans, len(ions)), dtype=float)
         ions = [i / 20. for i in ions]
         self.data = TimeSeries(data, times, ions)
@@ -192,7 +193,8 @@ class AgilentMSMSScan(Datafile.Datafile):
             yield (data[l] for l in loc)
         f.close()
 
-    def _total_trace(self, twin):
+    def _total_trace(self, twin=None):
+        #TODO: use twin
         tme = []
         tic = []
         for t, z in self._msscan_iter(['ScanTime', 'TIC']):

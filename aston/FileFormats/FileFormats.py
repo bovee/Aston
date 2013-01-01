@@ -14,17 +14,16 @@ def file_adaptors():
       import AgilentMS, AgilentMSMSScan
     from aston.FileFormats.Thermo \
       import ThermoCF, ThermoDXF
-    from aston.FileFormats.Bruker \
-      import BrukerMSMS
+    from aston.FileFormats.Bruker import BrukerMSMS
     from aston.FileFormats.AgilentUV \
       import AgilentDAD, AgilentMWD, AgilentMWD2, AgilentCSDAD
     from aston.FileFormats.OtherFiles \
       import AgilentFID, CSVFile
-    from aston.FileFormats.Waters \
-      import WatersAutospec
+    from aston.FileFormats.Waters import WatersAutospec
+    from aston.FileFormats.NetCDF import NetCDF
     return [AgilentMS, AgilentMSMSScan, BrukerMSMS, \
       ThermoCF, ThermoDXF, AgilentDAD, AgilentMWD, AgilentMWD2, \
-      AgilentCSDAD, AgilentFID, CSVFile, WatersAutospec]
+      AgilentCSDAD, AgilentFID, CSVFile, WatersAutospec, NetCDF]
 
     #for cls_str in dir(fl):
     #    cls = fl.__dict__[cls_str]
