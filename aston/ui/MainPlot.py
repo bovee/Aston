@@ -3,6 +3,7 @@ from aston.ui.Navbar import AstonNavBar
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg
 from matplotlib.path import Path
+from matplotlib.transforms import offset_copy
 import matplotlib.patches as patches
 import matplotlib.pyplot as plt
 from PyQt4.QtCore import Qt, QCoreApplication
@@ -135,10 +136,14 @@ class Plotter(object):
             self.plt.set_xlim(bnds[0])
             self.plt.set_ylim(bnds[1])
 
-        # TODO: code here for plotting FIA/Fxn collection
-        #import matplotlib.transforms
-        #trans = self.plt.get_xaxis_transform()
-        #self.plt.text(0,0, "test", transform=trans)
+        # TODO: save the text and lines to delete later?
+        # TODO: make this prettier
+        trans = self.plt.get_xaxis_transform()
+        transText = offset_copy(trans, fig=self.plt.figure, \
+                                x=3, units='points')
+        for ev in datafiles[0].events():
+            self.plt.vlines(ev[0], 0, 0.1, transform=trans)
+            self.plt.text(ev[0], 0, ev[2], transform=transText)
 
         #draw grid lines
         self.plt.grid(c='black', ls='-', alpha='0.05')

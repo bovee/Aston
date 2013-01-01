@@ -8,7 +8,7 @@ from datetime import datetime
 from xml.etree import ElementTree
 from aston import Datafile
 from aston.TimeSeries import TimeSeries
-from aston.FileFormats.AgilentCommon import read_masshunter_info
+from aston.FileFormats.AgilentCommon import read_masshunter_info, get_FIA
 
 
 class AgilentMS(Datafile.Datafile):
@@ -132,6 +132,10 @@ class AgilentMS(Datafile.Datafile):
         #TODO: vial number in here too?
         f.close()
         self.info.update(d)
+
+    def events(self):
+        folder = op.dirname(self.rawdata)
+        return get_FIA(folder)
 
 
 class AgilentMSMSScan(Datafile.Datafile):
