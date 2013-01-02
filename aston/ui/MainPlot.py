@@ -137,12 +137,13 @@ class Plotter(object):
 
         # TODO: save the text and lines to delete later?
         # TODO: make this prettier
-        trans = self.plt.get_xaxis_transform()
-        transText = offset_copy(trans, fig=self.plt.figure, \
-                                x=3, units='points')
-        for ev in datafiles[0].events():
-            self.plt.vlines(ev[0], 0, 0.1, transform=trans)
-            self.plt.text(ev[0], 0, ev[2], transform=transText)
+        if self.masterWindow.ui.actionGraphFxnCollection.isChecked():
+            trans = self.plt.get_xaxis_transform()
+            transText = offset_copy(trans, fig=self.plt.figure, \
+                                    x=3, units='points')
+            for ev in datafiles[0].events():
+                self.plt.vlines(ev[0], 0, 0.1, transform=trans)
+                self.plt.text(ev[0], 0, ev[2], transform=transText)
 
         #draw grid lines
         self.plt.grid(c='black', ls='-', alpha='0.05')
