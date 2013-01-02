@@ -3,12 +3,12 @@ import re
 import struct
 from datetime import datetime
 import numpy as np
-from aston import Datafile
 from aston.TimeSeries import TimeSeries
+from aston.FileFormats.AgilentCommon import AgilentMH, AgilentCS
 from aston.FileFormats.AgilentCommon import read_masshunter_info
 
 
-class AgilentMWD(Datafile.Datafile):
+class AgilentMWD(AgilentCS):
     ext = 'CH'
     mgc = '0233'
 
@@ -107,12 +107,9 @@ class AgilentMWD(Datafile.Datafile):
         self.info.update(d)
 
 
-class AgilentMWD2(Datafile.Datafile):
+class AgilentMWD2(AgilentCS):
     ext = 'CH'
     mgc = '0331'
-
-    def __init__(self, *args, **kwargs):
-        super(AgilentMWD2, self).__init__(*args, **kwargs)
 
     def _cache_data(self):
         #Because the spectra are stored in several files in the same
@@ -203,21 +200,18 @@ class AgilentMWD2(Datafile.Datafile):
         self.info.update(d)
 
 
-class AgilentDAD(Datafile.Datafile):
+class AgilentDAD(AgilentMH):
     ext = 'SD'
     mgc = None
-#header data in DAD1.sd
-#80 byte repetition
-#offset = 0xA4, format = 'IIfIfffQIIdddd'
-# 750 entries
-#f.seek(0xA4); struct.unpack('<IddffIQIIdddd', f.read(80))
+    #header data in DAD1.sd
+    #80 byte repetition
+    #offset = 0xA4, format = 'IIfIfffQIIdddd'
+    # 750 entries
+    #f.seek(0xA4); struct.unpack('<IddffIQIIdddd', f.read(80))
 
-#time series in DAD1.sg
-#all doubles, starts at 0x44
-#750x 54 double entries
-    def __init__(self, *args, **kwargs):
-        super(AgilentDAD, self).__init__(*args, **kwargs)
-
+    #time series in DAD1.sg
+    #all doubles, starts at 0x44
+    #750x 54 double entries
     def _cache_data(self):
         if self.data is not None:
             return
@@ -257,15 +251,12 @@ class AgilentDAD(Datafile.Datafile):
         self.info.update(d)
 
 
-class AgilentCSDAD(Datafile.Datafile):
+class AgilentCSDAD(AgilentCS):
     """
     Interpreter for *.UV files from Agilent Chemstation
     """
     ext = 'UV'
     mgc = '0233'
-
-    def __init__(self, *args, **kwargs):
-        super(AgilentCSDAD, self).__init__(*args, **kwargs)
 
     def _cache_data(self):
         #TODO: the chromatograms this generates are not exactly the

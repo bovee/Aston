@@ -13,9 +13,6 @@ class AgilentFID(Datafile.Datafile):
     ext = 'CH'
     mgc = '0238'
 
-    def __init__(self, *args, **kwargs):
-        super(AgilentFID, self).__init__(*args, **kwargs)
-
     def _cache_data(self):
         if self.data is not None:
             return
@@ -62,9 +59,6 @@ class CSVFile(Datafile.Datafile):
     '''
     ext = 'CSV'
     mgc = None
-
-    def __init__(self, *args, **kwargs):
-        super(CSVFile, self).__init__(*args, **kwargs)
 
     def _cache_data(self):
         delim = ','

@@ -9,9 +9,6 @@ class BrukerMSMS(Datafile.Datafile):
     ext = 'AMI'
     mgc = None
 
-    def __init__(self, *args, **kwargs):
-        super(BrukerMSMS, self).__init__(*args, **kwargs)
-
     #def _getTotalTrace(self):
     #    pass
 

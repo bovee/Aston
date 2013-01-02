@@ -26,7 +26,7 @@ class AstonNavBar(NavigationToolbar2QTAgg):
 
         #add the alignment tool
         self._actions['align'] = QtGui.QAction(QtGui.QIcon(icon('align')), \
-                                         'Align Chromatogram', self)
+          self.parent.tr('Align Chromatogram'), self)
         self._actions['align'].setCheckable(True)
         self.addAction(self._actions['align'])
         self._actions['align'].triggered.connect(self.align)
@@ -35,14 +35,14 @@ class AstonNavBar(NavigationToolbar2QTAgg):
 
         #add the peak tool
         self._actions['peak'] = QtGui.QAction(QtGui.QIcon(icon('peak')), \
-                                    'Add/Delete Peak', self)
+          self.parent.tr('Add/Delete Peak'), self)
         self._actions['peak'].setCheckable(True)
         self.addAction(self._actions['peak'])
         self._actions['peak'].triggered.connect(self.peak)
 
         #add the spectra tool
-        self._actions['spectrum'] = QtGui.QAction(QtGui.QIcon(icon('spectrum')), \
-                                        'Get Spectrum', self)
+        self._actions['spectrum'] = QtGui.QAction( \
+          QtGui.QIcon(icon('spectrum')), self.parent.tr('Get Spectrum'), self)
         self._actions['spectrum'].setCheckable(True)
         self.addAction(self._actions['spectrum'])
         self._actions['spectrum'].triggered.connect(self.spec)
@@ -54,7 +54,6 @@ class AstonNavBar(NavigationToolbar2QTAgg):
         self._actions['peak'].setChecked(self._active == 'PEAK')
         self._actions['spectrum'].setChecked(self._active == 'SPECTRUM')
         self._actions['align'].setChecked(self._active == 'ALIGN')
-
 
     def peak(self, *args):
         self._active = 'PEAK'
@@ -239,7 +238,8 @@ class AstonNavBar(NavigationToolbar2QTAgg):
         self.parent.specplotter.specTime = event.xdata
 
         # draw a line on the main plot for the location
-        self.parent.plotter.draw_spec_line(self._xypress[0], event.xdata, linestyle='-')
+        self.parent.plotter.draw_spec_line(self._xypress[0], \
+          event.xdata, linestyle='-')
         if event.key == 'shift':
             info = {'name': str(self._xypress[0])}
             spc = Spectrum(dt.db, None, dt.db_id, info, scan)

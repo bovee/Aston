@@ -4,7 +4,7 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg
 from matplotlib.path import Path
 from matplotlib.transforms import offset_copy
-import matplotlib.patches as patches
+from matplotlib.patches import PathPatch
 import matplotlib.pyplot as plt
 from PyQt4.QtCore import Qt, QCoreApplication
 
@@ -62,8 +62,7 @@ class Plotter(object):
             'jet': tr('Jet'),
             'Paired': tr('Paired'),
             'binary': tr('White-Black'),
-            'gray': tr('Black-White')
-            }
+            'gray': tr('Black-White')}
         self._styles = {
             'default': tr('Default'),
             'scaled': tr('Scaled'),
@@ -297,7 +296,7 @@ class Plotter(object):
                 fid = pk.getParentOfType('file').db_id
                 c, a = self.pk_clr_idx[fid]
 
-                self.patches[pk.db_id] = patches.PathPatch(Path(pk.as_poly()), \
+                self.patches[pk.db_id] = PathPatch(Path(pk.as_poly()), \
                   facecolor=desaturate(c, 0.2), alpha=a, lw=0)
                 self.plt.add_patch(self.patches[pk.db_id])
         self.redraw()

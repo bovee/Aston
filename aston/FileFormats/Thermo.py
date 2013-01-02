@@ -9,9 +9,6 @@ class ThermoCF(Datafile.Datafile):
     ext = 'CF'
     mgc = 'FFFF'
 
-    def __init__(self, *args, **kwargs):
-        super(ThermoCF, self).__init__(*args, **kwargs)
-
     def _cache_data(self):
         if self.data is not None:
             return
@@ -53,9 +50,6 @@ class ThermoCF(Datafile.Datafile):
 class ThermoDXF(Datafile.Datafile):
     ext = 'DXF'
     mgc = 'FFFF'
-
-    def __init__(self, *args, **kwargs):
-        super(ThermoDXF, self).__init__(*args, **kwargs)
 
     def _cache_data(self):
         if self.data is not None:

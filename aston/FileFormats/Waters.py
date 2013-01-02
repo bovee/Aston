@@ -13,9 +13,6 @@ class WatersAutospec(Datafile.Datafile):
     ext = 'IDX'
     mgc = None
 
-    def __init__(self, *args, **kwargs):
-        super(WatersAutospec, self).__init__(*args, **kwargs)
-
     #def _total_trace(self, twin=None):
     #    fidx = open(self.rawdata, 'rb')
     #    tme, tic = [], []

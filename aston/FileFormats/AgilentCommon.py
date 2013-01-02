@@ -2,7 +2,21 @@
 import struct
 import os.path as op
 from xml.etree import ElementTree
-import numpy as np
+from aston.Datafile import Datafile
+
+
+class AgilentMH(Datafile):
+    """
+    Base class for Agilent files from Masshunter.
+    """
+    pass
+
+
+class AgilentCS(Datafile):
+    """
+    Base class for Agilent files from ChemStation.
+    """
+    pass
 
 
 def read_chemstation_info(folder):
@@ -138,6 +152,7 @@ def parse_c_serialized(f):
         rec_len = f.tell() - 6 - len(rec_type) - rec_off
         f.seek(rec_off)
         yield p_rec_type, f.read(rec_len)
+
 
 def read_masshunter_info(folder):
     d = {}

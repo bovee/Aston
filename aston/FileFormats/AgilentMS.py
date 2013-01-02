@@ -6,17 +6,14 @@ import gzip
 import io
 from datetime import datetime
 from xml.etree import ElementTree
-from aston import Datafile
 from aston.TimeSeries import TimeSeries
 from aston.FileFormats.AgilentCommon import read_masshunter_info, get_FIA
+from aston.FileFormats.AgilentCommon import AgilentMH, AgilentCS
 
 
-class AgilentMS(Datafile.Datafile):
+class AgilentMS(AgilentCS):
     ext = 'MS'
     mgc = '0132'
-
-    def __init__(self, *args, **kwargs):
-        super(AgilentMS, self).__init__(*args, **kwargs)
 
     def _total_trace(self, twin=None):
         #TODO: use twin?
@@ -139,12 +136,9 @@ class AgilentMS(Datafile.Datafile):
         return get_FIA(folder)
 
 
-class AgilentMSMSScan(Datafile.Datafile):
+class AgilentMSMSScan(AgilentMH):
     ext = 'BIN'
     mgc = '0101'
-
-    def __init__(self, *args, **kwargs):
-        super(AgilentMSMSScan, self).__init__(*args, **kwargs)
 
     def _msscan_iter(self, keylist):
         f = open(self.rawdata, 'rb')

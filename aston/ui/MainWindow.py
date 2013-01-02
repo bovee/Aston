@@ -10,7 +10,8 @@ from aston.ui.SpecPlot import SpecPlotter
 from aston.Database import AstonFileDatabase
 from aston.Database import AstonDatabase
 from aston.FileTable import FileTreeModel
-from aston.Math.Integrators import waveletIntegrate, statSlopeIntegrate, merge_ions
+from aston.Math.Integrators import waveletIntegrate, \
+  statSlopeIntegrate, merge_ions
 
 
 class AstonWindow(QtGui.QMainWindow):
@@ -34,7 +35,8 @@ class AstonWindow(QtGui.QMainWindow):
 
         #connect the menu logic
         self.ui.actionOpen.triggered.connect(self.openFolder)
-        self.ui.actionExportChromatogram.triggered.connect(self.exportChromatogram)
+        self.ui.actionExportChromatogram.triggered.connect( \
+          self.exportChromatogram)
         self.ui.actionExportSpectra.triggered.connect(self.exportSpectrum)
         self.ui.actionExportSelectedItems.triggered.connect(self.exportItems)
         self.ui.actionIntegrate.triggered.connect(self.integrate)
@@ -118,30 +120,34 @@ class AstonWindow(QtGui.QMainWindow):
         Update the tab windows to match the menu.
         """
         self.ui.filesDockWidget.setVisible(self.ui.actionFiles.isChecked())
-        self.ui.settingsDockWidget.setVisible(self.ui.actionSettings.isChecked())
+        self.ui.settingsDockWidget.setVisible( \
+          self.ui.actionSettings.isChecked())
         self.ui.spectraDockWidget.setVisible(self.ui.actionSpectra.isChecked())
         self.ui.methodDockWidget.setVisible(self.ui.actionMethods.isChecked())
-        self.ui.compoundDockWidget.setVisible(self.ui.actionCompounds.isChecked())
+        self.ui.compoundDockWidget.setVisible( \
+          self.ui.actionCompounds.isChecked())
 
     def updateWindowsMenu(self):
         """
         Update the windows menu to match the tab.
         """
         self.ui.actionFiles.setChecked(self.ui.filesDockWidget.isVisible())
-        self.ui.actionSettings.setChecked(self.ui.settingsDockWidget.isVisible())
+        self.ui.actionSettings.setChecked( \
+          self.ui.settingsDockWidget.isVisible())
         self.ui.actionSpectra.setChecked(self.ui.spectraDockWidget.isVisible())
         self.ui.actionMethods.setChecked(self.ui.methodDockWidget.isVisible())
-        self.ui.actionCompounds.setChecked(self.ui.compoundDockWidget.isVisible())
+        self.ui.actionCompounds.setChecked( \
+          self.ui.compoundDockWidget.isVisible())
 
     def show_status(self, msg):
         self.statusBar().showMessage(msg, 2000)
 
     def getPref(self, key):
         try:
-            import configparser as cfg_parse
+            import configparser
         except:
-            import ConfigParser as cfg_parse
-        cp = cfg_parse.SafeConfigParser()
+            import ConfigParser as configparser
+        cp = configparser.SafeConfigParser()
         for cfg in (op.expanduser('~/.aston.ini'), './aston.ini'):
             if op.exists(cfg):
                 cp.readfp(open(cfg))
@@ -187,8 +193,11 @@ class AstonWindow(QtGui.QMainWindow):
         self.plotData()
 
     def exportChromatogram(self):
-        fopts = self.tr("Bitmap Image (*.png *.pgf *.raw *rgba);;Vector Image (*.svg *.emf *.eps *.pdf *.ps *.svgz);;Comma-Delimited Text (*.csv)")
-        fname = str(QtGui.QFileDialog.getSaveFileName(self, self.tr("Save As..."), filter=fopts))
+        fopts = self.tr("Bitmap Image (*.png *.pgf *.raw *rgba);;" + \
+          "Vector Image (*.svg *.emf *.eps *.pdf *.ps *.svgz);;" + \
+          "Comma-Delimited Text (*.csv)")
+        fname = str(QtGui.QFileDialog.getSaveFileName(self, \
+          self.tr("Save As..."), filter=fopts))
         if fname == '':
             return
         elif fname[-4:].lower() == '.csv':
@@ -210,8 +219,11 @@ class AstonWindow(QtGui.QMainWindow):
 
     def exportSpectrum(self):
         #TODO: this needs to be updated when SpecPlot becomes better
-        fopts = self.tr("Bitmap Image (*.png *.pgf *.raw *rgba);;Vector Image (*.svg *.emf *.eps *.pdf *.ps *.svgz);;Comma-Delimited Text (*.csv)")
-        fname = str(QtGui.QFileDialog.getSaveFileName(self, self.tr("Save As..."), filter=fopts))
+        fopts = self.tr("Bitmap Image (*.png *.pgf *.raw *rgba);;" + \
+          "Vector Image (*.svg *.emf *.eps *.pdf *.ps *.svgz);;" + \
+          "Comma-Delimited Text (*.csv)")
+        fname = str(QtGui.QFileDialog.getSaveFileName(self, \
+          self.tr("Save As..."), filter=fopts))
         if fname == '':
             return
         elif fname[-4:].lower() == '.csv':

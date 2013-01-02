@@ -3,7 +3,6 @@ This module allows Agilent, Thermo, and other instrument
 specific file formats to be accessed through the same
 interface.
 """
-#pylint: disable=C0103
 
 import os.path as op
 import numpy as np
