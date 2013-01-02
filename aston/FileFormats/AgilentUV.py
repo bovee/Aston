@@ -82,6 +82,7 @@ class AgilentMWD(AgilentCS):
         return wv, data
 
     def _update_info_from_file(self):
+        super(AgilentMWD, self)._update_info_from_file()
         d = {}
         #TODO: fix this so that it doesn't rely upon MWD1A.CH?
         f = open(self.rawdata, 'rb')
@@ -101,7 +102,7 @@ class AgilentMWD(AgilentCS):
         d['m-y-units'] = f.read(struct.unpack('>B', f.read(1))[0]).decode()
         f.seek(0x254)
         #TODO: replace signal name with reference_wavelength?
-        d['signal name'] = f.read(struct.unpack('>B', f.read(1))[0]).decode()
+        #d['signal name'] = f.read(struct.unpack('>B', f.read(1))[0]).decode()
         d['r-type'] = 'Sample'
         f.close()
         self.info.update(d)
@@ -174,6 +175,7 @@ class AgilentMWD2(AgilentCS):
         return wv, np.array(data)
 
     def _update_info_from_file(self):
+        super(AgilentMWD2, self)._update_info_from_file()
         d = {}
         #TODO: fix this so that it doesn't rely upon MWD1A.CH?
 
@@ -244,12 +246,6 @@ class AgilentDAD(AgilentMH):
         fhead.close()
         fdata.close()
 
-    def _update_info_from_file(self):
-        folder = os.path.dirname(self.rawdata)
-        d = read_masshunter_info(folder)
-        d['r-type'] = 'Sample'
-        self.info.update(d)
-
 
 class AgilentCSDAD(AgilentCS):
     """
@@ -306,6 +302,7 @@ class AgilentCSDAD(AgilentCS):
         self.data = TimeSeries(ndata, times, ions)
 
     def _update_info_from_file(self):
+        super(AgilentCSDAD, self)._update_info_from_file()
         d = {}
         f = open(self.rawdata, 'rb')
         f.seek(0x18)

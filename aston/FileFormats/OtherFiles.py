@@ -1,11 +1,12 @@
-from aston import Datafile
-from aston.TimeSeries import TimeSeries
 import os.path as op
 import numpy as np
 import struct
+from aston import Datafile
+from aston.TimeSeries import TimeSeries
+from aston.FileFormats.AgilentCommon import AgilentCS
 
 
-class AgilentFID(Datafile.Datafile):
+class AgilentFID(AgilentCS):
     # TODO: preliminary support, math is probably not correct
     """
     Reads a Agilent FID *.ch file.

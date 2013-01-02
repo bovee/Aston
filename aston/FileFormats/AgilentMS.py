@@ -7,7 +7,7 @@ import io
 from datetime import datetime
 from xml.etree import ElementTree
 from aston.TimeSeries import TimeSeries
-from aston.FileFormats.AgilentCommon import read_masshunter_info, get_FIA
+from aston.FileFormats.AgilentCommon import get_FIA
 from aston.FileFormats.AgilentCommon import AgilentMH, AgilentCS
 
 
@@ -111,6 +111,7 @@ class AgilentMS(AgilentCS):
         self.data = TimeSeries(data, times, ions)
 
     def _update_info_from_file(self):
+        super(AgilentMS, self)._update_info_from_file()
         d = {}
         f = open(self.rawdata, 'rb')
         f.seek(0x18)
@@ -250,10 +251,6 @@ class AgilentMSMSScan(AgilentMH):
         f.close()
         ions = np.linspace(minx, maxx, len(pd))
         return np.vstack([ions, pd])
-
-    def _update_info_from_file(self):
-        folder = op.dirname(self.rawdata)
-        self.info.update(read_masshunter_info(folder))
 
     def _other_trace(self, name):
         #TODO: read from MSPeriodicActuals.bin and TCC.* files
