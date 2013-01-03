@@ -9,40 +9,74 @@ class AgilentMH(Datafile):
     """
     Base class for Agilent files from Masshunter.
     """
-    pass
+    def _update_info_from_file(self):
+        folder = op.dirname(self.rawdata)
+        d = {}
+        try:
+            u = lambda s: s.decode('utf-8')
+            u('')
+        except:
+            u = lambda s: s
+
+        try:
+            xml_file = op.join(folder, 'sample_info.xml')
+            r = ElementTree.parse(xml_file).getroot()
+            info = dict((i.find('Name').text, i.find('Value').text) \
+            for i in r.findall('Field'))
+            d['name'] = info.get('Sample Name', '')
+            d['r-vial-pos'] = info.get('Sample Position', '')
+            d['r-inst'] = info.get('InstrumentName', '')
+            d['r-opr'] = info.get('OperatorName', '')
+            d['r-date'] = info.get('AcqTime', '').replace('T', \
+            ' ').rstrip('Z')
+            d['m-inj-size'] = info.get(u('Inj Vol (µl)'), '')
+        except IOError:
+            pass
+
+        try:
+            xml_file = op.join(folder, 'acqmethod.xml')
+            r = ElementTree.parse(xml_file).getroot()
+            d['m-len'] = r.find('.//CapPump//Stoptime').text
+            d['m-flw'] = r.find('.//CapPump//Flow').text
+            d['m-slv'] = r.find('.//CapPump//SolvNameA').text
+            d['m-slv-B'] = r.find('.//CapPump//SolvNameB').text
+            d['m-slv-B-per'] = r.find('.//CapPump//SolvRatioB').text
+            d['m-slv-C'] = r.find('.//CapPump//SolvNameC').text
+            d['m-slv-D'] = r.find('.//CapPump//SolvNameD').text
+            d['m-tmp'] = r.find('.//TCC//LeftTemp').text
+        except IOError:
+            pass
+        except AttributeError:
+            #e.g. if LeftTemp is not set, find will
+            #return None and None has no attribute text
+            #TODO: better fix for this
+            pass
+        self.info.update(d)
 
 
 class AgilentCS(Datafile):
     """
     Base class for Agilent files from ChemStation.
     """
-    pass
-
-
-def read_chemstation_info(folder):
-    d = {}
-    try:
+    def _update_info_from_file(self):
         pass
-    except TypeError:
-        pass
-    pass
 
-
-def get_FIA(folder):
-    #TODO: get fia from new-style *.REG files.
-    d = read_reg_file(open(op.join(folder, 'ACQRES.REG'), 'rb'))
-    if not d.get('FIARun', False):
-        return []
-    fis = []
-    prev_f = d['FIASeriesInfo'][1][1]
-    for f in d['FIASeriesInfo'][1][2:]:
-        fis.append([prev_f[0], f[0], prev_f[2]])
-        prev_f = f
-    else:
-        if len(fis) > 0:
-            off_t = fis[-1][1] - fis[-1][0]
-            fis.append([prev_f[0], prev_f[0] + off_t, prev_f[2]])
-    return fis
+    def events(self):
+        #TODO: get fia from new-style *.REG files.
+        folder = op.dirname(self.rawdata)
+        d = read_reg_file(open(op.join(folder, 'ACQRES.REG'), 'rb'))
+        if not d.get('FIARun', False):
+            return []
+        fis = []
+        prev_f = d['FIASeriesInfo'][1][1]
+        for f in d['FIASeriesInfo'][1][2:]:
+            fis.append([prev_f[0], f[0], prev_f[2]])
+            prev_f = f
+        else:
+            if len(fis) > 0:
+                off_t = fis[-1][1] - fis[-1][0]
+                fis.append([prev_f[0], prev_f[0] + off_t, prev_f[2]])
+        return fis
 
 
 def read_reg_file(f):
@@ -152,48 +186,3 @@ def parse_c_serialized(f):
         rec_len = f.tell() - 6 - len(rec_type) - rec_off
         f.seek(rec_off)
         yield p_rec_type, f.read(rec_len)
-
-
-def read_masshunter_info(folder):
-    d = {}
-    try:
-        u = lambda s: s.decode('utf-8')
-        u('')
-    except:
-        u = lambda s: s
-
-    try:
-        xml_file = op.join(folder, 'sample_info.xml')
-        r = ElementTree.parse(xml_file).getroot()
-        info = dict((i.find('Name').text, i.find('Value').text) \
-          for i in r.findall('Field'))
-        d['name'] = info.get('Sample Name', '')
-        d['r-vial-pos'] = info.get('Sample Position', '')
-        d['r-inst'] = info.get('InstrumentName', '')
-        d['r-opr'] = info.get('OperatorName', '')
-        d['r-date'] = info.get('AcqTime', '').replace('T', \
-        ' ').rstrip('Z')
-        d['m-inj-size'] = info.get(u('Inj Vol (µl)'), '')
-    except IOError:
-        pass
-
-    try:
-        xml_file = op.join(folder, 'acqmethod.xml')
-        r = ElementTree.parse(xml_file).getroot()
-        d['m-len'] = r.find('.//CapPump//Stoptime').text
-        d['m-flw'] = r.find('.//CapPump//Flow').text
-        d['m-slv'] = r.find('.//CapPump//SolvNameA').text
-        d['m-slv-B'] = r.find('.//CapPump//SolvNameB').text
-        d['m-slv-B-per'] = r.find('.//CapPump//SolvRatioB').text
-        d['m-slv-C'] = r.find('.//CapPump//SolvNameC').text
-        d['m-slv-D'] = r.find('.//CapPump//SolvNameD').text
-        d['m-tmp'] = r.find('.//TCC//LeftTemp').text
-    except IOError:
-        pass
-    except AttributeError:
-        #e.g. if LeftTemp is not set, find will
-        #return None and None has no attribute text
-        #TODO: better fix for this
-        pass
-
-    return d

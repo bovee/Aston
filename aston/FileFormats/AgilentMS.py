@@ -7,7 +7,6 @@ import io
 from datetime import datetime
 from xml.etree import ElementTree
 from aston.TimeSeries import TimeSeries
-from aston.FileFormats.AgilentCommon import get_FIA
 from aston.FileFormats.AgilentCommon import AgilentMH, AgilentCS
 
 
@@ -132,10 +131,6 @@ class AgilentMS(AgilentCS):
         f.close()
         self.info.update(d)
 
-    def events(self):
-        folder = op.dirname(self.rawdata)
-        return get_FIA(folder)
-
 
 class AgilentMSMSScan(AgilentMH):
     ext = 'BIN'
@@ -145,7 +140,8 @@ class AgilentMSMSScan(AgilentMH):
         f = open(self.rawdata, 'rb')
         r = ElementTree.parse(op.splitext(self.rawdata)[0] + '.xsd').getroot()
 
-        xml_to_struct = {'xs:int': 'i', 'xs:long': 'q', 'xs:byte': 'b', 'xs:double': 'd'}
+        xml_to_struct = {'xs:int': 'i', 'xs:long': 'q', \
+                         'xs:byte': 'b', 'xs:double': 'd'}
         rfrmt = {}
 
         for n in r.getchildren():

@@ -5,7 +5,6 @@ from datetime import datetime
 import numpy as np
 from aston.TimeSeries import TimeSeries
 from aston.FileFormats.AgilentCommon import AgilentMH, AgilentCS
-from aston.FileFormats.AgilentCommon import read_masshunter_info
 
 
 class AgilentMWD(AgilentCS):
