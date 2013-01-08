@@ -52,6 +52,8 @@ if len(sys.argv) >= 2 and sys.argv[1] == 'py2exe':
         'bundle_files': 1,
         'compressed': True,
         'optimize': '2',
+        'data_files': [("Microsoft.VC90.CRT", glob(r"C:\Program Files" + \
+          r"\Microsoft Visual Studio 9.0\VC\redist\x86\Microsoft.VC90.CRT\*.*"))],
         'dll_excludes': ['MSVCP90.dll', 'tcl85.dll', 'tk85.dll'],
         'includes': ['sip', 'scipy.sparse.csgraph._validation'],
         'excludes': ['_gtkagg', '_tkagg', 'tcl', 'Tkconstants', 'Tkinter']}
