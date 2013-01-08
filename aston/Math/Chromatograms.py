@@ -86,6 +86,15 @@ def base2(ic, t):
     oc[-1] = oc[-2] #FIXME: there's definitely a bug in here somewhere
 
 
+def CODA(ts, window, level):
+    """
+    CODA processing from Windig, Phalp, & Payne 1996 Anal Chem
+    """
+    datasm = movingaverage(ts.data, ts.t, window)
+    lengthdata = np.sqrt(np.sum(ts.data * ts.data))
+    datalengthscaled = ts.data / lengthdata #FIXME
+    pass
+
 def movingaverage(ic, t, window):
     x = int(window)
     half_wind = (x - 1) // 2
