@@ -1,13 +1,25 @@
-#TODO:.RAW : Micromass MassLynx directory format
-#TODO:.BAF : Bruker instrument data format
-#TODO:.FID : Bruker instrument data format
-#TODO:.PKL : MassLynx associated format
-#TODO:.WIFF: ABI/Sciex (QSTAR and QTRAP instrument) format
-#TODO:.YEP : Bruker instrument data format
-#TODO:.RAW : PerkinElmer TurboMass file format
+#File types from http://en.wikipedia.org/wiki/Mass_spectrometry_data_format
+#and http://www.amdis.net/What_is_AMDIS/AMDIS_Detailed/amdis_detailed.html
+#TODO: .ABI | DNA Chromatogram format
+#TODO: .ACQ | Inficon GCMS
+#TODO: .FID | Bruker instrument data format
+#TODO: .LRP | Shrader/GCMate
+#TODO: .MS  | Varian Saturn Files
+#TODO: .MS  | HP Benchtop and MS Engines
+#TODO: .MS  | Finnigan (GCQ,INCOS and ITDS formats) also *.MI & *.DAT
+#TODO: .MSF | Bruker
+#TODO: .PKL | MassLynx associated format
+#TODO: .RAW | Micromass MassLynx directory format
+#TODO: .RAW | PerkinElmer TurboMass file format
+#TODO: .SCF | "Standard Chromatogram Format" for DNA
+#      http://staden.sourceforge.net/manual/formats_unix_2.html
+#TODO: .SMS | Saturn SMS
+#TODO: .WIFF| ABI/Sciex (QSTAR and QTRAP instrument) format
+#TODO: .YEP | Bruker instrument data format
 
 import os
 import binascii
+
 
 def file_adaptors():
     from aston.FileFormats.AgilentMS \
