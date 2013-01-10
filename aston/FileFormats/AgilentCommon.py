@@ -2,6 +2,8 @@
 import struct
 import os.path as op
 from xml.etree import ElementTree
+import numpy as np
+from aston.TimeSeries import TimeSeries
 from aston.Datafile import Datafile
 
 
@@ -78,8 +80,49 @@ class AgilentCS(Datafile):
                 fis.append([prev_f[0], prev_f[0] + off_t, prev_f[2]])
         return fis
 
+    def _other_trace(self, name, twin=None):
+        #TODO: use twin
+        #TODO: read info from new style REG files
+        rf = op.join(op.dirname(self.rawdata), 'LCDIAG.REG')
+        if name in ['pres', 'flow', 'slva', 'slvb', 'slvc', 'slvd']:
+            t = {'pres': 'PMP1, Pressure', 'flow': 'PMP1, Flow',
+                 'slva': 'PMP1, Solvent A', 'slvb': 'PMP1, Solvent B',
+                 'slvc': 'PMP1, Solvent C', 'slvd': 'PMP1, Solvent D'}
+            df = read_multireg_file(open(rf, 'rb'), title=t[name])
+            ts = df['TimeSeries']
+            ts.ions = [name]
+            return ts
+        else:
+            return self._const(0.0, twin=twin)
 
-def read_reg_file(f):
+
+def read_multireg_file(f, title=None):
+    """
+    Some REG files have multiple "sections" with different data.
+    This parses each chunk out of such a file (e.g. LCDIAG.REG)
+    """
+    f.seek(0x26)
+    nparts = struct.unpack('<H', f.read(2))[0]
+    foff = 0x2D
+    if title is None:
+        data = []
+        for _ in range(nparts):
+            d = read_reg_file(f, foff)
+            data.append(d)
+            foff = f.tell() + 1
+    else:
+        for _ in range(nparts):
+            d = read_reg_file(f, foff)
+            if d.get('Title') == title:
+                data = d
+                break
+            foff = f.tell() + 1
+        else:
+            data = {}
+    return data
+
+
+def read_reg_file(f, foff=0x2D):
     """
     Given a file handle for an old-style Agilent *.REG file, this
     will parse that file into a dictonary of key/value pairs
@@ -89,14 +132,17 @@ def read_reg_file(f):
     # convenience function for reading in data
     rd = lambda st: struct.unpack(st, f.read(struct.calcsize(st)))
 
-    f.seek(0x2D)
+    f.seek(0x19)
+    if f.read(1) != b'A':
+        #raise TypeError("Version of REG file is too new.")
+        return {}
+
+    f.seek(foff)
     nrecs = rd('<I')[0]  # TODO: should be '<H'
-    if nrecs == 0:
-        raise TypeError("Version of REG file is too new.")
     rec_tab = [rd('<HHIII') for n in range(nrecs)]
 
     names = {}
-    f.seek(0x31 + 20 * nrecs)
+    f.seek(foff + 20 * nrecs + 4)
     for r in rec_tab:
         d = f.read(r[2])
         if r[1] == 1539:  # '0306'
@@ -106,12 +152,17 @@ def read_reg_file(f):
             names[cd[5]] = cd[4].decode('iso8859').strip('\x00')
             #except:
             #    pass
+        elif r[1] == 32769 or r[1] == 32771:  # b'0180' or b'0380'
+            names[r[4]] = d[:-1].decode('iso8859')
         elif r[1] == 32774:  # b'0680'
+            # this is a string that is referenced elsewhere (in a table)
             names[r[4]] = d[2:-1].decode('iso8859')
-    #return names
+        elif r[1] == 32770:  # b'0280'
+            # this is just a flattened numeric array
+            names[r[4]] = np.frombuffer(d, dtype=np.uint32, offset=4)
 
     data = {}
-    f.seek(0x31 + 20 * nrecs)
+    f.seek(foff + 20 * nrecs + 4)
     for r in rec_tab:
         d = f.read(r[2])
         if r[1] == 1538:  # '0206'
@@ -121,8 +172,13 @@ def read_reg_file(f):
                 data[cd[4].decode('iso8859').strip('\x00')] = cd[5]
             else:
                 pass
+        elif r[1] == 1537:  # b'0106'
+            # name of property
+            n = d[14:30].split(b'\x00')[0].decode('iso8859')
+            # with value from names
+            data[n] = names.get(struct.unpack('<I', d[35:39])[0], '')
         elif r[1] == 1793:  # b'0107'
-            #try:
+            # this is a table of values
             nrow = struct.unpack('<H', d[4:6])[0]
             ncol = struct.unpack('<H', d[16:18])[0]
             if ncol != 0:
@@ -149,8 +205,37 @@ def read_reg_file(f):
                         else:
                             row.append(p)
                     tab.append(row)
-                data[names[r[4]]] = \
-                    [colnames, tab]
+                data[names[r[4]]] = [colnames, tab]
+        elif r[1] == 1281 or r[1] == 1283:  # b'0105' or b'0305'
+            fm = '<HHBIIhIdII12shIddQQB8sII12shIddQQB8s'
+            m = struct.unpack(fm, d)
+            nrecs = m[4]  # number of points in table
+
+            #x_units = names.get(m[8], '')
+            x_arr = m[14] * names.get(m[9], np.arange(nrecs - 1))
+            y_arr = m[25] * names.get(m[20])
+            y_units = names.get(m[19], '')
+            if y_units == 'bar':
+                y_arr *= 0.1  # convert to MPa
+            #TODO: what to call this?
+            data['TimeSeries'] = TimeSeries(y_arr, x_arr, [''])
+        #elif r[1] == 1025:  # b'0104'
+        #    # lots of zeros? maybe one or two numbers?
+        #    # only found in REG entries that have long 0280 records
+        #    fm = '<HQQQIHHHHIIHB'
+        #    m = struct.unpack(fm, d)
+        #    print(m)
+        #    #print(r[1], len(d), binascii.hexlify(d))
+        #    pass
+        #elif r[1] == 512:  # b'0002'
+        #    # either points to two null pointers or two other pointers
+        #    # (indicates start of linked list?)
+        #    print(r[1], len(d), binascii.hexlify(d))
+        #elif r[1] == 769 or r[1] == 772:  # b'0103' or b'0403'
+        #    # points to 2nd, 3rd & 4th records (two 0002 records and a 0180)
+        #    b = binascii.hexlify
+        #    print(b(d[10:14]), b(d[14:18]), b(d[18:22]))
+
     return data
 
 

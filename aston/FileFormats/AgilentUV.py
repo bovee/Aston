@@ -276,7 +276,6 @@ class AgilentCSDAD(AgilentCS):
             s = {}
             v = struct.unpack('<h', f.read(2))[0] / 2000.
             s[nm_srt] = v
-            #for j in range(1, int((nm_end - nm_srt) / nm_stp)):
             for wv in np.arange(nm_srt, nm_end, nm_stp):
                 ov = struct.unpack('<h', f.read(2))[0]
                 if ov == -32768:
@@ -286,14 +285,8 @@ class AgilentCSDAD(AgilentCS):
                 s[wv] = v
                 if wv not in ions:
                     ions.append(wv)
-                #s[nm_srt + j * nm_stp] = v
             data[i] = s
 
-        #self.data = np.zeros((nscans, len(self.ions) + 1))
-        #for i, t, d in zip(range(nscans), times, data):
-        #    self.data[i, 0] = t
-        #    for ion, abn in d.items():
-        #        self.data[i, self.ions.index(ion) + 1] = abn
         ndata = np.zeros((nscans, len(ions)))
         for i, d in zip(range(nscans), data):
             for ion, abn in d.items():

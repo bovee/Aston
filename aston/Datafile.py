@@ -10,9 +10,8 @@ from scipy.interpolate import interp1d
 from scipy.optimize import leastsq
 from aston.Features import DBObject
 from aston.TimeSeries import TimeSeries
-from aston.FileFormats.FileFormats import get_magic
+from aston.FileFormats.FileFormats import get_magic, ftype_to_class
 from aston.FileFormats.FileFormats import ext_to_classtable
-from aston.FileFormats.FileFormats import ftype_to_class
 
 
 class Datafile(DBObject):
@@ -209,7 +208,7 @@ class Datafile(DBObject):
 
     def _named_trace(self, name, twin=None):
         t = self.time(twin, adjust=False)
-        lookdict = {'temp': 'm-tmp', 'pres': 'm-prs', 'flow': 'm-flw'}
+        lookdict = {'mtemp': 'm-tmp', 'mpres': 'm-prs', 'mflow': 'm-flw'}
         if name == 't' or name == 'time':
             return TimeSeries(t, t, [name])
         #elif name == 'b' or name == 'base':
