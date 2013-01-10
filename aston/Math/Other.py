@@ -19,18 +19,31 @@ def delta13C(r45sam, r46sam, d13cstd, r45std, r46std):
 
     Algorithm from Santrock, Studley & Hayes 1985 Anal. Chem.
     """
+    # possible values for constants (from NIST)
+    cst = {'Craig': {'S13': 0.0112372, 'S17': 0.00037995,
+                     'S18': 0.002079, 'K': 0.008333,
+                     'A': 0.5},
+           'IAEA': {'S13': 0.0112372, 'S17': 0.000378866601,
+                    'S18': 0.00206716068, 'K': 0.0091993,
+                    'A': 0.5},
+           'Werner': {'S13': 0.0112372, 'S17': 0.0003799,
+                      'S18': 0.0020052, 'K': 0.0093704,
+                      'A': 0.516},
+           'Santrock': {'S13': 0.0112372, 'S17': 0.0004023261,
+                        'S18': 0.0020052, 'K': 0.0099235,
+                        'A': 0.516},
+           'Assonov': {'S13': 0.0112372, 'S17': 0.000386913,
+                       'S18': 0.0020052, 'K': 0.0102819162,
+                       'A': 0.528},
+           'Assonov2': {'S13': 0.0111802, 'S17': 0.000386913,
+                        'S18': 0.0020052, 'K': 0.0102819162,
+                        'A': 0.528}}
+    k = cst['Santrock']
+
     # function for calculating 17R from 18R
-    # values from Santrock
-    #A, K = 0.5164, 0.0092
-    # values from Brand
-    A, K = 0.528, 0.001022461
-    c17 = lambda r: K * r ** A
+    c17 = lambda r: k['K'] * r ** k['A']
 
-    ## r's from Santrock
-    #rcpdb, rosmow = 0.011237, 0.002005
-
-    ## r's from Isodat
-    rcpdb, rosmow = 0.0111802, 0.0020052
+    rcpdb, rosmow = k['S13'], k['S18']
 
     # approx. shouldn't affect results much
     d18ostd = -21.097
