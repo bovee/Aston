@@ -61,23 +61,44 @@ class AgilentCS(Datafile):
     Base class for Agilent files from ChemStation.
     """
     def _update_info_from_file(self):
+        folder = op.dirname(self.rawdata)
+        pmp_file = op.join(folder, 'RUN.M', 'LPMP1.REG')
+        if op.exists(pmp_file):
+            d = read_reg_file(open(pmp_file, 'rb'))
+            if d.get('TIMETABLE', False):
+                # get solv_B, solv_C, solv_D, flow
+                # calculate solv_A
+                pass
+            else:
+                if d.get('SOLV_RATIO_A', False):
+                    pass
+                if d.get('SOLV_RATIO_B', False):
+                    pass
+                if d.get('SOLV_RATIO_C', False):
+                    pass
+                if d.get('SOLV_RATIO_D', False):
+                    pass
+                if d.get('FLOW', False):
+                    pass
         pass
 
     def events(self):
         #TODO: get fia from new-style *.REG files.
         folder = op.dirname(self.rawdata)
-        d = read_reg_file(open(op.join(folder, 'ACQRES.REG'), 'rb'))
-        if not d.get('FIARun', False):
-            return []
+        acq_file = op.join(folder, 'ACQRES.REG')
         fis = []
-        prev_f = d['FIASeriesInfo'][1][1]
-        for f in d['FIASeriesInfo'][1][2:]:
-            fis.append([prev_f[0], f[0], prev_f[2]])
-            prev_f = f
-        else:
-            if len(fis) > 0:
-                off_t = fis[-1][1] - fis[-1][0]
-                fis.append([prev_f[0], prev_f[0] + off_t, prev_f[2]])
+        if op.exists(acq_file):
+            d = read_reg_file(open(acq_file, 'rb'))
+            if not d.get('FIARun', False):
+                return []
+            prev_f = d['FIASeriesInfo'][1][1]
+            for f in d['FIASeriesInfo'][1][2:]:
+                fis.append([prev_f[0], f[0], prev_f[2]])
+                prev_f = f
+            else:
+                if len(fis) > 0:
+                    off_t = fis[-1][1] - fis[-1][0]
+                    fis.append([prev_f[0], prev_f[0] + off_t, prev_f[2]])
         return fis
 
     def _other_trace(self, name, twin=None):

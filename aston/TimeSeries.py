@@ -73,8 +73,12 @@ class TimeSeries(object):
         else:
             # depending on the val, find the rows differently
             if type(val) is int or type(val) is float:
+                #FIXME: this doesn't track the new positions
+                # in the array "ions" back the positions in
+                # self.ions
                 ions = np.array([i for i in self.ions \
-                if type(i) is int or type(i) is float])
+                  if type(i) is int or type(i) is float or\
+                  type(i) is np.float32])
                 rows = np.where(np.abs(ions - val) < tol)[0]
             elif val in self.ions:
                 rows = np.array([self.ions.index(val)])
