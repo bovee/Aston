@@ -1,8 +1,5 @@
 import numpy as np
 
-#we don't need to reinvent the wheel, so we can straight up use some
-#of numpy's default functions and pass our array directly in
-from numpy import abs, sin, cos, tan, gradient
 from scipy.stats import gaussian_kde
 from scipy.optimize import fmin, brentq
 
@@ -73,27 +70,40 @@ def base2(ic, t):
     pi = 0  # previous index
     oc = np.zeros(len(ic))
     for i in range(1, len(mn)):
-        if slope < (ic[mn[i]]-ic[mn[pi]]) / (mn[i]-mn[pi]) and \
+        if slope < (ic[mn[i]] - ic[mn[pi]]) / (mn[i] - mn[pi]) and \
           slope < max_slope:
             #add trend
             oc[mn[pi]:mn[i - 1]] = \
-              np.linspace(ic[mn[pi]],ic[mn[i-1]],mn[i-1]-mn[pi])
-            pi = i -1
+              np.linspace(ic[mn[pi]], ic[mn[i - 1]], mn[i - 1] - mn[pi])
+            pi = i - 1
         slope = (ic[mn[i]] - ic[mn[pi]]) / (mn[i] - mn[pi])
     print(mn[pi], mn[-1])
     oc[mn[pi]:mn[-1]] = \
-      np.linspace(ic[mn[pi]],ic[mn[-1]],mn[-1]-mn[pi])
-    oc[-1] = oc[-2] #FIXME: there's definitely a bug in here somewhere
+      np.linspace(ic[mn[pi]], ic[mn[-1]], mn[-1] - mn[pi])
+    oc[-1] = oc[-2]  # FIXME: there's definitely a bug in here somewhere
 
 
 def CODA(ts, window, level):
     """
     CODA processing from Windig, Phalp, & Payne 1996 Anal Chem
     """
-    datasm = movingaverage(ts.data, ts.t, window)
-    lengthdata = np.sqrt(np.sum(ts.data * ts.data))
-    datalengthscaled = ts.data / lengthdata #FIXME
-    pass
+    # pull out the data
+    d = ts.data.todense()
+
+    # smooth the data and standardize it
+    smooth_data = movingaverage(d, ts.times, window)
+    stand_data = (smooth_data - smooth_data.mean()) / smooth_data.std()
+
+    #scale the data to have unit length
+    scale_data = ts.data / np.sqrt(np.sum(d ** 2, axis=0))
+
+    # calculate the "mass chromatographic quality" (MCQ) index
+    mcq = np.sum(stand_data * scale_data) / np.sqrt(d.shape[0] - 1)
+
+    # filter out ions with an mcq below level
+    good_ions = [i for i, q in zip(ts.ions, mcq) if q >= level]
+    return good_ions
+
 
 def movingaverage(ic, t, window):
     x = int(window)
@@ -124,19 +134,26 @@ def _smooth(ic, half_wind, m):
     return oc
 
 
+# we don't need to reinvent the wheel, so we can straight up use some
+# of numpy's default functions and pass our array directly in
+# this function wraps
 def ts_func(f):
     def wrap_func(ic, t):
         return f(ic), t
     return wrap_func
+#def ts_func(f):
+#    def wrap_func(ts):
+#        return TimeSeries(f(ts.y), ts.times)
+#    return wrap_func
 
 fxns = {'fft': fft,
         'noise': noisefilter,
-        'abs': ts_func(abs),
-        'sin': ts_func(sin),
-        'cos': ts_func(cos),
-        'tan': ts_func(tan),
-        'derivative': ts_func(gradient),
-        'd': ts_func(gradient),
+        'abs': ts_func(np.abs),
+        'sin': ts_func(np.sin),
+        'cos': ts_func(np.cos),
+        'tan': ts_func(np.tan),
+        'derivative': ts_func(np.gradient),
+        'd': ts_func(np.gradient),
         'base': base,
         'movingaverage': movingaverage,
         'savitskygolay': savitzkygolay,

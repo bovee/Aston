@@ -103,7 +103,7 @@ class AgilentMS(AgilentCS):
             f.seek(npos)
         f.close()
 
-        cols += 1
+        #cols += 1
         data = scipy.sparse.csr_matrix((vals, cols, rowst), \
           shape=(nscans, len(ions)), dtype=float)
         ions = [i / 20. for i in ions]

@@ -10,10 +10,12 @@ from scipy.interpolate import interp1d
 
 
 class TimeSeries(object):
-    def __init__(self, data=None, times=np.array([]), ions=[]):
+    def __init__(self, data, times, ions=[]):
         if data is not None:
             if len(data.shape) == 1:
                 data = np.atleast_2d(data).T
+                if ions == []:
+                    ions = ['']
             assert times.shape[0] == data.shape[0]
             assert len(ions) == data.shape[1]
         self.data = data
