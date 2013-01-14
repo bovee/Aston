@@ -1,5 +1,6 @@
 import numpy as np
 
+import scipy.ndimage
 from scipy.stats import gaussian_kde
 from scipy.optimize import fmin, brentq
 
@@ -88,17 +89,17 @@ def CODA(ts, window, level):
     CODA processing from Windig, Phalp, & Payne 1996 Anal Chem
     """
     # pull out the data
-    d = ts.data.todense()
+    d = ts.data.toarray()
 
     # smooth the data and standardize it
-    smooth_data = movingaverage(d, ts.times, window)
+    smooth_data = movingaverage(d, ts.times, window)[0]
     stand_data = (smooth_data - smooth_data.mean()) / smooth_data.std()
 
     #scale the data to have unit length
-    scale_data = ts.data / np.sqrt(np.sum(d ** 2, axis=0))
+    scale_data = d / np.sqrt(np.sum(d ** 2, axis=0))
 
     # calculate the "mass chromatographic quality" (MCQ) index
-    mcq = np.sum(stand_data * scale_data) / np.sqrt(d.shape[0] - 1)
+    mcq = np.sum(stand_data * scale_data, axis=0) / np.sqrt(d.shape[0] - 1)
 
     # filter out ions with an mcq below level
     good_ions = [i for i, q in zip(ts.ions, mcq) if q >= level]
@@ -106,32 +107,25 @@ def CODA(ts, window, level):
 
 
 def movingaverage(ic, t, window):
-    x = int(window)
-    half_wind = (x - 1) // 2
-    m = np.ones(x) / x
-    return _smooth(ic, half_wind, m), t
+    m = np.ones(int(window)) / int(window)
+    return _smooth(ic, m), t
 
 
 def savitzkygolay(ic, t, window, order):
     # adapted from http://www.scipy.org/Cookbook/SavitzkyGolay
+    # but uses ndimage.convolve now, so we don't have to
+    # do the padding ourselves
     half_wind = (int(window) - 1) // 2
     order_range = range(int(order) + 1)
     # precompute coefficients
     b = [[k ** i for i in order_range] \
-      for k in range(-half_wind, half_wind + 1)]
-    m = np.linalg.pinv(b)
-    m = m[0]
-    return _smooth(ic, half_wind, m), t
+         for k in range(-half_wind, half_wind + 1)]
+    m = np.linalg.pinv(b)[0]
+    return _smooth(ic, m), t
 
 
-def _smooth(ic, half_wind, m):
-    # pad the signal at the extremes with
-    # values taken from the signal itself
-    firstvals = ic[0] - np.abs(ic[1:half_wind + 1][::-1] - ic[0])
-    lastvals = ic[-1] + np.abs(ic[-half_wind - 1:-1][::-1] - ic[-1])
-    y = np.concatenate((firstvals, ic, lastvals))
-    oc = np.convolve(m, y, mode='valid')
-    return oc
+def _smooth(ic, m):
+    return scipy.ndimage.convolve1d(ic, m, axis=0, mode='reflect')
 
 
 # we don't need to reinvent the wheel, so we can straight up use some
