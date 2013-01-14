@@ -1,19 +1,14 @@
 0.5 Checklist
 *************
 
-* AIA/CDF, RAW, mzML, & mzXML file support
-* save mzML & mzXML
+* mzML, & mzXML file support
+* save AIA/CDF, mzML & mzXML
 * Agilent .REG scraping
+  - method parameters
   - fraction collection
-  - pressure/flow rate/temp
 * display extras on graph
   - fraction collection windows
-  - MSMS points on graph / MSMS data display
   - test descriptions of method params on graph?
-* Agilent MSMS Peak file format
-* Bruker MSMS spectra
-* Method Database
-* setting to allow run info to be loaded from method DB
 * more integrators
   - wavelet integration
   - integrate by fraction collection windows
@@ -26,7 +21,14 @@
 0.6 Checklist
 *************
 
-* method editor?
+* RAW file support
+* MSMS support
+  - Agilent MSMS Peak file format
+  - Bruker MSMS spectra
+  - MSMS points on graph / MSMS data display
+* Method Database
+  - method editor?
+  - setting to allow run info to be loaded from method DB
 * compound database
   - hashing code for compounds? numerical match score between spectra?
 * remote database support
@@ -36,9 +38,6 @@
 * smarter peak editing?
   - adjustable peaks (little selectors on each end of "baseline")
   - highlight selected (in peak table) peak on graph
-* help manual / tutorials
-* package example data with aston (for tests / quality control)
-* write unit tests
 
 
 0.7 Checklist
@@ -50,6 +49,9 @@
 * have multiple plots and allow user to choose which plot each trace goes on?
   - have datafile return units associated with trace types to allow for multiple y axes
 * display x axes in seconds (or hours)
+* help manual / tutorials
+* package example data with aston (for tests / quality control)
+* write unit tests
 
 
 Indefinite
@@ -59,3 +61,4 @@ Indefinite
 * setup/disttools? need better versioning
 * use hashes of data instead of filenames to match data to database entries
   - but how to handle duplicate files?
+* refactor code to remove references to "ions"; should be mz or wavelength?

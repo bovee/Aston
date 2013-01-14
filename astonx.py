@@ -1,7 +1,7 @@
 #!/usr/bin/python2.7
 # -*- coding: utf-8 -*-
 
-#    Copyright 2011, 2012 Roderick Bovee
+#    Copyright 2011-2013 Roderick Bovee
 #
 #    This file is part of Aston.
 #
