@@ -49,9 +49,6 @@ class AgilentFID(AgilentCS):
         self.data = TimeSeries(np.array([data]).T, times, ['TIC'])
         self.data.time()
 
-    def _update_info_from_file(self):
-        pass
-
 
 class CSVFile(Datafile.Datafile):
     '''

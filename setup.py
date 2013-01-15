@@ -27,7 +27,7 @@ options = {
     ],
     'long_description': read('README.rst'),
     'packages': ['aston', 'aston.ui', 'aston.Features', \
-                'aston.FileFormats', 'aston.Math'],
+                 'aston.FileFormats', 'aston.Math'],
     'scripts': ['astonx.py'],
     #'data_files': matplotlib.get_py2exe_datafiles(),
     'package_data': {'aston': \

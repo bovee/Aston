@@ -55,6 +55,55 @@ class AgilentMH(Datafile):
             pass
         self.info.update(d)
 
+    def _other_trace(self, name, twin=None):
+        if name in ['pres', 'flow', 'slvb']:
+            fname = op.join(op.dirname(self.rawdata), 'CapPump1.cd')
+            ttab = {'pres': 'Pressure', 'flow': 'Flow', \
+                    'slvb': '%B'}
+        elif name in ['temp']:
+            fname = op.join(op.dirname(self.rawdata), 'TCC1.cd')
+            ttab = {'temp': 'Temperature of Left Heat Exchanger'}
+        else:
+            return super(AgilentMH, self)._other_trace(name, twin)
+
+        if not op.exists(fname) or not op.exists(fname[:-3] + '.cg'):
+            # file doesn't exist, kick it up to the parent
+            return super(AgilentMH, self)._other_trace(name, twin)
+
+        f = open(fname, 'rb')
+        fdat = open(fname[:-3] + '.cg', 'rb')
+
+        # convenience function for reading in data
+        rd = lambda st: struct.unpack(st, f.read(struct.calcsize(st)))
+
+        f.seek(0x4c)
+        num_traces = rd('<I')[0]
+        for _ in range(num_traces):
+            cloc = f.tell()
+            f.seek(cloc + 2)
+            sl = rd('<B')[0]
+            trace_name = rd('<' + str(sl) + 's')[0]
+            if ttab[name] == trace_name:
+                f.seek(f.tell() + 4)
+                foff = rd('<Q')[0]
+                npts = rd('<I')[0] + 2  # +2 for the extra time info
+                fdat.seek(foff)
+                pts = struct.unpack('<' + npts * 'd', fdat.read(8 * npts))
+                #TODO: pts[0] is not the true offset?
+                t = pts[0] + pts[1] * np.arange(npts - 2)
+                d = np.array(pts[2:])
+                # get the units
+                f.seek(f.tell() + 40)
+                sl = rd('<B')[0]
+                y_units = rd('<' + str(sl) + 's')[0]
+                if y_units == 'bar':
+                    d *= 0.1  # convert to MPa for metricness
+                elif y_units == '':
+                    pass  #TODO: ul/min to ml/min
+                return TimeSeries(d, t, [name])
+
+            f.seek(cloc + 87)
+
 
 class AgilentCS(Datafile):
     """

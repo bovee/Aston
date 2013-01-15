@@ -89,7 +89,10 @@ def CODA(ts, window, level):
     CODA processing from Windig, Phalp, & Payne 1996 Anal Chem
     """
     # pull out the data
-    d = ts.data.toarray()
+    try:
+        d = ts.data.toarray()
+    else:
+        d = ts.data
 
     # smooth the data and standardize it
     smooth_data = movingaverage(d, ts.times, window)[0]
@@ -119,7 +122,7 @@ def savitzkygolay(ic, t, window, order):
     order_range = range(int(order) + 1)
     # precompute coefficients
     b = [[k ** i for i in order_range] \
-         for k in range(-half_wind, half_wind + 1)]
+          for k in range(-half_wind, half_wind + 1)]
     m = np.linalg.pinv(b)[0]
     return _smooth(ic, m), t
 

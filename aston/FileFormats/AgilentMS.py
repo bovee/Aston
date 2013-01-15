@@ -248,6 +248,10 @@ class AgilentMSMSScan(AgilentMH):
         ions = np.linspace(minx, maxx, len(pd))
         return np.vstack([ions, pd])
 
-    def _other_trace(self, name):
-        #TODO: read from MSPeriodicActuals.bin and TCC.* files
-        return np.zeros(len(self.times))
+    def time(self, twin=None, adjust=True):
+        t = self._total_trace(twin=twin).times
+        if adjust and 't-scale' in self.info:
+            t *= float(self.info['t-scale'])
+        if adjust and 't-offset' in self.info:
+            t += float(self.info['t-offset'])
+        return t

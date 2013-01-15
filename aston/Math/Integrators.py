@@ -83,7 +83,6 @@ def waveletIntegrate(ts, plotter=None, **kwargs):
         #TODO: decompose p into proper peaks
 
         plotter.plt.plot(tr.t, sim_chr(p0, tr.times), 'k-')
-
     #p, r1, r2, r3, r4 = leastsq(errf, p0[:], args=(x, times), full_output=True, maxfev=10)
     #print(r2['nfev'], r3, r4)
     #plotter.plt.plot(times, sim_chr(p, times), 'k-')

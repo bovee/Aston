@@ -389,11 +389,8 @@ class Datafile(DBObject):
         if self.data is None:
             self._cache_data()
 
-        if twin is not None:
-            twin = (self._sc_off(twin[0]), self._sc_off(twin[1]))
-
-        return TimeSeries(val * np.ones(self.data.len(twin)), \
-          self.time(twin, adjust=False), ['!' + str(val)])
+        t = self.time(twin, adjust=False)
+        return TimeSeries(val * np.ones(t.shape), t, ['!' + str(val)])
 
     def _ions(self):
         if self.data is None:
@@ -458,7 +455,7 @@ class Datafile(DBObject):
         Load the data into the Datafile for the first time.
         """
         if self.data is None:
-            self.data = TimeSeries()
+            self.data = TimeSeries(np.array([]), np.array([]))
 
     def _update_info_from_file(self):
         """

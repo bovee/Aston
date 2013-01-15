@@ -57,6 +57,11 @@ class TimeSeries(object):
         st_idx, en_idx = self._slice_idxs(twin)
         return en_idx - st_idx
 
+    def twin(self, twin):
+        st_idx, en_idx = self._slice_idxs(twin)
+        return TimeSeries(self.data[st_idx:en_idx], \
+                          self.times[st_idx:en_idx], self.ions)
+
     def trace(self, val='TIC', tol=0.5, twin=None):
         st_idx, en_idx = self._slice_idxs(twin)
 
@@ -76,9 +81,9 @@ class TimeSeries(object):
                 #FIXME: this doesn't track the new positions
                 # in the array "ions" back the positions in
                 # self.ions
-                ions = np.array([i for i in self.ions \
-                  if type(i) is int or type(i) is float or\
-                  type(i) is np.float32])
+                is_num = lambda i: type(i) is int or \
+                  type(i) is float or type(i) is np.float32
+                ions = np.array([i for i in self.ions if is_num(i)])
                 rows = np.where(np.abs(ions - val) < tol)[0]
             elif val in self.ions:
                 rows = np.array([self.ions.index(val)])
