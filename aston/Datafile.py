@@ -295,8 +295,9 @@ class Datafile(DBObject):
 
         if fxn in math_fxns:
             f = math_fxns[fxn]
-            return ts.apply_fxn(f, *args)
-        return self._const(0.0)
+            return f(ts, *args)
+        else:
+            return self._const(np.nan)
 
     def get_point(self, trace, time):
         """

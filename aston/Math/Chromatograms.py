@@ -3,20 +3,25 @@ import numpy as np
 import scipy.ndimage
 from scipy.stats import gaussian_kde
 from scipy.optimize import fmin, brentq
+from aston.TimeSeries import TimeSeries, ts_func
 
 
-def fft(ic, t):
-    oc = np.abs(np.fft.fftshift(np.fft.fft(ic))) / len(ic)
-    t = np.fft.fftshift(np.fft.fftfreq(len(oc), d=t[1] - t[0]))
+def fft(ts):
+    oc = np.abs(np.fft.fftshift(np.fft.fft(ts.y))) / len(ts.y)
+    t = np.fft.fftshift(np.fft.fftfreq(len(oc), d=ts.times[1] - ts.times[0]))
+    return TimeSeries(oc, t)
 #elif fxn == 'ifft':
 #    ic = np.fft.ifft(np.fft.fftshift(ic * len(ic)))# / len(ic)
-    return oc, t
 
 
-def noisefilter(ic, t, bandwidth):
+def ifft(ic, t):
+    pass
+
+
+def noisefilter(y, bandwidth=0.2):
     #adapted from http://glowingpython.blogspot.com/
     #2011/08/fourier-transforms-and-image-filtering.html
-    I = np.fft.fftshift(np.fft.fft(ic))  # entering to frequency domain
+    I = np.fft.fftshift(np.fft.fft(y))  # entering to frequency domain
     # fftshift moves zero-frequency component to the center of the array
     P = np.zeros(len(I), dtype=complex)
     c1 = len(I) / 2  # spectrum center
@@ -24,15 +29,15 @@ def noisefilter(ic, t, bandwidth):
     r = int((r * len(I)) / 2)  # convert to coverage of the array
     for i in range(c1 - r, c1 + r):
         P[i] = I[i]  # frequency cutting
-    oc = np.real(np.fft.ifft(np.fft.ifftshift(P)))
+    return np.real(np.fft.ifft(np.fft.ifftshift(P)))
 
 
-def base(ic, t, slope_tol='5.0', off_tol='5.0'):
-    ic = savitzkygolay(ic, t, 5, 3)[0]
-    slopes = np.diff(ic) / np.diff(t)
+def base(ts, slope_tol='5.0', off_tol='5.0'):
+    ic = savitzkygolay(ts, 5, 3)[0]
+    slopes = np.diff(ic) / np.diff(ts.times)
     wind = np.array([0.5, 0.5])
     offsets = np.convolve(ic, wind, mode='valid') - \
-      slopes * np.convolve(t, wind, mode='valid')
+      slopes * np.convolve(ts.times, wind, mode='valid')
 
     sl_kern = gaussian_kde(slopes)
     base_slope = fmin(lambda x: -sl_kern(x), 0, disp=False)
@@ -53,8 +58,8 @@ def base(ic, t, slope_tol='5.0', off_tol='5.0'):
 
     msk = np.logical_and(valid, offsets > o1)
     msk = np.logical_and(valid, offsets < o2)
-    new_ic = np.interp(t, t[msk], ic[msk])
-    return new_ic, t
+    new_ic = np.interp(ts.times, ts.times[msk], ic[msk])
+    return TimeSeries(new_ic, ts.times)
 
 
 def base2(ic, t):
@@ -109,12 +114,12 @@ def CODA(ts, window, level):
     return good_ions
 
 
-def movingaverage(ic, t, window):
+def movingaverage(ts, window):
     m = np.ones(int(window)) / int(window)
-    return _smooth(ic, m), t
+    return TimeSeries(_smooth(ts.data, m), ts.times)
 
 
-def savitzkygolay(ic, t, window, order):
+def savitzkygolay(ts, window, order):
     # adapted from http://www.scipy.org/Cookbook/SavitzkyGolay
     # but uses ndimage.convolve now, so we don't have to
     # do the padding ourselves
@@ -124,27 +129,15 @@ def savitzkygolay(ic, t, window, order):
     b = [[k ** i for i in order_range] \
           for k in range(-half_wind, half_wind + 1)]
     m = np.linalg.pinv(b)[0]
-    return _smooth(ic, m), t
+    return TimeSeries(_smooth(ts.data, m), ts.times)
 
 
 def _smooth(ic, m):
     return scipy.ndimage.convolve1d(ic, m, axis=0, mode='reflect')
 
 
-# we don't need to reinvent the wheel, so we can straight up use some
-# of numpy's default functions and pass our array directly in
-# this function wraps
-def ts_func(f):
-    def wrap_func(ic, t):
-        return f(ic), t
-    return wrap_func
-#def ts_func(f):
-#    def wrap_func(ts):
-#        return TimeSeries(f(ts.y), ts.times)
-#    return wrap_func
-
 fxns = {'fft': fft,
-        'noise': noisefilter,
+        'noise': ts_func(noisefilter),
         'abs': ts_func(np.abs),
         'sin': ts_func(np.sin),
         'cos': ts_func(np.cos),

@@ -4,6 +4,7 @@
 import json
 import zlib
 import struct
+from functools import wraps
 import numpy as np
 from scipy.sparse import coo_matrix
 from scipy.interpolate import interp1d
@@ -237,3 +238,15 @@ def decompress_to_ts(zdata):
     d = np.fromstring(data[8 + li + lt:])
 
     return TimeSeries(d.reshape(len(t), len(i)), t, i)
+
+
+def ts_func(f):
+    """
+    This wraps a function that would normally only accept an array
+    and allows it to operate on a TimeSeries. Useful for applying
+    numpy functions to TimeSeries.
+    """
+    @wraps(f)
+    def wrap_func(ts, *args):
+        return TimeSeries(f(ts.y, *args), ts.times)
+    return wrap_func
