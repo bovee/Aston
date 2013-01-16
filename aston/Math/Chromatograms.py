@@ -94,10 +94,7 @@ def CODA(ts, window, level):
     CODA processing from Windig, Phalp, & Payne 1996 Anal Chem
     """
     # pull out the data
-    try:
-        d = ts.data.toarray()
-    else:
-        d = ts.data
+    d = ts.data
 
     # smooth the data and standardize it
     smooth_data = movingaverage(d, ts.times, window)[0]

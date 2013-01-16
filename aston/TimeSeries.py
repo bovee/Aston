@@ -19,7 +19,7 @@ class TimeSeries(object):
                     ions = ['']
             assert times.shape[0] == data.shape[0]
             assert len(ions) == data.shape[1]
-        self.data = data
+        self._rawdata = data
         self.times = times
         self.ions = ions
 
@@ -30,7 +30,7 @@ class TimeSeries(object):
         length as self.data. Acts in the time() and trace() functions.
         """
         if twin is None:
-            return 0, self.data.shape[0]
+            return 0, self._rawdata.shape[0]
 
         tme = self.times.copy()
 
@@ -39,7 +39,7 @@ class TimeSeries(object):
         else:
             st_idx = (np.abs(tme - twin[0])).argmin()
         if twin[1] is None:
-            en_idx = self.data.shape[0]
+            en_idx = self._rawdata.shape[0]
         else:
             en_idx = (np.abs(tme - twin[1])).argmin() + 1
         return st_idx, en_idx
@@ -60,7 +60,7 @@ class TimeSeries(object):
 
     def twin(self, twin):
         st_idx, en_idx = self._slice_idxs(twin)
-        return TimeSeries(self.data[st_idx:en_idx], \
+        return TimeSeries(self._rawdata[st_idx:en_idx], \
                           self.times[st_idx:en_idx], self.ions)
 
     def trace(self, val='TIC', tol=0.5, twin=None):
@@ -69,12 +69,12 @@ class TimeSeries(object):
         if val == 'TIC' and 'TIC' not in self.ions:
             # if a TIC is being requested and we don't have
             # a prebuilt one, sum up the axes
-            data = self.data[st_idx:en_idx, :].sum(axis=1)
+            data = self._rawdata[st_idx:en_idx, :].sum(axis=1)
         elif val == '!':
             # this is for peaks, where we return the first
             # ion by default; should be accessible from the
             # ions dialog box because !'s are stripped out
-            data = self.data[st_idx:en_idx, 0]
+            data = self._rawdata[st_idx:en_idx, 0]
             val = self.ions[0]
         else:
             # depending on the val, find the rows differently
@@ -96,7 +96,7 @@ class TimeSeries(object):
             if len(rows) == 0:
                 data = np.zeros(en_idx - st_idx) * np.nan
             else:
-                data = self.data[st_idx:en_idx, rows].sum(axis=1)
+                data = self._rawdata[st_idx:en_idx, rows].sum(axis=1)
         return TimeSeries(data, self.times[st_idx:en_idx], [val])
 
     def scan(self, time, to_time=None):
@@ -105,29 +105,29 @@ class TimeSeries(object):
         """
         idx = (np.abs(self.times - time)).argmin()
         if to_time is None:
-            if type(self.data) == np.ndarray:
-                ion_abs = self.data[idx, :].copy()
+            if type(self._rawdata) == np.ndarray:
+                ion_abs = self._rawdata[idx, :].copy()
             else:
-                ion_abs = self.data[idx, :].astype(float).toarray()[0]
+                ion_abs = self._rawdata[idx, :].astype(float).toarray()[0]
             #return np.array(self.ions), ion_abs
             return np.vstack([np.array([float(i) for i in self.ions]), \
               ion_abs])
         else:
             en_idx = (np.abs(self.times - to_time)).argmin()
             idx, en_idx = min(idx, en_idx), max(idx, en_idx)
-            if type(self.data) == np.ndarray:
-                ion_abs = self.data[idx:en_idx + 1, :].copy()
+            if type(self._rawdata) == np.ndarray:
+                ion_abs = self._rawdata[idx:en_idx + 1, :].copy()
             else:
-                ion_abs = self.data[idx:en_idx + 1, :].astype(float).toarray()[0]
+                ion_abs = self._rawdata[idx:en_idx + 1, :].astype(float).toarray()[0]
             return np.vstack([np.array([float(i) for i in self.ions]), \
               ion_abs.sum(axis=0)])
 
     def as_2D(self):
         ext = (self.times[0], self.times[-1], min(self.ions), max(self.ions))
-        if type(self.data) == np.ndarray:
-            grid = self.data[:, np.argsort(self.ions)].transpose()
+        if type(self._rawdata) == np.ndarray:
+            grid = self._rawdata[:, np.argsort(self.ions)].transpose()
         else:
-            data = self.data[:, 1:].tocoo()
+            data = self._rawdata[:, 1:].tocoo()
             data_ions = np.array([self.ions[i] for i in data.col])
             grid = coo_matrix((data.data, (data_ions, data.row))).toarray()
         return ext, grid
@@ -138,33 +138,29 @@ class TimeSeries(object):
     def _retime(self, new_times):
         if new_times.shape == self.times.shape:
             if np.all(np.equal(new_times, self.times)):
-                return self.data
+                return self._rawdata
         f = lambda d: interp1d(self.times, d, \
             bounds_error=False, fill_value=0.0)(new_times)
-        return np.apply_along_axis(f, 0, self.data)
+        return np.apply_along_axis(f, 0, self._rawdata)
 
     def adjust_time(self, offset=0.0, scale=1.0):
         t = scale * self.times + offset
-        return TimeSeries(self.data, t, self.ions)
-
-    def apply_fxn(self, f, *args):
-        d, t = f(self.data.T[0], self.times, *args)
-        return TimeSeries(d, t, self.ions)
+        return TimeSeries(self._rawdata, t, self.ions)
 
     def _apply_data(self, f, ts):
         """
         Convenience function for all of the math stuff.
         """
         if type(ts) == int or type(ts) == float:
-            d = ts * np.ones(self.data.shape[0])
+            d = ts * np.ones(self._rawdata.shape[0])
         elif ts is None:
             d = None
         elif all(ts.times == self.times):
-            d = ts.data[:, 0]
+            d = ts._rawdata[:, 0]
         else:
             d = ts._retime(self.times)[:, 0]
 
-        new_data = np.apply_along_axis(f, 0, self.data, d)
+        new_data = np.apply_along_axis(f, 0, self._rawdata, d)
         return TimeSeries(new_data, self.times, self.ions)
 
     def __add__(self, ts):
@@ -205,20 +201,27 @@ class TimeSeries(object):
             return self
         # TODO: shouldn't this use the times of the longest
         #timeseries and not just the first one?
-        data = np.hstack([self.data, ts._retime(self.times)])
+        data = np.hstack([self._rawdata, ts._retime(self.times)])
         ions = self.ions + ts.ions
         ts = TimeSeries(data, self.times, ions)
         return ts
 
     @property
     def y(self):
-        return self.data.T[0]
+        return self._rawdata.T[0]
+
+    @property
+    def data(self):
+        if type(self._rawdata) == np.ndarray:
+            return self._rawdata
+        else:
+            return self._rawdata.astype(float).toarray()
 
     def compress(self):
-        if type(self.data) != np.ndarray:
-            d = self.data.astype(float).toarray().tostring()
+        if type(self._rawdata) != np.ndarray:
+            d = self._rawdata.astype(float).toarray().tostring()
         else:
-            d = self.data.astype(float).tostring()
+            d = self._rawdata.astype(float).tostring()
         t = self.times.astype(float).tostring()
         lt = struct.pack('<L', len(t))
         i = json.dumps(self.ions).encode('utf-8')
