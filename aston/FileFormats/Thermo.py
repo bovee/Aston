@@ -68,6 +68,11 @@ class ThermoDXF(Datafile.Datafile):
         f.read(4)  # not sure what this value means?
 
         #TODO: this shouldn't be hardcoded
+        # these values can be found under
+        #CChannelGasConfPart?
+        #45.0 0x1420ef
+        #46.0 0x14211c
+        #
         ions = [44, 45, 46]
         ni = len(ions)
 
@@ -77,6 +82,7 @@ class ThermoDXF(Datafile.Datafile):
 
         data = np.array([struct.unpack('<f' + ni * 'd', \
           f.read(4 + ni * 8)) for _ in range(nscans)])
+
         data[:, 0] /= 60.  # convert time to minutes
         self.data = TimeSeries(data[:, 1:], data[:, 0], ions)
         f.close()
@@ -91,7 +97,32 @@ class ThermoDXF(Datafile.Datafile):
         #info['file name'] = os.path.basename(self.filename)
         d['name'] = os.path.splitext(os.path.basename(self.rawdata))[0]
         d['r-type'] = 'Sample'
+        #TODO: there has to be a better way than this to get these values
+        # at least don't keep cycling through the file for each one
+        d['r-d18o-std'] = self._read_thermo_data('d 18O/16O', 68, 'd')
+        d['r-d13c-std'] = self._read_thermo_data('d 13C/12C', 68, 'd')
         self.info.update(d)
+
+    def _read_thermo_data(self, search_str, offs, stype='d'):
+        search_utf = search_str.encode('utf_16_le')
+        stype = '<' + stype
+        with open(self.rawdata, 'rb') as f:
+            f.seek(0x14ADB1)
+            f.seek(len(search_utf))
+            while True:
+                f.seek(f.tell() - len(search_utf))
+                if f.read(len(search_utf)) == search_utf:
+                    break
+                if f.read(1) == b'':
+                    f.close()
+                    return ''
+            f.seek(f.tell() + offs)
+            v = struct.unpack(stype, f.read(struct.calcsize(stype)))[0]
+        return str(v)
+
+    def events(self):
+        #TODO: read in ref gas pulses
+        pass
 
 
 class ThermoRAW(Datafile.Datafile):

@@ -4,7 +4,6 @@
 import json
 import zlib
 import struct
-from functools import wraps
 import numpy as np
 from scipy.sparse import coo_matrix
 from scipy.interpolate import interp1d
@@ -249,7 +248,6 @@ def ts_func(f):
     and allows it to operate on a TimeSeries. Useful for applying
     numpy functions to TimeSeries.
     """
-    @wraps(f)
     def wrap_func(ts, *args):
         return TimeSeries(f(ts.y, *args), ts.times)
     return wrap_func

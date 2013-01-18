@@ -49,6 +49,7 @@ aston_fields = {
         'r-vial-pos': tr('Vial Position'),
         'r-seq-num': tr('Sequence Number'),
         'r-inst': tr('Instrument'),
+        'r-d18o-std': tr('Reference δ18O Value (‰)'),
         'r-d13c-std': tr('Reference δ13C Value (‰)'),
     # information generated in the program ("statistics")
         's-file-type': tr('File Type'),
