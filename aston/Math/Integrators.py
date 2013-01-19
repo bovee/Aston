@@ -7,6 +7,12 @@ from aston.TimeSeries import TimeSeries
 from aston.Math.Peak import time
 
 
+def simpleIntegrate(ts):
+    #TODO: 5 point smoothing on ts.y
+    dxdt = np.gradient(ts.y) / np.gradient(ts.times)
+    pass
+
+
 def waveletIntegrate(ts, plotter=None, **kwargs):
     x = ts.y
     t = ts.time()

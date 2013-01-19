@@ -8,7 +8,7 @@
   - fraction collection
 * display extras on graph
   - fraction collection windows
-  - test descriptions of method params on graph?
+  - ref. gas start/stops
 * more integrators
   - wavelet integration
   - integrate by fraction collection windows
@@ -17,11 +17,13 @@
   - low-high error checking for ranges, make sure ions are numbers, etc
 * better spectra display
   - display range as average for Agilent MSMS
+  - allow navigation around window
 
 0.6 Checklist
 *************
 
 * RAW file support
+* Chemstation B+ REG files
 * MSMS support
   - Agilent MSMS Peak file format
   - Bruker MSMS spectra

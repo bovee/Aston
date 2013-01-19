@@ -116,7 +116,7 @@ def movingaverage(ts, window):
     return TimeSeries(_smooth(ts.data, m), ts.times)
 
 
-def savitzkygolay(ts, window, order):
+def savitzkygolay(ts, window, order, deriv=0):
     # adapted from http://www.scipy.org/Cookbook/SavitzkyGolay
     # but uses ndimage.convolve now, so we don't have to
     # do the padding ourselves
@@ -125,7 +125,7 @@ def savitzkygolay(ts, window, order):
     # precompute coefficients
     b = [[k ** i for i in order_range] \
           for k in range(-half_wind, half_wind + 1)]
-    m = np.linalg.pinv(b)[0]
+    m = np.linalg.pinv(b)[deriv]
     return TimeSeries(_smooth(ts.data, m), ts.times)
 
 
