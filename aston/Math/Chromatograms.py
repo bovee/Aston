@@ -125,8 +125,8 @@ def savitzkygolay(ts, window, order, deriv=0):
     # precompute coefficients
     b = [[k ** i for i in order_range] \
           for k in range(-half_wind, half_wind + 1)]
-    m = np.linalg.pinv(b)[deriv]
-    return TimeSeries(_smooth(ts.data, m), ts.times)
+    m = np.linalg.pinv(b)[int(deriv)]
+    return TimeSeries(_smooth(ts.data, m), ts.times, ts.ions)
 
 
 def _smooth(ic, m):
