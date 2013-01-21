@@ -143,5 +143,5 @@ fxns = {'fft': fft,
         'd': ts_func(np.gradient),
         'base': base,
         'movingaverage': movingaverage,
-        'savitskygolay': savitzkygolay,
+        'savitzkygolay': savitzkygolay,
         }

@@ -115,25 +115,58 @@ class Datafile(DBObject):
         """
         Recursive string parser that handles "ion" strings.
         """
-        #TODO: better error checking in here?
+        def tokenize(istr, token):
+            plevel, words, sacc = 0, [], ''
+            for s in istr.split(token):
+                plevel += sum(1 for i in s if i == '(')
+                plevel -= sum(1 for i in s if i == ')')
+                if sacc == '':
+                    sacc += s
+                else:
+                    sacc += token + s
+                if plevel == 0:
+                    words.append(sacc.strip())
+                    sacc = ''
+            if sacc != '':
+                words.append(sacc.strip())
+            return words
 
-        #null case
+        def is_parans_exp(istr):
+            fxn = istr.split('(')[0]
+            if (not fxn.isalnum() and fxn != '(') or istr[-1] != ')':
+                return False
+            plevel = 1
+            for c in '('.join(istr[:-1].split('(')[1:]):
+                if c == '(':
+                    plevel += 1
+                elif c == ')':
+                    plevel -= 1
+                if plevel == 0:
+                    return False
+            return True
+
         if istr.strip() == '':
             return self._const(0, twin)
 
-        #remove any parantheses or pluses around the whole thing
-        istr = istr.lstrip('+(').rstrip(')')
+        #remove (unnessary?) pluses from the front
+        #TODO: plus should be abs?
+        istr = istr.lstrip('+')
 
         #invert it if preceded by a minus sign
         if istr[0] == '-':
-            ts = self._parse_ion_string(istr[1:], twin)
-            return -ts
+            return -self._parse_ion_string(istr[1:], twin)
 
-        #this is a function
-        if istr[:istr.find('(')].isalnum() and istr.find('(') != -1:
-            fxn = istr[:istr.find('(')]
-            if fxn == 'file' or fxn == 'f':
-                args = istr[istr.find('(') + 1:].split(';')
+        #this is a function or paranthesized expression
+        if is_parans_exp(istr):
+            if ')' not in istr:
+                # unbalanced parantheses
+                pass
+            fxn = istr.split('(')[0]
+            args = istr[istr.find('(') + 1:istr.find(')')].split(';')
+            if fxn == '':
+                # strip out the parantheses and continue
+                istr = args[0]  # istr[1:-1]
+            elif fxn == 'file' or fxn == 'f':
                 dt = self.database.getFileByName(args[0])
                 if dt is None:
                     return self._const(0, twin)
@@ -143,68 +176,54 @@ class Datafile(DBObject):
                     ts = dt.trace(twin=twin)
                 return ts.retime(self.time(twin))
             else:
-                args = istr[istr.find('(') + 1:].split(';')
                 ts = self._parse_ion_string(args[0], twin)
                 return self._apply_fxn(ts, fxn, *args[1:])
 
-        #have we simplified enough? is all of the tricky math gone?
+        # all the complicated math is gone, so simple lookup
         if set(istr).intersection(set('+-/*()')) == set():
-            if istr == 'x' or istr == 'tic':
-                return self._total_trace(twin)
-            elif istr.count(':') == 1:
-                #contains an ion range
-                #TODO: shouldn't this be:
-                #ion = sum(float(i) for i in istr.split(':')) / 2.0
-                ion = np.array([float(i) for i in istr.split(':')]).mean()
-                tol = abs(float(istr.split(':')[0]) - ion)
-                return self._ion_trace(ion, tol, twin=twin)
-            elif all(i in '0123456789.' for i in istr):
-                return self._ion_trace(float(istr), twin=twin)
-            elif istr[0] == '!' and all(i in '0123456789.' for i in istr[1:]):
-                #TODO: should this handle negative numbers?
-                return self._const(float(istr[1:]), twin)
-            elif istr == '!pi':
-                return self._const(np.pi, twin)
-            elif istr == '!e':
-                return self._const(np.e, twin)
-            else:
-                return self._named_trace(istr, twin=twin)
+            return self._parse_simple_ion_string(istr, twin)
 
-        #parse out the additive parts
-        ts = self._const(0, twin)
-        pa = ''
-        for i in istr:
-            if i in '+-' and pa[-1] not in '*/+' and \
-              pa.count('(') == pa.count(')'):
-                ts += self._parse_ion_string(pa, twin)
-                pa = ''
-            pa += i
+        # go through and handle operators
+        for token in '/*+-^':
+            if len(tokenize(istr, token)) != 1:
+                ts = tokenize(istr, token)
+                s = self._parse_ion_string(ts[0], twin)
+                for t in ts[1:]:
+                    if token == '/':
+                        s /= self._parse_ion_string(t, twin)
+                    elif token == '*':
+                        s *= self._parse_ion_string(t, twin)
+                    elif token == '+':
+                        s += self._parse_ion_string(t, twin)
+                    elif token == '-':
+                        s -= self._parse_ion_string(t, twin)
+                    elif token == '^':
+                        s **= self._parse_ion_string(t, twin)
+                return s
+        #TODO: shouldn't hit this point?
+        pass
 
-        if pa != istr:
-            return ts + self._parse_ion_string(pa, twin)
-
-        #TODO: exponents?
-
-        #no additive parts, parse multiplicative/divisive parts
-        ts = None
-        pa = ''
-        for i in istr:
-            if i in '*/' and pa.count('(') == pa.count(')'):
-                if ts is None:
-                    ts = self._parse_ion_string(pa, twin)
-                elif pa[0] in '*':
-                    ts *= self._parse_ion_string(pa[1:], twin)
-                elif pa[0] in '/':
-                    ts /= self._parse_ion_string(pa[1:], twin)
-                pa = ''
-            pa += i
-
-        if pa[0] in '*':
-            return ts * self._parse_ion_string(pa[1:], twin)
-        elif pa[0] in '/':
-            return ts / self._parse_ion_string(pa[1:], twin)
+    def _parse_simple_ion_string(self, istr, twin):
+        if istr == 'x' or istr == 'tic':
+            return self._total_trace(twin)
+        elif istr.count(':') == 1:
+            #contains an ion range
+            #TODO: shouldn't this be:
+            #ion = sum(float(i) for i in istr.split(':')) / 2.0
+            ion = np.array([float(i) for i in istr.split(':')]).mean()
+            tol = abs(float(istr.split(':')[0]) - ion)
+            return self._ion_trace(ion, tol, twin=twin)
+        elif all(i in '0123456789.' for i in istr):
+            return self._ion_trace(float(istr), twin=twin)
+        elif istr[0] == '!' and all(i in '0123456789.' for i in istr[1:]):
+            #TODO: should this handle negative numbers?
+            return self._const(float(istr[1:]), twin)
+        elif istr == '!pi':
+            return self._const(np.pi, twin)
+        elif istr == '!e':
+            return self._const(np.e, twin)
         else:
-            return 0  # this should never happen?
+            return self._named_trace(istr, twin=twin)
 
     def _named_trace(self, name, twin=None):
         t = self.time(twin, adjust=False)
@@ -233,7 +252,7 @@ class Datafile(DBObject):
             pass
         elif name == 'r45std' or name == 'r46std':
             # calculate isotopic reference for chromatogram
-            from aston.Math.Peak import area
+            #from aston.Math.Peak import area
             if name == 'r45std':
                 topion = 45
             else:
@@ -252,7 +271,8 @@ class Datafile(DBObject):
                 p, succ = leastsq(errfunc, p0, args=(np.array(x), np.array(y)))
             except:
                 p = p0
-            return TimeSeries(np.array(errfunc(p, t, np.zeros(len(t)))), t, [name])
+            sim_y = np.array(errfunc(p, t, np.zeros(len(t))))
+            return TimeSeries(sim_y, t, [name])
         elif name in lookdict:
             #we can store time-series data as a list of timepoints
             #in certain info fields and query it here
