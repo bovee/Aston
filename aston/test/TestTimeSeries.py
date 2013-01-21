@@ -1,6 +1,6 @@
 import numpy as np
 import base64
-from aston.TimeSeries import TimeSeries
+from aston.TimeSeries import TimeSeries, ts_func
 from aston.TimeSeries import decompress_to_ts
 
 def test_and():
@@ -35,3 +35,10 @@ def test_decompress():
       'FoFSptAaTso7QKlPR0AOdIGQA=='
     ts = decompress_to_ts(base64.b64decode(zdata))
     assert ts.ions == ['X']
+
+
+def test_gradient():
+    a = TimeSeries(np.array([[0,1,2,1,0],[0,0,2,0,0]]).T, np.array([1,2,3,4,5]), [1,2])
+    grad = ts_func(np.gradient)
+    c = grad(a.trace(1)) / grad(TimeSeries(a.times, a.times))
+    assert c.y == np.array([1., 1., 0., -1., -1.])

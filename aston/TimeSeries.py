@@ -174,6 +174,9 @@ class TimeSeries(object):
     def __div__(self, ts):
         return self._apply_data(lambda x, y: x / y, ts)
 
+    def __truediv__(self, ts):
+        return self.__div__(ts)
+
     def __reversed(self):
         raise NotImplementedError
 
