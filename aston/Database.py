@@ -76,33 +76,55 @@ class AstonDatabase(object):
         self.db.commit()
         c.close()
 
-    def addObject(self, obj):
+    def begin_lazy_op(self):
         if self.objects is None:
             self.reload()
         c = self.db.cursor()
-        result = c.execute('''INSERT INTO objs (type, parent_id, name,
-                           info, data) VALUES (?,?,?,?,?)''', \
-                           self._getRowFromObj(obj))
-        obj.db_id = result.lastrowid
+        return c
+
+    def end_lazy_op(self, c):
         self.db.commit()
         c.close()
+
+    def lazy_delete(self, c, obj):
+        c.execute('DELETE FROM objs WHERE id=?', (obj.db_id,))
+        del self.objects[self.objects.index(obj)]
+
+    def lazy_add(self, c, obj):
+        result = c.execute('INSERT INTO objs \
+          (type, parent_id, name, info, data) \
+          VALUES (?,?,?,?,?)', self._getRowFromObj(obj))
+        obj.db_id = result.lastrowid
         self.objects.append(obj)
 
+    def add_objects(self, obj):
+        """
+        Convenience method so lazy methods don't need to be called.
+        """
+        c = self.begin_lazy_op()
+        for o in obj:
+            result = c.execute('''INSERT INTO objs (type, parent_id, name,
+                            info, data) VALUES (?,?,?,?,?)''', \
+                            self._getRowFromObj(o))
+            o.db_id = result.lastrowid
+        self.objects += obj
+        self.end_lazy_op(c)
+
     def deleteObject(self, obj):
+        c = self.db.cursor()
         if type(obj) == list:
-            c = self.db.cursor()
-            qs = '(' + ','.join(['?'] * len(obj)) + ')'
-            c.execute('DELETE FROM objs WHERE id in ' + qs,
-                      [o.db_id for o in obj])
-            self.db.commit()
+            #qs = '(' + ','.join(['?'] * len(obj)) + ')'
+            #c.execute('DELETE FROM objs WHERE id in ' + qs,
+            #          [o.db_id for o in obj])
             for o in obj:
+                c.execute('DELETE FROM objs WHERE id=?', (o.db_id,))
                 del self.objects[self.objects.index(o)]
-        else:
-            c = self.db.cursor()
-            c.execute('DELETE FROM objs WHERE id=?', (obj.db_id,))
             self.db.commit()
-            c.close()
+        else:
+            c.execute('DELETE FROM objs WHERE id=?', (obj.db_id,))
             del self.objects[self.objects.index(obj)]
+        self.db.commit()
+        c.close()
 
     @property
     def root(self):

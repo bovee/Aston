@@ -425,26 +425,25 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         self.beginInsertRows(self._objToIndex(head), \
           row, row + len(objs) - 1)
         for obj in objs:
-            if head is not None:
-                obj.parent_id = head.db_id
-            else:
+            if head is None:
                 obj.parent_id = None
-            self.db.addObject(obj)
+            else:
+                obj.parent_id = head.db_id
+        self.db.add_objects(objs)
         self.endInsertRows()
         self.masterWindow.plotter.add_peaks(objs)
 
     def delObjects(self, objs):
-        self.beginResetModel()
-        self.db.deleteObject(objs)
-        self.endResetModel()
-        #for obj in objs:
-        #    if obj in self.db.root:
-        #        row = self.db.root.index(obj)
-        #    else:
-        #        row = obj.parent.children.index(obj)
-        #    self.beginRemoveRows(self._objToIndex(obj.parent), row, row)
-        #    self.db.deleteObject(obj)
-        #    self.endRemoveRows()
+        c = self.db.begin_lazy_op()
+        for obj in objs:
+            if obj in self.db.root:
+                row = self.db.root.index(obj)
+            else:
+                row = obj.parent.children.index(obj)
+            self.beginRemoveRows(self._objToIndex(obj.parent), row, row)
+            self.db.lazy_delete(c, obj)
+            self.endRemoveRows()
+        self.db.end_lazy_op(c)
         self.masterWindow.plotter.remove_peaks(objs)
 
     def _objToIndex(self, obj):

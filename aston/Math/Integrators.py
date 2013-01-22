@@ -181,14 +181,19 @@ def statSlopeIntegrate(ts, **kwargs):
 
 def merge_ions(pks):
     cleaned_pks = []
-    for pk in pks:
-        for c_pk in cleaned_pks:
-            if np.abs(time(c_pk.as_poly()) - time(pk.as_poly())) < 0.01 \
-              and c_pk.data.ions[0] != pk.data.ions[0]:
+    sort_pks = sorted(pks, key=lambda pk: time(pk.as_poly()))
+    cur_t = np.nan
+    for pk in sort_pks:
+        if np.abs(cur_t - time(pk.as_poly())) < 0.01:
+            c_pk = cleaned_pks[-1]
+            if c_pk.data.ions[0] != pk.data.ions[0]:
                 c_pk.rawdata = c_pk.rawdata & pk.rawdata
                 if 's-mzs' in c_pk.info:
                     del c_pk.info['s-mzs']
-                break
+            else:
+                cleaned_pks.append(pk)
         else:
             cleaned_pks.append(pk)
+        cur_t = time(pk.as_poly())
+
     return cleaned_pks
