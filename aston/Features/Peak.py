@@ -126,7 +126,7 @@ class Peak(DBObject):
             return ''
         d = delta13C(i45 / i44, i46 / i44, \
           float(dt.info['r-d13c-std']), r45std, r46std)
-        return str(d)
+        return '{0:.3f}'.format(d)
 
     def createSpectrum(self, method=None):
         prt = self.getParentOfType('file')

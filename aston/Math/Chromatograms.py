@@ -113,7 +113,7 @@ def CODA(ts, window, level):
 
 def movingaverage(ts, window):
     m = np.ones(int(window)) / int(window)
-    return TimeSeries(_smooth(ts.data, m), ts.times)
+    return TimeSeries(_smooth(ts.data, m), ts.times, ts.ions)
 
 
 def savitzkygolay(ts, window, order, deriv=0):

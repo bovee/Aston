@@ -89,11 +89,20 @@ class AstonDatabase(object):
         self.objects.append(obj)
 
     def deleteObject(self, obj):
-        c = self.db.cursor()
-        c.execute('DELETE FROM objs WHERE id=?', (obj.db_id,))
-        self.db.commit()
-        c.close()
-        del self.objects[self.objects.index(obj)]
+        if type(obj) == list:
+            c = self.db.cursor()
+            qs = '(' + ','.join(['?'] * len(obj)) + ')'
+            c.execute('DELETE FROM objs WHERE id in ' + qs,
+                      [o.db_id for o in obj])
+            self.db.commit()
+            for o in obj:
+                del self.objects[self.objects.index(o)]
+        else:
+            c = self.db.cursor()
+            c.execute('DELETE FROM objs WHERE id=?', (obj.db_id,))
+            self.db.commit()
+            c.close()
+            del self.objects[self.objects.index(obj)]
 
     @property
     def root(self):

@@ -434,14 +434,17 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         self.masterWindow.plotter.add_peaks(objs)
 
     def delObjects(self, objs):
-        for obj in objs:
-            if obj in self.db.root:
-                row = self.db.root.index(obj)
-            else:
-                row = obj.parent.children.index(obj)
-            self.beginRemoveRows(self._objToIndex(obj.parent), row, row)
-            self.db.deleteObject(obj)
-            self.endRemoveRows()
+        self.beginResetModel()
+        self.db.deleteObject(objs)
+        self.endResetModel()
+        #for obj in objs:
+        #    if obj in self.db.root:
+        #        row = self.db.root.index(obj)
+        #    else:
+        #        row = obj.parent.children.index(obj)
+        #    self.beginRemoveRows(self._objToIndex(obj.parent), row, row)
+        #    self.db.deleteObject(obj)
+        #    self.endRemoveRows()
         self.masterWindow.plotter.remove_peaks(objs)
 
     def _objToIndex(self, obj):
