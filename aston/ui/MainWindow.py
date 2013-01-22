@@ -10,8 +10,9 @@ from aston.ui.SpecPlot import SpecPlotter
 from aston.Database import AstonFileDatabase
 from aston.Database import AstonDatabase
 from aston.FileTable import FileTreeModel
-from aston.Math.Integrators import waveletIntegrate, \
-  statSlopeIntegrate, merge_ions
+from aston.Math.Integrators import merge_ions, update_peaks
+from aston.Math.Integrators import simple_integrate, drop_integrate
+from aston.Math.PeakFinding import simple_peak_find, wavelet_peak_find
 
 
 class AstonWindow(QtGui.QMainWindow):
@@ -252,13 +253,16 @@ class AstonWindow(QtGui.QMainWindow):
         ions = [i for i in dt.info['traces'].split(',')]
 
         if self.ui.actionIntegrateSimple.isChecked():
-            integrate = lambda f: None
+            peak_find = simple_peak_find
+            integrate = simple_integrate
             int_name = 'simple'
         elif self.ui.actionIntegrateStatSlope.isChecked():
-            integrate = statSlopeIntegrate
+            peak_find = simple_peak_find
+            integrate = drop_integrate
             int_name = 'statslope'
         elif self.ui.actionIntegrateWavelet.isChecked():
-            integrate = waveletIntegrate
+            peak_find = wavelet_peak_find
+            integrate = drop_integrate
             int_name = 'wavelet'
 
         if self.ui.actionTop_Trace.isChecked():
@@ -270,12 +274,10 @@ class AstonWindow(QtGui.QMainWindow):
 
         all_pks = []
         for ts in tss:
-            pks = integrate(ts, plotter=self.plotter)
-            for pk in pks:
-                pk.db, pk.parent_id = dt.db, dt.db_id
-                pk.info['traces'] = str(ts.ions[0])
-                pk.info['p-created'] = int_name
-                pk.info['p-type'] = 'Sample'
+            tpks = peak_find(ts)
+            pks = integrate(ts, tpks)
+            update_peaks(pks, dt, str(ts.ions[0]), \
+                         ptype='Sample', created=int_name)
             all_pks += pks
         mrg_pks = merge_ions(all_pks)
         self.obj_tab.addObjects(dt, mrg_pks)
