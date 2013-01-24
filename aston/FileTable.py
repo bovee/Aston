@@ -9,6 +9,7 @@ import pkg_resources
 import numpy as np
 from PyQt4 import QtGui, QtCore
 from aston.ui.Fields import aston_fields, aston_groups, aston_field_opts
+from aston.ui.MenuOptions import peak_models
 from aston.Database import AstonFileDatabase
 
 
@@ -209,7 +210,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             if obj.info['vis'] == 'y':
                 self.masterWindow.plotData()
         elif col == 'p-model':
-            obj.update_model(data)
+            obj.update_model(peak_models[data].__name__)
             self.masterWindow.plotter.remove_peaks([obj])
             self.masterWindow.plotter.add_peaks([obj])
         else:

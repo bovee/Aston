@@ -10,9 +10,9 @@ from aston.ui.SpecPlot import SpecPlotter
 from aston.Database import AstonFileDatabase
 from aston.Database import AstonDatabase
 from aston.FileTable import FileTreeModel
+import aston.ui.MenuOptions
 from aston.Math.Integrators import merge_ions, update_peaks
-from aston.Math.Integrators import simple_integrate, drop_integrate
-from aston.Math.PeakFinding import simple_peak_find, wavelet_peak_find
+from aston.Math.PeakFinding import event_peak_find
 
 
 class AstonWindow(QtGui.QMainWindow):
@@ -71,10 +71,21 @@ class AstonWindow(QtGui.QMainWindow):
         self.plotter = Plotter(self)
         self.specplotter = SpecPlotter(self)
 
-        #make integrator options groups
-        menu_gp = QtGui.QActionGroup(self)
-        for ac in self.ui.menuIntegrator.actions():
-            menu_gp.addAction(ac)
+        #make integrator options
+        peak_find_menu = QtGui.QMenu(self.ui.menuChromatogram)
+        v = aston.ui.MenuOptions.peak_finders.keys()[0]
+        self._add_opts_to_menu(peak_find_menu, \
+          aston.ui.MenuOptions.peak_finders.keys(),
+          lambda: None, v)
+        self.ui.actionPeak_Finder.setMenu(peak_find_menu)
+
+        integrator_menu = QtGui.QMenu(self.ui.menuChromatogram)
+        v = aston.ui.MenuOptions.integrators.keys()[0]
+        self._add_opts_to_menu(integrator_menu, \
+          aston.ui.MenuOptions.integrators.keys(),
+          lambda: None, v)
+        self.ui.actionIntegrator.setMenu(integrator_menu)
+
         menu_gp = QtGui.QActionGroup(self)
         for ac in self.ui.menuIntegrand.actions():
             menu_gp.addAction(ac)
@@ -146,7 +157,7 @@ class AstonWindow(QtGui.QMainWindow):
     def getPref(self, key):
         try:
             import configparser
-        except:
+        except ImportError:
             import ConfigParser as configparser
         cp = configparser.SafeConfigParser()
         for cfg in (op.expanduser('~/.aston.ini'), './aston.ini'):
@@ -252,29 +263,29 @@ class AstonWindow(QtGui.QMainWindow):
         dt = self.obj_tab.active_file()
         ions = [i for i in dt.info['traces'].split(',')]
 
-        if self.ui.actionIntegrateSimple.isChecked():
-            peak_find = simple_peak_find
-            integrate = simple_integrate
-            int_name = 'simple'
-        elif self.ui.actionIntegrateStatSlope.isChecked():
-            peak_find = simple_peak_find
-            integrate = drop_integrate
-            int_name = 'statslope'
-        elif self.ui.actionIntegrateWavelet.isChecked():
-            peak_find = wavelet_peak_find
-            integrate = drop_integrate
-            int_name = 'wavelet'
+        submnu = self.ui.actionPeak_Finder.menu().children()
+        opt = [i for i in submnu if i.isChecked()][0].text()
+        peak_find = aston.ui.MenuOptions.peak_finders[opt]
+
+        submnu = self.ui.actionIntegrator.menu().children()
+        opt = [i for i in submnu if i.isChecked()][0].text()
+        integrate = aston.ui.MenuOptions.integrators[opt]
+
+        int_name = peak_find.__name__ + ',' + integrate.__name__
 
         if self.ui.actionTop_Trace.isChecked():
             tss = [dt.trace(ions[0])]
-        elif self.ui.actionVis_Traces_in_Top_File.isChecked():
+        elif self.ui.actionTop_File_Vis_Traces.isChecked():
             tss = [dt.trace(i) for i in ions]
-        elif self.ui.actionAll_Traces_in_Top_File.isChecked():
+        elif self.ui.actionTop_File_All_Traces.isChecked():
             tss = [dt.trace(i) for i in dt.data.ions]
 
         all_pks = []
         for ts in tss:
-            tpks = peak_find(ts)
+            if peak_find == event_peak_find:
+                tpks = peak_find(ts, dt.events())
+            else:
+                tpks = peak_find(ts)
             pks = integrate(ts, tpks)
             update_peaks(pks, dt, str(ts.ions[0]), \
                          ptype='Sample', created=int_name)

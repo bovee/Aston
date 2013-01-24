@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 from PyQt4.QtCore import QObject
-import aston.Math.PeakModels as pkm
+from aston.ui.MenuOptions import peak_models
 
 tr = lambda s: QObject().trUtf8(s)
 
 aston_groups = {'m': tr('Method'),
-          'r': tr('Run'),
-          's': tr('Stats'),
-          't': tr('Transforms'),
-          'p': tr('Peaks'),
-          'sp': tr('Spectra')}
+                'r': tr('Run'),
+                's': tr('Stats'),
+                't': tr('Transforms'),
+                'p': tr('Peaks'),
+                'sp': tr('Spectra')}
 
 aston_fields = {
     # aston specific information
@@ -87,26 +87,6 @@ aston_fields = {
 #for time-dicts:
 #blank = not regulated otherwise, it's a dict with at least one entry: S
 #e.g. {'S':5,0:30,9:80,9.01:100,11:100}
-
-peak_models = {tr('None'): None,
-               tr('Bigaussian'): pkm.bigaussian,
-               tr('Box'): pkm.box,
-               tr('ExpModGaussian'): pkm.exp_mod_gaussian,
-               tr('ExtremeValue'): pkm.extreme_value,
-               tr('Gamma'): pkm.gamma_dist,
-               tr('Gaussian'): pkm.gaussian,
-               tr('Giddings'): pkm.giddings,
-               tr('HVL'): pkm.haarhoffvanderlinde,
-               tr('LogNormal'): pkm.lognormal,
-               tr('Lorentzian'): pkm.lorentzian,
-               tr('PapaiPap'): pkm.papai_pap,
-               tr('Parabola'): pkm.parabola,
-               tr('PearsonVII'): pkm.pearsonVII,
-               tr('Poisson'): pkm.poisson,
-               tr('StudentsT'): pkm.studentt,
-               tr('Triangle'): pkm.triangle,
-               tr('Weibull3'): pkm.weibull3
-               }
 
 aston_field_opts = {
     'r-type': ['None', 'Sample', 'Standard'],

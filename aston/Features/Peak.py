@@ -4,10 +4,10 @@ import aston.Math.Peak as peakmath
 from aston.Features.Spectrum import Spectrum
 from aston.TimeSeries import TimeSeries
 from aston.Math.Other import delta13C
-from aston.ui.Fields import peak_models
 from aston.Math.PeakModels import fit_to
+from aston.Math.PeakModels import peak_models
 
-peak_models = dict([(str(k), peak_models[k]) for k in peak_models])
+peak_models = dict([(pm.__name__, pm) for pm in peak_models])
 
 
 class Peak(DBObject):

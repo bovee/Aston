@@ -140,3 +140,7 @@ def stat_slope_peak_find(ts):
             peak_list += (pt0, pt1, {})
 
     return peak_list
+
+
+def event_peak_find(ts, events):
+    pass

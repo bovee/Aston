@@ -255,3 +255,9 @@ def gram_charlier(t, w, *n):
 def edgeworth_cramer(t, *n):
     #y = exp(-0.5 * t ** 2)
     raise NotImplementedError
+
+
+peak_models = [bigaussian, box, exp_mod_gaussian, extreme_value, gamma_dist,
+               gaussian, giddings, haarhoffvanderlinde, lognormal, lorentzian,
+               papai_pap, parabola, pearsonVII, poisson, studentt, triangle,
+               weibull3]
