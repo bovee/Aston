@@ -12,6 +12,8 @@ from aston.ui.Fields import aston_fields, aston_groups, aston_field_opts
 from aston.ui.MenuOptions import peak_models
 from aston.Database import AstonFileDatabase
 
+peak_models = {str(k): peak_models[k] for k in peak_models}
+
 
 class FileTreeModel(QtCore.QAbstractItemModel):
     """
@@ -177,7 +179,11 @@ class FileTreeModel(QtCore.QAbstractItemModel):
                 else:
                     rslt = QtCore.Qt.Unchecked
         elif role == QtCore.Qt.DisplayRole or role == QtCore.Qt.EditRole:
-            rslt = f.info[fld]
+            if fld == 'p-model' and f.db_type == 'peak':
+                rpeakmodels = {peak_models[k]: k for k in peak_models}
+                rslt = rpeakmodels.get(f.info[fld], 'None')
+            else:
+                rslt = f.info[fld]
         elif role == QtCore.Qt.DecorationRole and index.column() == 0:
             #TODO: icon for method, compound
             fname = {'file': 'file.png', 'peak': 'peak.png', \
@@ -210,7 +216,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             if obj.info['vis'] == 'y':
                 self.masterWindow.plotData()
         elif col == 'p-model':
-            obj.update_model(peak_models[data].__name__)
+            obj.update_model(peak_models[data])
             self.masterWindow.plotter.remove_peaks([obj])
             self.masterWindow.plotter.add_peaks([obj])
         else:
@@ -228,7 +234,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             return dflags
         dflags |= QtCore.Qt.ItemIsDragEnabled
         if col == 'vis' and obj.db_type == 'file':
-            dflags |= QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsUserCheckable
+            dflags |= QtCore.Qt.ItemIsUserCheckable
         elif col in ['r-filename'] or col[:2] == 's-' or col == 'vis':
             pass
         elif obj.db_type == 'file' and (col[:2] == 'p-' or col[:3] == 'sp-'):
