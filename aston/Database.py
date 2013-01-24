@@ -253,6 +253,7 @@ class AstonFileDatabase(AstonDatabase):
 
         #add the new files into the database
         #TODO: generate projects and project_ids based on folder names?
+        c = self.begin_lazy_op()
         for fn in set(datafiles.keys()).difference(dnames):
             fdate = datetime.fromtimestamp(os.path.getctime(fn)\
               ).replace(microsecond=0).isoformat(' ')
@@ -262,7 +263,8 @@ class AstonFileDatabase(AstonDatabase):
             args = (None, None, info, fn)
             obj = ftype_to_class(info['s-file-type'])(self, *args)
             obj._update_info_from_file()
-            self.addObject(obj)
+            self.lazy_add(c, obj)
+        self.end_lazy_op(c)
 
         #TODO: update old database entries with new metadata
 
