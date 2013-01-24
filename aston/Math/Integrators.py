@@ -60,7 +60,7 @@ def drop_integrate(ts, peak_list):
         # go through list of peaks to make sure there's no overlap
         for t0, t1, hints in pks:
             # if this peak totally overlaps with an existing one, don't add
-            if sum(1 for p in temp_pks if t1 <= p[0]) > 0:
+            if sum(1 for p in temp_pks if t1 <= p[1]) > 0:
                 continue
             overlap_pks = [p for p in temp_pks if t0 <= p[1]]
             if len(overlap_pks) > 0:
@@ -68,7 +68,7 @@ def drop_integrate(ts, peak_list):
                 overlap_pk = max(overlap_pks, key=lambda p: p[0])
                 # get the section of trace and find the lowest point
                 over_ts = ts.trace('!', twin=(t0, overlap_pk[1]))
-                min_t = over_ts.times[over_ts.y.arg_min()]
+                min_t = over_ts.times[over_ts.y.argmin()]
 
                 # delete the existing overlaping peak
                 for i, p in enumerate(temp_pks):
@@ -128,55 +128,6 @@ def leastsq_integrate(ts, peak_list):
     #        args=(x, times), full_output=True, maxfev=10)
     #print(r2['nfev'], r3, r4)
     #plotter.plt.plot(times, sim_chr(p, times), 'k-')
-
-
-def statSlopeIntegrate(ts, **kwargs):
-    x = ts.y
-    t = ts.time()
-    pks = []
-
-    dx = np.gradient(x)
-    dx2 = np.gradient(dx)
-
-    adx = np.average(dx)
-    adx2 = np.average(dx2)
-    l_i = -2
-
-    #old loop checked for concavity too; prob. not necessary
-    #for i in np.arange(len(t))[dx>adx+np.std(dx[abs(dx2)<adx2+np.std(dx2)])]:
-
-    #loop through all of the points that have a slope
-    #outside of one std. dev. from average
-    for i in np.arange(len(t))[dx > adx + np.std(dx)]:
-        if i - l_i == 1:
-            l_i = i
-            continue
-
-        #track backwards to find where this peak started
-        pt1 = ()
-        for j in range(i - 1, 0, -1):
-            if dx[j] < adx or dx2[j] < adx2:
-                pt1 = (t[j], x[j])
-                break
-
-        #track forwards to find where it ends
-        pt2 = ()
-        neg = 0
-        for j in range(i, len(t)):
-            if dx[j] < adx:
-                neg += 1
-            if neg > 3 and dx[j] > adx:  # and x[j]<ax:
-                pt2 = (t[j], x[j])
-                break
-
-        #create a peak and add it to the peak list
-        if pt1 != () and pt2 != ():
-            pk_ts = ts.trace('!', twin=(pt1[0], pt2[0]))
-            info = {'name': '{:.2f}-{:.2f}'.format(pt1[0], pt2[0])}
-            pk = Peak(None, None, None, info, pk_ts)
-            pks.append(pk)
-        l_i = i
-    return pks
 
 
 def merge_ions(pks):

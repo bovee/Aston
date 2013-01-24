@@ -4,6 +4,10 @@ import aston.Math.Peak as peakmath
 from aston.Features.Spectrum import Spectrum
 from aston.TimeSeries import TimeSeries
 from aston.Math.Other import delta13C
+from aston.ui.Fields import peak_models
+from aston.Math.PeakModels import fit_to
+
+peak_models = dict([(str(k), peak_models[k]) for k in peak_models])
 
 
 class Peak(DBObject):
@@ -15,23 +19,18 @@ class Peak(DBObject):
         if 'p-model' not in self.info:
             return self.rawdata
 
-        if self.info['p-model'] == 'Normal':
-            f = peakmath.gaussian
-        elif self.info['p-model'] == 'Lognormal':
-            f = peakmath.lognormal
-        elif self.info['p-model'] == 'Exp Mod Normal':
-            f = peakmath.exp_mod_gaussian
-        elif self.info['p-model'] == 'Lorentzian':
-            f = peakmath.lorentzian
-        else:
+        f = peak_models.get(self.info['p-model'], None)
+        if f is None:
             return self.rawdata
 
         times = self.rawdata.times
-        y0 = float(self.info['p-s-base'])
-        x0 = float(self.info['p-s-time'])
-        h = float(self.info['p-s-height'])
-        s = [float(i) for i in self.info['p-s-shape'].split(',')]
-        y = h * f(s, times - x0) + y0
+        try:
+            p = dict([i.split(':') for i in self.info['p-s-shape'].split(',')])
+            for k in p:
+                p[k] = float(p[k])
+        except:
+            p = {}
+        y = f(times, **p)
         y[0] = self.rawdata.data[0, 0]
         y[-1] = self.rawdata.data[-1, 0]
         return TimeSeries(y, times, ['X'])
@@ -142,25 +141,18 @@ class Peak(DBObject):
         # TODO: the model should be applied to *all* of the
         # ions in self.rawdata
         t = self.rawdata.times
-        d = self.rawdata.data[:, 0]
-        self.info['p-model'] = key
-        if key == 'Normal':
-            f = peakmath.gaussian
-        elif key == 'Lognormal':
-            f = peakmath.lognormal
-        elif key == 'Exp Mod Normal':
-            f = peakmath.exp_mod_gaussian
-        elif key == 'Lorentzian':
-            f = peakmath.lorentzian
-        else:
-            f = None
+        x = self.rawdata.data[:, 0]
+        self.info['p-model'] = str(key)
+
+        f = peak_models.get(str(key), None)
 
         self.info.del_items('p-s-')
         if f is not None:
-            base = min(d)
-            params = peakmath.fit_to(f, t, d - base)
-            self.info['p-s-time'] = str(params[0])
-            self.info['p-s-height'] = str(params[1])
-            self.info['p-s-base'] = str(base)
-            self.info['p-s-shape'] = ','.join( \
-              [str(i) for i in params[2:]])
+            #TODO: use baseline detection?
+            params = fit_to(f, t, x)
+            self.info['p-s-base'] = str(params['v'])
+            self.info['p-s-height'] = str(params['h'])
+            self.info['p-s-time'] = str(params['x'])
+            self.info['p-s-width'] = str(params['w'])
+            self.info['p-s-shape'] = \
+              ','.join([k + ':' + str(params[k]) for k in params])

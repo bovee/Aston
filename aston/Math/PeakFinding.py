@@ -92,7 +92,51 @@ def wavelet_peak_find(ts):
         peak_w = widths[l[0][pl]] * 0.5 * (t[1] - t[0])
         peak_amp = cwtm[l[0][pl], l[1][pl]] / (widths[l[0]][pl] ** 0.5)
         peak_t = t[l[1][pl]]
-        t0, t1 = peak_t - 3 * peak_w, peak_t + 3 * peak_w
+        t0, t1 = peak_t - 4 * peak_w, peak_t + 4 * peak_w
         peak_list.append((t0, t1, {'area': peak_amp}))
+
+    return peak_list
+
+
+def stat_slope_peak_find(ts):
+    t = ts.time()
+
+    dx = np.gradient(ts.y)
+    dx2 = np.gradient(dx)
+
+    adx = np.average(dx)
+    adx2 = np.average(dx2)
+    l_i = -2
+
+    #old loop checked for concavity too; prob. not necessary
+    #for i in np.arange(len(t))[dx>adx+np.std(dx[abs(dx2)<adx2+np.std(dx2)])]:
+
+    peak_list = []
+    #loop through all of the points that have a slope
+    #outside of one std. dev. from average
+    for i in np.arange(len(t))[dx > adx + np.std(dx)]:
+        if i - l_i == 1:
+            l_i = i
+            continue
+
+        #track backwards to find where this peak started
+        pt0 = ()
+        for j in range(i - 1, 0, -1):
+            if dx[j] < adx or dx2[j] < adx2:
+                pt0 = (t[j], ts.y[j])
+                break
+
+        #track forwards to find where it ends
+        pt1 = ()
+        neg = 0
+        for j in range(i, len(t)):
+            if dx[j] < adx:
+                neg += 1
+            if neg > 3 and dx[j] > adx:  # and x[j]<ax:
+                pt1 = (t[j], ts.y[j])
+                break
+
+        if pt0 != () and pt1 != ():
+            peak_list += (pt0, pt1, {})
 
     return peak_list
