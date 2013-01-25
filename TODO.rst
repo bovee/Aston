@@ -3,15 +3,11 @@
 
 * mzML, & mzXML file support
 * save AIA/CDF, mzML & mzXML
-* Agilent .REG scraping
-  - method parameters
-  - fraction collection
 * display extras on graph
   - fraction collection windows
-  - ref. gas start/stops
-* more integrators
-  - wavelet integration
-  - integrate by fraction collection windows
+* applications for "time window" alignment
+  - integrate all traces as first (isotopic mode)
+  - integrate by fraction collection windows/ref gas
 * finish trace selector dialog
   - delete items from ion list
   - low-high error checking for ranges, make sure ions are numbers, etc
@@ -23,19 +19,18 @@
 *************
 
 * RAW file support
-* Chemstation B+ REG files
 * MSMS support
   - Agilent MSMS Peak file format
   - Bruker MSMS spectra
   - MSMS points on graph / MSMS data display
-* Method Database
-  - method editor?
-  - setting to allow run info to be loaded from method DB
+* Chemstation B+ REG files
+* Agilent .REG scraping
+  - method parameters
+  - fraction collection
 * compound database
   - hashing code for compounds? numerical match score between spectra?
 * remote database support
 * autoalign chromatograms
-* noise removal
 * baseline detection (as a trace type?)
 * smarter peak editing?
   - adjustable peaks (little selectors on each end of "baseline")
@@ -48,9 +43,12 @@
 * optimization
   - seperate thread for database updating
   - tune MSMS file format performance (rewrites in C?)
+* Method Database
+  - method editor?
+  - setting to allow run info to be loaded from method DB
 * have multiple plots and allow user to choose which plot each trace goes on?
   - have datafile return units associated with trace types to allow for multiple y axes
-* display x axes in seconds (or hours)
+* display x axes in seconds (or hours or scans)
 * help manual / tutorials
 * package example data with aston (for tests / quality control)
 * write unit tests

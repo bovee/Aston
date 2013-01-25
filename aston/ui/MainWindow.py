@@ -292,17 +292,24 @@ class AstonWindow(QtGui.QMainWindow):
 
         int_name = peak_find.__name__ + ',' + integrate.__name__
 
+        isomode = self.ui.actionTop_File_All_Isotopic.isChecked()
         if self.ui.actionTop_Trace.isChecked():
             tss = [dt.trace(ions[0])]
         elif self.ui.actionTop_File_Vis_Traces.isChecked():
             tss = [dt.trace(i) for i in ions]
-        elif self.ui.actionTop_File_All_Traces.isChecked():
+        elif self.ui.actionTop_File_All_Traces.isChecked() or isomode:
             tss = [dt.trace(i) for i in dt.data.ions]
 
         all_pks = []
         for ts in tss:
             if peak_find == event_peak_find:
+                # event_peak_find also needs a list of events
                 tpks = peak_find(ts, dt.events())
+            elif all_pks != [] and isomode:
+                # we've already integrated things, reuse
+                # their found peaks, but shifted
+                #TODO: shift the found peaks to match the ts
+                tpks = tpks
             else:
                 tpks = peak_find(ts)
             pks = integrate(ts, tpks)
