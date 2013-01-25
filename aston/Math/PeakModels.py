@@ -18,11 +18,15 @@ from scipy.special import erfc, i1, gamma
 
 
 def fit_to(f, t, y, fit_vars=None):
+    weight_mom = lambda m, a, w: \
+            np.sum(w * (a - np.sum(w * a) / np.sum(w)) ** m) / np.sum(w)
+    #TODO: finish calculating these: find skew/kurtosis of weighted dataset?
     peak_params = {'v': min(y), 'h': max(y) - min(y)}
+    sig = np.sqrt(weight_mom(2, t, y))
     peak_params['x'] = t[y.argmax()]
-    peak_params['w'] = 1.
-    peak_params['s'] = 1.
-    peak_params['e'] = 1.
+    peak_params['w'] = sig ** 2
+    peak_params['s'] = weight_mom(3, t, y) / sig ** 3
+    peak_params['e'] = weight_mom(4, t, y) / sig ** 4 - 3
     peak_params['a'] = 1.
 
     if fit_vars is None:
@@ -101,13 +105,13 @@ def box(t):
 
 @peak_model
 def exp_mod_gaussian(t, w, s):
-    #TODO: error if w = 0
-    # s > 0
+    #TODO: error if w = 0 (or s = 0?)
     #http://en.wikipedia.org/wiki/Exponentially_modified_Gaussian_distribution
 
+    s = abs(s)
     exp_t = exp((w ** 2 - 2 * s * t) / (2 * s ** 2))
-    erf_t = erfc((w ** 2 - s * t) / (abs(s) * w))
-    return (w ** 1.5) / (1.414214 * abs(s)) * exp_t * erf_t
+    erf_t = erfc((w ** 2 - s * t) / (s * w))
+    return (w ** 1.5) / (1.414214 * s) * exp_t * erf_t
 
 
 @peak_model
@@ -135,6 +139,7 @@ def gaussian(t):
 @peak_model
 def giddings(t, w, x):
     # w != 0
+    x = abs(x)
     y = np.zeros(len(t))
     y[t > 0] = (1. / w) * sqrt(x / t[t > 0]) * exp((t[t > 0] + x) / -w)
     y[t > 0] *= i1(2. * sqrt(x * t[t > 0]) / w)
@@ -152,9 +157,14 @@ def haarhoffvanderlinde(t, w, s):
 
 @peak_model
 def lognormal(t, s, r=2.):
-    # r > 1, sr > 1
-    # r is the ratio between h and the height at which
-    # s is computed
+    #y = np.zeros(len(t))
+    #y[t > 0] = exp(-0.5 * (log(t[t > 0]) - x) ** 2) / (t[t > 0] * sqrt(2 * np.pi))
+    #return y
+
+    #TODO: this doesn't work very well
+    # r is the ratio between h and the height at
+    # which s is computed: normally 2.
+    s, r = abs(s), abs(r)  # r > 1, s > 1
     y = np.zeros(len(t))
     lt = -log(r) / log(s) ** 2
     y[t > 0] = exp(lt * log(t[t > 0] * (s ** 2 - 1) / s) ** 2)
@@ -217,6 +227,7 @@ def triangle(t):
 @peak_model
 def weibull3(t, a):
     #TODO: doesn't work?
+    a = abs(a)
     y = np.zeros(len(t))
     at = (a - 1.) / a
     tt = t[t > 0] + ((a - 1.) / a) ** (1. / a)
