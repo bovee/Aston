@@ -144,12 +144,13 @@ class AgilentCS(Datafile):
                     return {}
                 prev_f = d['FIASeriesInfo'][1][1]
                 for f in d['FIASeriesInfo'][1][2:]:
-                    evts.append([prev_f[0], f[0], prev_f[2]])
+                    evts.append([prev_f[0], f[0], {'name': prev_f[2]}])
                     prev_f = f
                 else:
                     if len(evts) > 0:
                         off_t = evts[-1][1] - evts[-1][0]
-                        evts.append([prev_f[0], prev_f[0] + off_t, prev_f[2]])
+                        evts.append([prev_f[0], prev_f[0] + off_t, \
+                                     {'name': prev_f[2]}])
         return evts
 
     def _other_trace(self, name, twin=None):

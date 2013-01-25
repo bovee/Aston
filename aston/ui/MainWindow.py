@@ -103,6 +103,7 @@ class AstonWindow(QtGui.QMainWindow):
         self.ui.actionGraphFxnCollection.triggered.connect(self.set_legend)
         self.ui.actionGraphFIA.triggered.connect(self.set_legend)
         self.ui.actionGraphIRMS.triggered.connect(self.set_legend)
+        self.ui.actionGraph_Peaks_Found.triggered.connect(self.set_legend)
 
         style_menu = QtGui.QMenu(self.ui.menuSettings)
         v = self.obj_tab.db.get_key('graph_style', dflt='default')
@@ -261,6 +262,21 @@ class AstonWindow(QtGui.QMainWindow):
         sel = self.obj_tab.returnSelFiles()
         f.write(self.obj_tab.items_as_csv(sel))
         f.close()
+
+    def find_peaks_top_trace(self):
+        #TODO: clunky copy of code from integrate, but
+        # needed for display "peaks found" on graph
+        dt = self.obj_tab.active_file()
+        ion = dt.info['traces'].split(',')[0]
+
+        submnu = self.ui.actionPeak_Finder.menu().children()
+        opt = [i for i in submnu if i.isChecked()][0].text()
+        peak_find = aston.ui.MenuOptions.peak_finders[opt]
+
+        if peak_find == event_peak_find:
+            return []
+        else:
+            return peak_find(dt.trace(ion))
 
     def integrate(self):
         dt = self.obj_tab.active_file()

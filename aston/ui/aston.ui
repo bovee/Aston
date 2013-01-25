@@ -101,18 +101,6 @@
     <property name="title">
      <string>Settings</string>
     </property>
-    <widget class="QMenu" name="menuExtras">
-     <property name="enabled">
-      <bool>true</bool>
-     </property>
-     <property name="title">
-      <string>Extras</string>
-     </property>
-     <addaction name="actionGraphFxnCollection"/>
-     <addaction name="actionGraphFIA"/>
-     <addaction name="actionGraphIRMS"/>
-     <addaction name="actionGraphMSMS"/>
-    </widget>
     <widget class="QMenu" name="menuPeaks">
      <property name="enabled">
       <bool>false</bool>
@@ -123,6 +111,19 @@
      <addaction name="actionPeaksHide"/>
      <addaction name="actionPeaksShow"/>
      <addaction name="actionPeaksShowLabels"/>
+    </widget>
+    <widget class="QMenu" name="menuExtras">
+     <property name="enabled">
+      <bool>true</bool>
+     </property>
+     <property name="title">
+      <string>Extras</string>
+     </property>
+     <addaction name="actionGraph_Peaks_Found"/>
+     <addaction name="actionGraphFxnCollection"/>
+     <addaction name="actionGraphFIA"/>
+     <addaction name="actionGraphIRMS"/>
+     <addaction name="actionGraphMSMS"/>
     </widget>
     <addaction name="actionGraph_Style"/>
     <addaction name="actionLegend"/>
@@ -188,8 +189,8 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>94</width>
-          <height>24</height>
+          <width>100</width>
+          <height>30</height>
          </rect>
         </property>
         <attribute name="label">
@@ -534,6 +535,9 @@
    <property name="checkable">
     <bool>true</bool>
    </property>
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>MS-MS</string>
    </property>
@@ -669,11 +673,6 @@
     <string/>
    </property>
   </action>
-  <action name="actionGraph_Style">
-   <property name="text">
-    <string>Graph Style</string>
-   </property>
-  </action>
   <action name="actionColor_Scheme">
    <property name="text">
     <string>Color Scheme</string>
@@ -687,6 +686,19 @@
   <action name="actionIntegrator">
    <property name="text">
     <string>Integrator</string>
+   </property>
+  </action>
+  <action name="actionGraph_Peaks_Found">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Peaks Found</string>
+   </property>
+  </action>
+  <action name="actionGraph_Style">
+   <property name="text">
+    <string>Graph Style</string>
    </property>
   </action>
  </widget>

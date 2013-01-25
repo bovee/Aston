@@ -156,11 +156,11 @@ class ThermoDXF(Datafile.Datafile):
             for e, t, s in zip(evt, time, status):
                 if e.startswith('Reference'):
                     gas_on = (s == 1)
-                if gas_on:
-                    p_st = t
-                elif not gas_on and p_st is not None:
-                    i += 1
-                    evts.append([p_st, t, 'R' + str(i)])
+                    if gas_on:
+                        p_st = t
+                    elif not gas_on and p_st is not None:
+                        i += 1
+                        evts.append([p_st, t, {'name': 'R' + str(i)}])
         return evts
 
 

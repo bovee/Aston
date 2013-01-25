@@ -142,6 +142,11 @@ class Plotter(object):
             evts += datafiles[0].events('fia')
         if self.masterWindow.ui.actionGraphIRMS.isChecked():
             evts += datafiles[0].events('refgas')
+        if self.masterWindow.ui.actionGraph_Peaks_Found.isChecked():
+            pevts = self.masterWindow.find_peaks_top_trace()
+            for i, p in enumerate(pevts):
+                p[2]['name'] = 'P' + str(i + 1)
+            evts += pevts
 
         if evts != []:
             # TODO: save the text and lines to delete later?
@@ -151,10 +156,11 @@ class Plotter(object):
             transText = offset_copy(trans, fig=self.plt.figure, \
                                     x=3, units='points')
             for ev in evts:
-                self.plt.vlines(ev[1], 0, 0.1, color='0.75', \
-                                transform=trans)
-                self.plt.vlines(ev[0], 0, 0.1, transform=trans)
-                self.plt.text(ev[0], 0, ev[2], transform=transText)
+                t0, t1, ta = ev[0], ev[1], (ev[1] + ev[0]) / 2.
+                self.plt.vlines(t1, 0, 0.1, color='0.75', transform=trans)
+                self.plt.vlines(t0, 0, 0.1, transform=trans)
+                self.plt.text(ta, 0, ev[2]['name'], \
+                              ha='center', transform=transText)
 
         #draw grid lines
         self.plt.grid(c='black', ls='-', alpha='0.05')
