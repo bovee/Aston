@@ -99,30 +99,69 @@ class ThermoDXF(Datafile.Datafile):
         d['r-type'] = 'Sample'
         #TODO: there has to be a better way than this to get these values
         # at least don't keep cycling through the file for each one
-        d['r-d18o-std'] = self._read_thermo_data('d 18O/16O', 68, 'd')
-        d['r-d13c-std'] = self._read_thermo_data('d 13C/12C', 68, 'd')
+        foff_o = self._th_off('d 18O/16O'.encode('utf_16_le'))
+        foff_c = self._th_off('d 13C/12C'.encode('utf_16_le'), hint=foff_o)
+        with open(self.rawdata, 'rb') as f:
+            if foff_o is not None:
+                f.seek(foff_o + 68)
+                d['r-d18o-std'] = str(struct.unpack('<d', f.read(8)))
+            if foff_c is not None:
+                f.seek(foff_c + 68)
+                d['r-d13c-std'] = str(struct.unpack('<d', f.read(8)))
         self.info.update(d)
 
-    def _read_thermo_data(self, search_str, offs, stype='d'):
-        search_utf = search_str.encode('utf_16_le')
-        stype = '<' + stype
+    def _th_off(self, search_str, hint=None):
+        if hint is None:
+            hint = 0
         with open(self.rawdata, 'rb') as f:
-            f.seek(0x14ADB1)
-            f.seek(len(search_utf))
+            f.seek(hint)
+            f.seek(len(search_str))
             while True:
-                f.seek(f.tell() - len(search_utf))
-                if f.read(len(search_utf)) == search_utf:
+                f.seek(f.tell() - len(search_str))
+                if f.read(len(search_str)) == search_str:
                     break
                 if f.read(1) == b'':
                     f.close()
-                    return ''
-            f.seek(f.tell() + offs)
-            v = struct.unpack(stype, f.read(struct.calcsize(stype)))[0]
-        return str(v)
+                    return None
+            foff = f.tell()
+        return foff
 
-    def events(self):
+    def events(self, kind):
         #TODO: read in ref gas pulses
-        pass
+        evts = super(ThermoDXF, self).events(kind)
+        if kind == 'refgas':
+            with open(self.rawdata, 'rb') as f:
+                f.seek(self._th_off('CActionHwTransferContainer'))
+                evt, time, status = [], [], []
+                while True:
+                    d = struct.unpack('<ihHBB', f.read(10))
+                    if d[0] != 3:
+                        #TODO: probably a better way to figure this out
+                        break
+                    #name1 = f.read(2 * d[4]).decode('utf-16')
+                    f.read(2 * d[4])
+                    d = struct.unpack('<HBB', f.read(4))
+                    name2 = f.read(2 * d[2]).decode('utf-16')
+                    d = struct.unpack('<iiiiiiiih', f.read(34))
+                    if d[4] == 2:
+                        status.append(d[5])
+                    else:
+                        time.append(d[4] / 60000.)
+                        evt.append(name2)
+                    if d[-1] == -1:
+                        # first record ends (?) with this, so skip
+                        # the CValveTransfer part afterwards
+                        f.read(22)
+            p_st, gas_on, i = None, False, 0
+            for e, t, s in zip(evt, time, status):
+                if e.startswith('Reference'):
+                    gas_on = (s == 1)
+                if gas_on:
+                    p_st = t
+                elif not gas_on and p_st is not None:
+                    i += 1
+                    evts.append([p_st, t, 'R' + str(i)])
+        return evts
 
 
 class ThermoRAW(Datafile.Datafile):

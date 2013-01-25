@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'aston.ui'
 #
-# Created: Thu Jan 24 14:04:59 2013
+# Created: Thu Jan 24 20:22:38 2013
 #      by: PyQt4 UI code generator 4.9.6
 #
 # WARNING! All changes made in this file will be lost!
@@ -59,7 +59,7 @@ class Ui_MainWindow(object):
         self.menuExtras.setEnabled(True)
         self.menuExtras.setObjectName(_fromUtf8("menuExtras"))
         self.menuPeaks = QtGui.QMenu(self.menuSettings)
-        self.menuPeaks.setEnabled(True)
+        self.menuPeaks.setEnabled(False)
         self.menuPeaks.setObjectName(_fromUtf8("menuPeaks"))
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtGui.QStatusBar(MainWindow)
@@ -91,7 +91,7 @@ class Ui_MainWindow(object):
         self.toolBox = QtGui.QToolBox(self.dockWidgetContents_3)
         self.toolBox.setObjectName(_fromUtf8("toolBox"))
         self.page = QtGui.QWidget()
-        self.page.setGeometry(QtCore.QRect(0, 0, 100, 30))
+        self.page.setGeometry(QtCore.QRect(0, 0, 94, 24))
         self.page.setObjectName(_fromUtf8("page"))
         self.toolBox.addItem(self.page, _fromUtf8(""))
         self.page_2 = QtGui.QWidget()
@@ -278,8 +278,9 @@ class Ui_MainWindow(object):
         self.actionEvent = QtGui.QAction(MainWindow)
         self.actionEvent.setCheckable(True)
         self.actionEvent.setObjectName(_fromUtf8("actionEvent"))
-        self.actionFIA_2 = QtGui.QAction(MainWindow)
-        self.actionFIA_2.setObjectName(_fromUtf8("actionFIA_2"))
+        self.actionGraphFIA = QtGui.QAction(MainWindow)
+        self.actionGraphFIA.setCheckable(True)
+        self.actionGraphFIA.setObjectName(_fromUtf8("actionGraphFIA"))
         self.actionTwo_Pass_Peak_Find = QtGui.QAction(MainWindow)
         self.actionTwo_Pass_Peak_Find.setCheckable(True)
         self.actionTwo_Pass_Peak_Find.setObjectName(_fromUtf8("actionTwo_Pass_Peak_Find"))
@@ -327,7 +328,7 @@ class Ui_MainWindow(object):
         self.menuWindows.addAction(self.actionMethods)
         self.menuWindows.addAction(self.actionCompounds)
         self.menuExtras.addAction(self.actionGraphFxnCollection)
-        self.menuExtras.addAction(self.actionFIA_2)
+        self.menuExtras.addAction(self.actionGraphFIA)
         self.menuExtras.addAction(self.actionGraphIRMS)
         self.menuExtras.addAction(self.actionGraphMSMS)
         self.menuPeaks.addAction(self.actionPeaksHide)
@@ -417,7 +418,7 @@ class Ui_MainWindow(object):
         self.actionWavelet.setText(_translate("MainWindow", "Wavelet", None))
         self.actionStatistical_Slope.setText(_translate("MainWindow", "StatSlope", None))
         self.actionEvent.setText(_translate("MainWindow", "Event", None))
-        self.actionFIA_2.setText(_translate("MainWindow", "Flow Injection", None))
+        self.actionGraphFIA.setText(_translate("MainWindow", "Flow Injection", None))
         self.actionTwo_Pass_Peak_Find.setText(_translate("MainWindow", "Two Pass Peak Find", None))
         self.actionIntegrate.setText(_translate("MainWindow", "Integrate", None))
         self.actionGraph_Style.setText(_translate("MainWindow", "Graph Style", None))

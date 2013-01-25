@@ -100,6 +100,9 @@ class AstonWindow(QtGui.QMainWindow):
         self.ui.actionColor_Scheme.setMenu(color_menu)
 
         self.ui.actionLegend.triggered.connect(self.set_legend)
+        self.ui.actionGraphFxnCollection.triggered.connect(self.set_legend)
+        self.ui.actionGraphFIA.triggered.connect(self.set_legend)
+        self.ui.actionGraphIRMS.triggered.connect(self.set_legend)
 
         style_menu = QtGui.QMenu(self.ui.menuSettings)
         v = self.obj_tab.db.get_key('graph_style', dflt='default')
@@ -193,11 +196,11 @@ class AstonWindow(QtGui.QMainWindow):
     def set_color_scheme(self):
         v = self.plotter.setColorScheme(self.sender().data())
         self.obj_tab.db.set_key('color_scheme', v)
-        self.plotData()
+        self.plotData(updateBounds=False)
 
     def set_legend(self):
         self.plotter.legend = self.ui.actionLegend.isChecked()
-        self.plotData()
+        self.plotData(updateBounds=False)
 
     def set_graph_style(self):
         v = self.plotter.setStyle(self.sender().data())

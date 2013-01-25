@@ -456,7 +456,7 @@ class Datafile(DBObject):
     #The following function stubs should be filled out in the
     #subclasses that handle the raw datafiles.
 
-    def events(self):
+    def events(self, kind):
         """
         Returns events that happen during a run, like FIA injections
         or fraction collections windows. These happen at one (or over

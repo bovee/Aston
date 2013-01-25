@@ -131,24 +131,26 @@ class AgilentCS(Datafile):
                     pass
         pass
 
-    def events(self):
+    def events(self, kind):
         #TODO: get fia from new-style *.REG files.
-        folder = op.dirname(self.rawdata)
-        acq_file = op.join(folder, 'ACQRES.REG')
-        fis = []
-        if op.exists(acq_file):
-            d = read_reg_file(open(acq_file, 'rb'))
-            if not d.get('FIARun', False):
-                return []
-            prev_f = d['FIASeriesInfo'][1][1]
-            for f in d['FIASeriesInfo'][1][2:]:
-                fis.append([prev_f[0], f[0], prev_f[2]])
-                prev_f = f
-            else:
-                if len(fis) > 0:
-                    off_t = fis[-1][1] - fis[-1][0]
-                    fis.append([prev_f[0], prev_f[0] + off_t, prev_f[2]])
-        return fis
+        evts = super(AgilentCS, self).events(kind)
+        if kind == 'fia':
+            folder = op.dirname(self.rawdata)
+            acq_file = op.join(folder, 'ACQRES.REG')
+
+            if op.exists(acq_file):
+                d = read_reg_file(open(acq_file, 'rb'))
+                if not d.get('FIARun', False):
+                    return {}
+                prev_f = d['FIASeriesInfo'][1][1]
+                for f in d['FIASeriesInfo'][1][2:]:
+                    evts.append([prev_f[0], f[0], prev_f[2]])
+                    prev_f = f
+                else:
+                    if len(evts) > 0:
+                        off_t = evts[-1][1] - evts[-1][0]
+                        evts.append([prev_f[0], prev_f[0] + off_t, prev_f[2]])
+        return evts
 
     def _other_trace(self, name, twin=None):
         #TODO: use twin

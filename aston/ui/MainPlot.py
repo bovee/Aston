@@ -135,13 +135,24 @@ class Plotter(object):
             self.plt.set_xlim(bnds[0])
             self.plt.set_ylim(bnds[1])
 
-        # TODO: save the text and lines to delete later?
-        # TODO: make this prettier
+        evts = []
         if self.masterWindow.ui.actionGraphFxnCollection.isChecked():
+            evts += datafiles[0].events('fxn')
+        if self.masterWindow.ui.actionGraphFIA.isChecked():
+            evts += datafiles[0].events('fia')
+        if self.masterWindow.ui.actionGraphIRMS.isChecked():
+            evts += datafiles[0].events('refgas')
+
+        if evts != []:
+            # TODO: save the text and lines to delete later?
+            # TODO: make this prettier
+
             trans = self.plt.get_xaxis_transform()
             transText = offset_copy(trans, fig=self.plt.figure, \
                                     x=3, units='points')
-            for ev in datafiles[0].events():
+            for ev in evts:
+                self.plt.vlines(ev[1], 0, 0.1, color='0.75', \
+                                transform=trans)
                 self.plt.vlines(ev[0], 0, 0.1, transform=trans)
                 self.plt.text(ev[0], 0, ev[2], transform=transText)
 
