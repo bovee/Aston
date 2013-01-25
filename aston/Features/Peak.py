@@ -1,3 +1,4 @@
+import json
 import numpy as np
 from aston.Features.DBObject import DBObject
 import aston.Math.Peak as peakmath
@@ -22,17 +23,14 @@ class Peak(DBObject):
         f = peak_models.get(self.info['p-model'], None)
         if f is None:
             return self.rawdata
+        #TODO: if p-params is a list, plot each item as current
+        #p-params; allow for multiple functions to fit one peak
 
-        times = self.rawdata.times
-        try:
-            p = dict([i.split(':') for i in self.info['p-s-shape'].split(',')])
-            for k in p:
-                p[k] = float(p[k])
-        except:
-            p = {}
+        times = self.rawdata.times[1:-1]
+        p = json.loads(self.info['p-params'])
         y = f(times, **p)
-        y[0] = self.rawdata.data[0, 0]
-        y[-1] = self.rawdata.data[-1, 0]
+        #y[0] = self.rawdata.data[0, 0]
+        #y[-1] = self.rawdata.data[-1, 0]
         return TimeSeries(y, times, ['X'])
 
     def time(self, twin=None):
@@ -140,8 +138,9 @@ class Peak(DBObject):
     def update_model(self, key):
         # TODO: the model should be applied to *all* of the
         # ions in self.rawdata
-        t = self.rawdata.times
-        x = self.rawdata.data[:, 0]
+        t = self.rawdata.times[1:-1]
+        x = self.rawdata.data[:, 0][1:-1]
+        #xa = x[1:-1] - np.linspace(x[0], x[-1], len(x) - 2)
         self.info['p-model'] = str(key)
 
         f = peak_models.get(str(key), None)
@@ -150,9 +149,9 @@ class Peak(DBObject):
         if f is not None:
             #TODO: use baseline detection?
             params = fit_to(f, t, x)
+            params['f'] = str(key)
             self.info['p-s-base'] = str(params['v'])
             self.info['p-s-height'] = str(params['h'])
             self.info['p-s-time'] = str(params['x'])
             self.info['p-s-width'] = str(params['w'])
-            self.info['p-s-shape'] = \
-              ','.join([k + ':' + str(params[k]) for k in params])
+            self.info['p-params'] = json.dumps(params)
