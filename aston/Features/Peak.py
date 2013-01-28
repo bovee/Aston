@@ -5,7 +5,7 @@ import aston.Math.Peak as peakmath
 from aston.Features.Spectrum import Spectrum
 from aston.TimeSeries import TimeSeries
 from aston.Math.Other import delta13C
-from aston.Math.PeakModels import fit_to
+from aston.Math.PeakFitting import fit_to
 from aston.Math.PeakModels import peak_models
 
 peak_models = dict([(pm.__name__, pm) for pm in peak_models])
@@ -29,9 +29,8 @@ class Peak(DBObject):
         times = self.rawdata.times[1:-1]
         p = json.loads(self.info['p-params'])
         y = f(times, **p)
-        #y[0] = self.rawdata.data[0, 0]
-        #y[-1] = self.rawdata.data[-1, 0]
-        return TimeSeries(y, times, ['X'])
+        y = np.hstack([self.rawdata.y[0], y, self.rawdata.y[-1]])
+        return TimeSeries(y, self.rawdata.times, ['X'])
 
     def time(self, twin=None):
         return self.rawdata.trace('!', twin=twin).time
@@ -148,7 +147,7 @@ class Peak(DBObject):
         self.info.del_items('p-s-')
         if f is not None:
             #TODO: use baseline detection?
-            params = fit_to(f, t, x)
+            params = fit_to(f, t, x, make_bounded=True)
             params['f'] = str(key)
             self.info['p-s-base'] = str(params['v'])
             self.info['p-s-height'] = str(params['h'])

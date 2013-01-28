@@ -1,6 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-Functions which model peaks and means to fit them to actual peaks.
+Functions which model peaks and decorator to allow those functions
+to be translated and scaled and have the bounds of their parameters
+respected.
+
+Unless otherwise noted, the formulation of how each function is
+written is taken from DiMarco & Bombi 2001 J Chrom A
 
 Example:
     t = np.linspace(-10,10,200)
@@ -13,34 +18,27 @@ import inspect
 from functools import wraps
 import numpy as np
 from numpy import exp, sqrt, abs, log
-from scipy.optimize import leastsq
 from scipy.special import erfc, i1, gamma
 
 
-def fit_to(f, t, y, fit_vars=None):
-    weight_mom = lambda m, a, w: \
-            np.sum(w * (a - np.sum(w * a) / np.sum(w)) ** m) / np.sum(w)
-    #TODO: finish calculating these: find skew/kurtosis of weighted dataset?
-    peak_params = {'v': min(y), 'h': max(y) - min(y)}
-    sig = np.sqrt(weight_mom(2, t, y))
-    peak_params['x'] = t[y.argmax()]
-    peak_params['w'] = sig ** 2
-    peak_params['s'] = weight_mom(3, t, y) / sig ** 3
-    peak_params['e'] = weight_mom(4, t, y) / sig ** 4 - 3
-    peak_params['a'] = 1.
+# These functions allow us to use commonsense notation
+# in labelling parameter bounds. The sqrt is to allow
+# the bounded parameter to be multiplied without fear of it
+# rounding outside the bounds.
+openhi = lambda i: np.nextafter(i, -1)
+openlow = lambda i: i + np.sqrt(np.nextafter(i, 1) - i)
 
-    if fit_vars is None:
-        fit_vars = f.peakargs
 
-    initc = [peak_params[i] for i in fit_vars]
-
-    def errfunc(p, t, y, peak_params):
-        for k, v in zip(fit_vars, p):
-            peak_params[k] = v
-        return f(t, **peak_params) - y
-
-    fit_p, _ = leastsq(errfunc, initc, args=(t, y, peak_params))
-    return dict(zip(fit_vars, fit_p))
+def bounds(**kwargs):
+    """
+    Using this function as a decorator allow us to label which
+    parameters of a function shouldn't have their values allowed
+    to fall outside of a specific range.
+    """
+    def wrap(f):
+        f._pbounds = kwargs
+        return f
+    return wrap
 
 
 def peak_model(f):
@@ -79,8 +77,8 @@ def peak_model(f):
 
     args = set(['v', 'h', 'x', 'w'])
     anames, _, _, _ = inspect.getargspec(f)
-    wrapped_f.peakargs = list(args.union([a for a in anames \
-                                          if a not in ('t', 'r')]))
+    wrapped_f._peakargs = list(args.union([a for a in anames \
+                                           if a not in ('t', 'r')]))
     return wrapped_f
 
 
@@ -103,12 +101,11 @@ def box(t):
     return y
 
 
+@bounds(w=(openlow(0.), np.inf), s=(1., np.inf))
 @peak_model
 def exp_mod_gaussian(t, w, s):
-    #TODO: error if w = 0 (or s = 0?)
     #http://en.wikipedia.org/wiki/Exponentially_modified_Gaussian_distribution
 
-    s = abs(s)
     exp_t = exp((w ** 2 - 2 * s * t) / (2 * s ** 2))
     erf_t = erfc((w ** 2 - s * t) / (s * w))
     return (w ** 1.5) / (1.414214 * s) * exp_t * erf_t
@@ -119,6 +116,7 @@ def extreme_value(t):
     return exp(-exp(-t) - t + 1)
 
 
+@bounds(w=(openlow(0.), np.inf), s=(1., np.inf))
 @peak_model
 def gamma_dist(t, w, s):
     # from Wikipedia: not the same as Di Marco & Bombi's formulation
@@ -136,16 +134,18 @@ def gaussian(t):
     return exp(-0.5 * t ** 2)
 
 
+@bounds(w=(openlow(0.), np.inf), x=(openlow(0.), np.inf))
 @peak_model
 def giddings(t, w, x):
     # w != 0
-    x = abs(x)
     y = np.zeros(len(t))
     y[t > 0] = (1. / w) * sqrt(x / t[t > 0]) * exp((t[t > 0] + x) / -w)
+    #TODO: "overflow encountered in i1"
     y[t > 0] *= i1(2. * sqrt(x * t[t > 0]) / w)
     return y
 
 
+@bounds(w=(openlow(0.), np.inf), s=(openlow(0.), np.inf))
 @peak_model
 def haarhoffvanderlinde(t, w, s):
     # s here = s * z in Di Marco & Bombi
@@ -155,16 +155,12 @@ def haarhoffvanderlinde(t, w, s):
     return y
 
 
+@bounds(s=(openlow(1.), np.inf))
 @peak_model
 def lognormal(t, s, r=2.):
-    #y = np.zeros(len(t))
-    #y[t > 0] = exp(-0.5 * (log(t[t > 0]) - x) ** 2) / (t[t > 0] * sqrt(2 * np.pi))
-    #return y
-
-    #TODO: this doesn't work very well
     # r is the ratio between h and the height at
     # which s is computed: normally 2.
-    s, r = abs(s), abs(r)  # r > 1, s > 1
+    #TODO: this doesn't work very well
     y = np.zeros(len(t))
     lt = -log(r) / log(s) ** 2
     y[t > 0] = exp(lt * log(t[t > 0] * (s ** 2 - 1) / s) ** 2)
@@ -197,6 +193,7 @@ def parabola(t):
     return y
 
 
+@bounds(a=(openlow(0.), np.inf))
 @peak_model
 def pearsonVII(t, a):
     return (1 + 4 * t ** 2 * (2 ** (1 / a) - 1)) ** -a
@@ -210,6 +207,7 @@ def poisson(t, a):
     return y
 
 
+@bounds(s=(openlow(0.), np.inf))
 @peak_model
 def studentt(t, s):
     # s != 0
@@ -224,19 +222,17 @@ def triangle(t):
     return y
 
 
+@bounds(a=(openlow(1.), np.inf))
 @peak_model
 def weibull3(t, a):
     #TODO: doesn't work?
-    a = abs(a)
     y = np.zeros(len(t))
     at = (a - 1.) / a
     tt = t[t > 0] + ((a - 1.) / a) ** (1. / a)
     y[t > 0] = at ** at * tt ** (a - 1.) * exp(-tt ** a + at)
     return y
 
-# FUNCTIONS TO DO
-
-
+## FUNCTIONS TO DO
 #def chesler_cram_a(t, a, b, c, d):
 #def chesler_cram_b(t, a, b, c, d, e):
 #def cumulative(t, w, a):
