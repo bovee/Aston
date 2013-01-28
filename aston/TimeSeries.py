@@ -69,6 +69,8 @@ class TimeSeries(object):
             # if a TIC is being requested and we don't have
             # a prebuilt one, sum up the axes
             data = self._rawdata[st_idx:en_idx, :].sum(axis=1)
+            #TODO: this fails for sparse matrices?
+            #data = np.array(self._rawdata[st_idx:en_idx, :].sum(axis=0).T)[0]
         elif val == '!':
             # this is for peaks, where we return the first
             # ion by default; should be accessible from the

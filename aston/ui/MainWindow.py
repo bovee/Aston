@@ -304,7 +304,10 @@ class AstonWindow(QtGui.QMainWindow):
         for ts in tss:
             if peak_find == event_peak_find:
                 # event_peak_find also needs a list of events
-                tpks = peak_find(ts, dt.events())
+                evts = []
+                for n in ('fia', 'refgas'):
+                    evts += dt.events(n)
+                tpks = peak_find(ts, evts)
             elif all_pks != [] and isomode:
                 # we've already integrated things, reuse
                 # their found peaks, but shifted

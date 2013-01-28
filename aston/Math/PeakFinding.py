@@ -1,7 +1,7 @@
 import numpy as np
 import scipy.signal._peak_finding as spf
-from aston.Math.Chromatograms import savitzkygolay
-from aston.Math.Chromatograms import movingaverage
+#from aston.Math.Chromatograms import savitzkygolay
+#from aston.Math.Chromatograms import movingaverage
 
 
 def simple_peak_find(ts, start_slope=500, end_slope=200, \
@@ -66,22 +66,23 @@ def simple_peak_find(ts, start_slope=500, end_slope=200, \
     return peak_list
 
 
-def wavelet_peak_find(ts):
+def wavelet_peak_find(ts, min_snr=1., assume_sig=4.):
     t = ts.time()
 
     widths = np.linspace(1, 100, 200)
     cwtm = spf.cwt(ts.y, spf.ricker, widths)
     ridges = spf._identify_ridge_lines(cwtm, widths / 2.0, 2)
     filt_ridges = spf._filter_ridge_lines(cwtm, ridges, \
-      min_length=cwtm.shape[0] / 8.0, min_snr=1)
+      min_length=cwtm.shape[0] / 8.0, min_snr=min_snr)
 
+    ## the next code is just to visualize how this works
     #import matplotlib.pyplot as plt
     #plt.imshow(cwtm)  # extent=(widths[0], widths[-1], times[0], times[-1]))
     #for l in ridges:
     #    plt.plot(l[1], l[0], 'k-')
     #for l in filt_ridges:
     #    plt.plot(l[1], l[0], 'r-')
-    ##plt.plot(peaks_t, peaks_w, 'k*')
+    ##plt.plot(peaks_t, peaks_w, 'k*')  # not working
     #plt.show()
 
     # loop through the ridges and find the point of maximum
@@ -92,13 +93,14 @@ def wavelet_peak_find(ts):
         peak_w = widths[l[0][pl]] * 0.5 * (t[1] - t[0])
         peak_amp = cwtm[l[0][pl], l[1][pl]] / (widths[l[0]][pl] ** 0.5)
         peak_t = t[l[1][pl]]
-        t0, t1 = peak_t - 4 * peak_w, peak_t + 4 * peak_w
+        t0, t1 = peak_t - assume_sig * peak_w, peak_t + assume_sig * peak_w
         peak_list.append((t0, t1, {'area': peak_amp}))
 
     return peak_list
 
 
 def stat_slope_peak_find(ts):
+    #TODO: this isn't working the best right now
     t = ts.time()
 
     dx = np.gradient(ts.y)
@@ -120,27 +122,53 @@ def stat_slope_peak_find(ts):
             continue
 
         #track backwards to find where this peak started
-        pt0 = ()
+        pt0 = None
         for j in range(i - 1, 0, -1):
             if dx[j] < adx or dx2[j] < adx2:
-                pt0 = (t[j], ts.y[j])
+                pt0 = t[j]
                 break
 
         #track forwards to find where it ends
-        pt1 = ()
+        pt1 = None
         neg = 0
         for j in range(i, len(t)):
             if dx[j] < adx:
                 neg += 1
             if neg > 3 and dx[j] > adx:  # and x[j]<ax:
-                pt1 = (t[j], ts.y[j])
+                pt1 = t[j]
                 break
 
-        if pt0 != () and pt1 != ():
-            peak_list += (pt0, pt1, {})
+        if pt0 is not None and pt1 is not None:
+            peak_list += [(pt0, pt1, {})]
 
     return peak_list
 
 
 def event_peak_find(ts, events):
-    pass
+    #TODO: don't just integrate the entire space
+    # from point to point. integrate from
+    # baseline point to other baseline point
+    return align_events(ts, events)
+
+
+def align_events(ts, evts):
+    # assume ts is constantly spaced
+    t = ts.times
+
+    #convert list of initial times into impulses
+    #that will correlate with spikes in the
+    #derivative (such as at the beginning of a peak)
+    pulse_y = np.zeros(len(t))
+    for st_t in [p[0] for p in evts]:
+        pulse_y[np.argmin(np.abs(t - st_t))] = 1.
+    cor = np.correlate(pulse_y, np.gradient(ts.y), mode='same')
+
+    #apply weighting to cor to make "far" correlations less likely
+    cor[:len(t) // 2] *= np.logspace(0., 1., len(t) // 2)
+    cor[len(t) // 2:] *= np.logspace(1., 0., len(t) - len(t) // 2)
+
+    shift = (len(t) // 2 - cor.argmax()) * (t[1] - t[0])
+    #TODO: track back slightly to catch start of peak, not maximum
+    # slope of peak?
+    new_evts = [(t0 + shift, t1 + shift, {}) for t0, t1, _ in evts]
+    return new_evts
