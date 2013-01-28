@@ -1,8 +1,10 @@
+import numpy as np
 from scipy.optimize import root
 
 # using 23.5 as a default d18o assuming no fractionation
 # during combustion; actual combustion produces values
 # lower than this. See Schumacher et al 2008 Atm Chem & Phys Dis
+
 
 def delta13C_Craig(r45sam, r46sam, d13cstd, r45std, r46std,
                    d18ostd=23.5):

@@ -31,6 +31,7 @@
   - hashing code for compounds? numerical match score between spectra?
 * remote database support
 * autoalign chromatograms
+* rewrite database code to use context manager for "lazy" system
 * baseline detection (as a trace type?)
 * smarter peak editing?
   - adjustable peaks (little selectors on each end of "baseline")
