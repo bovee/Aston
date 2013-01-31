@@ -157,13 +157,14 @@ def haarhoffvanderlinde(t, w, s):
 
 @bounds(s=(openlow(1.), np.inf))
 @peak_model
-def lognormal(t, s, r=2.):
+def lognormal(t, w, s, r=2.):
     # r is the ratio between h and the height at
     # which s is computed: normally 2.
-    #TODO: this doesn't work very well
+    #TODO: this needs to be translated to center on 0
     y = np.zeros(len(t))
     lt = -log(r) / log(s) ** 2
-    y[t > 0] = exp(lt * log(t[t > 0] * (s ** 2 - 1) / s) ** 2)
+    ta = t + 5.2385 * (w - 1)
+    y[ta > 0] = exp(lt * log(ta[ta > 0] / w * (s ** 2 - 1) / s) ** 2)
     return y
 
 

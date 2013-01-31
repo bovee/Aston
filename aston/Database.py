@@ -272,8 +272,8 @@ class AstonFileDatabase(AstonDatabase):
         #TODO: generate projects and project_ids based on folder names?
         c = self.begin_lazy_op()
         for fn in set(datafiles.keys()).difference(dnames):
-            fdate = datetime.fromtimestamp(os.path.getctime(fn)\
-              ).replace(microsecond=0).isoformat(' ')
+            fdate = datetime.fromtimestamp(os.path.getctime(fn))
+            fdate = fdate.replace(microsecond=0).isoformat(' ')
             info = {'s-file-type': datafiles[fn], 'traces': 'TIC', \
               'name': os.path.splitext(os.path.basename(fn))[0], \
               'r-date': fdate}

@@ -5,7 +5,7 @@ import aston.Math.Peak as peakmath
 from aston.Features.Spectrum import Spectrum
 from aston.TimeSeries import TimeSeries
 from aston.Math.Other import delta13C
-from aston.Math.PeakFitting import fit_to
+from aston.Math.PeakFitting import fit, guess_initc
 from aston.Math.PeakModels import peak_models
 
 peak_models = dict([(pm.__name__, pm) for pm in peak_models])
@@ -137,17 +137,20 @@ class Peak(DBObject):
     def update_model(self, key):
         # TODO: the model should be applied to *all* of the
         # ions in self.rawdata
-        t = self.rawdata.times[1:-1]
-        x = self.rawdata.data[:, 0][1:-1]
-        #xa = x[1:-1] - np.linspace(x[0], x[-1], len(x) - 2)
         self.info['p-model'] = str(key)
+        self.info.del_items('p-s-')
 
         f = peak_models.get(str(key), None)
-
-        self.info.del_items('p-s-')
         if f is not None:
             #TODO: use baseline detection?
-            params = fit_to(f, t, x, make_bounded=True)
+            t = self.rawdata.times[1:-1]
+            y = self.rawdata.y[1:-1]
+            #ya = x[1:-1] - np.linspace(x[0], x[-1], len(x) - 2)
+
+            ts = TimeSeries(y, t)
+            initc = guess_initc(ts, f, [t[y.argmax()]])
+            params = fit(ts, [f], initc)[0]
+
             params['f'] = str(key)
             self.info['p-s-base'] = str(params['v'])
             self.info['p-s-height'] = str(params['h'])
