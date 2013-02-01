@@ -3,6 +3,7 @@ import pkg_resources
 from PyQt4 import QtGui
 
 from aston.ui.aston_ui import Ui_MainWindow
+from aston.ui.AstonSettings import AstonSettings
 from aston.ui.FilterWindow import FilterWindow
 from aston.ui.MainPlot import Plotter
 from aston.ui.SpecPlot import SpecPlotter
@@ -113,6 +114,10 @@ class AstonWindow(QtGui.QMainWindow):
           self.plotter.availStyles(), self.set_graph_style, v)
         self.ui.actionGraph_Style.setMenu(style_menu)
 
+        # add settings widget in
+        self.settingsWidget = AstonSettings(self, db=file_db)
+        self.ui.verticalLayout_settings.addWidget(self.settingsWidget)
+
         #plot data
         self.plotData()
 
@@ -192,6 +197,7 @@ class AstonWindow(QtGui.QMainWindow):
         #load everything
         file_db = AstonFileDatabase(op.join(self.directory, 'aston.sqlite'))
         self.obj_tab = FileTreeModel(file_db, self.ui.fileTreeView, self)
+        self.settingsWidget.db = file_db
         self.plotData()
 
     def set_color_scheme(self):
@@ -263,6 +269,22 @@ class AstonWindow(QtGui.QMainWindow):
         f.write(self.obj_tab.items_as_csv(sel))
         f.close()
 
+    def get_f_opts(self, f):
+        gv = lambda k, df: float(self.obj_tab.db.get_key(k, dflt=str(df)))
+        p = {}
+        fname = f.__name__
+        if fname == 'event_peak_find':
+            pass
+        elif fname == 'simple_peak_find':
+            p['start_slope'] = gv('peakfind_simple_startslope', 500)
+            p['end_slope'] = gv('peakfind_simple_endslope', 200)
+            p['min_peak_height'] = gv('peakfind_simple_minheight', 50)
+            p['max_peak_width'] = gv('peakfind_simple_maxwidth', 1.5)
+        elif fname == 'wavelet_peak_find':
+            p['min_snr'] = gv('peakfind_wavelet_minsnr', 1)
+            p['assume_sig'] = gv('peakfind_wavelet_asssig', 4)
+        return p
+
     def find_peaks_top_trace(self):
         #TODO: clunky copy of code from integrate, but
         # needed for display "peaks found" on graph
@@ -276,7 +298,7 @@ class AstonWindow(QtGui.QMainWindow):
         if peak_find == event_peak_find:
             return []
         else:
-            return peak_find(dt.trace(ion))
+            return peak_find(dt.trace(ion), **self.get_f_opts(peak_find))
 
     def integrate(self):
         dt = self.obj_tab.active_file()
@@ -307,14 +329,14 @@ class AstonWindow(QtGui.QMainWindow):
                 evts = []
                 for n in ('fia', 'refgas'):
                     evts += dt.events(n)
-                tpks = peak_find(ts, evts)
+                tpks = peak_find(ts, evts, **self.get_f_opts(peak_find))
             elif all_pks != [] and isomode:
                 # we've already integrated things, reuse
                 # their found peaks, but shifted
                 #TODO: shift the found peaks to match the ts
                 tpks = tpks
             else:
-                tpks = peak_find(ts)
+                tpks = peak_find(ts, **self.get_f_opts(peak_find))
             pks = integrate(ts, tpks)
             update_peaks(pks, dt, str(ts.ions[0]), \
                          ptype='Sample', created=int_name)

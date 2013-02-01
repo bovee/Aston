@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'aston.ui'
 #
-# Created: Fri Jan 25 09:11:47 2013
+# Created: Thu Jan 31 16:11:43 2013
 #      by: PyQt4 UI code generator 4.9.6
 #
 # WARNING! All changes made in this file will be lost!
@@ -88,17 +88,9 @@ class Ui_MainWindow(object):
         self.dockWidgetContents_3.setObjectName(_fromUtf8("dockWidgetContents_3"))
         self.horizontalLayout_4 = QtGui.QHBoxLayout(self.dockWidgetContents_3)
         self.horizontalLayout_4.setObjectName(_fromUtf8("horizontalLayout_4"))
-        self.toolBox = QtGui.QToolBox(self.dockWidgetContents_3)
-        self.toolBox.setObjectName(_fromUtf8("toolBox"))
-        self.page = QtGui.QWidget()
-        self.page.setGeometry(QtCore.QRect(0, 0, 100, 30))
-        self.page.setObjectName(_fromUtf8("page"))
-        self.toolBox.addItem(self.page, _fromUtf8(""))
-        self.page_2 = QtGui.QWidget()
-        self.page_2.setGeometry(QtCore.QRect(0, 0, 72, 159))
-        self.page_2.setObjectName(_fromUtf8("page_2"))
-        self.toolBox.addItem(self.page_2, _fromUtf8(""))
-        self.horizontalLayout_4.addWidget(self.toolBox)
+        self.verticalLayout_settings = QtGui.QVBoxLayout()
+        self.verticalLayout_settings.setObjectName(_fromUtf8("verticalLayout_settings"))
+        self.horizontalLayout_4.addLayout(self.verticalLayout_settings)
         self.settingsDockWidget.setWidget(self.dockWidgetContents_3)
         MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(8), self.settingsDockWidget)
         self.spectraDockWidget = QtGui.QDockWidget(MainWindow)
@@ -305,7 +297,6 @@ class Ui_MainWindow(object):
         self.menuExport.addAction(self.actionExportSpectra)
         self.menuExport.addAction(self.actionExportSelectedItems)
         self.menuFile.addAction(self.actionOpen)
-        self.menuFile.addAction(self.actionCopy_Settings_from_Other_DB)
         self.menuFile.addAction(self.menuExport.menuAction())
         self.menuFile.addSeparator()
         self.menuFile.addAction(self.actionQuit)
@@ -352,7 +343,6 @@ class Ui_MainWindow(object):
         self.menubar.addAction(self.menuHelp.menuAction())
 
         self.retranslateUi(MainWindow)
-        self.toolBox.setCurrentIndex(1)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -370,8 +360,6 @@ class Ui_MainWindow(object):
         self.filesDockWidget.setWindowTitle(_translate("MainWindow", "Files", None))
         self.lineEdit.setPlaceholderText(_translate("MainWindow", "Seach by Name", None))
         self.settingsDockWidget.setWindowTitle(_translate("MainWindow", "Settings", None))
-        self.toolBox.setItemText(self.toolBox.indexOf(self.page), _translate("MainWindow", "Integration", None))
-        self.toolBox.setItemText(self.toolBox.indexOf(self.page_2), _translate("MainWindow", "File Locations", None))
         self.spectraDockWidget.setWindowTitle(_translate("MainWindow", "Spectra", None))
         self.methodDockWidget.setWindowTitle(_translate("MainWindow", "Methods", None))
         self.compoundDockWidget.setWindowTitle(_translate("MainWindow", "Compounds", None))

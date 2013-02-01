@@ -4,7 +4,7 @@ from aston.Features.DBObject import DBObject
 import aston.Math.Peak as peakmath
 from aston.Features.Spectrum import Spectrum
 from aston.TimeSeries import TimeSeries
-from aston.Math.Other import delta13C
+from aston.Math.Other import delta13C_Santrock, delta13C_Craig
 from aston.Math.PeakFitting import fit, guess_initc
 from aston.Math.PeakModels import peak_models
 
@@ -109,6 +109,9 @@ class Peak(DBObject):
         except:
             return ''
 
+        calc_meth = self.db.get_key('d13c_method', dflt='santrock')
+        consts = self.db.get_key('d13c_const', dflt='Santrock')
+
         r45std = dt.get_point('r45std', peakmath.time(self.as_poly(44)))
         r46std = dt.get_point('r46std', peakmath.time(self.as_poly(44)))
 
@@ -120,8 +123,14 @@ class Peak(DBObject):
         # if one of the areas is 0, clearly there's a problem
         if i44 * i45 * i46 == 0:
             return ''
-        d = delta13C(i45 / i44, i46 / i44, \
-          float(dt.info['r-d13c-std']), r45std, r46std)
+        if calc_meth == 'craig':
+            d = delta13C_Craig(i45 / i44, i46 / i44, \
+              float(dt.info['r-d13c-std']), r45std, r46std)
+        else:
+            d = delta13C_Santrock(i45 / i44, i46 / i44, \
+              float(dt.info['r-d13c-std']), r45std, r46std,
+              ks=consts)
+
         return '{0:.3f}'.format(d)
 
     def createSpectrum(self, method=None):

@@ -1,23 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>SettingsDialog</class>
- <widget class="QDialog" name="SettingsDialog">
-  <property name="windowModality">
-   <enum>Qt::WindowModal</enum>
-  </property>
+ <class>Form</class>
+ <widget class="QWidget" name="Form">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>430</width>
-    <height>330</height>
+    <width>450</width>
+    <height>372</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Settings</string>
-  </property>
-  <property name="sizeGripEnabled">
-   <bool>false</bool>
+   <string>Form</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
@@ -29,7 +23,7 @@
       <enum>QTabWidget::Rounded</enum>
      </property>
      <property name="currentIndex">
-      <number>1</number>
+      <number>0</number>
      </property>
      <property name="elideMode">
       <enum>Qt::ElideNone</enum>
@@ -40,53 +34,9 @@
      <property name="movable">
       <bool>false</bool>
      </property>
-     <widget class="QWidget" name="tab_3">
-      <attribute name="title">
-       <string>Graph</string>
-      </attribute>
-      <layout class="QFormLayout" name="formLayout">
-       <property name="fieldGrowthPolicy">
-        <enum>QFormLayout::ExpandingFieldsGrow</enum>
-       </property>
-       <item row="0" column="0">
-        <widget class="QLabel" name="label_3">
-         <property name="text">
-          <string>X Units</string>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="1">
-        <widget class="QComboBox" name="comboBox_3">
-         <property name="currentIndex">
-          <number>1</number>
-         </property>
-         <item>
-          <property name="text">
-           <string>Seconds</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>Minutes</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>Hours</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>Scans</string>
-          </property>
-         </item>
-        </widget>
-       </item>
-      </layout>
-     </widget>
      <widget class="QWidget" name="tab">
       <attribute name="title">
-       <string>Integrators</string>
+       <string>Peak Finders &amp;&amp; Integrators</string>
       </attribute>
       <layout class="QVBoxLayout" name="verticalLayout_2">
        <item>
@@ -99,21 +49,14 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>396</width>
-            <height>194</height>
+            <width>447</width>
+            <height>196</height>
            </rect>
           </property>
           <attribute name="label">
            <string>Simple Peak Finder</string>
           </attribute>
-          <layout class="QFormLayout" name="formLayout_3">
-           <item row="0" column="0">
-            <widget class="QLabel" name="label_4">
-             <property name="text">
-              <string>Starting Slope</string>
-             </property>
-            </widget>
-           </item>
+          <layout class="QGridLayout" name="gridLayout_4">
            <item row="1" column="0">
             <widget class="QLabel" name="label_5">
              <property name="text">
@@ -121,15 +64,24 @@
              </property>
             </widget>
            </item>
-           <item row="2" column="0">
-            <widget class="QLabel" name="label_6">
-             <property name="text">
-              <string>Min Peak Width (min)</string>
+           <item row="1" column="1">
+            <widget class="QDoubleSpinBox" name="doubleSimpleEndSlope">
+             <property name="minimum">
+              <double>-10000.000000000000000</double>
+             </property>
+             <property name="maximum">
+              <double>10000.000000000000000</double>
+             </property>
+             <property name="singleStep">
+              <double>100.000000000000000</double>
+             </property>
+             <property name="value">
+              <double>200.000000000000000</double>
              </property>
             </widget>
            </item>
            <item row="0" column="1">
-            <widget class="QDoubleSpinBox" name="doubleSpinBox_2">
+            <widget class="QDoubleSpinBox" name="doubleSpinSimpleStartSlope">
              <property name="minimum">
               <double>-10000.000000000000000</double>
              </property>
@@ -139,38 +91,49 @@
              <property name="singleStep">
               <double>100.000000000000000</double>
              </property>
-            </widget>
-           </item>
-           <item row="1" column="1">
-            <widget class="QDoubleSpinBox" name="doubleSpinBox_3">
-             <property name="minimum">
-              <double>-10000.000000000000000</double>
-             </property>
-             <property name="maximum">
-              <double>10000.000000000000000</double>
-             </property>
-             <property name="singleStep">
-              <double>100.000000000000000</double>
+             <property name="value">
+              <double>500.000000000000000</double>
              </property>
             </widget>
            </item>
-           <item row="2" column="1">
-            <widget class="QDoubleSpinBox" name="doubleSpinBox_4"/>
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_4">
+             <property name="text">
+              <string>Starting Slope</string>
+             </property>
+            </widget>
            </item>
-           <item row="3" column="0">
+           <item row="0" column="2">
+            <widget class="QLabel" name="label_6">
+             <property name="text">
+              <string>Max Peak Width (min)</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="3">
+            <widget class="QDoubleSpinBox" name="doubleSpinSimpleMaxPeakWidth">
+             <property name="value">
+              <double>1.500000000000000</double>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="2">
             <widget class="QLabel" name="label_7">
              <property name="text">
               <string>Min Peak Height</string>
              </property>
             </widget>
            </item>
-           <item row="3" column="1">
-            <widget class="QDoubleSpinBox" name="doubleSpinBox">
+           <item row="1" column="3">
+            <widget class="QDoubleSpinBox" name="doubleSpinSimpleMinPeakHgt">
              <property name="maximum">
               <double>10000000.000000000000000</double>
              </property>
              <property name="singleStep">
               <double>100.000000000000000</double>
+             </property>
+             <property name="value">
+              <double>50.000000000000000</double>
              </property>
             </widget>
            </item>
@@ -181,13 +144,84 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>396</width>
-            <height>194</height>
+            <width>100</width>
+            <height>30</height>
            </rect>
           </property>
           <attribute name="label">
-           <string>Page 2</string>
+           <string>StatSlope Peak Finder</string>
           </attribute>
+         </widget>
+         <widget class="QWidget" name="page_3">
+          <property name="geometry">
+           <rect>
+            <x>0</x>
+            <y>0</y>
+            <width>247</width>
+            <height>56</height>
+           </rect>
+          </property>
+          <attribute name="label">
+           <string>Wavelet Peak Finder</string>
+          </attribute>
+          <layout class="QFormLayout" name="formLayout_5">
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_12">
+             <property name="text">
+              <string>Minimum Signal-Noise Ratio</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QDoubleSpinBox" name="doubleSpinWaveletMinSNR">
+             <property name="value">
+              <double>1.000000000000000</double>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QDoubleSpinBox" name="doubleSpinWaveletAssSig">
+             <property name="value">
+              <double>4.000000000000000</double>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="label_13">
+             <property name="text">
+              <string>Assumed Sigma</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+         <widget class="QWidget" name="page_4">
+          <property name="geometry">
+           <rect>
+            <x>0</x>
+            <y>0</y>
+            <width>416</width>
+            <height>213</height>
+           </rect>
+          </property>
+          <attribute name="label">
+           <string>LeastSq Integrator</string>
+          </attribute>
+          <layout class="QFormLayout" name="formLayout_6">
+           <property name="fieldGrowthPolicy">
+            <enum>QFormLayout::ExpandingFieldsGrow</enum>
+           </property>
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_14">
+             <property name="text">
+              <string>Peak Model</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QComboBox" name="comboLeastSqPeakModel"/>
+           </item>
+          </layout>
          </widget>
         </widget>
        </item>
@@ -206,7 +240,46 @@
         </widget>
        </item>
        <item row="1" column="1">
-        <widget class="QComboBox" name="comboBox"/>
+        <widget class="QComboBox" name="comboIsotopeKs">
+         <property name="currentIndex">
+          <number>3</number>
+         </property>
+         <item>
+          <property name="text">
+           <string>Craig</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>IAEA</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Warner</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Santrock</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Assonov</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Assonov2</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Isodat</string>
+          </property>
+         </item>
+        </widget>
        </item>
        <item row="0" column="0">
         <widget class="QLabel" name="label_2">
@@ -216,7 +289,18 @@
         </widget>
        </item>
        <item row="0" column="1">
-        <widget class="QComboBox" name="comboBox_2"/>
+        <widget class="QComboBox" name="comboIsotopeMethod">
+         <item>
+          <property name="text">
+           <string>Santrock-Studley-Hayes</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Craig</string>
+          </property>
+         </item>
+        </widget>
        </item>
       </layout>
      </widget>
@@ -235,7 +319,7 @@
           </widget>
          </item>
          <item row="0" column="1">
-          <widget class="QLineEdit" name="lineEdit"/>
+          <widget class="QLineEdit" name="lineCompoundDB"/>
          </item>
          <item row="1" column="0">
           <widget class="QLabel" name="label_9">
@@ -245,12 +329,15 @@
           </widget>
          </item>
          <item row="1" column="1">
-          <widget class="QLineEdit" name="lineEdit_2"/>
+          <widget class="QLineEdit" name="lineMethodDB"/>
          </item>
          <item row="2" column="1">
-          <widget class="QCheckBox" name="checkBox">
+          <widget class="QCheckBox" name="checkDBRescan">
            <property name="text">
             <string/>
+           </property>
+           <property name="checked">
+            <bool>true</bool>
            </property>
           </widget>
          </item>
@@ -269,13 +356,26 @@
           </widget>
          </item>
          <item row="3" column="1">
-          <widget class="QCheckBox" name="checkBox_2">
+          <widget class="QCheckBox" name="checkDBRemoveDeleted">
            <property name="text">
             <string/>
            </property>
           </widget>
          </item>
         </layout>
+       </item>
+       <item>
+        <spacer name="verticalSpacer_2">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
        </item>
        <item>
         <widget class="QPushButton" name="pushButton">
@@ -288,51 +388,8 @@
      </widget>
     </widget>
    </item>
-   <item>
-    <widget class="QDialogButtonBox" name="buttonBox">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
-     </property>
-     <property name="standardButtons">
-      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
-     </property>
-    </widget>
-   </item>
   </layout>
  </widget>
  <resources/>
- <connections>
-  <connection>
-   <sender>buttonBox</sender>
-   <signal>accepted()</signal>
-   <receiver>SettingsDialog</receiver>
-   <slot>accept()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>248</x>
-     <y>254</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>157</x>
-     <y>274</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>buttonBox</sender>
-   <signal>rejected()</signal>
-   <receiver>SettingsDialog</receiver>
-   <slot>reject()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>316</x>
-     <y>260</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>286</x>
-     <y>274</y>
-    </hint>
-   </hints>
-  </connection>
- </connections>
+ <connections/>
 </ui>

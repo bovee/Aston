@@ -1,7 +1,7 @@
 import zlib
 import numpy as np
 from aston.Features.DBObject import DBObject
-from aston.Math.Other import delta13C
+from aston.Math.Other import delta13C_Santrock
 
 
 class Spectrum(DBObject):
@@ -50,7 +50,7 @@ class Spectrum(DBObject):
         if r45std == 0.0:
             return ''
 
-        d = delta13C(self.ion(44), self.ion(45), self.ion(46), \
+        d = delta13C_Santrock(self.ion(44), self.ion(45), self.ion(46), \
                  float(dt.info['r-d13c-std']), r45std, r46std)
 
         return str(d)

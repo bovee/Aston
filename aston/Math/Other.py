@@ -15,8 +15,8 @@ def delta13C_Craig(r45sam, r46sam, d13cstd, r45std, r46std,
     return d13C
 
 
-def delta13C(r45sam, r46sam, d13cstd, r45std, r46std,
-             ks='Santrock', d18ostd=23.5):
+def delta13C_Santrock(r45sam, r46sam, d13cstd, r45std, r46std,
+                      ks='Santrock', d18ostd=23.5):
     """
     Given the measured isotope signals of a sample and a
     standard and the delta-13C of that standard, calculate

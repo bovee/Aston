@@ -85,6 +85,14 @@ class AstonDatabase(object):
         self.db.commit()
         c.close()
 
+    def lazy_set_key(self, c, key, val):
+        c.execute('SELECT * FROM prefs WHERE key = ?', (key,))
+        if c.fetchone() is not None:
+            c.execute('UPDATE prefs SET value=? WHERE key=?', (val, key))
+        else:
+            c.execute('INSERT INTO prefs (value,key) VALUES (?,?)', \
+                      (val, key))
+
     def updateObject(self, obj):
         c = self.db.cursor()
         c.execute('''UPDATE objs SET type=?, parent_id=?, name=?,
@@ -217,7 +225,8 @@ class AstonDatabase(object):
 class AstonFileDatabase(AstonDatabase):
     def __init__(self, *args, **kwargs):
         super(AstonFileDatabase, self).__init__(*args, **kwargs)
-        self.update_file_list(self.database_path)
+        if self.get_key('db_reload_on_open', dflt='True') == 'True':
+            self.update_file_list(self.database_path)
 
     def update_file_list(self, path):
         """
@@ -259,14 +268,13 @@ class AstonFileDatabase(AstonDatabase):
         c = self.db.cursor()
         c.execute('SELECT data FROM objs WHERE type="file"')
         dnames = set([i[0] for i in c])
-        c.close()
 
         #compare the two lists -> remove deleted files from the database
-        #TODO: this should only flag files as being bad, not delete them
-        #from the database.
-        #for fn in dnames.difference(set(fnames)):
-        #    c.execute('DELETE FROM files WHERE file_name=?',(fn,))
-        #    self.db.commit()
+        if self.get_key('db_remove_deleted', dflt='False') == 'True':
+            for fn in dnames.difference(set(datafiles.keys())):
+                c.execute('DELETE FROM files WHERE file_name=?', (fn,))
+            self.db.commit()
+        c.close()
 
         #add the new files into the database
         #TODO: generate projects and project_ids based on folder names?
