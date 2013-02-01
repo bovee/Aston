@@ -4,6 +4,8 @@ from scipy.optimize import leastsq  # , fmin, minimize
 from aston.Features import Peak
 from aston.TimeSeries import TimeSeries
 from aston.Math.Peak import time
+from aston.Math.PeakModels import gaussian
+from aston.Math.PeakFitting import guess_initc, fit
 
 
 def update_peaks(peaks, dt, ion, ptype='Sample', created='manual'):
@@ -96,38 +98,31 @@ def drop_integrate(ts, peak_list):
     return peaks
 
 
-def leastsq_integrate(ts, peak_list):
+def leastsq_integrate(ts, peak_list, f='gaussian'):
     win_list = _get_windows(peak_list)
+    #TODO: use f parameter to choose function
+    f = gaussian
 
-    def sim_chr(p, times):
-        gauss = lambda t, h, w: h * np.exp(-t ** 2 / (2 * w ** 2))
-        c = p[0] + times * p[1]
-        for i in range(int((len(p) - 2) / 3)):
-            t, h, w = p[2 + 3 * i:5 + 3 * i]
-            c += gauss(times - t, h, w)
-        return c
-
-    errf = lambda p, y, t: sum(y - sim_chr(p, t))
-
-    for w in win_list:
-        tr = ts.trace(twin=w[0]).y
-        #TODO: build proper starting parameters (including area)
-        p0 = np.insert(np.array(w[1]), 0, [tr.y[0], 0])
-        #p, r1, r2, r3, r4 = leastsq(errf, p0[:],
-        #        args=(tr.y, tr.times), full_output=True, maxfev=10)
-
-        # crashes: TypeError
-        #p = minimize(errf, p0[:], method='nelder-mead',
-        #        args=(tr.y, tr.times), options={'disp':True})
-        #print(p, dir(p))
-
-        #TODO: decompose p into proper peaks
-
-        #plotter.plt.plot(tr.t, sim_chr(p0, tr.times), 'k-')
-    #p, r1, r2, r3, r4 = leastsq(errf, p0[:],
-    #        args=(x, times), full_output=True, maxfev=10)
-    #print(r2['nfev'], r3, r4)
-    #plotter.plt.plot(times, sim_chr(p, times), 'k-')
+    peaks = []
+    for w, peak_list in win_list:
+        tr = ts.trace(twin=w)
+        # if there's location info, we can use this for
+        # our inital params
+        if 'x' in peak_list[0][2]:
+            #TODO: should fill in other values?
+            #TODO: should do something with y0 and y1?
+            initc = [i[2] for i in peak_list]
+        else:
+            #TODO: should find peak maxima for rts?
+            rts = [0.5 * (i[0] + i[1]) for i in peak_list]
+            initc = guess_initc(tr, f, rts)
+        params, _ = fit(tr, [f] * len(initc), initc)
+        for p in params:
+            pk_ts = TimeSeries(f(tr.times, **p), tr.times)
+            info = {'name': '{:.2f}'.format(p['x'])}
+            pk = Peak(None, None, None, info, pk_ts)
+            peaks.append(pk)
+    return peaks
 
 
 def merge_ions(pks):

@@ -12,7 +12,6 @@
   - delete items from ion list
   - low-high error checking for ranges, make sure ions are numbers, etc
 * better spectra display
-  - display range as average for Agilent MSMS
   - allow navigation around window
 
 0.6 Checklist
@@ -21,6 +20,7 @@
 * RAW file support
 * MSMS support
   - Agilent MSMS Peak file format
+  - spectral range display (as average) for Agilent MSMS
   - Bruker MSMS spectra
   - MSMS points on graph / MSMS data display
 * Chemstation B+ REG files

@@ -72,6 +72,7 @@ aston_fields = {
     # peak info
         'p-type': tr('Peak Type'),
         'p-model': tr('Peak Model'),
+        'p-s-model-fit': tr('Peak Model Fit (r²)'),
         'p-s-area': tr('Peak Area'),
         'p-s-length': tr('Peak Width (min)'),
         'p-s-height': tr('Peak Height'),

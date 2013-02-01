@@ -149,11 +149,13 @@ class Peak(DBObject):
 
             ts = TimeSeries(y, t)
             initc = guess_initc(ts, f, [t[y.argmax()]])
-            params = fit(ts, [f], initc)[0]
+            params, res = fit(ts, [f], initc)
+            params = params[0]
 
             params['f'] = str(key)
             self.info['p-s-base'] = str(params['v'])
             self.info['p-s-height'] = str(params['h'])
             self.info['p-s-time'] = str(params['x'])
             self.info['p-s-width'] = str(params['w'])
+            self.info['p-s-model-fit'] = str(res['r^2'])
             self.info['p-params'] = json.dumps(params)

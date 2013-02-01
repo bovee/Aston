@@ -74,7 +74,7 @@ def guess_initc(ts, f, rts=[]):
         peak_params['h'] = ts.y[top_idx] - \
                 min(ts.y[side_idx[0]], ts.y[side_idx[1]])
         peak_params['w'] = ts.times[side_idx[1]] - ts.times[side_idx[0]]
-        peak_params['s'] = 1.
+        peak_params['s'] = 1.1
         peak_params['e'] = 1.
         peak_params['a'] = 1.
         all_params.append(peak_params)
@@ -155,6 +155,7 @@ def fit(ts, fs=[], all_params=[], fit_vars=None, \
     # calculate r^2 of the fit
     ss_err = errfunc(fit_p, ts.times, ts.y, fitted_params)
     ss_tot = np.sum((ts.y - np.mean(ts.y)) ** 2)
-    print('r2=',  1 - ss_err / ss_tot)
+    r2 = 1 - ss_err / ss_tot
+    res = {'r^2': r2}
 
-    return fitted_params
+    return fitted_params, res

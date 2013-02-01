@@ -52,7 +52,7 @@ def simple_peak_find(ts, start_slope=500, end_slope=200, \
         # if no end point is found, the end point
         # is the end of the timeseries
         if len(pos_dist_to_end) == 0:
-            pk2 = len(ts.y)
+            pk2 = len(ts.y) - 1
         else:
             pk2 = pk + pos_dist_to_end.min()
 
@@ -94,8 +94,8 @@ def wavelet_peak_find(ts, min_snr=1., assume_sig=4.):
         peak_amp = cwtm[l[0][pl], l[1][pl]] / (widths[l[0]][pl] ** 0.5)
         peak_t = t[l[1][pl]]
         t0, t1 = peak_t - assume_sig * peak_w, peak_t + assume_sig * peak_w
-        peak_list.append((t0, t1, {'area': peak_amp}))
-
+        peak_list.append((t0, t1, {'x': peak_t, 'h': peak_amp, \
+                                   'w': peak_w}))
     return peak_list
 
 
