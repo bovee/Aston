@@ -3,16 +3,15 @@
 
 * mzML, & mzXML file support
 * save AIA/CDF, mzML & mzXML
-* display extras on graph
-  - fraction collection windows
 * applications for "time window" alignment
   - integrate all traces as first (isotopic mode)
-  - integrate by fraction collection windows/ref gas
-* finish trace selector dialog
-  - delete items from ion list
-  - low-high error checking for ranges, make sure ions are numbers, etc
+  - fix integrate by fraction collection windows/ref gas
 * better spectra display
   - allow navigation around window
+* isotope stuff
+  - allow selection of method & coefficients
+* allow integration on user-selected peaks
+* periodic integration (to replace old "split peaks" code)
 
 0.6 Checklist
 *************
@@ -36,6 +35,8 @@
 * smarter peak editing?
   - adjustable peaks (little selectors on each end of "baseline")
   - highlight selected (in peak table) peak on graph
+* allow user-selected peaks to be re-interpreted &
+  coelution spots to be found
 
 
 0.7 Checklist
@@ -45,6 +46,7 @@
   - seperate thread for database updating
   - tune MSMS file format performance (rewrites in C?)
 * Method Database
+  - allow calibration curves to be saved for compounds
   - method editor?
   - setting to allow run info to be loaded from method DB
 * have multiple plots and allow user to choose which plot each trace goes on?

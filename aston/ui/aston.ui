@@ -424,6 +424,9 @@
    <property name="checkable">
     <bool>true</bool>
    </property>
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Methods</string>
    </property>
@@ -431,6 +434,9 @@
   <action name="actionCompounds">
    <property name="checkable">
     <bool>true</bool>
+   </property>
+   <property name="enabled">
+    <bool>false</bool>
    </property>
    <property name="text">
     <string>Compounds</string>
@@ -627,6 +633,9 @@
   <action name="actionTwo_Pass_Peak_Find">
    <property name="checkable">
     <bool>true</bool>
+   </property>
+   <property name="enabled">
+    <bool>false</bool>
    </property>
    <property name="text">
     <string>Two Pass Peak Find</string>

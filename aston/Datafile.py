@@ -278,8 +278,9 @@ class Datafile(DBObject):
               self.getAllChildren('peak') \
               if o.info['p-type'] == 'Isotope Standard']
             x = [float(o.info['p-s-time']) for o in std_specs]
-            y = [o.area(topion) / o.area(44) for o in std_specs]
-            if len(x) == 0:
+            y = [o.area(topion) / o.area(44) for o in std_specs \
+                 if o.area(44) != 0]
+            if len(x) == 0 or len(y) == 0:
                 return self._const(0.0, twin)
 
             p0 = [y[0], 0]
@@ -314,13 +315,15 @@ class Datafile(DBObject):
                 srt_ind = np.argsort(x)
                 if 'S' in tpts:
                     #there's a "S"tart value defined
-                    return t, np.interp(t, x[srt_ind], \
-                      y[srt_ind], float(tpts['S']))
+                    return TimeSeries(np.interp(t, x[srt_ind], \
+                      y[srt_ind], float(tpts['S'])), t, [name])
                 else:
                     return TimeSeries(np.interp(t, x[srt_ind], \
                       y[srt_ind]), t, [name])
             elif is_num(val):
                 return self._const(float(val))
+            else:
+                return self._const(np.nan)
         else:
             return self._other_trace(name)
 

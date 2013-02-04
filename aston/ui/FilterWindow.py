@@ -14,23 +14,34 @@ class FilterWindow(QtGui.QWidget):
         dt = parent.obj_tab.returnSelFile()
 
         #self.ui.ionList.pressed.connect(self.ionListKeyPressed)
+        delAc = QtGui.QAction("Delete", self.ui.ionList, \
+          shortcut=QtCore.Qt.Key_Backspace, triggered=self.deleteIon)
+        self.ui.ionList.addAction(delAc)
         self.ui.ionList.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.ui.ionList.customContextMenuRequested.connect(self.iClickMenu)
 
-        self.ui.definedIonBox.addItems(['TIC', 'TIME', 'PRES', 'TEMP', 'FLOW'])
+        #TODO: check that all these traces exist?
+        ions = ['TIC (X)', 'TIME (T)', 'PRES', 'TEMP', 'FLOW']
+        ions += ['MPRES', 'MTEMP', 'MFLOW', 'R45STD', 'R46STD']
+        self.ui.definedIonBox.addItems(ions)
         self.ui.addDefinedIonButton.clicked.connect(self.addDefIon)
 
-        self.ui.singleIonBox.addItems([str(i) for i in dt.scan(0)])
+        dtions = dt._ions()
+        if len(dtions) < 32:
+            self.ui.singleIonBox.addItems(sorted([str(i) for i in dtions]))
         self.ui.singleIonBox.setEditText('')
+        self.ui.singleIonBox.isLeftToRight
         self.ui.addSingleIonButton.clicked.connect(self.addSingleIon)
 
         self.ui.addRangeIonButton.clicked.connect(self.addRangeIon)
+        if len(dtions) > 1:
+            self.ui.startRangeIonBox.setRange(min(dtions), max(dtions))
+            self.ui.endRangeIonBox.setRange(min(dtions), max(dtions))
 
         self.ui.addUserIonButton.clicked.connect(self.addUserIon)
 
         #options for smoothing
         self.ui.smoothComboBox.addItems(aston_field_opts['t-smooth'])
-        #self.ui.smoothComboBox.addItems(['None','Moving Average','Savitsky-Golay'])
         self.ui.smoothComboBox.currentIndexChanged.connect(self.smoothChanged)
 
         self.loadInfo(dt)
@@ -89,21 +100,28 @@ class FilterWindow(QtGui.QWidget):
         else:
             pass
 
+    def ionListKeyPressed(self, evt):
+        print(evt)
+        pass
+
     def iClickMenu(self, point):
         menu = QtGui.QMenu(self.ui.ionList)
 
         if len(self.ui.ionList.selectedItems()) > 0:
-            ac = menu.addAction(self.tr('Delete'), self.deleteIon)
+            menu.addAction(self.tr('Delete'), self.deleteIon)
 
         if not menu.isEmpty():
             menu.exec_(self.ui.ionList.mapToGlobal(point))
 
     def deleteIon(self):
-        #for item in self.ui.ionList.selectedItems():
-        pass
+        for item in self.ui.ionList.selectedItems():
+            self.ui.ionList.takeItem(self.ui.ionList.row(item))
 
     def addDefIon(self):
-        self.ui.ionList.addItem(self.ui.definedIonBox.currentText())
+        #TODO: error check ion string here?
+        ion = str(self.ui.definedIonBox.currentText())
+        ion = ion.split('(')[0].strip()
+        self.ui.ionList.addItem(ion)
 
     def addSingleIon(self):
         self.ui.ionList.addItem(self.ui.singleIonBox.currentText())

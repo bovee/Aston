@@ -63,16 +63,23 @@ class AstonDatabase(object):
             self.objects.append(self._getObjFromRow(i))
         c.close()
 
+    def all_keys(self):
+        c = self.db.cursor()
+        c.execute('SELECT key, value FROM prefs')
+        p = c.fetchall()
+        c.close()
+        return dict(p)
+
     def get_key(self, key, dflt=''):
         c = self.db.cursor()
-        c.execute('SELECT * FROM prefs WHERE key = ?', (key,))
+        c.execute('SELECT value FROM prefs WHERE key = ?', (key,))
         res = c.fetchone()
         c.close()
 
         if res is None:
             return dflt
         else:
-            return res[1]
+            return res[0]
 
     def set_key(self, key, val):
         c = self.db.cursor()
@@ -84,14 +91,6 @@ class AstonDatabase(object):
                       (val, key))
         self.db.commit()
         c.close()
-
-    def lazy_set_key(self, c, key, val):
-        c.execute('SELECT * FROM prefs WHERE key = ?', (key,))
-        if c.fetchone() is not None:
-            c.execute('UPDATE prefs SET value=? WHERE key=?', (val, key))
-        else:
-            c.execute('INSERT INTO prefs (value,key) VALUES (?,?)', \
-                      (val, key))
 
     def updateObject(self, obj):
         c = self.db.cursor()

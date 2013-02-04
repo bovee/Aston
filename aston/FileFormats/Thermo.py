@@ -104,10 +104,10 @@ class ThermoDXF(Datafile.Datafile):
         with open(self.rawdata, 'rb') as f:
             if foff_o is not None:
                 f.seek(foff_o + 68)
-                d['r-d18o-std'] = str(struct.unpack('<d', f.read(8)))
+                d['r-d18o-std'] = str(struct.unpack('<d', f.read(8))[0])
             if foff_c is not None:
                 f.seek(foff_c + 68)
-                d['r-d13c-std'] = str(struct.unpack('<d', f.read(8)))
+                d['r-d13c-std'] = str(struct.unpack('<d', f.read(8))[0])
         self.info.update(d)
 
     def _th_off(self, search_str, hint=None):

@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'aston.ui'
 #
-# Created: Thu Jan 31 16:11:43 2013
+# Created: Fri Feb  1 14:37:03 2013
 #      by: PyQt4 UI code generator 4.9.6
 #
 # WARNING! All changes made in this file will be lost!
@@ -200,9 +200,11 @@ class Ui_MainWindow(object):
         self.actionSpectra.setObjectName(_fromUtf8("actionSpectra"))
         self.actionMethods = QtGui.QAction(MainWindow)
         self.actionMethods.setCheckable(True)
+        self.actionMethods.setEnabled(False)
         self.actionMethods.setObjectName(_fromUtf8("actionMethods"))
         self.actionCompounds = QtGui.QAction(MainWindow)
         self.actionCompounds.setCheckable(True)
+        self.actionCompounds.setEnabled(False)
         self.actionCompounds.setObjectName(_fromUtf8("actionCompounds"))
         self.actionAll_Items_as_CSV = QtGui.QAction(MainWindow)
         self.actionAll_Items_as_CSV.setObjectName(_fromUtf8("actionAll_Items_as_CSV"))

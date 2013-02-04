@@ -25,7 +25,6 @@ Model for handling display of open files.
 import os.path as op
 import json
 import pkg_resources
-import numpy as np
 from PyQt4 import QtGui, QtCore
 from aston.ui.Fields import aston_fields, aston_groups, aston_field_opts
 from aston.ui.MenuOptions import peak_models
@@ -511,7 +510,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             f = self.proxyMod.mapToSource(prjNode).internalPointer()
             if f.info['vis'] == 'y':
                 chkFiles.append(f)
-            if self.proxyMod.rowCount(prjNode) > 0:
+            if len(f.children) > 0:
                 chkFiles += self.returnChkFiles(prjNode)
         return chkFiles
 
