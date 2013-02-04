@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'aston_settings.ui'
 #
-# Created: Thu Jan 31 18:38:49 2013
+# Created: Fri Feb  1 14:35:26 2013
 #      by: PyQt4 UI code generator 4.9.6
 #
 # WARNING! All changes made in this file will be lost!
@@ -85,11 +85,11 @@ class Ui_Form(object):
         self.gridLayout_4.addWidget(self.doubleSpinSimpleMinPeakHgt, 1, 3, 1, 1)
         self.toolBox.addItem(self.page, _fromUtf8(""))
         self.page_2 = QtGui.QWidget()
-        self.page_2.setGeometry(QtCore.QRect(0, 0, 100, 30))
+        self.page_2.setGeometry(QtCore.QRect(0, 0, 416, 213))
         self.page_2.setObjectName(_fromUtf8("page_2"))
         self.toolBox.addItem(self.page_2, _fromUtf8(""))
         self.page_3 = QtGui.QWidget()
-        self.page_3.setGeometry(QtCore.QRect(0, 0, 247, 56))
+        self.page_3.setGeometry(QtCore.QRect(0, 0, 416, 213))
         self.page_3.setObjectName(_fromUtf8("page_3"))
         self.formLayout_5 = QtGui.QFormLayout(self.page_3)
         self.formLayout_5.setObjectName(_fromUtf8("formLayout_5"))
@@ -156,15 +156,19 @@ class Ui_Form(object):
         self.formLayout_4 = QtGui.QFormLayout()
         self.formLayout_4.setObjectName(_fromUtf8("formLayout_4"))
         self.label_8 = QtGui.QLabel(self.tab_4)
+        self.label_8.setEnabled(False)
         self.label_8.setObjectName(_fromUtf8("label_8"))
         self.formLayout_4.setWidget(0, QtGui.QFormLayout.LabelRole, self.label_8)
         self.lineCompoundDB = QtGui.QLineEdit(self.tab_4)
+        self.lineCompoundDB.setEnabled(False)
         self.lineCompoundDB.setObjectName(_fromUtf8("lineCompoundDB"))
         self.formLayout_4.setWidget(0, QtGui.QFormLayout.FieldRole, self.lineCompoundDB)
         self.label_9 = QtGui.QLabel(self.tab_4)
+        self.label_9.setEnabled(False)
         self.label_9.setObjectName(_fromUtf8("label_9"))
         self.formLayout_4.setWidget(1, QtGui.QFormLayout.LabelRole, self.label_9)
         self.lineMethodDB = QtGui.QLineEdit(self.tab_4)
+        self.lineMethodDB.setEnabled(False)
         self.lineMethodDB.setObjectName(_fromUtf8("lineMethodDB"))
         self.formLayout_4.setWidget(1, QtGui.QFormLayout.FieldRole, self.lineMethodDB)
         self.checkDBRescan = QtGui.QCheckBox(self.tab_4)
@@ -185,15 +189,15 @@ class Ui_Form(object):
         self.verticalLayout_3.addLayout(self.formLayout_4)
         spacerItem = QtGui.QSpacerItem(20, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
         self.verticalLayout_3.addItem(spacerItem)
-        self.pushButton = QtGui.QPushButton(self.tab_4)
-        self.pushButton.setObjectName(_fromUtf8("pushButton"))
-        self.verticalLayout_3.addWidget(self.pushButton)
+        self.pushButtonCopyDB = QtGui.QPushButton(self.tab_4)
+        self.pushButtonCopyDB.setObjectName(_fromUtf8("pushButtonCopyDB"))
+        self.verticalLayout_3.addWidget(self.pushButtonCopyDB)
         self.tabWidget.addTab(self.tab_4, _fromUtf8(""))
         self.verticalLayout.addWidget(self.tabWidget)
 
         self.retranslateUi(Form)
         self.tabWidget.setCurrentIndex(0)
-        self.toolBox.setCurrentIndex(0)
+        self.toolBox.setCurrentIndex(3)
         self.comboIsotopeKs.setCurrentIndex(3)
         QtCore.QMetaObject.connectSlotsByName(Form)
 
@@ -227,6 +231,6 @@ class Ui_Form(object):
         self.label_9.setText(_translate("Form", "Method DB", None))
         self.label_10.setText(_translate("Form", "Rescan on Open", None))
         self.label_11.setText(_translate("Form", "Remove Deleted Files", None))
-        self.pushButton.setText(_translate("Form", "Copy Settings from Other AstonDB", None))
+        self.pushButtonCopyDB.setText(_translate("Form", "Copy Settings from Other AstonDB", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_4), _translate("Form", "Aston", None))
 

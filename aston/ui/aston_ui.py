@@ -276,6 +276,7 @@ class Ui_MainWindow(object):
         self.actionGraphFIA.setObjectName(_fromUtf8("actionGraphFIA"))
         self.actionTwo_Pass_Peak_Find = QtGui.QAction(MainWindow)
         self.actionTwo_Pass_Peak_Find.setCheckable(True)
+        self.actionTwo_Pass_Peak_Find.setEnabled(False)
         self.actionTwo_Pass_Peak_Find.setObjectName(_fromUtf8("actionTwo_Pass_Peak_Find"))
         self.actionIntegrate = QtGui.QAction(MainWindow)
         self.actionIntegrate.setObjectName(_fromUtf8("actionIntegrate"))

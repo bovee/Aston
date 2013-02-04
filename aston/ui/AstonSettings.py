@@ -1,5 +1,6 @@
 from PyQt4 import QtGui
 from aston.ui.aston_settings_ui import Ui_Form
+from aston.Database import AstonDatabase
 
 
 class AstonSettings(QtGui.QWidget):
@@ -11,37 +12,63 @@ class AstonSettings(QtGui.QWidget):
         self.db = db
 
         if db is not None:
-            self.load_numeric_opts()
+            self.load_opts()
+            self.ui.pushButtonCopyDB.clicked.connect(self.load_other_db)
+            self.ui.comboIsotopeMethod.activated.connect(self.set_isotope)
+            self.ui.comboIsotopeKs.activated.connect(self.set_isotope)
+
+    def set_isotope(self):
+        pass
 
     def numeric_opts(self):
-        k_to_b = {'peakfind_simple_startslope': ('500', \
-                  self.ui.doubleSpinSimpleStartSlope),
-                  'peakfind_simple_endslope': ('200', \
-                  self.ui.doubleSimpleEndSlope),
-                  'peakfind_simple_maxwidth': ('1.5', \
-                  self.ui.doubleSpinSimpleMaxPeakWidth),
-                  'peakfind_simple_minheight': ('50', \
-                  self.ui.doubleSpinSimpleMinPeakHgt),
-                  'peakfind_wavelet_minsnr': ('1', \
-                  self.ui.doubleSpinWaveletMinSNR),
-                  'peakfind_wavelet_asssig': ('4', \
-                  self.ui.doubleSpinWaveletAssSig)}
+        k_to_b = {'peakfind_simple_startslope': \
+                  self.ui.doubleSpinSimpleStartSlope,
+                  'peakfind_simple_endslope': \
+                  self.ui.doubleSimpleEndSlope,
+                  'peakfind_simple_maxwidth': \
+                  self.ui.doubleSpinSimpleMaxPeakWidth,
+                  'peakfind_simple_minheight': \
+                  self.ui.doubleSpinSimpleMinPeakHgt,
+                  'peakfind_wavelet_minsnr': \
+                  self.ui.doubleSpinWaveletMinSNR,
+                  'peakfind_wavelet_asssig': self.ui.doubleSpinWaveletAssSig,
+                  'db_remove_deleted': self.ui.checkDBRemoveDeleted,
+                  'db_reload_on_open': self.ui.checkDBRescan}
         return k_to_b
 
-    def load_numeric_opts(self):
+    def load_opts(self):
         k_to_b = self.numeric_opts()
         for k in k_to_b:
-            v = self.db.get_key(k, dflt=k_to_b[k][0])
-            k_to_b[k][1].setValue(float(v))
-            k_to_b[k][1].valueChanged.connect(self.save_numeric_opts)
+            v = self.db.get_key(k, dflt=None)
+            if type(k_to_b[k]) == QtGui.QDoubleSpinBox:
+                if v is not None:
+                    k_to_b[k].setValue(float(v))
+                k_to_b[k].valueChanged.connect(self.save_opts(k))
+            elif type(k_to_b[k]) == QtGui.QCheckBox:
+                if v is not None:
+                    k_to_b[k].setChecked(v == 'T')
+                k_to_b[k].stateChanged.connect(self.save_opts(k))
 
-    def save_numeric_opts(self):
-        k_to_b = self.numeric_opts()
-        c = self.db.begin_lazy_op()
-        for k in k_to_b:
-            v = k_to_b[k][1].value()
-            self.db.lazy_set_key(c, k, str(v))
-        self.db.end_lazy_op(c)
+    def save_opts(self, k):
+        def wrapped_f():
+            k_to_b = self.numeric_opts()
+            if type(k_to_b[k]) == QtGui.QDoubleSpinBox:
+                self.db.set_key(k, str(k_to_b[k].value()))
+            elif type(k_to_b[k]) == QtGui.QCheckBox:
+                if k_to_b[k].isChecked():
+                    self.db.set_key(k, 'T')
+                else:
+                    self.db.set_key(k, 'F')
+        return wrapped_f
+
+    def load_other_db(self):
+        path = str(QtGui.QFileDialog.getOpenFileName(self,
+          self.tr('Open DB'), '', self.tr('AstonDB (aston.sqlite)')))
+        if path == '':
+            return
+        other_db_vals = AstonDatabase(path).all_keys()
+        for k in other_db_vals:
+            self.db.set_key(k, other_db_vals[k])
 
     #def set_up_graph(self):
     #    pass
