@@ -65,6 +65,11 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             treeView.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
             treeView.clicked.connect(self.itemSelected)
 
+            #set up key shortcuts
+            delAc = QtGui.QAction("Delete", treeView, \
+              shortcut=QtCore.Qt.Key_Backspace, triggered=self.delItemKey)
+            treeView.addAction(delAc)
+
             #set up right-clicking
             treeView.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
             treeView.customContextMenuRequested.connect(self.click_main)
@@ -298,13 +303,13 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         fts = [s for s in sel if s.db_type == 'peak']
         if len(fts) > 0:
             self._add_menu_opt(self.tr('Create Spec.'), self.createSpec, fts, menu)
-            self._add_menu_opt(self.tr('Split Peak'), self.splitPeaks, fts, menu)
+            #self._add_menu_opt(self.tr('Split Peak'), self.splitPeaks, fts, menu)
             self._add_menu_opt(self.tr('Merge Peaks'), self.merge_peaks, fts, menu)
 
-        #Things we can do with files
-        fts = [s for s in sel if s.db_type == 'file']
-        if len(fts) > 0:
-            self._add_menu_opt(self.tr('Copy Method'), self.makeMethod, fts, menu)
+        ##Things we can do with files
+        #fts = [s for s in sel if s.db_type == 'file']
+        #if len(fts) > 0:
+        #    self._add_menu_opt(self.tr('Copy Method'), self.makeMethod, fts, menu)
 
         #Things we can do with everything
         if len(sel) > 0:
@@ -322,6 +327,9 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         func, objs = self.sender().data()
         func(objs)
 
+    def delItemKey(self):
+        self.delObjects(self.returnSelFiles())
+
     def debug(self, objs):
         pks = [o for o in objs if o.db_type == 'peak']
         for pk in pks:
@@ -336,58 +344,58 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         new_objs = merge_ions(objs)
         self.delObjects([o for o in objs if o not in new_objs])
 
-    def makeMethod(self, objs):
-        self.masterWindow.cmpd_tab.addObjects(None, objs)
-
     def createSpec(self, objs):
         for obj in objs:
             self.addObjects(obj, [obj.createSpectrum()])
 
-    def splitPeaks(self, pks):
-        from aston.Features.Peak import Peak
-        #db_list = str(self.sender().data()).split(',')
-        #pks = [self.db.getObjectByID(int(o)) for o in db_list]
-        SPO, Cancel = QtGui.QInputDialog.getDouble(self.masterWindow, "Aston", "Slice Offset", 0.0)
-        if not Cancel:
-            return
-        SPL, Cancel = QtGui.QInputDialog.getDouble(self.masterWindow, "Aston", "Slice Length", 0.2)
-        if not Cancel:
-            return
+    #def makeMethod(self, objs):
+    #    self.masterWindow.cmpd_tab.addObjects(None, objs)
 
-        for pk in pks:
-            ts, te = pk.time()[0], pk.time()[-1]
-            if (ts - SPO) % SPL == 0:
-                t0 = pk.time()[0]
-            else:
-                t0 = SPO + SPL * (np.ceil((ts - SPO) / SPL) - 1)
-            t = t0
+    #def splitPeaks(self, pks):
+    #    from aston.Features.Peak import Peak
+    #    #db_list = str(self.sender().data()).split(',')
+    #    #pks = [self.db.getObjectByID(int(o)) for o in db_list]
+    #    SPO, Cancel = QtGui.QInputDialog.getDouble(self.masterWindow, "Aston", "Slice Offset", 0.0)
+    #    if not Cancel:
+    #        return
+    #    SPL, Cancel = QtGui.QInputDialog.getDouble(self.masterWindow, "Aston", "Slice Length", 0.2)
+    #    if not Cancel:
+    #        return
 
-            def y(tm):
-                ys, ye = pk.trace()[0], pk.trace()[-1]
-                return ys + (ye - ys) * (tm - t0) / (te - ts)
+    #    for pk in pks:
+    #        ts, te = min(pk.data.times), max(pk.data.times)
+    #        if (ts - SPO) % SPL == 0:
+    #            t0 = pk.time()[0]
+    #        else:
+    #            t0 = SPO + SPL * (np.ceil((ts - SPO) / SPL) - 1)
+    #        t = t0
 
-            pks = []
-            dt = pk.parent
-            del pk.info['p-s-']
-            info = pk.info
-            info['p-int'] = 'split'
-            while t < te:
-                verts = np.column_stack((pk.time(t, t + SPL), \
-                  pk.trace(None, t, t + SPL)))
-                if t != t0:
-                    #not the first point
-                    verts = np.vstack(([t, y(t)], verts))
-                if t + SPL < te:
-                    #not the last point
-                    verts = np.vstack((verts, [t + SPL, y(t + SPL)]))
-                info['name'] = '{:.2f}-{:.2f}'.format(verts[0, 0],\
-                                                      verts[-1, 0])
-                pks.append(Peak(dt.db, None, dt.db_id, \
-                                info.copy(), verts.tolist()))
-                t += SPL
-            self.delObjects([pk])
-            self.addObjects(dt, pks)
-            del dt.info['s-peaks']
+    #        def y(tm):
+    #            ys, ye = pk.data.y[0], pk.data.y[-1]
+    #            return ys + (ye - ys) * (tm - t0) / (te - ts)
+
+    #        pks = []
+    #        dt = pk.parent
+    #        del pk.info['p-s-']
+    #        info = pk.info
+    #        info['p-int'] = 'split'
+    #        while t < te:
+    #            verts = np.column_stack((pk.time(t, t + SPL), \
+    #              pk.trace(None, t, t + SPL)))
+    #            if t != t0:
+    #                #not the first point
+    #                verts = np.vstack(([t, y(t)], verts))
+    #            if t + SPL < te:
+    #                #not the last point
+    #                verts = np.vstack((verts, [t + SPL, y(t + SPL)]))
+    #            info['name'] = '{:.2f}-{:.2f}'.format(verts[0, 0],\
+    #                                                  verts[-1, 0])
+    #            pks.append(Peak(dt.db, None, dt.db_id, \
+    #                            info.copy(), verts.tolist()))
+    #            t += SPL
+    #        self.delObjects([pk])
+    #        self.addObjects(dt, pks)
+    #        del dt.info['s-peaks']
 
     def click_head(self, point):
         menu = QtGui.QMenu(self.treeView)

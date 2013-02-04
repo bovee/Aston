@@ -125,6 +125,10 @@ def leastsq_integrate(ts, peak_list, f='gaussian'):
     return peaks
 
 
+def periodic_integrate(ts, peak_list, offset=0., period=1.):
+    pass
+
+
 def merge_ions(pks):
     cleaned_pks = []
     sort_pks = sorted(pks, key=lambda pk: time(pk.as_poly()))

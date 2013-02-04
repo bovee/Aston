@@ -224,7 +224,7 @@ class AstonDatabase(object):
 class AstonFileDatabase(AstonDatabase):
     def __init__(self, *args, **kwargs):
         super(AstonFileDatabase, self).__init__(*args, **kwargs)
-        if self.get_key('db_reload_on_open', dflt='True') == 'True':
+        if self.get_key('db_reload_on_open', dflt='T') == 'T':
             self.update_file_list(self.database_path)
 
     def update_file_list(self, path):
@@ -269,7 +269,7 @@ class AstonFileDatabase(AstonDatabase):
         dnames = set([i[0] for i in c])
 
         #compare the two lists -> remove deleted files from the database
-        if self.get_key('db_remove_deleted', dflt='False') == 'True':
+        if self.get_key('db_remove_deleted', dflt='False') == 'T':
             for fn in dnames.difference(set(datafiles.keys())):
                 c.execute('DELETE FROM files WHERE file_name=?', (fn,))
             self.db.commit()
