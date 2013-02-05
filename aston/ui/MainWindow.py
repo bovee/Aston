@@ -73,14 +73,14 @@ class AstonWindow(QtGui.QMainWindow):
 
         #make integrator options
         peak_find_menu = QtGui.QMenu(self.ui.menuChromatogram)
-        v = aston.ui.MenuOptions.peak_finders.keys()[0]
+        v = list(aston.ui.MenuOptions.peak_finders.keys())[0]
         self._add_opts_to_menu(peak_find_menu, \
           aston.ui.MenuOptions.peak_finders.keys(),
           lambda: None, v)
         self.ui.actionPeak_Finder.setMenu(peak_find_menu)
 
         integrator_menu = QtGui.QMenu(self.ui.menuChromatogram)
-        v = aston.ui.MenuOptions.integrators.keys()[0]
+        v = list(aston.ui.MenuOptions.integrators.keys())[0]
         self._add_opts_to_menu(integrator_menu, \
           aston.ui.MenuOptions.integrators.keys(),
           lambda: None, v)
