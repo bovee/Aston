@@ -1,3 +1,4 @@
+from collections import OrderedDict
 import numpy as np
 from scipy.optimize import root
 
@@ -6,27 +7,28 @@ from scipy.optimize import root
 # lower than this. See Schumacher et al 2008 Atm Chem & Phys Dis
 
 
-def delta13C_constants(ks):
+def delta13C_constants():
     """
     Constants for calculating delta13C values from ratios.
     From website of Verkouteren & Lee 2001 Anal. Chem.
     """
     # possible values for constants (from NIST)
-    cst = {'Craig': {'S13': 0.0112372, 'S18': 0.002079,
-                     'K': 0.008333, 'A': 0.5},
-           'IAEA': {'S13': 0.0112372, 'S18': 0.00206716068,
-                    'K': 0.0091993, 'A': 0.5},
-           'Werner': {'S13': 0.0112372, 'S18': 0.0020052,
-                      'K': 0.0093704, 'A': 0.516},
-           'Santrock': {'S13': 0.0112372, 'S18': 0.0020052,
-                        'K': 0.0099235, 'A': 0.516},
-           'Assonov': {'S13': 0.0112372, 'S18': 0.0020052,
-                       'K': 0.0102819162, 'A': 0.528},
-           'Assonov2': {'S13': 0.0111802, 'S18': 0.0020052,
-                        'K': 0.0102819162, 'A': 0.528},
-           'Isodat': {'S13': 0.0111802, 'S18': 0.0020052,
-                        'K': 0.0099235, 'A': 0.516}}
-    return cst[ks]
+    cst = OrderedDict()
+    cst['Craig'] = {'S13': 0.0112372, 'S18': 0.002079,
+                    'K': 0.008333, 'A': 0.5}
+    cst['IAEA'] = {'S13': 0.0112372, 'S18': 0.00206716068,
+                   'K': 0.0091993, 'A': 0.5}
+    cst['Werner'] = {'S13': 0.0112372, 'S18': 0.0020052,
+                     'K': 0.0093704, 'A': 0.516}
+    cst['Santrock'] = {'S13': 0.0112372, 'S18': 0.0020052,
+                       'K': 0.0099235, 'A': 0.516}
+    cst['Assonov'] = {'S13': 0.0112372, 'S18': 0.0020052,
+                      'K': 0.0102819162, 'A': 0.528}
+    cst['Assonov2'] = {'S13': 0.0111802, 'S18': 0.0020052,
+                       'K': 0.0102819162, 'A': 0.528}
+    cst['Isodat'] = {'S13': 0.0111802, 'S18': 0.0020052,
+                      'K': 0.0099235, 'A': 0.516}
+    return cst
 
 
 def delta13C_Craig(r45sam, r46sam, d13cstd, r45std, r46std,
@@ -45,7 +47,7 @@ def delta13C_Craig(r45sam, r46sam, d13cstd, r45std, r46std,
     """
     # the constants for the calculations
     # originally r13, r17, r18 = 1123.72e-5, 759.9e-6, 415.8e-5
-    k = delta13C_constants(ks)
+    k = delta13C_constants()[ks]
 
     #TODO: not clear why need to multiply by 2?
     r13, r18 = k['S13'], 2 * k['S18']
@@ -82,7 +84,7 @@ def delta13C_Santrock(r45sam, r46sam, d13cstd, r45std, r46std,
 
     Algorithm from Santrock, Studley & Hayes 1985 Anal. Chem.
     """
-    k = delta13C_constants(ks)
+    k = delta13C_constants()[ks]
 
     # function for calculating 17R from 18R
     c17 = lambda r: k['K'] * r ** k['A']

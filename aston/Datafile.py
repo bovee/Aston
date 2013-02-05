@@ -81,6 +81,32 @@ class Datafile(DBObject):
             offset = float(self.info.get('t-offset', 0.0))
             return (t - offset) / scale
 
+    def active_traces(self, n=None, all_tr=False, twin=None):
+        """
+        Returns TimeSeries for some subset of ions.
+
+        If all_tr is True, return all TimeSeries in self,
+        otherwise return the 'n'th trace specified in the 'traces'
+        property; if n is None, then return all traces in the 'traces'
+        property.
+        """
+        if all_tr:
+            ions = self._ions()
+        else:
+            ions = self.info['traces'].split(',')
+            ions = [i.strip() for i in ions]
+
+        if n is not None:
+            if n > len(ions):
+                return []
+            else:
+                return [self.trace(ions[n], twin)]
+        else:
+            tss = []
+            for ion in ions:
+                tss += [self.trace(ion, twin)]
+            return tss
+
     def trace(self, ion=None, twin=None):
         """
         Returns a TimeSeries object derived from this Datafile.

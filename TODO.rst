@@ -1,21 +1,13 @@
 0.5 Checklist
 *************
 
-* mzML, & mzXML file support
-* save AIA/CDF, mzML & mzXML
-* applications for "time window" alignment
-  - integrate all traces as first (isotopic mode)
-  - fix integrate by fraction collection windows/ref gas
-* better spectra display
-  - allow navigation around window
-* isotope stuff
-  - allow selection of method & coefficients
-* allow integration on user-selected peaks
-* periodic integration (to replace old "split peaks" code)
+* finish?
 
 0.6 Checklist
 *************
 
+* mzML, & mzXML file support
+* save AIA/CDF, mzML & mzXML
 * RAW file support
 * MSMS support
   - Agilent MSMS Peak file format
@@ -37,6 +29,7 @@
   - highlight selected (in peak table) peak on graph
 * allow user-selected peaks to be re-interpreted &
   coelution spots to be found
+* periodic integration (to replace old "split peaks" code)
 
 
 0.7 Checklist

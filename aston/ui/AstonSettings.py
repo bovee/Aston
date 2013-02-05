@@ -43,7 +43,8 @@ class AstonSettings(QtGui.QWidget):
             if type(k_to_b[k]) == QtGui.QDoubleSpinBox:
                 if v is not None:
                     k_to_b[k].setValue(float(v))
-                k_to_b[k].valueChanged.connect(self.save_opts(k))
+                #k_to_b[k].valueChanged.connect(self.save_opts(k))
+                k_to_b[k].editingFinished.connect(self.save_opts(k))
             elif type(k_to_b[k]) == QtGui.QCheckBox:
                 if v is not None:
                     k_to_b[k].setChecked(v == 'T')

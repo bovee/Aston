@@ -22,6 +22,7 @@ Model for handling display of open files.
 """
 #pylint: disable=C0103
 
+import re
 import os.path as op
 import json
 import pkg_resources
@@ -355,10 +356,12 @@ class FileTreeModel(QtCore.QAbstractItemModel):
     #    from aston.Features.Peak import Peak
     #    #db_list = str(self.sender().data()).split(',')
     #    #pks = [self.db.getObjectByID(int(o)) for o in db_list]
-    #    SPO, Cancel = QtGui.QInputDialog.getDouble(self.masterWindow, "Aston", "Slice Offset", 0.0)
+    #    SPO, Cancel = QtGui.QInputDialog.getDouble(self.masterWindow, "Aston",
+    #                                               "Slice Offset", 0.0)
     #    if not Cancel:
     #        return
-    #    SPL, Cancel = QtGui.QInputDialog.getDouble(self.masterWindow, "Aston", "Slice Length", 0.2)
+    #    SPL, Cancel = QtGui.QInputDialog.getDouble(self.masterWindow, "Aston",
+    #                                               "Slice Length", 0.2)
     #    if not Cancel:
     #        return
 
@@ -579,6 +582,11 @@ class FilterModel(QtGui.QSortFilterProxyModel):
         #        return True
         #else:
         return super(FilterModel, self).filterAcceptsRow(row, index)
+
+    def lessThan(self, left, right):
+        tonum = lambda text: int(text) if text.isdigit() else text.lower()
+        breakup = lambda key: [tonum(c) for c in re.split('([0-9]+)', key)]
+        return breakup(str(left.data())) < breakup(str(right.data()))
 
 
 class ComboDelegate(QtGui.QItemDelegate):
