@@ -196,7 +196,7 @@ class AgilentMSMSScan(AgilentMH):
         for t, z in self._msscan_iter(['ScanTime', 'TIC']):
             tme.append(t)
             tic.append(z)
-        return TimeSeries(np.array(tic), np.array(tme), ['TIC'])
+        return TimeSeries(np.array(tic), np.array(tme), ['TIC']).twin(twin)
 
     def _ion_trace(self, val, tol=0.5, twin=None):
         #super hack-y way to disable checksum and length checking

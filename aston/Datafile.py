@@ -100,11 +100,11 @@ class Datafile(DBObject):
             if n > len(ions):
                 return []
             else:
-                return [self.trace(ions[n], twin)]
+                return [self.trace(ions[n], twin=twin)]
         else:
             tss = []
             for ion in ions:
-                tss += [self.trace(ion, twin)]
+                tss += [self.trace(ion, twin=twin)]
             return tss
 
     def trace(self, ion=None, twin=None):
