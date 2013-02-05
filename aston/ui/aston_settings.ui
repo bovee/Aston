@@ -23,7 +23,7 @@
       <enum>QTabWidget::Rounded</enum>
      </property>
      <property name="currentIndex">
-      <number>0</number>
+      <number>1</number>
      </property>
      <property name="elideMode">
       <enum>Qt::ElideNone</enum>
@@ -41,6 +41,12 @@
       <layout class="QVBoxLayout" name="verticalLayout_2">
        <item>
         <widget class="QToolBox" name="toolBox">
+         <property name="enabled">
+          <bool>true</bool>
+         </property>
+         <property name="frameShadow">
+          <enum>QFrame::Plain</enum>
+         </property>
          <property name="currentIndex">
           <number>0</number>
          </property>
@@ -50,7 +56,7 @@
             <x>0</x>
             <y>0</y>
             <width>447</width>
-            <height>196</height>
+            <height>170</height>
            </rect>
           </property>
           <attribute name="label">
@@ -61,6 +67,9 @@
             <widget class="QLabel" name="label_5">
              <property name="text">
               <string>Ending Slope</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
              </property>
             </widget>
            </item>
@@ -81,7 +90,7 @@
             </widget>
            </item>
            <item row="0" column="1">
-            <widget class="QDoubleSpinBox" name="doubleSpinSimpleStartSlope">
+            <widget class="QDoubleSpinBox" name="doubleSimpleStartSlope">
              <property name="minimum">
               <double>-10000.000000000000000</double>
              </property>
@@ -101,17 +110,13 @@
              <property name="text">
               <string>Starting Slope</string>
              </property>
-            </widget>
-           </item>
-           <item row="0" column="2">
-            <widget class="QLabel" name="label_6">
-             <property name="text">
-              <string>Max Peak Width (min)</string>
+             <property name="alignment">
+              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
              </property>
             </widget>
            </item>
            <item row="0" column="3">
-            <widget class="QDoubleSpinBox" name="doubleSpinSimpleMaxPeakWidth">
+            <widget class="QDoubleSpinBox" name="doubleSimpleMaxPeakWidth">
              <property name="value">
               <double>1.500000000000000</double>
              </property>
@@ -122,10 +127,13 @@
              <property name="text">
               <string>Min Peak Height</string>
              </property>
+             <property name="alignment">
+              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+             </property>
             </widget>
            </item>
            <item row="1" column="3">
-            <widget class="QDoubleSpinBox" name="doubleSpinSimpleMinPeakHgt">
+            <widget class="QDoubleSpinBox" name="doubleSimpleMinPeakHgt">
              <property name="maximum">
               <double>10000000.000000000000000</double>
              </property>
@@ -137,52 +145,38 @@
              </property>
             </widget>
            </item>
+           <item row="0" column="2">
+            <widget class="QLabel" name="label_6">
+             <property name="text">
+              <string>Max Peak Width (min)</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+             </property>
+            </widget>
+           </item>
           </layout>
-         </widget>
-         <widget class="QWidget" name="page_2">
-          <property name="geometry">
-           <rect>
-            <x>0</x>
-            <y>0</y>
-            <width>94</width>
-            <height>24</height>
-           </rect>
-          </property>
-          <attribute name="label">
-           <string>StatSlope Peak Finder</string>
-          </attribute>
          </widget>
          <widget class="QWidget" name="page_3">
           <property name="geometry">
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>247</width>
-            <height>56</height>
+            <width>387</width>
+            <height>82</height>
            </rect>
           </property>
           <attribute name="label">
            <string>Wavelet Peak Finder</string>
           </attribute>
-          <layout class="QFormLayout" name="formLayout_5">
-           <item row="0" column="0">
-            <widget class="QLabel" name="label_12">
+          <layout class="QGridLayout" name="gridLayout">
+           <item row="0" column="2">
+            <widget class="QLabel" name="label_17">
              <property name="text">
-              <string>Minimum Signal-Noise Ratio</string>
+              <string>Min Length</string>
              </property>
-            </widget>
-           </item>
-           <item row="0" column="1">
-            <widget class="QDoubleSpinBox" name="doubleSpinWaveletMinSNR">
-             <property name="value">
-              <double>1.000000000000000</double>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="1">
-            <widget class="QDoubleSpinBox" name="doubleSpinWaveletAssSig">
-             <property name="value">
-              <double>4.000000000000000</double>
+             <property name="alignment">
+              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
              </property>
             </widget>
            </item>
@@ -190,6 +184,103 @@
             <widget class="QLabel" name="label_13">
              <property name="text">
               <string>Assumed Sigma</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QDoubleSpinBox" name="doubleWaveletAssSig">
+             <property name="value">
+              <double>4.000000000000000</double>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_12">
+             <property name="text">
+              <string>Minimum Signal-Noise Ratio</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QDoubleSpinBox" name="doubleWaveletMinSNR">
+             <property name="value">
+              <double>1.000000000000000</double>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="2">
+            <widget class="QLabel" name="label_18">
+             <property name="text">
+              <string>Max Dist</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="3">
+            <widget class="QDoubleSpinBox" name="doubleWaveletMinLength">
+             <property name="value">
+              <double>8.000000000000000</double>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="3">
+            <widget class="QDoubleSpinBox" name="doubleWaveletMaxDist">
+             <property name="value">
+              <double>4.000000000000000</double>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QLabel" name="label_19">
+             <property name="text">
+              <string>Gap Thresh</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QDoubleSpinBox" name="doubleWaveletGapThresh">
+             <property name="value">
+              <double>2.000000000000000</double>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+         <widget class="QWidget" name="page_2">
+          <property name="geometry">
+           <rect>
+            <x>0</x>
+            <y>0</y>
+            <width>117</width>
+            <height>29</height>
+           </rect>
+          </property>
+          <attribute name="label">
+           <string>Event Peak Finder</string>
+          </attribute>
+          <layout class="QFormLayout" name="formLayout">
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_3">
+             <property name="text">
+              <string>Adjust Times</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QCheckBox" name="checkEventAdjust">
+             <property name="text">
+              <string/>
              </property>
             </widget>
            </item>
@@ -201,7 +292,7 @@
             <x>0</x>
             <y>0</y>
             <width>416</width>
-            <height>213</height>
+            <height>187</height>
            </rect>
           </property>
           <attribute name="label">
@@ -220,6 +311,55 @@
            </item>
            <item row="0" column="1">
             <widget class="QComboBox" name="comboLeastSqPeakModel"/>
+           </item>
+          </layout>
+         </widget>
+         <widget class="QWidget" name="page_5">
+          <property name="geometry">
+           <rect>
+            <x>0</x>
+            <y>0</y>
+            <width>116</width>
+            <height>56</height>
+           </rect>
+          </property>
+          <attribute name="label">
+           <string>Periodic Integrator</string>
+          </attribute>
+          <layout class="QFormLayout" name="formLayout_3">
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_15">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="text">
+              <string>Offset</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QDoubleSpinBox" name="doublePeriodicOffset">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="label_16">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="text">
+              <string>Period</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QDoubleSpinBox" name="doublePeriodicPeriod">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+            </widget>
            </item>
           </layout>
          </widget>

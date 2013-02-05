@@ -8,11 +8,10 @@ from aston.ui.FilterWindow import FilterWindow
 from aston.ui.MainPlot import Plotter
 from aston.ui.SpecPlot import SpecPlotter
 
-from aston.Database import AstonFileDatabase
-from aston.Database import AstonDatabase
+from aston.Database import AstonDatabase, AstonFileDatabase
 from aston.FileTable import FileTreeModel
 import aston.ui.MenuOptions
-from aston.Math.Integrators import merge_ions, update_peaks
+from aston.Math.Integrators import merge_ions
 from aston.Math.PeakFinding import event_peak_find
 
 
@@ -270,77 +269,92 @@ class AstonWindow(QtGui.QMainWindow):
         f.close()
 
     def get_f_opts(self, f):
-        gv = lambda k, df: float(self.obj_tab.db.get_key(k, dflt=str(df)))
+        gf = lambda k, df: float(self.obj_tab.db.get_key(k, dflt=str(df)))
+        gv = lambda k, df: str(self.obj_tab.db.get_key(k, dflt=str(df)))
         p = {}
         fname = f.__name__
-        if fname == 'event_peak_find':
-            pass
-        elif fname == 'simple_peak_find':
-            p['start_slope'] = gv('peakfind_simple_startslope', 500)
-            p['end_slope'] = gv('peakfind_simple_endslope', 200)
-            p['min_peak_height'] = gv('peakfind_simple_minheight', 50)
-            p['max_peak_width'] = gv('peakfind_simple_maxwidth', 1.5)
+        if fname == 'simple_peak_find':
+            p['start_slope'] = gf('peakfind_simple_startslope', 500)
+            p['end_slope'] = gf('peakfind_simple_endslope', 200)
+            p['min_peak_height'] = gf('peakfind_simple_minheight', 50)
+            p['max_peak_width'] = gf('peakfind_simple_maxwidth', 1.5)
         elif fname == 'wavelet_peak_find':
-            p['min_snr'] = gv('peakfind_wavelet_minsnr', 1)
-            p['assume_sig'] = gv('peakfind_wavelet_asssig', 4)
+            p['min_snr'] = gf('peakfind_wavelet_minsnr', 1)
+            p['assume_sig'] = gf('peakfind_wavelet_asssig', 4)
+        elif fname == 'event_peak_find':
+            p['adjust_times'] = gv('peakfind_event_adjust', 'F') == 'T'
+        elif fname == 'leastsq_integrate':
+            p['f'] = gv('integrate_leastsq_f', 'gaussian')
+        elif fname == 'periodic_integrate':
+            p['period'] = gf('integrate_periodic_offset', 0.)
+            p['offset'] = gf('integrate_periodic_period', 1.)
         return p
 
-    def find_peaks_top_trace(self):
-        #TODO: clunky copy of code from integrate, but
-        # needed for display "peaks found" on graph
-        dt = self.obj_tab.active_file()
-        ion = dt.info['traces'].split(',')[0]
-
+    def find_peaks(self, tss, dt=None, isomode=False, block_evts=False):
         submnu = self.ui.actionPeak_Finder.menu().children()
         opt = [i for i in submnu if i.isChecked()][0].text()
         peak_find = aston.ui.MenuOptions.peak_finders[opt]
 
-        if peak_find == event_peak_find:
+        if block_evts and peak_find == event_peak_find:
+            # needed for display "peaks found" on graph
             return []
-        else:
-            return peak_find(dt.trace(ion), **self.get_f_opts(peak_find))
 
-    def integrate(self):
-        dt = self.obj_tab.active_file()
-        ions = [i for i in dt.info['traces'].split(',')]
-
-        submnu = self.ui.actionPeak_Finder.menu().children()
-        opt = [i for i in submnu if i.isChecked()][0].text()
-        peak_find = aston.ui.MenuOptions.peak_finders[opt]
-
-        submnu = self.ui.actionIntegrator.menu().children()
-        opt = [i for i in submnu if i.isChecked()][0].text()
-        integrate = aston.ui.MenuOptions.integrators[opt]
-
-        int_name = peak_find.__name__ + ',' + integrate.__name__
-
-        isomode = self.ui.actionTop_File_All_Isotopic.isChecked()
-        if self.ui.actionTop_Trace.isChecked():
-            tss = [dt.trace(ions[0])]
-        elif self.ui.actionTop_File_Vis_Traces.isChecked():
-            tss = [dt.trace(i) for i in ions]
-        elif self.ui.actionTop_File_All_Traces.isChecked() or isomode:
-            tss = [dt.trace(i) for i in dt.data.ions]
-
-        all_pks = []
+        peaks_found = []
         for ts in tss:
             if peak_find == event_peak_find:
                 # event_peak_find also needs a list of events
                 evts = []
-                for n in ('fia', 'refgas'):
-                    evts += dt.events(n)
-                tpks = peak_find(ts, evts, **self.get_f_opts(peak_find))
-            elif all_pks != [] and isomode:
+                if dt is not None:
+                    for n in ('fia', 'refgas'):
+                        evts += dt.events(n)
+                    tpks = peak_find(ts, evts, **self.get_f_opts(peak_find))
+            elif peaks_found != [] and isomode:
                 # we've already integrated things, reuse
                 # their found peaks, but shifted
-                #TODO: shift the found peaks to match the ts
-                tpks = tpks
+                tpks = []
+                for p in peaks_found[0]:
+                    old_pk_ts = tss[0].twin((p[0], p[1]))
+                    old_t = old_pk_ts.times[old_pk_ts.y.argmax()]
+                    new_pk_ts = ts.twin((p[0], p[1]))
+                    off = new_pk_ts.times[new_pk_ts.y.argmax()] - old_t
+                    new_p = (p[0] + off, p[1] + off, p[2])
+                    tpks.append(new_p)
             else:
                 tpks = peak_find(ts, **self.get_f_opts(peak_find))
-            pks = integrate(ts, tpks)
-            update_peaks(pks, dt, str(ts.ions[0]), \
-                         ptype='Sample', created=int_name)
+            for pk in tpks:
+                pk[2]['pf'] = peak_find.__name__
+            peaks_found.append(tpks)
+        return peaks_found
+
+    def integrate_peaks(self, tss, peaks_found, dt=None):
+        submnu = self.ui.actionIntegrator.menu().children()
+        opt = [i for i in submnu if i.isChecked()][0].text()
+        integrate = aston.ui.MenuOptions.integrators[opt]
+
+        all_pks = []
+        for ts, tpks in zip(tss, peaks_found):
+            pks = integrate(ts, tpks, **self.get_f_opts(integrate))
+            for p in pks:
+                p.info['trace'] = str(ts.ions[0])
+                if dt is not None:
+                    p.db, p.parent_id = dt.db, dt.db_id
             all_pks += pks
+        return all_pks
+
+    def integrate(self):
+        dt = self.obj_tab.active_file()
+
+        isomode = self.ui.actionTop_File_All_Isotopic.isChecked()
+        if self.ui.actionTop_Trace.isChecked():
+            tss = dt.active_traces(n=0)
+        elif self.ui.actionTop_File_Vis_Traces.isChecked():
+            tss = dt.active_traces()
+        elif self.ui.actionTop_File_All_Traces.isChecked() or isomode:
+            tss = dt.active_traces(all_tr=True)
+
+        found_peaks = self.find_peaks(tss, dt, isomode)
+        all_pks = self.integrate_peaks(tss, found_peaks, dt)
+
         mrg_pks = merge_ions(all_pks)
         self.obj_tab.addObjects(dt, mrg_pks)
         dt.info.del_items('s-peaks')

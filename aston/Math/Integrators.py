@@ -1,19 +1,9 @@
 import numpy as np
-#import scipy.ndimage as nd
-from scipy.optimize import leastsq  # , fmin, minimize
 from aston.Features import Peak
 from aston.TimeSeries import TimeSeries
 from aston.Math.Peak import time
-from aston.Math.PeakModels import gaussian
+from aston.Math.PeakModels import peak_models
 from aston.Math.PeakFitting import guess_initc, fit
-
-
-def update_peaks(peaks, dt, ion, ptype='Sample', created='manual'):
-    for p in peaks:
-        p.db, p.parent_id = dt.db, dt.db_id
-        p.info['trace'] = ion
-        p.info['p-create'] = created
-        p.info['p-type'] = ptype
 
 
 def simple_integrate(ts, peak_list):
@@ -28,6 +18,7 @@ def simple_integrate(ts, peak_list):
             t = np.hstack([t0, ts.times, t1])
             pk_ts = TimeSeries(d, t, ts.ions)
         info = {'name': '{:.2f}-{:.2f}'.format(t0, t1)}
+        info['p-create'] = hints.get('pf', '') + ',simple_integrate'
         pk = Peak(None, None, None, info, pk_ts)
         peaks.append(pk)
     return peaks
@@ -95,13 +86,18 @@ def drop_integrate(ts, peak_list):
         # none of our peaks should overlap, so we can just use
         # simple_integrate now
         peaks += simple_integrate(ts, temp_pks)
+        for p in peaks:
+            p.info['p-create'] = p.info['p-create'].split(',')[0] + \
+                    ',drop_integrate'
+
     return peaks
 
 
 def leastsq_integrate(ts, peak_list, f='gaussian'):
     win_list = _get_windows(peak_list)
-    #TODO: use f parameter to choose function
-    f = gaussian
+
+    # lookup the peak model function to use for fitting
+    f = {f.__name__: f for f in peak_models}[f]
 
     peaks = []
     for w, peak_list in win_list:
@@ -120,6 +116,8 @@ def leastsq_integrate(ts, peak_list, f='gaussian'):
         for p in params:
             pk_ts = TimeSeries(f(tr.times, **p), tr.times)
             info = {'name': '{:.2f}'.format(p['x'])}
+            info['p-create'] = peak_list[0][2].get('pf', '') + \
+                    ',' + 'leastsq_integrate'
             pk = Peak(None, None, None, info, pk_ts)
             peaks.append(pk)
     return peaks

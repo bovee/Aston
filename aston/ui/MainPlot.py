@@ -143,10 +143,11 @@ class Plotter(object):
         if self.masterWindow.ui.actionGraphIRMS.isChecked():
             evts += datafiles[0].events('refgas')
         if self.masterWindow.ui.actionGraph_Peaks_Found.isChecked():
-            pevts = self.masterWindow.find_peaks_top_trace()
-            for i, p in enumerate(pevts):
+            tss = self.masterWindow.obj_tab.active_file().active_traces(n=0)
+            pevts = self.masterWindow.find_peaks(tss, block_evts=True)
+            for i, p in enumerate(pevts[0]):
                 p[2]['name'] = 'P' + str(i + 1)
-            evts += pevts
+            evts += pevts[0]
 
         if evts != []:
             # TODO: save the text and lines to delete later?

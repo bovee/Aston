@@ -1,7 +1,7 @@
 import numpy as np
 import scipy.signal._peak_finding as spf
 #from aston.Math.Chromatograms import savitzkygolay
-#from aston.Math.Chromatograms import movingaverage
+from aston.Math.Chromatograms import movingaverage
 
 
 def simple_peak_find(ts, start_slope=500, end_slope=200, \
@@ -14,6 +14,7 @@ def simple_peak_find(ts, start_slope=500, end_slope=200, \
     """
     #TODO: Isodat uses a PEAK_RESOLUTION, but we don't?
     #PEAK_RESOLUTION = 0.93
+    point_gap = 10
 
     def slid_win(itr, size=2):
         """Returns a sliding window of size size along itr."""
@@ -28,19 +29,23 @@ def simple_peak_find(ts, start_slope=500, end_slope=200, \
 
     #TODO: check these smoothing defaults
     t = ts.times
-    #dxdt = np.gradient(movingaverage(ts, 5).y) / np.gradient(t)
+    smooth_y = movingaverage(ts, 9).y
+    dxdt = np.gradient(smooth_y) / np.gradient(t)
     #dxdt = -savitzkygolay(ts, 5, 3, deriv=1).y / np.gradient(t)
-    dxdt = np.gradient(ts.y) / np.gradient(t)
 
     hi_slopes = np.arange(len(dxdt))[dxdt > start_slope]
     # get the first points of any "runs" as a peak start
     peak_sts = [hi_slopes[0]] + \
       [j for i, j in slid_win(hi_slopes, 2) if j - i > 10]
     lo_slopes = np.arange(len(dxdt))[dxdt < -end_slope]
+    # filter out any lone points farther than 10 away from their neighbors
+    lo_slopes = [lo_slopes[0]] + [i[1] for i in slid_win(lo_slopes, 3) \
+                 if i[1] - i[0] < point_gap or \
+                 i[2] - i[1] < point_gap] + [lo_slopes[-1]]
     # get the last points of any "runs" as a peak end
     peak_ens = [j for i, j in slid_win(lo_slopes[::-1], 2) \
-                if i - j > 10] + [lo_slopes[-1]]
-    #avals = np.arange(len(t))[np.abs(t - 3.5) < 0.5]
+                if i - j > point_gap] + [lo_slopes[-1]]
+    #avals = np.arange(len(t))[np.abs(t - 0.675) < 0.25]
     #print([i for i in lo_slopes if i in avals])
     #print([(t[i], i) for i in peak_ens if i in avals])
 
@@ -66,14 +71,15 @@ def simple_peak_find(ts, start_slope=500, end_slope=200, \
     return peak_list
 
 
-def wavelet_peak_find(ts, min_snr=1., assume_sig=4.):
+def wavelet_peak_find(ts, min_snr=1., assume_sig=4., min_length=8.0,
+                      max_dist=4.0, gap_thresh=2.0):
     t = ts.time()
 
     widths = np.linspace(1, 100, 200)
     cwtm = spf.cwt(ts.y, spf.ricker, widths)
-    ridges = spf._identify_ridge_lines(cwtm, widths / 2.0, 2)
+    ridges = spf._identify_ridge_lines(cwtm, widths / max_dist, gap_thresh)
     filt_ridges = spf._filter_ridge_lines(cwtm, ridges, \
-      min_length=cwtm.shape[0] / 8.0, min_snr=min_snr)
+      min_length=cwtm.shape[0] / min_length, min_snr=min_snr)
 
     ## the next code is just to visualize how this works
     #import matplotlib.pyplot as plt
@@ -144,31 +150,29 @@ def stat_slope_peak_find(ts):
     return peak_list
 
 
-def event_peak_find(ts, events):
-    #TODO: don't just integrate the entire space
-    # from point to point. integrate from
-    # baseline point to other baseline point
-    return align_events(ts, events)
+def event_peak_find(ts, events, adjust_times=False):
+    if adjust_times:
+        # for the following, we need to assume ts is constantly spaced
+        t = ts.times
+
+        #convert list of events into impulses that will correlate
+        #with spikes in the derivative (such as peak beginning & ends)
+        pulse_y = np.zeros(len(t))
+        for st_t, en_t, hints in evts:
+            pulse_y[np.argmin(np.abs(t - st_t))] = 1.
+            pulse_y[np.argmin(np.abs(t - en_t))] = -1.
+        cor = np.correlate(pulse_y, np.gradient(ts.y), mode='same')
+
+        #apply weighting to cor to make "far" correlations less likely
+        cor[:len(t) // 2] *= np.logspace(0., 1., len(t) // 2)
+        cor[len(t) // 2:] *= np.logspace(1., 0., len(t) - len(t) // 2)
+
+        shift = (len(t) // 2 - cor.argmax()) * (t[1] - t[0])
+        new_evts = [(t0 + shift, t1 + shift, {}) for t0, t1, _ in evts]
+        return new_evts
+    else:
+        return events
 
 
 def align_events(ts, evts):
-    # assume ts is constantly spaced
-    t = ts.times
-
-    #convert list of initial times into impulses
-    #that will correlate with spikes in the
-    #derivative (such as at the beginning of a peak)
-    pulse_y = np.zeros(len(t))
-    for st_t in [p[0] for p in evts]:
-        pulse_y[np.argmin(np.abs(t - st_t))] = 1.
-    cor = np.correlate(pulse_y, np.gradient(ts.y), mode='same')
-
-    #apply weighting to cor to make "far" correlations less likely
-    cor[:len(t) // 2] *= np.logspace(0., 1., len(t) // 2)
-    cor[len(t) // 2:] *= np.logspace(1., 0., len(t) - len(t) // 2)
-
-    shift = (len(t) // 2 - cor.argmax()) * (t[1] - t[0])
-    #TODO: track back slightly to catch start of peak, not maximum
-    # slope of peak?
-    new_evts = [(t0 + shift, t1 + shift, {}) for t0, t1, _ in evts]
     return new_evts
