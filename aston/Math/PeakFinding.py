@@ -158,7 +158,7 @@ def event_peak_find(ts, events, adjust_times=False):
         #convert list of events into impulses that will correlate
         #with spikes in the derivative (such as peak beginning & ends)
         pulse_y = np.zeros(len(t))
-        for st_t, en_t, hints in evts:
+        for st_t, en_t, hints in events:
             pulse_y[np.argmin(np.abs(t - st_t))] = 1.
             pulse_y[np.argmin(np.abs(t - en_t))] = -1.
         cor = np.correlate(pulse_y, np.gradient(ts.y), mode='same')
@@ -168,7 +168,7 @@ def event_peak_find(ts, events, adjust_times=False):
         cor[len(t) // 2:] *= np.logspace(1., 0., len(t) - len(t) // 2)
 
         shift = (len(t) // 2 - cor.argmax()) * (t[1] - t[0])
-        new_evts = [(t0 + shift, t1 + shift, {}) for t0, t1, _ in evts]
+        new_evts = [(t0 + shift, t1 + shift, {}) for t0, t1, _ in events]
         return new_evts
     else:
         return events

@@ -300,14 +300,10 @@ class AstonWindow(QtGui.QMainWindow):
             p['offset'] = gf('integrate_periodic_period', 1.)
         return p
 
-    def find_peaks(self, tss, dt=None, isomode=False, block_evts=False):
+    def find_peaks(self, tss, dt=None, isomode=False):
         submnu = self.ui.actionPeak_Finder.menu().children()
         opt = [i for i in submnu if i.isChecked()][0].text()
         peak_find = aston.ui.MenuOptions.peak_finders[opt]
-
-        if block_evts and peak_find == event_peak_find:
-            # needed for display "peaks found" on graph
-            return []
 
         peaks_found = []
         for ts in tss:
@@ -318,6 +314,8 @@ class AstonWindow(QtGui.QMainWindow):
                     for n in ('fia', 'refgas'):
                         evts += dt.events(n)
                     tpks = peak_find(ts, evts, **self.get_f_opts(peak_find))
+                else:
+                    tpks = []
             elif peaks_found != [] and isomode:
                 # we've already integrated things, reuse
                 # their found peaks, but shifted

@@ -143,8 +143,9 @@ class Plotter(object):
         if self.masterWindow.ui.actionGraphIRMS.isChecked():
             evts += datafiles[0].events('refgas')
         if self.masterWindow.ui.actionGraph_Peaks_Found.isChecked():
-            tss = self.masterWindow.obj_tab.active_file().active_traces(n=0)
-            pevts = self.masterWindow.find_peaks(tss, block_evts=True)
+            dt = self.masterWindow.obj_tab.active_file()
+            tss = dt.active_traces(n=0)
+            pevts = self.masterWindow.find_peaks(tss, dt)
             for i, p in enumerate(pevts[0]):
                 p[2]['name'] = 'P' + str(i + 1)
             evts += pevts[0]
