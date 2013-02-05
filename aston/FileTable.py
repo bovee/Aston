@@ -1,15 +1,37 @@
 # -*- coding: utf-8 -*-
-#pylint: disable=C0103
+
+#    Copyright 2011-2013 Roderick Bovee
+#
+#    This file is part of Aston.
+#
+#    Aston is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    Aston is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with Aston.  If not, see <http://www.gnu.org/licenses/>.
+
 """
 Model for handling display of open files.
 """
+#pylint: disable=C0103
+
+import re
 import os.path as op
 import json
 import pkg_resources
-import numpy as np
 from PyQt4 import QtGui, QtCore
 from aston.ui.Fields import aston_fields, aston_groups, aston_field_opts
+from aston.ui.MenuOptions import peak_models
 from aston.Database import AstonFileDatabase
+
+peak_models = {str(k): peak_models[k] for k in peak_models}
 
 
 class FileTreeModel(QtCore.QAbstractItemModel):
@@ -43,6 +65,11 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             treeView.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
             treeView.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
             treeView.clicked.connect(self.itemSelected)
+
+            #set up key shortcuts
+            delAc = QtGui.QAction("Delete", treeView, \
+              shortcut=QtCore.Qt.Key_Backspace, triggered=self.delItemKey)
+            treeView.addAction(delAc)
 
             #set up right-clicking
             treeView.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
@@ -176,7 +203,11 @@ class FileTreeModel(QtCore.QAbstractItemModel):
                 else:
                     rslt = QtCore.Qt.Unchecked
         elif role == QtCore.Qt.DisplayRole or role == QtCore.Qt.EditRole:
-            rslt = f.info[fld]
+            if fld == 'p-model' and f.db_type == 'peak':
+                rpeakmodels = {peak_models[k]: k for k in peak_models}
+                rslt = rpeakmodels.get(f.info[fld], 'None')
+            else:
+                rslt = f.info[fld]
         elif role == QtCore.Qt.DecorationRole and index.column() == 0:
             #TODO: icon for method, compound
             fname = {'file': 'file.png', 'peak': 'peak.png', \
@@ -209,7 +240,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             if obj.info['vis'] == 'y':
                 self.masterWindow.plotData()
         elif col == 'p-model':
-            obj.update_model(data)
+            obj.update_model(peak_models[data])
             self.masterWindow.plotter.remove_peaks([obj])
             self.masterWindow.plotter.add_peaks([obj])
         else:
@@ -227,7 +258,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             return dflags
         dflags |= QtCore.Qt.ItemIsDragEnabled
         if col == 'vis' and obj.db_type == 'file':
-            dflags |= QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsUserCheckable
+            dflags |= QtCore.Qt.ItemIsUserCheckable
         elif col in ['r-filename'] or col[:2] == 's-' or col == 'vis':
             pass
         elif obj.db_type == 'file' and (col[:2] == 'p-' or col[:3] == 'sp-'):
@@ -246,6 +277,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         #remove all of the peak patches from the
         #main plot and add new ones in
         sel = self.returnSelFile()
+        self.masterWindow.specplotter.libscans = []
         if sel is not None:
             if sel.db_type == 'file':
             #    self.masterWindow.plotter.clear_peaks()
@@ -254,8 +286,8 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             #            sel.getAllChildren('peak'))
                 pass
             elif sel.db_type == 'spectrum':
-                self.masterWindow.specplotter.addSpec(sel.data, 'lib')
-                self.masterWindow.specplotter.plotSpec()
+                self.masterWindow.specplotter.libscans = [sel.data]
+                self.masterWindow.specplotter.plot()
         objs_sel = len(self.returnSelFiles())
         self.masterWindow.show_status(str(objs_sel) + ' items selected')
 
@@ -273,13 +305,13 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         fts = [s for s in sel if s.db_type == 'peak']
         if len(fts) > 0:
             self._add_menu_opt(self.tr('Create Spec.'), self.createSpec, fts, menu)
-            self._add_menu_opt(self.tr('Split Peak'), self.splitPeaks, fts, menu)
+            #self._add_menu_opt(self.tr('Split Peak'), self.splitPeaks, fts, menu)
             self._add_menu_opt(self.tr('Merge Peaks'), self.merge_peaks, fts, menu)
 
-        #Things we can do with files
-        fts = [s for s in sel if s.db_type == 'file']
-        if len(fts) > 0:
-            self._add_menu_opt(self.tr('Copy Method'), self.makeMethod, fts, menu)
+        ##Things we can do with files
+        #fts = [s for s in sel if s.db_type == 'file']
+        #if len(fts) > 0:
+        #    self._add_menu_opt(self.tr('Copy Method'), self.makeMethod, fts, menu)
 
         #Things we can do with everything
         if len(sel) > 0:
@@ -297,6 +329,9 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         func, objs = self.sender().data()
         func(objs)
 
+    def delItemKey(self):
+        self.delObjects(self.returnSelFiles())
+
     def debug(self, objs):
         pks = [o for o in objs if o.db_type == 'peak']
         for pk in pks:
@@ -311,58 +346,60 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         new_objs = merge_ions(objs)
         self.delObjects([o for o in objs if o not in new_objs])
 
-    def makeMethod(self, objs):
-        self.masterWindow.cmpd_tab.addObjects(None, objs)
-
     def createSpec(self, objs):
         for obj in objs:
             self.addObjects(obj, [obj.createSpectrum()])
 
-    def splitPeaks(self, pks):
-        from aston.Features.Peak import Peak
-        #db_list = str(self.sender().data()).split(',')
-        #pks = [self.db.getObjectByID(int(o)) for o in db_list]
-        SPO, Cancel = QtGui.QInputDialog.getDouble(self.masterWindow, "Aston", "Slice Offset", 0.0)
-        if not Cancel:
-            return
-        SPL, Cancel = QtGui.QInputDialog.getDouble(self.masterWindow, "Aston", "Slice Length", 0.2)
-        if not Cancel:
-            return
+    #def makeMethod(self, objs):
+    #    self.masterWindow.cmpd_tab.addObjects(None, objs)
 
-        for pk in pks:
-            ts, te = pk.time()[0], pk.time()[-1]
-            if (ts - SPO) % SPL == 0:
-                t0 = pk.time()[0]
-            else:
-                t0 = SPO + SPL * (np.ceil((ts - SPO) / SPL) - 1)
-            t = t0
+    #def splitPeaks(self, pks):
+    #    from aston.Features.Peak import Peak
+    #    #db_list = str(self.sender().data()).split(',')
+    #    #pks = [self.db.getObjectByID(int(o)) for o in db_list]
+    #    SPO, Cancel = QtGui.QInputDialog.getDouble(self.masterWindow, "Aston",
+    #                                               "Slice Offset", 0.0)
+    #    if not Cancel:
+    #        return
+    #    SPL, Cancel = QtGui.QInputDialog.getDouble(self.masterWindow, "Aston",
+    #                                               "Slice Length", 0.2)
+    #    if not Cancel:
+    #        return
 
-            def y(tm):
-                ys, ye = pk.trace()[0], pk.trace()[-1]
-                return ys + (ye - ys) * (tm - t0) / (te - ts)
+    #    for pk in pks:
+    #        ts, te = min(pk.data.times), max(pk.data.times)
+    #        if (ts - SPO) % SPL == 0:
+    #            t0 = pk.time()[0]
+    #        else:
+    #            t0 = SPO + SPL * (np.ceil((ts - SPO) / SPL) - 1)
+    #        t = t0
 
-            pks = []
-            dt = pk.parent
-            del pk.info['p-s-']
-            info = pk.info
-            info['p-int'] = 'split'
-            while t < te:
-                verts = np.column_stack((pk.time(t, t + SPL), \
-                  pk.trace(None, t, t + SPL)))
-                if t != t0:
-                    #not the first point
-                    verts = np.vstack(([t, y(t)], verts))
-                if t + SPL < te:
-                    #not the last point
-                    verts = np.vstack((verts, [t + SPL, y(t + SPL)]))
-                info['name'] = '{:.2f}-{:.2f}'.format(verts[0, 0],\
-                                                      verts[-1, 0])
-                pks.append(Peak(dt.db, None, dt.db_id, \
-                                info.copy(), verts.tolist()))
-                t += SPL
-            self.delObjects([pk])
-            self.addObjects(dt, pks)
-            del dt.info['s-peaks']
+    #        def y(tm):
+    #            ys, ye = pk.data.y[0], pk.data.y[-1]
+    #            return ys + (ye - ys) * (tm - t0) / (te - ts)
+
+    #        pks = []
+    #        dt = pk.parent
+    #        del pk.info['p-s-']
+    #        info = pk.info
+    #        info['p-int'] = 'split'
+    #        while t < te:
+    #            verts = np.column_stack((pk.time(t, t + SPL), \
+    #              pk.trace(None, t, t + SPL)))
+    #            if t != t0:
+    #                #not the first point
+    #                verts = np.vstack(([t, y(t)], verts))
+    #            if t + SPL < te:
+    #                #not the last point
+    #                verts = np.vstack((verts, [t + SPL, y(t + SPL)]))
+    #            info['name'] = '{:.2f}-{:.2f}'.format(verts[0, 0],\
+    #                                                  verts[-1, 0])
+    #            pks.append(Peak(dt.db, None, dt.db_id, \
+    #                            info.copy(), verts.tolist()))
+    #            t += SPL
+    #        self.delObjects([pk])
+    #        self.addObjects(dt, pks)
+    #        del dt.info['s-peaks']
 
     def click_head(self, point):
         menu = QtGui.QMenu(self.treeView)
@@ -485,7 +522,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             f = self.proxyMod.mapToSource(prjNode).internalPointer()
             if f.info['vis'] == 'y':
                 chkFiles.append(f)
-            if self.proxyMod.rowCount(prjNode) > 0:
+            if len(f.children) > 0:
                 chkFiles += self.returnChkFiles(prjNode)
         return chkFiles
 
@@ -546,6 +583,11 @@ class FilterModel(QtGui.QSortFilterProxyModel):
         #        return True
         #else:
         return super(FilterModel, self).filterAcceptsRow(row, index)
+
+    def lessThan(self, left, right):
+        tonum = lambda text: int(text) if text.isdigit() else text.lower()
+        breakup = lambda key: [tonum(c) for c in re.split('([0-9]+)', key)]
+        return breakup(str(left.data())) < breakup(str(right.data()))
 
 
 class ComboDelegate(QtGui.QItemDelegate):

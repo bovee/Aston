@@ -1,4 +1,22 @@
 #!/usr/bin/env python
+
+#    Copyright 2011-2013 Roderick Bovee
+#
+#    This file is part of Aston.
+#
+#    Aston is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    Aston is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with Aston.  If not, see <http://www.gnu.org/licenses/>.
+
 from setuptools import setup
 import matplotlib
 import sys
@@ -10,7 +28,7 @@ def read(fname):
 
 options = {
     'name': 'Aston',
-    'version': '0.4.3',
+    'version': '0.5.0',
     'description': 'Mass/UV Spectral Analysis Program',
     'author': 'Roderick Bovee',
     'author_email': 'bovee@fas.harvard.edu',

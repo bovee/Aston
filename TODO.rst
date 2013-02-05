@@ -1,43 +1,35 @@
 0.5 Checklist
 *************
 
-* mzML, & mzXML file support
-* save AIA/CDF, mzML & mzXML
-* Agilent .REG scraping
-  - method parameters
-  - fraction collection
-* display extras on graph
-  - fraction collection windows
-  - test descriptions of method params on graph?
-* more integrators
-  - wavelet integration
-  - integrate by fraction collection windows
-* finish trace selector dialog
-  - delete items from ion list
-  - low-high error checking for ranges, make sure ions are numbers, etc
-* better spectra display
-  - display range as average for Agilent MSMS
+* finish?
 
 0.6 Checklist
 *************
 
+* mzML, & mzXML file support
+* save AIA/CDF, mzML & mzXML
 * RAW file support
 * MSMS support
   - Agilent MSMS Peak file format
+  - spectral range display (as average) for Agilent MSMS
   - Bruker MSMS spectra
   - MSMS points on graph / MSMS data display
-* Method Database
-  - method editor?
-  - setting to allow run info to be loaded from method DB
+* Chemstation B+ REG files
+* Agilent .REG scraping
+  - method parameters
+  - fraction collection
 * compound database
   - hashing code for compounds? numerical match score between spectra?
 * remote database support
 * autoalign chromatograms
-* noise removal
+* rewrite database code to use context manager for "lazy" system
 * baseline detection (as a trace type?)
 * smarter peak editing?
   - adjustable peaks (little selectors on each end of "baseline")
   - highlight selected (in peak table) peak on graph
+* allow user-selected peaks to be re-interpreted &
+  coelution spots to be found
+* periodic integration (to replace old "split peaks" code)
 
 
 0.7 Checklist
@@ -46,9 +38,13 @@
 * optimization
   - seperate thread for database updating
   - tune MSMS file format performance (rewrites in C?)
+* Method Database
+  - allow calibration curves to be saved for compounds
+  - method editor?
+  - setting to allow run info to be loaded from method DB
 * have multiple plots and allow user to choose which plot each trace goes on?
   - have datafile return units associated with trace types to allow for multiple y axes
-* display x axes in seconds (or hours)
+* display x axes in seconds (or hours or scans)
 * help manual / tutorials
 * package example data with aston (for tests / quality control)
 * write unit tests

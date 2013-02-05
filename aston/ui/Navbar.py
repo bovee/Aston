@@ -1,11 +1,10 @@
 import time
 import os.path as op
 import pkg_resources
-import numpy as np
 from PyQt4 import QtGui  # , QtCore
 from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg
-from aston.Features import Peak, Spectrum
-from aston.TimeSeries import TimeSeries
+from aston.Math.Integrators import merge_ions
+from aston.Features.Spectrum import Spectrum
 
 
 class AstonNavBar(NavigationToolbar2QTAgg):
@@ -100,36 +99,24 @@ class AstonNavBar(NavigationToolbar2QTAgg):
             self.ev_time = time.time()
             if abs(self._xypress[0] - event.xdata) < 0.01:
                 return
-            ion = dt.info['traces'].split(',')[0]
 
+            t0, t1 = event.xdata, self._xypress[0]
+            y0, y1 = event.ydata, self._xypress[1]
             if self._xypress[0] < event.xdata:
-                pt1 = (self._xypress[0], self._xypress[1])
-                pt2 = (event.xdata, event.ydata)
-            else:
-                pt1 = (event.xdata, event.ydata)
-                pt2 = (self._xypress[0], self._xypress[1])
+                t0, t1, y0, y1 = t1, t0, y1, y0
 
             if event.key == 'shift':
-                new_ts = None
-                for i in dt.info['traces'].split(','):
-                    ts = dt.trace(i, twin=(pt1[0], pt2[0]))
-                    #d = np.vstack([pt1[1], ts.data, pt2[1]])
-                    #t = np.hstack([pt1[0], ts.times, pt2[0]])
-                    if new_ts is None:
-                        new_ts = ts
-                    else:
-                        new_ts = new_ts & ts
+                # if the shift key is down, integrate all of the
+                # traces without any baseline offset
+                tss = dt.active_traces(twin=(t0, t1))
+                pks_found = len(tss) * [[(t0, t1, {'pf': 'manual'})]]
             else:
-                ts = dt.trace(ion, twin=(pt1[0], pt2[0]))
-                d = np.vstack([pt1[1], ts.data, pt2[1]])
-                t = np.hstack([pt1[0], ts.times, pt2[0]])
-                new_ts = TimeSeries(d, t, ts.ions)
-
-            info = {'p-type': 'Sample', 'p-created': 'manual'}
-            info['name'] = '{:.2f}-{:.2f}'.format(pt1[0], pt2[0])
-            info['traces'] = ion
-            pk = Peak(dt.db, None, dt.db_id, info, new_ts)
-            self.parent.obj_tab.addObjects(dt, [pk])
+                tss = dt.active_traces(n=0, twin=(t0, t1))
+                pks_found = [[(t0, t1, {'y0': y0, 'y1': y1, 'pf': 'manual'})]]
+            pks = self.parent.integrate_peaks(tss, pks_found, dt)
+            if event.key == 'shift':
+                pks = merge_ions(pks)
+            self.parent.obj_tab.addObjects(dt, pks)
             dt.info.del_items('s-peaks')
 
         self._xypress = []
@@ -230,12 +217,13 @@ class AstonNavBar(NavigationToolbar2QTAgg):
             return
         if event.xdata == self._xypress[0]:
             scan = dt.scan(self._xypress[0])
+            spec_time = str(self._xypress[0])
         else:
             scan = dt.scan(self._xypress[0], to_time=event.xdata)
+            spec_time = str(self._xypress[0]) + '-' + str(event.xdata)
 
-        self.parent.specplotter.addSpec(scan)
-        self.parent.specplotter.plotSpec()
-        self.parent.specplotter.specTime = event.xdata
+        self.parent.specplotter.set_main_spec(scan, spec_time)
+        self.parent.specplotter.plot()
 
         # draw a line on the main plot for the location
         self.parent.plotter.draw_spec_line(self._xypress[0], \

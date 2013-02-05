@@ -1,3 +1,20 @@
+#    Copyright 2011-2013 Roderick Bovee
+#
+#    This file is part of Aston.
+#
+#    Aston is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    Aston is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with Aston.  If not, see <http://www.gnu.org/licenses/>.
+
 """
 This module allows Agilent, Thermo, and other instrument
 specific file formats to be accessed through the same
@@ -63,6 +80,32 @@ class Datafile(DBObject):
             scale = float(self.info.get('t-scale', 1.0))
             offset = float(self.info.get('t-offset', 0.0))
             return (t - offset) / scale
+
+    def active_traces(self, n=None, all_tr=False, twin=None):
+        """
+        Returns TimeSeries for some subset of ions.
+
+        If all_tr is True, return all TimeSeries in self,
+        otherwise return the 'n'th trace specified in the 'traces'
+        property; if n is None, then return all traces in the 'traces'
+        property.
+        """
+        if all_tr:
+            ions = self._ions()
+        else:
+            ions = self.info['traces'].split(',')
+            ions = [i.strip() for i in ions]
+
+        if n is not None:
+            if n > len(ions):
+                return []
+            else:
+                return [self.trace(ions[n], twin)]
+        else:
+            tss = []
+            for ion in ions:
+                tss += [self.trace(ion, twin)]
+            return tss
 
     def trace(self, ion=None, twin=None):
         """
@@ -261,8 +304,9 @@ class Datafile(DBObject):
               self.getAllChildren('peak') \
               if o.info['p-type'] == 'Isotope Standard']
             x = [float(o.info['p-s-time']) for o in std_specs]
-            y = [o.area(topion) / o.area(44) for o in std_specs]
-            if len(x) == 0:
+            y = [o.area(topion) / o.area(44) for o in std_specs \
+                 if o.area(44) != 0]
+            if len(x) == 0 or len(y) == 0:
                 return self._const(0.0, twin)
 
             p0 = [y[0], 0]
@@ -297,13 +341,15 @@ class Datafile(DBObject):
                 srt_ind = np.argsort(x)
                 if 'S' in tpts:
                     #there's a "S"tart value defined
-                    return t, np.interp(t, x[srt_ind], \
-                      y[srt_ind], float(tpts['S']))
+                    return TimeSeries(np.interp(t, x[srt_ind], \
+                      y[srt_ind], float(tpts['S'])), t, [name])
                 else:
                     return TimeSeries(np.interp(t, x[srt_ind], \
                       y[srt_ind]), t, [name])
             elif is_num(val):
                 return self._const(float(val))
+            else:
+                return self._const(np.nan)
         else:
             return self._other_trace(name)
 
@@ -456,7 +502,7 @@ class Datafile(DBObject):
     #The following function stubs should be filled out in the
     #subclasses that handle the raw datafiles.
 
-    def events(self):
+    def events(self, kind):
         """
         Returns events that happen during a run, like FIA injections
         or fraction collections windows. These happen at one (or over

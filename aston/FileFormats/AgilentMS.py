@@ -123,12 +123,17 @@ class AgilentMS(AgilentCS):
         rawdate = f.read(struct.unpack('>B', f.read(1))[0]).decode()
         try:
             d['r-date'] = datetime.strptime(rawdate, \
-            "%d %b %y %H:%M %p").isoformat(' ')
+              "%d %b %y %H:%M %p").isoformat(' ')
         except ValueError:
             pass  # date is not in correct format to parse?
         d['r-type'] = 'Sample'
         #TODO: vial number in here too?
         f.close()
+
+        #TODO: fill this out
+        ## read info from the acqmeth.txt file
+        #fname = op.join(op.dirname(self.rawdata), 'acqmeth.txt')
+
         self.info.update(d)
 
 

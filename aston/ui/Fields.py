@@ -1,15 +1,16 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 from PyQt4.QtCore import QObject
+from aston.ui.MenuOptions import peak_models
 
 tr = lambda s: QObject().trUtf8(s)
 
 aston_groups = {'m': tr('Method'),
-          'r': tr('Run'),
-          's': tr('Stats'),
-          't': tr('Transforms'),
-          'p': tr('Peaks'),
-          'sp': tr('Spectra')}
+                'r': tr('Run'),
+                's': tr('Stats'),
+                't': tr('Transforms'),
+                'p': tr('Peaks'),
+                'sp': tr('Spectra')}
 
 aston_fields = {
     # aston specific information
@@ -71,6 +72,7 @@ aston_fields = {
     # peak info
         'p-type': tr('Peak Type'),
         'p-model': tr('Peak Model'),
+        'p-s-model-fit': tr('Peak Model Fit (r²)'),
         'p-s-area': tr('Peak Area'),
         'p-s-length': tr('Peak Width (min)'),
         'p-s-height': tr('Peak Height'),
@@ -90,7 +92,7 @@ aston_fields = {
 aston_field_opts = {
     'r-type': ['None', 'Sample', 'Standard'],
     'p-type': ['None', 'Sample', 'Standard', 'Isotope Standard'],
-    'p-model': ['None', 'Normal', 'Lognormal', 'Exp Mod Normal', 'Lorentzian'],
+    'p-model': [k for k in peak_models],
     'sp-type': ['None', 'Sample', 'Standard', 'Isotope Standard'],
     't-smooth': ['None', 'Moving Average', 'Savitsky-Golay'],
     't-remove-noise': ['None'],

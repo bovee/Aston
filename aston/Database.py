@@ -1,3 +1,20 @@
+#    Copyright 2011-2013 Roderick Bovee
+#
+#    This file is part of Aston.
+#
+#    Aston is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    Aston is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with Aston.  If not, see <http://www.gnu.org/licenses/>.
+
 """
 This module handles database access for Aston.
 """
@@ -46,16 +63,23 @@ class AstonDatabase(object):
             self.objects.append(self._getObjFromRow(i))
         c.close()
 
+    def all_keys(self):
+        c = self.db.cursor()
+        c.execute('SELECT key, value FROM prefs')
+        p = c.fetchall()
+        c.close()
+        return dict(p)
+
     def get_key(self, key, dflt=''):
         c = self.db.cursor()
-        c.execute('SELECT * FROM prefs WHERE key = ?', (key,))
+        c.execute('SELECT value FROM prefs WHERE key = ?', (key,))
         res = c.fetchone()
         c.close()
 
         if res is None:
             return dflt
         else:
-            return res[1]
+            return res[0]
 
     def set_key(self, key, val):
         c = self.db.cursor()
@@ -200,7 +224,8 @@ class AstonDatabase(object):
 class AstonFileDatabase(AstonDatabase):
     def __init__(self, *args, **kwargs):
         super(AstonFileDatabase, self).__init__(*args, **kwargs)
-        self.update_file_list(self.database_path)
+        if self.get_key('db_reload_on_open', dflt='T') == 'T':
+            self.update_file_list(self.database_path)
 
     def update_file_list(self, path):
         """
@@ -242,21 +267,20 @@ class AstonFileDatabase(AstonDatabase):
         c = self.db.cursor()
         c.execute('SELECT data FROM objs WHERE type="file"')
         dnames = set([i[0] for i in c])
-        c.close()
 
         #compare the two lists -> remove deleted files from the database
-        #TODO: this should only flag files as being bad, not delete them
-        #from the database.
-        #for fn in dnames.difference(set(fnames)):
-        #    c.execute('DELETE FROM files WHERE file_name=?',(fn,))
-        #    self.db.commit()
+        if self.get_key('db_remove_deleted', dflt='False') == 'T':
+            for fn in dnames.difference(set(datafiles.keys())):
+                c.execute('DELETE FROM files WHERE file_name=?', (fn,))
+            self.db.commit()
+        c.close()
 
         #add the new files into the database
         #TODO: generate projects and project_ids based on folder names?
         c = self.begin_lazy_op()
         for fn in set(datafiles.keys()).difference(dnames):
-            fdate = datetime.fromtimestamp(os.path.getctime(fn)\
-              ).replace(microsecond=0).isoformat(' ')
+            fdate = datetime.fromtimestamp(os.path.getctime(fn))
+            fdate = fdate.replace(microsecond=0).isoformat(' ')
             info = {'s-file-type': datafiles[fn], 'traces': 'TIC', \
               'name': os.path.splitext(os.path.basename(fn))[0], \
               'r-date': fdate}

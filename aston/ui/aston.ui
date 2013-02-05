@@ -42,33 +42,27 @@
      <addaction name="actionExportSelectedItems"/>
     </widget>
     <addaction name="actionOpen"/>
-    <addaction name="actionCopy_Settings_from_Other_DB"/>
     <addaction name="menuExport"/>
     <addaction name="separator"/>
     <addaction name="actionQuit"/>
    </widget>
-   <widget class="QMenu" name="menuIntegrate">
+   <widget class="QMenu" name="menuChromatogram">
     <property name="title">
      <string>Chromatogram</string>
     </property>
-    <widget class="QMenu" name="menuIntegrator">
-     <property name="title">
-      <string>Integrator</string>
-     </property>
-     <addaction name="actionIntegrateSimple"/>
-     <addaction name="actionIntegrateStatSlope"/>
-     <addaction name="actionIntegrateWavelet"/>
-    </widget>
     <widget class="QMenu" name="menuIntegrand">
      <property name="title">
       <string>Integrand</string>
      </property>
      <addaction name="actionTop_Trace"/>
-     <addaction name="actionVis_Traces_in_Top_File"/>
-     <addaction name="actionAll_Traces_in_Top_File"/>
+     <addaction name="actionTop_File_Vis_Traces"/>
+     <addaction name="actionTop_File_All_Isotopic"/>
+     <addaction name="actionTop_File_All_Traces"/>
     </widget>
     <addaction name="actionIntegrate"/>
-    <addaction name="menuIntegrator"/>
+    <addaction name="actionPeak_Finder"/>
+    <addaction name="actionTwo_Pass_Peak_Find"/>
+    <addaction name="actionIntegrator"/>
     <addaction name="menuIntegrand"/>
     <addaction name="separator"/>
     <addaction name="actionAutoAlignChromatogram"/>
@@ -79,8 +73,34 @@
     <property name="title">
      <string>Spectrum</string>
     </property>
+    <widget class="QMenu" name="menuCurrent">
+     <property name="title">
+      <string>Current</string>
+     </property>
+     <addaction name="actionSpecMainDisp"/>
+     <addaction name="actionSpecMainLabel"/>
+     <addaction name="actionSpecMainSave"/>
+    </widget>
+    <widget class="QMenu" name="menuPrevious">
+     <property name="title">
+      <string>Previous</string>
+     </property>
+     <addaction name="actionSpecPrevDisp"/>
+     <addaction name="actionSpecPrevLabel"/>
+     <addaction name="actionSpecPrevSave"/>
+    </widget>
+    <widget class="QMenu" name="menuLibrary">
+     <property name="title">
+      <string>Library</string>
+     </property>
+     <addaction name="actionSpecLibDisp"/>
+     <addaction name="actionSpecLibLabel"/>
+    </widget>
+    <addaction name="menuCurrent"/>
+    <addaction name="menuPrevious"/>
+    <addaction name="menuLibrary"/>
+    <addaction name="separator"/>
     <addaction name="actionSearch_Database"/>
-    <addaction name="actionSave_to_Database"/>
     <addaction name="actionSequence"/>
     <addaction name="actionStructure"/>
    </widget>
@@ -104,7 +124,7 @@
    </widget>
    <widget class="QMenu" name="menuSettings">
     <property name="title">
-     <string>Settings</string>
+     <string>Graph</string>
     </property>
     <widget class="QMenu" name="menuPeaks">
      <property name="enabled">
@@ -124,9 +144,11 @@
      <property name="title">
       <string>Extras</string>
      </property>
+     <addaction name="actionGraph_Peaks_Found"/>
      <addaction name="actionGraphFxnCollection"/>
+     <addaction name="actionGraphFIA"/>
+     <addaction name="actionGraphIRMS"/>
      <addaction name="actionGraphMSMS"/>
-     <addaction name="actionGraphMethodDetails"/>
     </widget>
     <addaction name="actionGraph_Style"/>
     <addaction name="actionLegend"/>
@@ -135,7 +157,7 @@
     <addaction name="menuExtras"/>
    </widget>
    <addaction name="menuFile"/>
-   <addaction name="menuIntegrate"/>
+   <addaction name="menuChromatogram"/>
    <addaction name="menuSpectrum"/>
    <addaction name="menuSettings"/>
    <addaction name="menuWindows"/>
@@ -183,37 +205,7 @@
    <widget class="QWidget" name="dockWidgetContents_3">
     <layout class="QHBoxLayout" name="horizontalLayout_4">
      <item>
-      <widget class="QToolBox" name="toolBox">
-       <property name="currentIndex">
-        <number>1</number>
-       </property>
-       <widget class="QWidget" name="page">
-        <property name="geometry">
-         <rect>
-          <x>0</x>
-          <y>0</y>
-          <width>100</width>
-          <height>30</height>
-         </rect>
-        </property>
-        <attribute name="label">
-         <string>Integration</string>
-        </attribute>
-       </widget>
-       <widget class="QWidget" name="page_2">
-        <property name="geometry">
-         <rect>
-          <x>0</x>
-          <y>0</y>
-          <width>72</width>
-          <height>159</height>
-         </rect>
-        </property>
-        <attribute name="label">
-         <string>File Locations</string>
-        </attribute>
-       </widget>
-      </widget>
+      <layout class="QVBoxLayout" name="verticalLayout_settings"/>
      </item>
     </layout>
    </widget>
@@ -458,6 +450,9 @@
    <property name="checkable">
     <bool>true</bool>
    </property>
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Methods</string>
    </property>
@@ -465,6 +460,9 @@
   <action name="actionCompounds">
    <property name="checkable">
     <bool>true</bool>
+   </property>
+   <property name="enabled">
+    <bool>false</bool>
    </property>
    <property name="text">
     <string>Compounds</string>
@@ -483,17 +481,12 @@
     <string>Legend</string>
    </property>
   </action>
-  <action name="actionColor_Scheme">
-   <property name="text">
-    <string>Color Scheme</string>
-   </property>
-  </action>
   <action name="actionIntegrateStatSlope">
    <property name="checkable">
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>StatSlope</string>
+    <string>Drop</string>
    </property>
   </action>
   <action name="actionIntegrateWavelet">
@@ -501,10 +494,10 @@
     <bool>true</bool>
    </property>
    <property name="checked">
-    <bool>true</bool>
+    <bool>false</bool>
    </property>
    <property name="text">
-    <string>Wavelet</string>
+    <string>LeastSquares</string>
    </property>
   </action>
   <action name="actionPeaksHide">
@@ -524,6 +517,9 @@
    </property>
   </action>
   <action name="actionPeaksShowLabels">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Show with Labels</string>
    </property>
@@ -533,12 +529,15 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Fxn Collection/FIA</string>
+    <string>Fxn Collection</string>
    </property>
   </action>
   <action name="actionGraphMSMS">
    <property name="checkable">
     <bool>true</bool>
+   </property>
+   <property name="enabled">
+    <bool>false</bool>
    </property>
    <property name="text">
     <string>MS-MS</string>
@@ -548,6 +547,9 @@
    <property name="checkable">
     <bool>true</bool>
    </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
    <property name="enabled">
     <bool>true</bool>
    </property>
@@ -555,17 +557,12 @@
     <string>Simple</string>
    </property>
   </action>
-  <action name="actionGraphMethodDetails">
+  <action name="actionGraphIRMS">
    <property name="checkable">
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Method Details</string>
-   </property>
-  </action>
-  <action name="actionIntegrate">
-   <property name="text">
-    <string>Integrate</string>
+    <string>Gas Pulse (IRMS)</string>
    </property>
   </action>
   <action name="actionFIA">
@@ -592,25 +589,187 @@
     <string>Top Trace</string>
    </property>
   </action>
-  <action name="actionVis_Traces_in_Top_File">
+  <action name="actionTop_File_Vis_Traces">
    <property name="checkable">
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Vis. Traces in Top File</string>
+    <string>Top File - Vis. Traces</string>
    </property>
   </action>
-  <action name="actionAll_Traces_in_Top_File">
+  <action name="actionTop_File_All_Traces">
    <property name="checkable">
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>All Traces in Top File</string>
+    <string>Top File - All Traces</string>
+   </property>
+  </action>
+  <action name="actionTop_File_All_Isotopic">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Top File - All (Isotopic)</string>
+   </property>
+  </action>
+  <action name="actionSimple">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Simple</string>
+   </property>
+  </action>
+  <action name="actionWavelet">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Wavelet</string>
+   </property>
+  </action>
+  <action name="actionStatistical_Slope">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>StatSlope</string>
+   </property>
+  </action>
+  <action name="actionEvent">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Event</string>
+   </property>
+  </action>
+  <action name="actionGraphFIA">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Flow Injection</string>
+   </property>
+  </action>
+  <action name="actionTwo_Pass_Peak_Find">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Two Pass Peak Find</string>
+   </property>
+  </action>
+  <action name="actionIntegrate">
+   <property name="text">
+    <string>Integrate</string>
+   </property>
+  </action>
+  <action name="action">
+   <property name="text">
+    <string/>
+   </property>
+  </action>
+  <action name="actionColor_Scheme">
+   <property name="text">
+    <string>Color Scheme</string>
+   </property>
+  </action>
+  <action name="actionPeak_Finder">
+   <property name="text">
+    <string>Peak Finder</string>
+   </property>
+  </action>
+  <action name="actionIntegrator">
+   <property name="text">
+    <string>Integrator</string>
+   </property>
+  </action>
+  <action name="actionGraph_Peaks_Found">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Peaks Found</string>
    </property>
   </action>
   <action name="actionGraph_Style">
    <property name="text">
     <string>Graph Style</string>
+   </property>
+  </action>
+  <action name="actionSpecMainDisp">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Display</string>
+   </property>
+  </action>
+  <action name="actionSpecMainLabel">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Label</string>
+   </property>
+  </action>
+  <action name="actionSpecPrevDisp">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Display</string>
+   </property>
+  </action>
+  <action name="actionSpecPrevLabel">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Label</string>
+   </property>
+  </action>
+  <action name="actionSpecLibDisp">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Display</string>
+   </property>
+  </action>
+  <action name="actionSpecLibLabel">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Label</string>
+   </property>
+  </action>
+  <action name="actionSpecMainSave">
+   <property name="text">
+    <string>Save</string>
+   </property>
+  </action>
+  <action name="actionSpecPrevSave">
+   <property name="text">
+    <string>Save</string>
    </property>
   </action>
  </widget>

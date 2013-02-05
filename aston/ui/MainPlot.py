@@ -135,15 +135,34 @@ class Plotter(object):
             self.plt.set_xlim(bnds[0])
             self.plt.set_ylim(bnds[1])
 
-        # TODO: save the text and lines to delete later?
-        # TODO: make this prettier
+        evts = []
         if self.masterWindow.ui.actionGraphFxnCollection.isChecked():
+            evts += datafiles[0].events('fxn')
+        if self.masterWindow.ui.actionGraphFIA.isChecked():
+            evts += datafiles[0].events('fia')
+        if self.masterWindow.ui.actionGraphIRMS.isChecked():
+            evts += datafiles[0].events('refgas')
+        if self.masterWindow.ui.actionGraph_Peaks_Found.isChecked():
+            dt = self.masterWindow.obj_tab.active_file()
+            tss = dt.active_traces(n=0)
+            pevts = self.masterWindow.find_peaks(tss, dt)
+            for i, p in enumerate(pevts[0]):
+                p[2]['name'] = 'P' + str(i + 1)
+            evts += pevts[0]
+
+        if evts != []:
+            # TODO: save the text and lines to delete later?
+            # TODO: make this prettier
+
             trans = self.plt.get_xaxis_transform()
             transText = offset_copy(trans, fig=self.plt.figure, \
                                     x=3, units='points')
-            for ev in datafiles[0].events():
-                self.plt.vlines(ev[0], 0, 0.1, transform=trans)
-                self.plt.text(ev[0], 0, ev[2], transform=transText)
+            for ev in evts:
+                t0, t1, ta = ev[0], ev[1], (ev[1] + ev[0]) / 2.
+                self.plt.vlines(t1, 0, 0.1, color='0.75', transform=trans)
+                self.plt.vlines(t0, 0, 0.1, transform=trans)
+                self.plt.text(ta, 0, ev[2]['name'], \
+                              ha='center', transform=transText)
 
         #draw grid lines
         self.plt.grid(c='black', ls='-', alpha='0.05')

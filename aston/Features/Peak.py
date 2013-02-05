@@ -1,9 +1,14 @@
+import json
 import numpy as np
 from aston.Features.DBObject import DBObject
 import aston.Math.Peak as peakmath
 from aston.Features.Spectrum import Spectrum
 from aston.TimeSeries import TimeSeries
-from aston.Math.Other import delta13C
+from aston.Math.Other import delta13C_Santrock, delta13C_Craig
+from aston.Math.PeakFitting import fit, guess_initc
+from aston.Math.PeakModels import peak_models
+
+peak_models = dict([(pm.__name__, pm) for pm in peak_models])
 
 
 class Peak(DBObject):
@@ -15,26 +20,17 @@ class Peak(DBObject):
         if 'p-model' not in self.info:
             return self.rawdata
 
-        if self.info['p-model'] == 'Normal':
-            f = peakmath.gaussian
-        elif self.info['p-model'] == 'Lognormal':
-            f = peakmath.lognormal
-        elif self.info['p-model'] == 'Exp Mod Normal':
-            f = peakmath.exp_mod_gaussian
-        elif self.info['p-model'] == 'Lorentzian':
-            f = peakmath.lorentzian
-        else:
+        f = peak_models.get(self.info['p-model'], None)
+        if f is None:
             return self.rawdata
+        #TODO: if p-params is a list, plot each item as current
+        #p-params; allow for multiple functions to fit one peak
 
-        times = self.rawdata.times
-        y0 = float(self.info['p-s-base'])
-        x0 = float(self.info['p-s-time'])
-        h = float(self.info['p-s-height'])
-        s = [float(i) for i in self.info['p-s-shape'].split(',')]
-        y = h * f(s, times - x0) + y0
-        y[0] = self.rawdata.data[0, 0]
-        y[-1] = self.rawdata.data[-1, 0]
-        return TimeSeries(y, times, ['X'])
+        times = self.rawdata.times[1:-1]
+        p = json.loads(self.info['p-params'])
+        y = f(times, **p)
+        y = np.hstack([self.rawdata.y[0], y, self.rawdata.y[-1]])
+        return TimeSeries(y, self.rawdata.times, ['X'])
 
     def time(self, twin=None):
         return self.rawdata.trace('!', twin=twin).time
@@ -113,6 +109,9 @@ class Peak(DBObject):
         except:
             return ''
 
+        calc_meth = self.db.get_key('d13c_method', dflt='santrock')
+        consts = self.db.get_key('d13c_const', dflt='Santrock')
+
         r45std = dt.get_point('r45std', peakmath.time(self.as_poly(44)))
         r46std = dt.get_point('r46std', peakmath.time(self.as_poly(44)))
 
@@ -124,9 +123,15 @@ class Peak(DBObject):
         # if one of the areas is 0, clearly there's a problem
         if i44 * i45 * i46 == 0:
             return ''
-        d = delta13C(i45 / i44, i46 / i44, \
-          float(dt.info['r-d13c-std']), r45std, r46std)
-        return str(d)
+        if calc_meth == 'craig':
+            d = delta13C_Craig(i45 / i44, i46 / i44, \
+              float(dt.info['r-d13c-std']), r45std, r46std)
+        else:
+            d = delta13C_Santrock(i45 / i44, i46 / i44, \
+              float(dt.info['r-d13c-std']), r45std, r46std,
+              ks=consts)
+
+        return '{0:.3f}'.format(d)
 
     def createSpectrum(self, method=None):
         prt = self.getParentOfType('file')
@@ -141,26 +146,25 @@ class Peak(DBObject):
     def update_model(self, key):
         # TODO: the model should be applied to *all* of the
         # ions in self.rawdata
-        t = self.rawdata.times
-        d = self.rawdata.data[:, 0]
-        self.info['p-model'] = key
-        if key == 'Normal':
-            f = peakmath.gaussian
-        elif key == 'Lognormal':
-            f = peakmath.lognormal
-        elif key == 'Exp Mod Normal':
-            f = peakmath.exp_mod_gaussian
-        elif key == 'Lorentzian':
-            f = peakmath.lorentzian
-        else:
-            f = None
-
+        self.info['p-model'] = str(key)
         self.info.del_items('p-s-')
+
+        f = peak_models.get(str(key), None)
         if f is not None:
-            base = min(d)
-            params = peakmath.fit_to(f, t, d - base)
-            self.info['p-s-time'] = str(params[0])
-            self.info['p-s-height'] = str(params[1])
-            self.info['p-s-base'] = str(base)
-            self.info['p-s-shape'] = ','.join( \
-              [str(i) for i in params[2:]])
+            #TODO: use baseline detection?
+            t = self.rawdata.times[1:-1]
+            y = self.rawdata.y[1:-1]
+            #ya = x[1:-1] - np.linspace(x[0], x[-1], len(x) - 2)
+
+            ts = TimeSeries(y, t)
+            initc = guess_initc(ts, f, [t[y.argmax()]])
+            params, res = fit(ts, [f], initc)
+            params = params[0]
+
+            params['f'] = str(key)
+            self.info['p-s-base'] = str(params['v'])
+            self.info['p-s-height'] = str(params['h'])
+            self.info['p-s-time'] = str(params['x'])
+            self.info['p-s-width'] = str(params['w'])
+            self.info['p-s-model-fit'] = str(res['r^2'])
+            self.info['p-params'] = json.dumps(params)
