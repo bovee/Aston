@@ -26,6 +26,7 @@ import re
 import os.path as op
 import json
 import pkg_resources
+from collections import OrderedDict
 from PyQt4 import QtGui, QtCore
 from aston.ui.Fields import aston_fields, aston_groups, aston_field_opts
 from aston.ui.MenuOptions import peak_models
@@ -403,7 +404,9 @@ class FileTreeModel(QtCore.QAbstractItemModel):
 
     def click_head(self, point):
         menu = QtGui.QMenu(self.treeView)
-        subs = dict([(n, QtGui.QMenu(menu)) for n in aston_groups])
+        subs = OrderedDict()
+        for n in aston_groups:
+            subs[n] = QtGui.QMenu(menu)
 
         for fld in aston_fields:
             if fld == 'name':

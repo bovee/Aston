@@ -135,6 +135,7 @@ class Plotter(object):
             self.plt.set_xlim(bnds[0])
             self.plt.set_ylim(bnds[1])
 
+        # plot events on the bottom of the graph
         evts = []
         if self.masterWindow.ui.actionGraphFxnCollection.isChecked():
             evts += datafiles[0].events('fxn')
@@ -189,9 +190,8 @@ class Plotter(object):
 
         tnum = 0
         for dt in datafiles:
-            for y in dt.info['traces'].split(','):
-                ts = dt.trace(y.strip())
-                trace = ts.data
+            for ts in dt.active_traces():
+                trace = ts.y
                 if 'scaled' in self._style:
                     #TODO: fails at negative chromatograms
                     trace -= min(trace)
@@ -207,7 +207,7 @@ class Plotter(object):
                 else:
                     c = self._color(int(tnum % trs) / float(trs - 1), 1)
                 ls = self._linestyle[int(np.floor((tnum % 28) / 7))]
-                nm = dt.info['name'].strip('_') + ' ' + y
+                nm = dt.info['name'].strip('_') + ' ' + ts.ions[0]
                 self.plt.plot(ts.times, trace, color=c, \
                   ls=ls, lw=1.2, label=nm)
                 tnum += 1

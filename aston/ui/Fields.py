@@ -1,89 +1,86 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
+from collections import OrderedDict
 from PyQt4.QtCore import QObject
 from aston.ui.MenuOptions import peak_models
 
 tr = lambda s: QObject().trUtf8(s)
 
-aston_groups = {'m': tr('Method'),
-                'r': tr('Run'),
-                's': tr('Stats'),
-                't': tr('Transforms'),
-                'p': tr('Peaks'),
-                'sp': tr('Spectra')}
+aston_groups = OrderedDict()
+aston_groups['m'] = tr('Method')
+aston_groups['r'] = tr('Run')
+aston_groups['s'] = tr('Stats')
+aston_groups['t'] = tr('Transforms')
+aston_groups['p'] = tr('Peaks')
 
-aston_fields = {
-    # aston specific information
-        'name': tr('Name'),
-        'vis': tr('Vis?'),
-        'traces': tr('Traces'),
-    # method information
-        'm': tr('Method Name'),  # e.g. RJBPROT. strip out *.M suffix
-        'm-type': tr('Chromatography Type'),
-        'm-col': tr('Column Name'),
-        'm-col-type': tr('Column Phase'),
-        'm-col-dim': tr('Column Dimensions (mm x mm)'),
-        'm-col-part-size': tr('Column Particle Size (µ)'),
-        'm-len': tr('Run Length (min)'),
-        'm-inj-size': tr('Injection Size (µl)'),
-        'm-tmp': tr('Temperature (°C)'),  # type = time-dict
-        'm-prs': tr('Pressure (kbar)'),  # type = time-dict
-        'm-flw': tr('Flow (µl/min)'),  # type = time-dict
-        'm-slv': tr('Solvent/Carrier'),  # Solvent A
-        'm-slv-B': tr('Solvent B'),
-        'm-slv-B-per': tr('% Solvent B'),  # type = time-dict
-        'm-slv-C': tr('Solvent C'),
-        'm-slv-C-per': tr('% Solvent C'),  # type = time-dict
-        'm-slv-D': tr('Solvent D'),
-        'm-slv-D-per': tr('% Solvent D'),  # type = time-dict
-        'm-detect': tr('Detector Type'),
-        'm-uv': tr('UV Wavelengths'),
-        'm-ms-int-mode': tr('MS Interface Mode'),
-        'm-y-units': tr('Units'),
-    # run information
-        'r-filename': tr('File Name'),
-        'r-smp': tr('Sample'),  # e.g. BSA
-        'r-smp-conc': tr('Sample Concentration'),  # e.g. 5 mg/ml
-        'r-date': tr('Date'),
-        'r-opr': tr('Operator'),
-        'r-type': tr('Type'),  # sample, standard, etc.
-        'r-vial-pos': tr('Vial Position'),
-        'r-seq-num': tr('Sequence Number'),
-        'r-inst': tr('Instrument'),
-        'r-d18o-std': tr('Reference δ18O Value (‰)'),
-        'r-d13c-std': tr('Reference δ13C Value (‰)'),
-    # information generated in the program ("statistics")
-        's-file-type': tr('File Type'),
-        's-scans': tr('Scans'),
-        's-mzs': tr('Ions'),
-        's-st-time': tr('Start Time (min)'),
-        's-en-time': tr('End Time (min)'),
-        's-peaks': tr('# of Peaks'),
-        's-spectra': tr('# of Spectra'),
-        's-peaks-st': tr('First Peak RT (min)'),
-        's-peaks-en': tr('Last Peak RT (min)'),
-    # data transformations
-        't-scale': tr('Scale'),
-        't-offset': tr('Offset'),
-        't-smooth': tr('Smoothing Method'),
-        't-smooth-order': tr('Smoothing Order'),
-        't-smooth-window': tr('Smoothing Window'),
-        't-remove-noise': tr('Noise Removal Method'),
-    # peak info
-        'p-type': tr('Peak Type'),
-        'p-model': tr('Peak Model'),
-        'p-s-model-fit': tr('Peak Model Fit (r²)'),
-        'p-s-area': tr('Peak Area'),
-        'p-s-length': tr('Peak Width (min)'),
-        'p-s-height': tr('Peak Height'),
-        'p-s-time': tr('Peak Retention Time (min)'),
-        'p-s-pwhm': tr('Peak Width Half-Max (min)'),
-        'p-s-pkcap': tr('Peak Capacity (# Peaks)'),
-    #spectrum info
-        'sp-type': tr('Spectrum Type'),
-        'sp-time': tr('Spectrum Time (min)'),
-        'sp-d13c': tr('δ13C Value (‰)'),
-       }
+aston_fields = OrderedDict()
+# aston specific information
+aston_fields['name'] = tr('Name')
+aston_fields['vis'] = tr('Vis?')
+aston_fields['traces'] = tr('Traces')
+# method information
+aston_fields['m'] = tr('Method Name')  # e.g. RJBPROT. strip out *.M suffix
+aston_fields['m-type'] = tr('Chromatography Type')
+aston_fields['m-col'] = tr('Column Name')
+aston_fields['m-col-type'] = tr('Column Phase')
+aston_fields['m-col-dim'] = tr('Column Dimensions (mm x mm)')
+aston_fields['m-col-part-size'] = tr('Column Particle Size (µ)')
+aston_fields['m-len'] = tr('Run Length (min)')
+aston_fields['m-inj-size'] = tr('Injection Size (µl)')
+aston_fields['m-tmp'] = tr('Temperature (°C)')  # type = time-dict
+aston_fields['m-prs'] = tr('Pressure (kbar)')  # type = time-dict
+aston_fields['m-flw'] = tr('Flow (µl/min)')  # type = time-dict
+aston_fields['m-slv'] = tr('Solvent/Carrier')  # Solvent A
+aston_fields['m-slv-B'] = tr('Solvent B')
+aston_fields['m-slv-B-per'] = tr('% Solvent B')  # type = time-dict
+aston_fields['m-slv-C'] = tr('Solvent C')
+aston_fields['m-slv-C-per'] = tr('% Solvent C')  # type = time-dict
+aston_fields['m-slv-D'] = tr('Solvent D')
+aston_fields['m-slv-D-per'] = tr('% Solvent D')  # type = time-dict
+aston_fields['m-detect'] = tr('Detector Type')
+aston_fields['m-uv'] = tr('UV Wavelengths')
+aston_fields['m-ms-int-mode'] = tr('MS Interface Mode')
+aston_fields['m-y-units'] = tr('Units')
+# run information
+aston_fields['r-filename'] = tr('File Name')
+aston_fields['r-smp'] = tr('Sample')  # e.g. BSA
+aston_fields['r-smp-conc'] = tr('Sample Concentration')  # e.g. 5 mg/ml
+aston_fields['r-date'] = tr('Date')
+aston_fields['r-opr'] = tr('Operator')
+aston_fields['r-type'] = tr('Type')  # sample, standard, etc.
+aston_fields['r-vial-pos'] = tr('Vial Position')
+aston_fields['r-seq-num'] = tr('Sequence Number')
+aston_fields['r-inst'] = tr('Instrument')
+aston_fields['r-d18o-std'] = tr('Reference δ18O Value (‰)')
+aston_fields['r-d13c-std'] = tr('Reference δ13C Value (‰)')
+# information generated in the program ("statistics")
+aston_fields['s-file-type'] = tr('File Type')
+aston_fields['s-scans'] = tr('Scans')
+aston_fields['s-mzs'] = tr('Ions')
+aston_fields['s-st-time'] = tr('Start Time (min)')
+aston_fields['s-en-time'] = tr('End Time (min)')
+aston_fields['s-peaks'] = tr('# of Peaks')
+aston_fields['s-spectra'] = tr('# of Spectra')
+aston_fields['s-peaks-st'] = tr('First Peak RT (min)')
+aston_fields['s-peaks-en'] = tr('Last Peak RT (min)')
+# data transformations
+aston_fields['t-scale'] = tr('Scale')
+aston_fields['t-offset'] = tr('Offset')
+aston_fields['t-smooth'] = tr('Smoothing Method')
+aston_fields['t-smooth-order'] = tr('Smoothing Order')
+aston_fields['t-smooth-window'] = tr('Smoothing Window')
+aston_fields['t-remove-noise'] = tr('Noise Removal Method')
+# peak info
+aston_fields['p-type'] = tr('Peak Type')
+aston_fields['p-model'] = tr('Peak Model')
+aston_fields['p-s-model-fit'] = tr('Peak Model Fit (r²)')
+aston_fields['p-s-area'] = tr('Peak Area')
+aston_fields['p-s-length'] = tr('Peak Width (min)')
+aston_fields['p-s-height'] = tr('Peak Height')
+aston_fields['p-s-time'] = tr('Peak Retention Time (min)')
+aston_fields['p-s-pwhm'] = tr('Peak Width Half-Max (min)')
+aston_fields['p-s-pkcap'] = tr('Peak Capacity (# Peaks)')
+aston_fields['p-s-d13c'] = tr('δ13C Value (‰)')
 
 #for time-dicts:
 #blank = not regulated otherwise, it's a dict with at least one entry: S

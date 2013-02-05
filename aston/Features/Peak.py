@@ -65,14 +65,11 @@ class Peak(DBObject):
             prt = self.getParentOfType('file')
             if prt is None:
                 return ''
-            t = float(prt.getInfo('s-peaks-en')) - \
-                float(prt.getInfo('s-peaks-st'))
+            t = float(prt.info['s-peaks-en']) - \
+                float(prt.info['s-peaks-st'])
             return str(t / peakmath.length(self.as_poly()) + 1)
-        elif fld == 'sp-d13c':
+        elif fld == 'p-s-d13c':
             return self.d13C()
-            #spcs = self.getAllChildren('spectrum')
-            #if len(spcs) > 0:
-            #    return spcs[0].d13C()
         return ''
 
     def contains(self, x, y):

@@ -100,11 +100,15 @@ class Datafile(DBObject):
             if n > len(ions):
                 return []
             else:
-                return [self.trace(ions[n], twin=twin)]
+                ts = self.trace(ions[n], twin=twin)
+                ts.ions[0] = ions[n]
+                return [ts]
         else:
             tss = []
             for ion in ions:
-                tss += [self.trace(ion, twin=twin)]
+                ts = self.trace(ion, twin=twin)
+                ts.ions[0] = ion
+                tss += [ts]
             return tss
 
     def trace(self, ion=None, twin=None):
@@ -399,10 +403,9 @@ class Datafile(DBObject):
                   if type(i) is int or type(i) is float]
                 if len(ions) > 0:
                     self.info['s-mzs'] = str(min(ions)) + '-' + str(max(ions))
-        elif fld == 's-time-st' or fld == 's-time-en':
-            time = self.time()
-            self.info['s-time-st'] = str(min(time))
-            self.info['s-time-en'] = str(max(time))
+        elif fld == 's-st-time' or fld == 's-en-time':
+            self.info['s-st-time'] = str(min(self.time()))
+            self.info['s-en-time'] = str(max(self.time()))
         elif fld == 's-peaks' or fld == 's-spectra':
             self.info['s-peaks'] = len(self.getAllChildren('peak'))
             self.info['s-spectra'] = len(self.getAllChildren('spectrum'))

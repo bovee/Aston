@@ -1,8 +1,3 @@
-0.5 Checklist
-*************
-
-* finish?
-
 0.6 Checklist
 *************
 

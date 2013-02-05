@@ -131,8 +131,8 @@ class AstonWindow(QtGui.QMainWindow):
         self.plotData()
 
         #set up the compound database
-        cmpd_db = AstonDatabase(self.getPref('Default.COMPOUND_DB'))
-        self.cmpd_tab = FileTreeModel(cmpd_db, self.ui.compoundTreeView, self)
+        #cmpd_db = AstonDatabase(self.getPref('Default.COMPOUND_DB'))
+        #self.cmpd_tab = FileTreeModel(cmpd_db, self.ui.compoundTreeView, self)
 
     def _add_opts_to_menu(self, menu, opts, fxn, dflt=None):
         menu_gp = QtGui.QActionGroup(self)
@@ -224,9 +224,11 @@ class AstonWindow(QtGui.QMainWindow):
         self.plotData()
 
     def exportChromatogram(self):
-        fopts = self.tr("Bitmap Image (*.png *.pgf *.raw *rgba);;" + \
-          "Vector Image (*.svg *.emf *.eps *.pdf *.ps *.svgz);;" + \
-          "Comma-Delimited Text (*.csv)")
+        fopts = self.tr('PNG Image (*.png);;PGF Image (*.pgf);;' + \
+          'RAW Image (*.raw);;RGBA Image (*.rgba);;SVG Image (*.svg);;' + \
+          'EMF Image (*.emf);;EPS Image (*.eps);;' + \
+          'Portable Document Format (*.pdf);;Postscript Image (*.ps);;' + \
+          'Compressed SVG File (*.svgz);;Comma-Delimited Text (*.csv)')
         fname = str(QtGui.QFileDialog.getSaveFileName(self, \
           self.tr("Save As..."), filter=fopts))
         if fname == '':
@@ -250,9 +252,11 @@ class AstonWindow(QtGui.QMainWindow):
 
     def exportSpectrum(self):
         #TODO: this needs to be updated when SpecPlot becomes better
-        fopts = self.tr("Bitmap Image (*.png *.pgf *.raw *rgba);;" + \
-          "Vector Image (*.svg *.emf *.eps *.pdf *.ps *.svgz);;" + \
-          "Comma-Delimited Text (*.csv)")
+        fopts = self.tr('PNG Image (*.png);;PGF Image (*.pgf);;' + \
+          'RAW Image (*.raw);;RGBA Image (*.rgba);;SVG Image (*.svg);;' + \
+          'EMF Image (*.emf);;EPS Image (*.eps);;' + \
+          'Portable Document Format (*.pdf);;Postscript Image (*.ps);;' + \
+          'Compressed SVG File (*.svgz);;Comma-Delimited Text (*.csv)')
         fname = str(QtGui.QFileDialog.getSaveFileName(self, \
           self.tr("Save As..."), filter=fopts))
         if fname == '':
@@ -271,8 +275,11 @@ class AstonWindow(QtGui.QMainWindow):
     def exportItems(self):
         #TODO: options for exporting different delimiters (e.g. tab) or
         #exporting select items as pictures (e.g. selected spectra)
+        fopts = self.tr('Comma-Delimited Text (*.csv)')
         fname = str(QtGui.QFileDialog.getSaveFileName(self, \
-          self.tr("Save As...")))
+          self.tr("Save As..."), filter=fopts))
+        if fname == '':
+            return
         f = open(fname, 'w')
         sel = self.obj_tab.returnSelFiles()
         f.write(self.obj_tab.items_as_csv(sel))
