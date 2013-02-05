@@ -277,6 +277,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         #remove all of the peak patches from the
         #main plot and add new ones in
         sel = self.returnSelFile()
+        self.masterWindow.specplotter.libscans = []
         if sel is not None:
             if sel.db_type == 'file':
             #    self.masterWindow.plotter.clear_peaks()
@@ -285,8 +286,8 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             #            sel.getAllChildren('peak'))
                 pass
             elif sel.db_type == 'spectrum':
-                self.masterWindow.specplotter.addSpec(sel.data, 'lib')
-                self.masterWindow.specplotter.plotSpec()
+                self.masterWindow.specplotter.libscans = [sel.data]
+                self.masterWindow.specplotter.plot()
         objs_sel = len(self.returnSelFiles())
         self.masterWindow.show_status(str(objs_sel) + ' items selected')
 

@@ -90,6 +90,16 @@ class AstonWindow(QtGui.QMainWindow):
         for ac in self.ui.menuIntegrand.actions():
             menu_gp.addAction(ac)
 
+        # hook up spectrum menu
+        for m in [self.ui.actionSpecLibDisp, self.ui.actionSpecLibLabel,\
+                  self.ui.actionSpecMainDisp, self.ui.actionSpecMainLabel, \
+                  self.ui.actionSpecPrevDisp, self.ui.actionSpecPrevLabel]:
+            m.triggered.connect(self.specplotter.plot)
+        self.ui.actionSpecMainSave.triggered.connect( \
+          self.specplotter.save_main_spec)
+        self.ui.actionSpecPrevSave.triggered.connect( \
+          self.specplotter.save_prev_spec)
+
         #flesh out the settings menu
         color_menu = QtGui.QMenu(self.ui.menuSettings)
         v = self.obj_tab.db.get_key('color_scheme', dflt='Spectral')

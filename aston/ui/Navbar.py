@@ -217,12 +217,13 @@ class AstonNavBar(NavigationToolbar2QTAgg):
             return
         if event.xdata == self._xypress[0]:
             scan = dt.scan(self._xypress[0])
+            spec_time = str(self._xypress[0])
         else:
             scan = dt.scan(self._xypress[0], to_time=event.xdata)
+            spec_time = str(self._xypress[0]) + '-' + str(event.xdata)
 
-        self.parent.specplotter.addSpec(scan)
-        self.parent.specplotter.plotSpec()
-        self.parent.specplotter.specTime = event.xdata
+        self.parent.specplotter.set_main_spec(scan, spec_time)
+        self.parent.specplotter.plot()
 
         # draw a line on the main plot for the location
         self.parent.plotter.draw_spec_line(self._xypress[0], \

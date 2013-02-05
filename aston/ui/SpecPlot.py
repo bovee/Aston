@@ -1,8 +1,9 @@
+import time
 import numpy as np
-from PyQt4 import QtCore, QtGui
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg
-from matplotlib.ticker import AutoMinorLocator
+from matplotlib.backends.backend_qt4 import NavigationToolbar2QT
+#from matplotlib.ticker import AutoMinorLocator
 from aston.Features import Spectrum
 
 
@@ -25,147 +26,118 @@ class SpecPlotter(object):
         self.plt.yaxis.set_ticks_position('none')
         self.plt.xaxis.set_tick_params(which='both', direction='out')
 
-        self.canvas.mpl_connect('button_press_event', self.specmousedown)
-        self.canvas.mpl_connect('scroll_event', self.specmousescroll)
+        # create a hidden NavigationBar to handle panning/zooming
+        self.navbar = NavigationToolbar2QT(self.canvas, None)
+        self.ev_time = 0, None, None
 
-        self.scans = {}
-        self.scansToDisp = []
-        self.scansToLbl = ['']
-        self.specTime = None
+        self.canvas.mpl_connect('button_press_event', self.mousedown)
+        self.canvas.mpl_connect('button_release_event', self.mouseup)
+        self.canvas.mpl_connect('scroll_event', self.mousescroll)
 
-    def addSpec(self, scan, label=''):
-        #save into scans dictionary
-        if label is '' and '' in self.scans:
-            self.scans['prev'] = self.scans['']
-        self.scans[label] = scan
-        if label not in self.scansToDisp:
-            self.scansToDisp.append(label)
+        self.mainscan = None
+        self.prevscan = None
+        self.libscans = []
+        self.spec_time, self.pspec_time = '', ''
 
-    def plotSpec(self):
-        #plot it in the area below
+    def set_main_spec(self, scan, time):
+        self.mainscan, self.prevscan = scan, self.mainscan
+        self.spec_time, self.pspec_time = time, self.spec_time
+
+    def plot(self):
+        mwui = self.masterWindow.ui
         self.plt.cla()
 
-        #colors
-        clrs = {'': 'black', 'prev': '0.7', 'lib': 'blue'}
         xmin, xmax = np.inf, -np.inf
         ymin, ymax = 0, -np.inf
 
-        #loop through all of the scans to be displayed
-        for scn_nm in self.scansToDisp:
-            scn = self.scans[scn_nm]
+        if mwui.actionSpecLibDisp.isChecked() and len(self.libscans) > 0:
+            lbl = mwui.actionSpecLibLabel.isChecked()
+            for scn in self.libscans:
+                xmin, xmax = min(min(scn[0]), xmin), max(max(scn[0]), xmax)
+                ymin, ymax = min(min(scn[1]), ymin), max(max(scn[1]), ymax)
+                self.plot_spec(scn, 'blue', label=lbl)
 
-            xmin = min(min(scn[0]), xmin)
-            xmax = max(max(scn[0]), xmax)
-            ymin = min(min(scn[1]), ymin)
-            ymax = max(max(scn[1]), ymax)
+        if mwui.actionSpecPrevDisp.isChecked() and self.prevscan is not None:
+            scn = self.prevscan
+            xmin, xmax = min(min(scn[0]), xmin), max(max(scn[0]), xmax)
+            ymin, ymax = min(min(scn[1]), ymin), max(max(scn[1]), ymax)
+            lbl = mwui.actionSpecPrevLabel.isChecked()
+            self.plot_spec(scn, '0.7', label=lbl)
 
-            try:
-                clr = clrs[scn_nm]
-            except:
-                clr = 'black'
+        if mwui.actionSpecMainDisp.isChecked() and self.mainscan is not None:
+            scn = self.mainscan
+            xmin, xmax = min(min(scn[0]), xmin), max(max(scn[0]), xmax)
+            ymin, ymax = min(min(scn[1]), ymin), max(max(scn[1]), ymax)
+            lbl = mwui.actionSpecMainLabel.isChecked()
+            self.plot_spec(scn, 'black', label=lbl)
 
-            #add the spectral lines (and little points!)
-            if scn.shape[1] > 10 and np.all(np.diff(scn[0]) - \
-              (scn[0, 1] - scn[0, 0]) < 1e-9):
-                #if the spacing between all the points is equal, plot as a line
-                self.plt.plot(scn[0], scn[1], '-', color=clr)
-            else:
-                try:
-                    #FIXME: this crashes on Windows unless the user has clicked on
-                    #the spectrum graph previously. Matplotlib bug, needs workaround
-                    self.plt.vlines(scn[0], 0, scn[1], color=clr, alpha=0.5)
-                except:
-                    pass
-                self.plt.plot(scn[0], scn[1], ',', color=clr)
-#            self.plt.set_ylim(bottom=0)
-
-            if scn_nm in self.scansToLbl:
-                #go through the top 10% highest ions from highest to lowest
-                #always have at least 10 labels, but no more than 50 (arbitrary)
-                #if an ion is close to one seen previously, don't display it
-                v2lbl = {}  # values to label
-                plbl = []  # skip labeling these values
-                #number of labels
-                nls = -1 * min(max(int(len(scn) / 10.0), 10), 50)
-                for i in np.array(scn[1]).argsort()[:nls:-1]:
-                    mz = scn[0][i]
-                    #don't allow a new label within 1.5 units of another
-                    if not np.any(np.abs(np.array(plbl) - mz) < 1.5):
-                        v2lbl[mz] = scn[1][i]
-                    plbl.append(mz)
-
-                #add peak labels
-                for v in v2lbl:
-                    self.plt.text(v, v2lbl[v], str(v), ha='center', \
-                      va='bottom', rotation=90, size=10, color=clr, \
-                      bbox={'boxstyle': 'larrow,pad=0.3', 'fc': clr, \
-                            'ec': clr, 'lw': 1, 'alpha': '0.25'})
-
-        #redraw the canvas
+        # update the view bounds and save them for the navbar
         self.plt.set_xlim(xmin - 1, xmax + 1)
         self.plt.set_ylim(ymin, ymax)
+        self.navbar._views.clear()
+        self.navbar._positions.clear()
+        self.navbar.push_current()
+
+        # plot everything!
         self.canvas.draw()
 
-    def specmousedown(self, event):
+    def plot_spec(self, scn, clr, label=False):
+        if scn.shape[1] > 10 and np.all(np.diff(scn[0]) - \
+          (scn[0, 1] - scn[0, 0]) < 1e-9):
+            #if the spacing between all the points is equal, plot as a line
+            self.plt.plot(scn[0], scn[1], '-', color=clr)
+        else:
+            try:
+                #FIXME: this crashes on Windows unless the user has clicked on
+                #the spectrum graph previously. Matplotlib bug needs workaround
+                self.plt.vlines(scn[0], 0, scn[1], color=clr, alpha=0.5)
+            except:
+                pass
+            self.plt.plot(scn[0], scn[1], ',', color=clr)
+
+        if label:
+            #go through the top 10% highest ions from highest to lowest
+            #always have at least 10 labels, but no more than 50 (arbitrary)
+            #if an ion is close to one seen previously, don't display it
+            v2lbl = {}  # values to label
+            plbl = []  # skip labeling these values
+            #number of labels
+            nls = -1 * min(max(int(len(scn) / 10.0), 10), 50)
+            for i in np.array(scn[1]).argsort()[:nls:-1]:
+                mz = scn[0][i]
+                #don't allow a new label within 1.5 units of another
+                if not np.any(np.abs(np.array(plbl) - mz) < 1.5):
+                    v2lbl[mz] = scn[1][i]
+                plbl.append(mz)
+
+            #add peak labels
+            for v in v2lbl:
+                self.plt.text(v, v2lbl[v], str(v), ha='center', \
+                    va='bottom', rotation=90, size=10, color=clr, \
+                    bbox={'boxstyle': 'larrow,pad=0.3', 'fc': clr, \
+                        'ec': clr, 'lw': 1, 'alpha': '0.25'})
+
+    def mousedown(self, event):
         if event.button == 1:
-            dlim = self.plt.dataLim.get_points()
-            self.plt.axis([dlim[0][0], dlim[1][0], dlim[0][1], dlim[1][1]])
-            self.canvas.draw()
+            if self.ev_time[1] is not None and self.ev_time[2] is not None:
+                if time.time() - self.ev_time[0] < 1 and \
+                  np.abs(event.xdata - self.ev_time[1]) < 1 and \
+                  np.abs(event.ydata - self.ev_time[2]) < 1:
+                    self.navbar.home()
+            self.navbar.press_zoom(event)
         elif event.button == 3:
-            #TODO: make the spec window work better
-            menu = QtGui.QMenu(self.canvas)
-            for i in self.scans:
-                if i == '':
-                    ac = menu.addAction('current')
-                else:
-                    ac = menu.addAction(i)
-                submenu = QtGui.QMenu(menu)
-                sac = submenu.addAction('Display', self.togSpc)
-                sac.setCheckable(True)
-                sac.setChecked(i in self.scansToDisp)
-                sac.setData(i)
-                sac = submenu.addAction('Label', self.spcLbl)
-                sac.setCheckable(True)
-                sac.setChecked(i in self.scansToLbl)
-                sac.setData(i)
-                sac = submenu.addAction('Save', self.saveSpc)
-                sac.setData(i)
-                ac.setMenu(submenu)
+            event.button = 1
+            self.navbar.press_pan(event)
 
-            if not menu.isEmpty():
-                menu.exec_(self.canvas.mapToGlobal(
-                  QtCore.QPoint(event.x, self.canvas.height() - event.y)))
+    def mouseup(self, event):
+        if event.button == 1:
+            self.navbar.release_zoom(event)
+            self.ev_time = time.time(), event.xdata, event.ydata
+        elif event.button == 3:
+            event.button = 1
+            self.navbar.release_pan(event)
 
-    def togSpc(self):
-        scn_nm = str(self.masterWindow.sender().data())
-        if scn_nm in self.scansToDisp:
-            self.scansToDisp.remove(scn_nm)
-        else:
-            self.scansToDisp.append(scn_nm)
-        self.plotSpec()
-
-    def spcLbl(self):
-        scn_nm = str(self.masterWindow.sender().data())
-        if scn_nm in self.scansToLbl:
-            self.scansToLbl.remove(scn_nm)
-        else:
-            self.scansToLbl.append(scn_nm)
-        self.plotSpec()
-
-    def saveSpc(self):
-        #TODO: better metadata on spectra
-        scn_nm = str(self.masterWindow.sender().data())
-        scn = self.scans[scn_nm]
-        dt = self.masterWindow.obj_tab.returnSelFile()
-        info = {'name': scn_nm}
-        if dt is None:
-            spc = Spectrum(self.masterWindow.obj_tab.db, \
-              None, None, info, scn)
-        else:
-            spc = Spectrum(dt.db, None, dt.db_id, info, scn)
-        self.masterWindow.obj_tab.addObjects(dt, [spc])
-
-    def specmousescroll(self, event):
+    def mousescroll(self, event):
         xmin, xmax = self.plt.get_xlim()
         ymin, ymax = self.plt.get_ylim()
         if event.button == 'up':  # zoom in
@@ -173,7 +145,7 @@ class SpecPlotter(object):
               event.xdata + (xmax - event.xdata) / 2.)
             self.plt.set_ylim(event.ydata - (event.ydata - ymin) / 2., \
               event.ydata + (ymax - event.ydata) / 2.)
-        elif event.button == 'down': #zoom out
+        elif event.button == 'down':  # zoom out
             dlim = self.plt.dataLim.get_points()
             xmin = max(event.xdata - 2 * (event.xdata - xmin), dlim[0][0])
             xmax = min(event.xdata + 2 * (xmax - event.xdata), dlim[1][0])
@@ -181,3 +153,15 @@ class SpecPlotter(object):
             ymax = min(event.ydata + 2 * (ymax - event.ydata), dlim[1][1])
             self.plt.axis([xmin, xmax, ymin, ymax])
         self.canvas.draw()
+
+    def save_main_spec(self):
+        dt = self.masterWindow.obj_tab.active_file()
+        info = {'name': self.spec_time}
+        spc = Spectrum(dt.db, None, dt.db_id, info, self.mainscan)
+        self.masterWindow.obj_tab.addObjects(dt, [spc])
+
+    def save_prev_spec(self):
+        dt = self.masterWindow.obj_tab.active_file()
+        info = {'name': self.pspec_time}
+        spc = Spectrum(dt.db, None, dt.db_id, info, self.prevscan)
+        self.masterWindow.obj_tab.addObjects(dt, [spc])
