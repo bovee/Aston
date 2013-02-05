@@ -25,9 +25,9 @@ Model for handling display of open files.
 import re
 import os.path as op
 import json
-import pkg_resources
 from collections import OrderedDict
 from PyQt4 import QtGui, QtCore
+from aston.ui.resources import resfile
 from aston.ui.Fields import aston_fields, aston_groups, aston_field_opts
 from aston.ui.MenuOptions import peak_models
 from aston.Database import AstonFileDatabase
@@ -213,8 +213,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             #TODO: icon for method, compound
             fname = {'file': 'file.png', 'peak': 'peak.png', \
                     'spectrum': 'spectrum.png'}
-            loc = pkg_resources.resource_filename(__name__, \
-              op.join('ui', 'icons', fname.get(f.db_type, '')))
+            loc = resfile('aston/ui', 'icons/' + fname.get(f.db_type, ''))
             rslt = QtGui.QIcon(loc)
         return rslt
 

@@ -1,7 +1,7 @@
 import os.path as op
-import pkg_resources
 from PyQt4 import QtGui
 
+from aston.ui.resources import resfile
 from aston.ui.aston_ui import Ui_MainWindow
 from aston.ui.AstonSettings import AstonSettings
 from aston.ui.FilterWindow import FilterWindow
@@ -22,8 +22,7 @@ class AstonWindow(QtGui.QMainWindow):
         self.ui.setupUi(self)
 
         #my icon!
-        icn_path = pkg_resources.resource_filename(__name__, \
-          op.join('icons', 'logo.png'))
+        icn_path = resfile('aston/ui', 'icons/logo.png')
         self.setWindowIcon(QtGui.QIcon(icn_path))
 
         #quick fix for Mac OS menus

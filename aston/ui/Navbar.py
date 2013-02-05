@@ -1,8 +1,8 @@
 import time
 import os.path as op
-import pkg_resources
 from PyQt4 import QtGui  # , QtCore
 from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg
+from aston.ui.resources import resfile
 from aston.Math.Integrators import merge_ions
 from aston.Features.Spectrum import Spectrum
 
@@ -15,8 +15,7 @@ class AstonNavBar(NavigationToolbar2QTAgg):
         self._xypress = []
 
         #quick function to return icon locs
-        icon = lambda l: pkg_resources.resource_filename( \
-          __name__, op.join('icons', l + '.png'))
+        icon = lambda l: resfile('aston/ui', 'icons/' + l + '.png')
 
         #remove the plot adjustment buttons
         self.removeAction(self.actions()[-1])

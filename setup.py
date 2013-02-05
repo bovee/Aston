@@ -18,6 +18,7 @@
 #    along with Aston.  If not, see <http://www.gnu.org/licenses/>.
 
 from setuptools import setup
+from glob import glob
 import matplotlib
 import sys
 import os
@@ -47,7 +48,7 @@ options = {
     'packages': ['aston', 'aston.ui', 'aston.Features', \
                  'aston.FileFormats', 'aston.Math'],
     'scripts': ['astonx.py'],
-    #'data_files': matplotlib.get_py2exe_datafiles(),
+    'data_files': matplotlib.get_py2exe_datafiles(),
     'package_data': {'aston': \
       ['i18n/*.qm', 'ui/icons/*.png']},
     'include_package_data': True,
@@ -65,15 +66,21 @@ if len(sys.argv) >= 2 and sys.argv[1] == 'py2exe':
 
     options['windows'] = ['astonx.py']
     # scipy...._validation is only needed because of bug in scipy
+    #options['data_files'] += [('Microsoft.VC90.CRT', \
+    #      glob(r'C:\Program Files\Microsoft Visual Studio 9.0' + \
+    #      r'\VC\redist\x86\Microsoft.VC90.CRT\*.*'))]
+    options['data_files'] += [(r'aston\i18n', \
+      glob(os.path.abspath(r'aston\i18n\*.qm')))]
+    options['data_files'] += [(r'aston\ui\icons', \
+      glob(os.path.abspath(r'aston\ui\icons\*.png')))]
+    options['zipfile'] = None
     options['options'] = {
         'py2exe': {'skip_archive': False,
-        'bundle_files': 1,
+        'bundle_files': 2,
         'compressed': True,
         'optimize': '2',
-        'data_files': [("Microsoft.VC90.CRT", glob(r"C:\Program Files" + \
-          r"\Microsoft Visual Studio 9.0\VC\redist\x86\Microsoft.VC90.CRT\*.*"))],
-        'dll_excludes': ['MSVCP90.dll', 'tcl85.dll', 'tk85.dll'],
-        'includes': ['sip', 'scipy.sparse.csgraph._validation'],
+        'dll_excludes': ['MSVCP90.dll', 'tcl85.dll', 'tk85.dll', 'w9xpopen.exe'],
+        'includes': ['sip', 'scipy.sparse.csgraph._validation', 'scipy.io.matlab.streams'],
         'excludes': ['_gtkagg', '_tkagg', 'tcl', 'Tkconstants', 'Tkinter']}
     }
 
@@ -112,13 +119,11 @@ setup(**options)
 
 if len(sys.argv) >= 2 and sys.argv[1] == 'py2exe':
     os.system('rmdir build /s /q')
-    #os.system('mkdir dist\\aston')
-    #os.system('mkdir dist\\aston\\ui')
-    #os.system('mkdir dist\\aston\\ui\\icons')
-    #os.system('copy aston\\ui\\icons\\*.png dist\\aston\\ui\\icons\\')
-    #os.system('copy platform\\win\\*.ico dist\\aston\\ui\\icons\\')
+    os.system('rmdir dist\\mpl-data\\sample_data /s /q')
+    os.system('copy platform\\win\\*.ico dist\\aston\\ui\\icons\\')
+    #TODO: create the Microsoft.VC90.CRT folder and copy the DLLs
+    # and manifest into it
     #TODO: run the aston.nsi
-    #TODO: delete matplotlib sample data
 elif len(sys.argv) >= 2 and sys.argv[1] == 'py2app':
     os.system('rm -rf build')
     os.system('cp -rf platform/mac/qt_menu.nib dist/Aston.app/Contents/Resources/')
