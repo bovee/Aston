@@ -154,6 +154,14 @@ class TimeSeries(object):
             grid = coo_matrix((data.data, (data_ions, data.row))).toarray()
         return ext, grid
 
+    def plot(self):
+        """
+        Plots the top trace in matplotlib.  Useful for data exploration on
+        the commandline; not used in the PyQt gui.
+        """
+        import matplotlib.pyplot as plt
+        plt.plot(self.times, self.y)
+
     def retime(self, new_times):
         return TimeSeries(self._retime(new_times), new_times, self.ions)
 
