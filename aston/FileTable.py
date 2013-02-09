@@ -241,8 +241,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
                 self.masterWindow.plotData()
         elif col == 'p-model':
             obj.update_model(peak_models[data])
-            self.masterWindow.plotter.remove_peaks([obj])
-            self.masterWindow.plotter.add_peaks([obj])
+            self.masterWindow.plotData(updateBounds=False)
         else:
             obj.info[col] = data
         obj.save_changes()
@@ -470,7 +469,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
                 obj.parent_id = head.db_id
         self.db.add_objects(objs)
         self.endInsertRows()
-        self.masterWindow.plotter.add_peaks(objs)
+        self.masterWindow.plotData(updateBounds=False)
 
     def delObjects(self, objs):
         c = self.db.begin_lazy_op()
@@ -483,7 +482,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             self.db.lazy_delete(c, obj)
             self.endRemoveRows()
         self.db.end_lazy_op(c)
-        self.masterWindow.plotter.remove_peaks(objs)
+        self.masterWindow.plotData(updateBounds=False)
 
     def _objToIndex(self, obj):
         if obj is None:

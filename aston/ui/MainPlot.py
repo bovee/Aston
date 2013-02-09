@@ -4,7 +4,7 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg
 from matplotlib.path import Path
 from matplotlib.transforms import offset_copy
-from matplotlib.patches import PathPatch
+from matplotlib.patches import PathPatch, Polygon
 import matplotlib.pyplot as plt
 from PyQt4.QtCore import Qt, QCoreApplication
 
@@ -40,7 +40,6 @@ class Plotter(object):
         self.canvas.mpl_connect('scroll_event', self.mousescroll)
 
         self.spec_line = None
-        self.patches = {}
 
         tr = lambda s: QCoreApplication.translate('', s)
         self._colors = {
@@ -116,7 +115,7 @@ class Plotter(object):
             self.plt.yaxis.set_ticks_position('none')
             self.cb = None
         self.plt.figure.subplots_adjust(left=0.05, right=0.95)
-        self.pk_clr_idx = {}
+        self.patches = {}
 
         #plot all of the datafiles
         if len(datafiles) == 0:
@@ -134,6 +133,10 @@ class Plotter(object):
         else:
             self.plt.set_xlim(bnds[0])
             self.plt.set_ylim(bnds[1])
+            if type(self.spec_line) == Polygon:
+                self.plt.add_patch(self.spec_line)
+            else:
+                self.plt.add_line(self.spec_line)
 
         # plot events on the bottom of the graph
         evts = []
@@ -175,6 +178,12 @@ class Plotter(object):
         """
         Plots times series on the graph.
         """
+        def desaturate(c, k=0):
+            """
+            Utility function to desaturate a color c by an amount k.
+            """
+            intensity = 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]
+            return [intensity * k + i * (1 - k) for i in c]
 
         # make up a factor to separate traces by
         if 'stacked' in self._style:
@@ -211,7 +220,15 @@ class Plotter(object):
                 self.plt.plot(ts.times, trace, color=c, \
                   ls=ls, lw=1.2, label=nm)
                 tnum += 1
-            self.pk_clr_idx[dt.db_id] = (c, alpha)
+
+                # plot peaks
+                for pk in dt.getAllChildren('peak'):
+                    if float(ts.ions[0]) in pk.data.ions or \
+                      ts.ions[0] in pk.data.ions:
+                        ply = Path(pk.as_poly(float(ts.ions[0])))
+                        self.patches[pk.db_id] = PathPatch(ply, \
+                          facecolor=desaturate(c, 0.2), alpha=alpha, lw=0)
+                        self.plt.add_patch(self.patches[pk.db_id])
 
         #add a legend and make it pretty
         if self.legend:
@@ -288,35 +305,4 @@ class Plotter(object):
             ymin = max(ymin, self.navbar._views.home()[0][2])
             ymax = min(ymax, self.navbar._views.home()[0][3])
             self.plt.axis([xmin, xmax, ymin, ymax])
-        self.redraw()
-
-    def clear_peaks(self):
-        self.plt.patches = []
-        self.patches = {}
-        self.redraw()
-
-    def remove_peaks(self, pks):
-        for pk in pks:
-            if pk.db_type == 'peak':
-                if pk.db_id in self.patches:
-                    patch = self.patches[pk.db_id]
-                    self.plt.patches.remove(patch)
-        self.redraw()
-
-    def add_peaks(self, pks):
-        def desaturate(c, k=0):
-            """
-            Utility function to desaturate a color c by an amount k.
-            """
-            intensity = 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]
-            return [intensity * k + i * (1 - k) for i in c]
-
-        for pk in pks:
-            if pk.db_type == 'peak':
-                fid = pk.getParentOfType('file').db_id
-                c, a = self.pk_clr_idx[fid]
-
-                self.patches[pk.db_id] = PathPatch(Path(pk.as_poly()), \
-                  facecolor=desaturate(c, 0.2), alpha=a, lw=0)
-                self.plt.add_patch(self.patches[pk.db_id])
         self.redraw()
