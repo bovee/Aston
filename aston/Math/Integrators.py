@@ -145,3 +145,15 @@ def merge_ions(pks):
         cur_t = time(pk.as_poly())
 
     return cleaned_pks
+
+
+def integrate_mpwrap(ts_and_pks, integrate, fopts):
+    """
+    Take a zipped timeseries and peaks found in it
+    and integrate it to return peaks.
+    """
+    ts, tpks = ts_and_pks
+    pks = integrate(ts, tpks, **fopts)
+    for p in pks:
+        p.info['trace'] = str(ts.ions[0])
+    return pks

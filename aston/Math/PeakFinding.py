@@ -35,10 +35,15 @@ def simple_peak_find(ts, start_slope=500, end_slope=200, \
 
     hi_slopes = np.arange(len(dxdt))[dxdt > start_slope]
     # get the first points of any "runs" as a peak start
+    if len(hi_slopes) == 0:
+        return []
     peak_sts = [hi_slopes[0]] + \
       [j for i, j in slid_win(hi_slopes, 2) if j - i > 10]
+
     lo_slopes = np.arange(len(dxdt))[dxdt < -end_slope]
     # filter out any lone points farther than 10 away from their neighbors
+    if len(lo_slopes) == 0:
+        return []
     lo_slopes = [lo_slopes[0]] + [i[1] for i in slid_win(lo_slopes, 3) \
                  if i[1] - i[0] < point_gap or \
                  i[2] - i[1] < point_gap] + [lo_slopes[-1]]
@@ -174,5 +179,18 @@ def event_peak_find(ts, events, adjust_times=False):
         return events
 
 
-def align_events(ts, evts):
-    return new_evts
+def peak_find_mpwrap(ts, peak_find, fopts, dt):
+    if peak_find == event_peak_find:
+        # event_peak_find also needs a list of events
+        evts = []
+        if dt is not None:
+            for n in ('fia', 'refgas'):
+                evts += dt.events(n)
+            tpks = peak_find(ts, evts, **fopts)
+        else:
+            tpks = []
+    else:
+        tpks = peak_find(ts, **fopts)
+    for pk in tpks:
+        pk[2]['pf'] = peak_find.__name__
+    return tpks

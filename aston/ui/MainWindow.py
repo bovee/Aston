@@ -1,3 +1,5 @@
+import functools
+import multiprocessing
 import os.path as op
 from PyQt4 import QtGui
 
@@ -11,8 +13,8 @@ from aston.ui.SpecPlot import SpecPlotter
 from aston.Database import AstonDatabase, AstonFileDatabase
 from aston.FileTable import FileTreeModel
 import aston.ui.MenuOptions
-from aston.Math.Integrators import merge_ions
-from aston.Math.PeakFinding import event_peak_find
+from aston.Math.Integrators import merge_ions, integrate_mpwrap
+from aston.Math.PeakFinding import event_peak_find, peak_find_mpwrap
 
 
 class AstonWindow(QtGui.QMainWindow):
@@ -311,20 +313,10 @@ class AstonWindow(QtGui.QMainWindow):
         opt = [i for i in submnu if i.isChecked()][0].text()
         peak_find = aston.ui.MenuOptions.peak_finders[opt]
 
-        peaks_found = []
-        for ts in tss:
-            if peak_find == event_peak_find:
-                # event_peak_find also needs a list of events
-                evts = []
-                if dt is not None:
-                    for n in ('fia', 'refgas'):
-                        evts += dt.events(n)
-                    tpks = peak_find(ts, evts, **self.get_f_opts(peak_find))
-                else:
-                    tpks = []
-            elif peaks_found != [] and isomode:
-                # we've already integrated things, reuse
-                # their found peaks, but shifted
+        if isomode:
+            peaks_found = [peak_find_mpwrap(tss[0], peak_find, \
+                                            self.get_f_opts(peak_find), dt)]
+            for ts in tss[1:]:
                 tpks = []
                 for p in peaks_found[0]:
                     old_pk_ts = tss[0].twin((p[0], p[1]))
@@ -333,11 +325,14 @@ class AstonWindow(QtGui.QMainWindow):
                     off = new_pk_ts.times[new_pk_ts.y.argmax()] - old_t
                     new_p = (p[0] + off, p[1] + off, p[2])
                     tpks.append(new_p)
-            else:
-                tpks = peak_find(ts, **self.get_f_opts(peak_find))
-            for pk in tpks:
-                pk[2]['pf'] = peak_find.__name__
-            peaks_found.append(tpks)
+                peaks_found.append(tpks)
+        else:
+            f = functools.partial(peak_find_mpwrap, peak_find=peak_find, \
+                                  fopts=self.get_f_opts(peak_find), dt=dt)
+            #po = multiprocessing.Pool()
+            #peaks_found = po.map(f, tss)
+            peaks_found = list(map(f, tss))
+
         return peaks_found
 
     def integrate_peaks(self, tss, peaks_found, dt=None):
@@ -345,14 +340,16 @@ class AstonWindow(QtGui.QMainWindow):
         opt = [i for i in submnu if i.isChecked()][0].text()
         integrate = aston.ui.MenuOptions.integrators[opt]
 
-        all_pks = []
-        for ts, tpks in zip(tss, peaks_found):
-            pks = integrate(ts, tpks, **self.get_f_opts(integrate))
-            for p in pks:
-                p.info['trace'] = str(ts.ions[0])
-                if dt is not None:
-                    p.db, p.parent_id = dt.db, dt.db_id
-            all_pks += pks
+        f = functools.partial(integrate_mpwrap, integrate=integrate, \
+                              fopts=self.get_f_opts(integrate))
+        #po = multiprocessing.Pool()
+        #all_pks = po.map(f, zip(tss, peaks_found))
+        all_pks = list(map(f, zip(tss, peaks_found)))
+
+        # flatten all_pks, add db info and return it
+        all_pks = [pk for pks in all_pks for pk in pks]
+        for pk in all_pks:
+            pk.db, pk.parent_id = dt.db, dt.db_id
         return all_pks
 
     def integrate(self):
