@@ -99,7 +99,11 @@ elif len(sys.argv) >= 2 and sys.argv[1] == 'py2app':
 
     options['app'] = ['astonx.py']
     options['setup_requires'] = ['py2app']
-    #options['iconfile'] = ''
+    options['iconfile'] = 'aston/ui/icons/logo.icns'
+    options['data_files'] += [('aston/i18n', \
+      glob(os.path.abspath('aston/i18n/*.qm')))]
+    options['data_files'] += [('aston/ui/icons', \
+      glob(os.path.abspath('aston/ui/icons/*.png')))]
     options['options'] = {'py2app': {
         'argv_emulation': False,
         'includes': ['sip', 'PyQt4', 'PyQt4.QtCore', \
@@ -128,11 +132,11 @@ elif len(sys.argv) >= 2 and sys.argv[1] == 'py2app':
     os.system('rm -rf build')
     os.system('cp -rf platform/mac/qt_menu.nib dist/Aston.app/Contents/Resources/')
     os.system('cp platform/mac/qt.conf dist/Aston.app/Contents/Resources/')
-    #os.system('mkdir dist/Aston.app/Contents/Resources/aston')
-    #os.system('mkdir dist/Aston.app/Contents/Resources/aston/ui')
-    #os.system('mkdir dist/Aston.app/Contents/Resources/aston/ui/icons')
-    #os.system('cp aston/ui/icons/*.png dist/Aston.app/Contents/Resources/aston/ui/icons/')
-    ##TODO: copy icon.icns into *.app
+    os.system('cp platform/mac/logo.icns dist/Aston.app/Contents/Resources/PythonApplet.icns')
+    os.system('rm -rf dist/Aston.app/Contents/Resources/mpl-data/sample_data')
+    os.system('rm -rf dist/Aston.app/Contents/Resources/lib/python2.7/matplotlib/tests')
+    os.system('rm -rf dist/Aston.app/Contents/Resources/lib/python2.7/scipy/weave')
+    os.system('rm -rf dist/Aston.app/Contents/Resources/lib/python2.7/matplotlib/mpl-data')
     ##TODO: remove stuff from "dist/Aston.app/Contents/Resources/lib/python2.7"
     ##matplotlib.tests, scipy.weave, numpy.f2py
     ##libQtNetwork.4.dylib, libQtXmlPatterns.4.dylib, libtcl8.5.dylib
