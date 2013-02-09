@@ -25,6 +25,7 @@
 * allow user-selected peaks to be re-interpreted &
   coelution spots to be found
 * periodic integration (to replace old "split peaks" code)
+* extract spectra from SIM method file properly (e.g. CM1292)
 
 
 0.7 Checklist

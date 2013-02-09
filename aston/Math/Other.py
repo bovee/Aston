@@ -1,6 +1,6 @@
 from collections import OrderedDict
 import numpy as np
-from scipy.optimize import root
+from scipy.optimize import fsolve
 
 # using 23.5 as a default d18o assuming no fractionation
 # during combustion; actual combustion produces values
@@ -71,7 +71,6 @@ def delta13C_Craig(r45sam, r46sam, d13cstd, r45std, r46std,
 
     # solve the system of equations
     x = np.linalg.solve(eqn_mat, np.array([r45d45, d46]))
-
     return x[0]
 
 
@@ -103,7 +102,8 @@ def delta13C_Santrock(r45sam, r46sam, d13cstd, r45std, r46std,
     r46 = (r46sam / r46std) * c46
 
     rf = lambda r18: -3 * c17(r18) ** 2 + 2 * r45 * c17(r18) + 2 * r18 - r46
-    r18 = root(rf, r18std).x[0]
+    #r18 = scipy.optimize.root(rf, r18std).x[0]  # use with scipy 0.11.0
+    r18 = fsolve(rf, r18std)[0]
     r13 = r45 - 2 * c17(r18)
     return 1000 * (r13 / rcpdb - 1)
 
