@@ -1,5 +1,4 @@
 import numpy as np
-import scipy.signal._peak_finding as spf
 #from aston.Math.Chromatograms import savitzkygolay
 from aston.Math.Chromatograms import movingaverage
 
@@ -78,6 +77,9 @@ def simple_peak_find(ts, start_slope=500, end_slope=200, \
 
 def wavelet_peak_find(ts, min_snr=1., assume_sig=4., min_length=8.0,
                       max_dist=4.0, gap_thresh=2.0):
+    # this import is here to let scipy 0.9.0 at least
+    # load this module
+    import scipy.signal._peak_finding as spf
     t = ts.time()
 
     widths = np.linspace(1, 100, 200)

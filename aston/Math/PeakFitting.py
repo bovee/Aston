@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.optimize import leastsq, minimize
+from scipy.optimize import leastsq, fmin, anneal, fmin_l_bfgs_b
 
 # bounding code inspired by http://newville.github.com/lmfit-py/bounds.html
 # which was inspired by leastsqbound, which was inspired by MINUIT
@@ -118,28 +118,28 @@ def fit(ts, fs=[], all_params=[], fit_vars=None, \
     def errfunc(p, t, y, all_params):
         return np.sum(errfunc_lsq(p, t, y, all_params) ** 2)
 
-    #if alg == 'simplex':
-    #    fit_p, _ = fmin(errfunc_1, initc, args=(t, y, peak_params))
-    #elif alg == 'anneal':
-    #    fit_p, _ = anneal(errfunc_1, initc, args=(t, y, peak_params))
-    #elif alg == 'lbfgsb':
-    #    #TODO: use bounds param
-    #    fitp, _ = fmin_l_bfgs_b(errfunc_1, fit_p, args=(t, y, peak_params), \
-    #                            approx_grad=True)
-    if alg == 'leastsq':
+    if alg == 'simplex':
+        fit_p, _ = fmin(errfunc, initc, args=(ts.times, ts.y, peak_params))
+    elif alg == 'anneal':
+        fit_p, _ = anneal(errfunc, initc, args=(ts.times, ts.y, peak_params))
+    elif alg == 'lbfgsb':
+        #TODO: use bounds param
+        fitp, _ = fmin_l_bfgs_b(errfunc, fit_p, args=(ts.times, ts.y, \
+                                peak_params), approx_grad=True)
+    elif alg == 'leastsq':
         fit_p, _ = leastsq(errfunc_lsq, initc, \
                            args=(ts.times, ts.y, all_params))
-    else:
-        r = minimize(errfunc, initc, \
-                     args=(ts.times, ts.y, all_params), \
-                     jac=False, gtol=1e-2)
-        #if not r['success']:
-        #    print('Fail:' + str(f))
-        #    print(r)
-        if np.nan in r['x']:  # not r['success']?
-            fit_p = initc
-        else:
-            fit_p = r['x']
+    #else:
+    #    r = minimize(errfunc, initc, \
+    #                 args=(ts.times, ts.y, all_params), \
+    #                 jac=False, gtol=1e-2)
+    #    #if not r['success']:
+    #    #    print('Fail:' + str(f))
+    #    #    print(r)
+    #    #if np.nan in r['x']:  # not r['success']?
+    #    #    fit_p = initc
+    #    #else:
+    #    #    fit_p = r['x']
 
     fit_pl = fit_p.tolist()
     v = fit_pl.pop(0)
