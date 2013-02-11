@@ -30,7 +30,7 @@ class Peak(DBObject):
         p = json.loads(self.info['p-params'])
         y = f(times, **p)
         y = np.hstack([self.rawdata.y[0], y, self.rawdata.y[-1]])
-        return TimeSeries(y, self.rawdata.times, ['X'])
+        return TimeSeries(y, self.rawdata.times, [self.rawdata.ions[0]])
 
     def time(self, twin=None):
         return self.rawdata.trace('!', twin=twin).time

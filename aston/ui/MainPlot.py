@@ -135,7 +135,7 @@ class Plotter(object):
             self.plt.set_ylim(bnds[1])
             if type(self.spec_line) == Polygon:
                 self.plt.add_patch(self.spec_line)
-            else:
+            elif self.spec_line is not None:
                 self.plt.add_line(self.spec_line)
 
         # plot events on the bottom of the graph
@@ -223,9 +223,14 @@ class Plotter(object):
 
                 # plot peaks
                 for pk in dt.getAllChildren('peak'):
-                    if float(ts.ions[0]) in pk.data.ions or \
-                      ts.ions[0] in pk.data.ions:
-                        ply = Path(pk.as_poly(float(ts.ions[0])))
+                    #TODO: there has to be a better way to handle if
+                    # the ion is a string or a float
+                    if ts.ions[0] in pk.data.ions or \
+                      ts.ions[0] in [str(i) for i in pk.data.ions]:
+                        try:
+                            ply = Path(pk.as_poly(float(ts.ions[0])))
+                        except:
+                            ply = Path(pk.as_poly(ts.ions[0]))
                         self.patches[pk.db_id] = PathPatch(ply, \
                           facecolor=desaturate(c, 0.2), alpha=alpha, lw=0)
                         self.plt.add_patch(self.patches[pk.db_id])
