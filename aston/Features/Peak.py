@@ -26,11 +26,32 @@ class Peak(DBObject):
         #TODO: if p-params is a list, plot each item as current
         #p-params; allow for multiple functions to fit one peak
 
-        times = self.rawdata.times[1:-1]
         p = json.loads(self.info['p-params'])
-        y = f(times, **p)
-        y = np.hstack([self.rawdata.y[0], y, self.rawdata.y[-1]])
+        y = f(self.rawdata.times, **p)
         return TimeSeries(y, self.rawdata.times, [self.rawdata.ions[0]])
+
+    def baseline(self, ion=None, interp=False):
+        if self.info['p-baseline'] == '':
+            return None
+        bases = json.loads(self.info['p-baseline'])
+        if str(ion) in bases:
+            return np.array(bases[str(ion)])
+        else:
+            return None
+
+    def set_baseline(self, ion, value=None):
+        if self.info['p-baseline'] == '':
+            bases = {}
+        else:
+            bases = json.loads(self.info['p-baseline'])
+        if value is None and str(ion) in bases:
+            del bases[str(ion)]
+        elif value is None:
+            return
+        else:
+            assert type(value) == np.ndarray
+        bases[str(ion)] = value.tolist()
+        self.info['p-baseline'] = json.dumps(bases)
 
     def time(self, twin=None):
         return self.rawdata.trace('!', twin=twin).time
@@ -72,17 +93,29 @@ class Peak(DBObject):
             return self.d13C()
         return ''
 
-    def contains(self, x, y):
-        return peakmath.contains(self.as_poly(), x, y)
+    def contains(self, x, y, ion=None):
+        if not self.data.has_ion(ion):
+            return False
+        if self.info['p-s-time'] == '1.3236661911':
+            print(self.info['p-baseline'], ion)
+            print(peakmath.contains(self.as_poly(ion), x, y))
+        return peakmath.contains(self.as_poly(ion), x, y)
 
     def as_poly(self, ion=None):
+        # add in the baseline on either side
         if ion is None:
             row = 0
         elif ion not in self.data.ions:
             row = 0
         else:
             row = self.data.ions.index(ion)
-        return np.vstack([self.data.times, self.data.data.T[row]]).T
+        pk = np.vstack([self.data.times, self.data.data.T[row]]).T
+        base = self.baseline(ion)
+        if base is None:
+            ply = pk
+        else:
+            ply = np.vstack([base[0], pk, base[:0:-1]])
+        return ply[np.logical_not(np.any(np.isnan(ply), axis=1))]
 
     def area(self, ion=None):
         if ion == '!':
@@ -148,9 +181,9 @@ class Peak(DBObject):
 
         f = peak_models.get(str(key), None)
         if f is not None:
-            #TODO: use baseline detection?
-            t = self.rawdata.times[1:-1]
-            y = self.rawdata.y[1:-1]
+            t = self.rawdata.times
+            y = self.rawdata.y
+            #TODO: subtract baseline
             #ya = x[1:-1] - np.linspace(x[0], x[-1], len(x) - 2)
 
             ts = TimeSeries(y, t)

@@ -134,7 +134,8 @@ def merge_ions(pks):
     for pk in sort_pks:
         if np.abs(cur_t - time(pk.as_poly())) < 0.01:
             c_pk = cleaned_pks[-1]
-            if c_pk.data.ions[0] != pk.data.ions[0]:
+            if not c_pk.data.has_ion(pk.data.ions[0]):
+                c_pk.set_baseline(pk.data.ions[0], pk.baseline())
                 c_pk.rawdata = c_pk.rawdata & pk.rawdata
                 if 's-mzs' in c_pk.info:
                     del c_pk.info['s-mzs']
