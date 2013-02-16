@@ -23,6 +23,8 @@ class AstonNavBar(NavigationToolbar2QTAgg):
         self.removeAction(self.actions()[-1])
 
         #add the alignment tool
+        if not hasattr(self, '_actions'):
+            self._actions = {}
         self._actions['align'] = QtGui.QAction(QtGui.QIcon(icon('align')), \
           self.parent.tr('Align Chromatogram'), self)
         self._actions['align'].setCheckable(True)
