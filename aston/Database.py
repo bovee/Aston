@@ -40,7 +40,9 @@ class AstonDatabase(object):
     def __init__(self, database):
         self.database_path = database
 
-        if not os.path.exists(database):
+        if database is None:
+            self.db = None
+        elif not os.path.exists(database):
             # create a database file if one doesn't exist
             self.db = sqlite3.connect(database)
             c = self.db.cursor()
@@ -55,6 +57,8 @@ class AstonDatabase(object):
         self.objects = None
 
     def reload(self):
+        if self.db is None:
+            return
         #preload all the objects in the database
         c = self.db.cursor()
         c.execute('SELECT type, id, parent_id, info, data FROM objs')
@@ -71,6 +75,8 @@ class AstonDatabase(object):
         return dict(p)
 
     def get_key(self, key, dflt=''):
+        if self.db is None:
+            return dflt
         c = self.db.cursor()
         c.execute('SELECT value FROM prefs WHERE key = ?', (key,))
         res = c.fetchone()
@@ -82,6 +88,8 @@ class AstonDatabase(object):
             return res[0]
 
     def set_key(self, key, val):
+        if self.db is None:
+            return
         c = self.db.cursor()
         c.execute('SELECT * FROM prefs WHERE key = ?', (key,))
         if c.fetchone() is not None:
@@ -155,6 +163,8 @@ class AstonDatabase(object):
         return self.getChildren()
 
     def getChildren(self, db_id=None):
+        if self.db is None:
+            return []
         if self.objects is None:
             self.reload()
         return [obj for obj in self.objects if obj.parent_id == db_id]

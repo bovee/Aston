@@ -15,7 +15,7 @@ from aston.Database import AstonDatabase, AstonFileDatabase
 from aston.FileTable import FileTreeModel
 import aston.ui.MenuOptions
 from aston.Math.Integrators import merge_ions, integrate_mpwrap
-from aston.Math.PeakFinding import event_peak_find, peak_find_mpwrap
+from aston.Math.PeakFinding import peak_find_mpwrap
 
 
 class AstonWindow(QtGui.QMainWindow):
@@ -32,8 +32,13 @@ class AstonWindow(QtGui.QMainWindow):
         self.ui.actionSettings.setMenuRole(QtGui.QAction.NoRole)
 
         #set up the list of files in the current directory
-        self.directory = op.expanduser(self.getPref('Default.FILE_DIRECTORY'))
-        file_db = AstonFileDatabase(op.join(self.directory, 'aston.sqlite'))
+        fdir = self.getPref('Default.FILE_DIRECTORY')
+        if fdir is not None:
+            self.directory = op.expanduser(fdir)
+            file_db = AstonFileDatabase(op.join(self.directory, \
+                                                'aston.sqlite'))
+        else:
+            file_db = AstonDatabase(None)
         self.obj_tab = FileTreeModel(file_db, self.ui.fileTreeView, self)
 
         #connect the menu logic
@@ -104,8 +109,8 @@ class AstonWindow(QtGui.QMainWindow):
 
         #flesh out the settings menu
         color_menu = QtGui.QMenu(self.ui.menuSettings)
-        v = self.obj_tab.db.get_key('color_scheme', dflt='Spectral')
-        v = self.plotter._colors[v]
+        v_cs = self.obj_tab.db.get_key('color_scheme', dflt='Spectral')
+        v = self.plotter._colors[v_cs]
         self.plotter.setColorScheme(v)
         self._add_opts_to_menu(color_menu, \
           self.plotter.availColors(), self.set_color_scheme, v)
@@ -118,8 +123,8 @@ class AstonWindow(QtGui.QMainWindow):
         self.ui.actionGraph_Peaks_Found.triggered.connect(self.set_legend)
 
         style_menu = QtGui.QMenu(self.ui.menuSettings)
-        v = self.obj_tab.db.get_key('graph_style', dflt='default')
-        v = self.plotter._styles[v]
+        v_gs = self.obj_tab.db.get_key('graph_style', dflt='default')
+        v = self.plotter._styles[v_gs]
         self.plotter.setStyle(v)
         self._add_opts_to_menu(style_menu, \
           self.plotter.availStyles(), self.set_graph_style, v)
@@ -190,7 +195,7 @@ class AstonWindow(QtGui.QMainWindow):
         try:
             return cp.get(key.split('.')[0], key.split('.')[1])
         except:
-            return ''
+            return None
 
     def open_folder(self):
         folder = str(QtGui.QFileDialog.getExistingDirectory(self, \
