@@ -51,6 +51,7 @@ class AstonSettings(QtGui.QWidget):
 
     def numeric_opts(self):
         k_to_b = {'peakfind_simple_startslope': self.ui.doubleSimpleStartSlope,
+                  'peakfind_simple_initslope': self.ui.doubleSimpleInitSlope,
                   'peakfind_simple_endslope': self.ui.doubleSimpleEndSlope,
                   'peakfind_simple_maxwidth': self.ui.doubleSimpleMaxPeakWidth,
                   'peakfind_simple_minheight': self.ui.doubleSimpleMinPeakHgt,

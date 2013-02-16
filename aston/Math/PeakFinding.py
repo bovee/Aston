@@ -3,7 +3,7 @@ import numpy as np
 from aston.Math.Chromatograms import movingaverage
 
 
-def simple_peak_find(ts, start_slope=500, end_slope=200, \
+def simple_peak_find(ts, init_slope=500, start_slope=500, end_slope=200, \
                      min_peak_height=50, max_peak_width=1.5):
     """
     Given a TimeSeries, return a list of tuples
@@ -32,46 +32,62 @@ def simple_peak_find(ts, start_slope=500, end_slope=200, \
     dxdt = np.gradient(smooth_y) / np.gradient(t)
     #dxdt = -savitzkygolay(ts, 5, 3, deriv=1).y / np.gradient(t)
 
-    hi_slopes = np.arange(len(dxdt))[dxdt > start_slope]
+    init_slopes = np.arange(len(dxdt))[dxdt > init_slope]
+    if len(init_slopes) == 0:
+        return []
     # get the first points of any "runs" as a peak start
-    if len(hi_slopes) == 0:
-        return []
-    peak_sts = [hi_slopes[0]] + \
-      [j for i, j in slid_win(hi_slopes, 2) if j - i > 10]
+    # runs can have a gap of up to 10 points in them
+    peak_sts = [init_slopes[0]] + \
+      [j for i, j in slid_win(init_slopes, 2) if j - i > 10]
+    peak_sts.sort()
 
-    lo_slopes = np.arange(len(dxdt))[dxdt < -end_slope]
-    # filter out any lone points farther than 10 away from their neighbors
-    if len(lo_slopes) == 0:
+    en_slopes = np.arange(len(dxdt))[dxdt < -end_slope]
+    if len(en_slopes) == 0:
         return []
-    lo_slopes = [lo_slopes[0]] + [i[1] for i in slid_win(lo_slopes, 3) \
+    # filter out any lone points farther than 10 away from their neighbors
+    en_slopes = [en_slopes[0]] + [i[1] for i in slid_win(en_slopes, 3) \
                  if i[1] - i[0] < point_gap or \
-                 i[2] - i[1] < point_gap] + [lo_slopes[-1]]
+                 i[2] - i[1] < point_gap] + [en_slopes[-1]]
     # get the last points of any "runs" as a peak end
-    peak_ens = [j for i, j in slid_win(lo_slopes[::-1], 2) \
-                if i - j > point_gap] + [lo_slopes[-1]]
+    peak_ens = [j for i, j in slid_win(en_slopes[::-1], 2) \
+                if i - j > point_gap] + [en_slopes[-1]]
+    peak_ens.sort()
     #avals = np.arange(len(t))[np.abs(t - 0.675) < 0.25]
-    #print([i for i in lo_slopes if i in avals])
+    #print([i for i in en_slopes if i in avals])
     #print([(t[i], i) for i in peak_ens if i in avals])
 
     peak_list = []
 
     for pk in peak_sts:
+        # track backwards to find the true start
+        while dxdt[pk] > start_slope and pk > 0:
+            pk -= 1
+
+        # now find where the peak ends
         dist_to_end = np.array(peak_ens) - pk
-        pos_dist_to_end = dist_to_end[dist_to_end > 0]
-        # if no end point is found, the end point
-        # is the end of the timeseries
-        if len(pos_dist_to_end) == 0:
-            pk2 = len(ts.y) - 1
+        pos_end = pk + dist_to_end[dist_to_end > 0]
+        for pk2 in pos_end:
+            if (ts.y[pk2] - ts.y[pk]) / (t[pk2] - t[pk]) > start_slope:
+                # if the baseline beneath the peak is too large, let's
+                # keep going to the next dip
+                peak_list.append((t[pk], t[pk2], {}))
+                pk = pk2
+            else:
+                break
         else:
-            pk2 = pk + pos_dist_to_end.min()
+            # if no end point is found, the end point
+            # is the end of the timeseries
+            pk2 = len(ts.y) - 1
 
         # make sure that peak is short enough
         if t[pk2] - t[pk] > max_peak_width:
             pk2 = pk + np.abs(t[pk:] - t[pk] - max_peak_width).argmin()
 
         pk_hgt = max(ts.y[pk:pk2]) - min(ts.y[pk:pk2])
-        if pk_hgt > min_peak_height:
-            peak_list.append((t[pk], t[pk2], {}))
+        if pk_hgt < min_peak_height:
+            continue
+
+        peak_list.append((t[pk], t[pk2], {}))
     return peak_list
 
 

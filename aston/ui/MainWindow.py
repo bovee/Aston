@@ -292,6 +292,7 @@ class AstonWindow(QtGui.QMainWindow):
         p = {}
         fname = f.__name__
         if fname == 'simple_peak_find':
+            p['init_slope'] = gf('peakfind_simple_initslope', 500)
             p['start_slope'] = gf('peakfind_simple_startslope', 500)
             p['end_slope'] = gf('peakfind_simple_endslope', 200)
             p['min_peak_height'] = gf('peakfind_simple_minheight', 50)

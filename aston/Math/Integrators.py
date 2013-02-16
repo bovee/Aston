@@ -13,13 +13,12 @@ def simple_integrate(ts, peak_list):
     peaks = []
     for t0, t1, hints in peak_list:
         pk_ts = ts.trace('!', twin=(t0, t1))
-        if 'y0' in hints and 'y1' in hints:
-            d = np.vstack([hints['y0'], ts.data, hints['y1']])
-            t = np.hstack([t0, ts.times, t1])
-            pk_ts = TimeSeries(d, t, ts.ions)
         info = {'name': '{:.2f}-{:.2f}'.format(t0, t1)}
         info['p-create'] = hints.get('pf', '') + ',simple_integrate'
         pk = Peak(None, None, None, info, pk_ts)
+        if 'y0' in hints and 'y1' in hints:
+            base = np.array([[t0, hints['y0']], [t1, hints['y1']]])
+            pk.set_baseline(ts.ions[0], base)
         peaks.append(pk)
     return peaks
 
@@ -71,11 +70,16 @@ def drop_integrate(ts, peak_list):
 
                 # if there are y-values, interpolate a new one
                 if 'y0' in overlap_pk[2] and 'y1' in hints:
-                    xs = np.array([overlap_pk[0], t1])
                     ys = np.array([overlap_pk[2]['y0'], hints['y1']])
-                    y_val = np.interp(min_t, xs, ys)
-                    overlap_pk[2]['y1'] = y_val
-                    hints['y0'] = y_val
+                else:
+                    y0 = ts.get_point('!', overlap_pk[0])
+                    y1 = ts.get_point('!', t1)
+                    overlap_pk[2]['y0'], hints['y1'] = y0, y1
+                    ys = np.array([y0, y1])
+                xs = np.array([overlap_pk[0], t1])
+                y_val = np.interp(min_t, xs, ys)
+                overlap_pk[2]['y1'] = y_val
+                hints['y0'] = y_val
 
                 # add the old and new peak in
                 temp_pks.append((overlap_pk[0], min_t, overlap_pk[2]))
