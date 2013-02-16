@@ -373,12 +373,10 @@ class Datafile(DBObject):
         """
         Return the value of the trace at a certain time.
         """
-        time = self._sc_off(time)
-
         ts = self.trace(trace)
         f = interp1d(ts.times, ts.data.T, \
           bounds_error=False, fill_value=0.0)
-        return f(time)[0]
+        return f(self._sc_off(time))[0]
 
     def _load_info(self, fld):
         #create the key if it doesn't yet exist

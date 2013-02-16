@@ -67,7 +67,7 @@ class CSVFile(Datafile.Datafile):
                 data = np.array([np.fromstring(ln, sep=delim) for ln in lns[1:]])
                 self.data = TimeSeries(data[:, 1:], data[:, 0], ions)
         except:
-            self.data = TimeSeries()
+            self.data = TimeSeries(np.array([]), np.array([]))
 
     def _update_info_from_file(self):
         d = {}

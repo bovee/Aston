@@ -90,8 +90,11 @@ class AstonNavBar(NavigationToolbar2QTAgg):
             self.ev_time = time.time()
             if abs(self._xypress[0] - event.xdata) > 0.01:
                 return
+            #TODO: better way to retrieve top ion?
+            ion = dt.active_traces(n=0)[0].ions[0]
+            #TODO: filter so peak has ion 'ion'
             for pk in dt.getAllChildren('peak'):
-                if pk.contains(event.xdata, event.ydata):
+                if pk.contains(event.xdata, event.ydata, ion=ion):
                     self.parent.obj_tab.delObjects([pk])
                     break
         else:

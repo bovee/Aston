@@ -1,5 +1,6 @@
 import functools
 import multiprocessing
+import codecs
 import os.path as op
 from PyQt4 import QtGui
 
@@ -36,7 +37,7 @@ class AstonWindow(QtGui.QMainWindow):
         self.obj_tab = FileTreeModel(file_db, self.ui.fileTreeView, self)
 
         #connect the menu logic
-        self.ui.actionOpen.triggered.connect(self.openFolder)
+        self.ui.actionOpen.triggered.connect(self.open_folder)
         self.ui.actionExportChromatogram.triggered.connect( \
           self.exportChromatogram)
         self.ui.actionExportSpectra.triggered.connect(self.exportSpectrum)
@@ -191,7 +192,7 @@ class AstonWindow(QtGui.QMainWindow):
         except:
             return ''
 
-    def openFolder(self):
+    def open_folder(self):
         folder = str(QtGui.QFileDialog.getExistingDirectory(self, \
           self.tr("Open Folder")))
         if folder == '':
@@ -281,10 +282,9 @@ class AstonWindow(QtGui.QMainWindow):
           self.tr("Save As..."), filter=fopts))
         if fname == '':
             return
-        f = open(fname, 'w')
         sel = self.obj_tab.returnSelFiles()
-        f.write(self.obj_tab.items_as_csv(sel))
-        f.close()
+        with codecs.open(fname, 'w', encoding='utf-8') as f:
+            f.write(self.obj_tab.items_as_csv(sel))
 
     def get_f_opts(self, f):
         gf = lambda k, df: float(self.obj_tab.db.get_key(k, dflt=str(df)))

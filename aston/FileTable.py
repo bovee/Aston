@@ -22,8 +22,8 @@ Model for handling display of open files.
 """
 #pylint: disable=C0103
 
+from __future__ import unicode_literals
 import re
-import os.path as op
 import json
 from collections import OrderedDict
 from PyQt4 import QtGui, QtCore
@@ -565,10 +565,15 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             row_lst.append(delim.join(col_lst))
 
         if incHeaders:
-            flds = [aston_fields[i] for i in flds if i not in ['vis']]
-            return delim.join(flds) + '\n' + '\n'.join(row_lst)
-        else:
-            return '\n'.join(row_lst)
+            try:  # for python 2
+                flds = [unicode(aston_fields[i]) for i in flds \
+                        if i not in ['vis']]
+            except:  # for python 3
+                flds = [aston_fields[i] for i in flds \
+                        if i not in ['vis']]
+            header = delim.join(flds) + '\n'
+            table = '\n'.join(row_lst)
+            return header + table
 
 
 class FilterModel(QtGui.QSortFilterProxyModel):

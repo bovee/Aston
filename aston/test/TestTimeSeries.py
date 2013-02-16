@@ -3,6 +3,7 @@ import base64
 from aston.TimeSeries import TimeSeries, ts_func
 from aston.TimeSeries import decompress_to_ts
 
+
 def test_and():
     t = np.array([1, 2, 3, 4, 5])
     a = TimeSeries(np.array([10, 20, 30, 40, 50]), t, ['X'])
@@ -37,8 +38,9 @@ def test_decompress():
     assert ts.ions == ['X']
 
 
-def test_gradient():
-    a = TimeSeries(np.array([[0,1,2,1,0],[0,0,2,0,0]]).T, np.array([1,2,3,4,5]), [1,2])
+def test_tsfunc():
+    a = TimeSeries(np.array([[0, 1, 2, 1, 0], [0, 0, 2, 0, 0]]).T, \
+                   np.array([1, 2, 3, 4, 5]), [1, 2])
     grad = ts_func(np.gradient)
     c = grad(a.trace(1)) / grad(TimeSeries(a.times, a.times))
-    assert c.y == np.array([1., 1., 0., -1., -1.])
+    assert np.all(c.y == np.array([1., 1., 0., -1., -1.]))

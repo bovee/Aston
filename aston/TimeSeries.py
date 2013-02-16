@@ -144,6 +144,15 @@ class TimeSeries(object):
             return np.vstack([np.array([float(i) for i in self.ions]), \
               ion_abs.sum(axis=0)])
 
+    def get_point(self, trace, time):
+        """
+        Return the value of the trace at a certain time.
+        """
+        ts = self.trace(trace)
+        f = interp1d(ts.times, ts.data.T, \
+          bounds_error=False, fill_value=0.0)
+        return f(time)[0]
+
     def as_2D(self):
         ext = (self.times[0], self.times[-1], min(self.ions), max(self.ions))
         if type(self._rawdata) == np.ndarray:
@@ -154,28 +163,40 @@ class TimeSeries(object):
             grid = coo_matrix((data.data, (data_ions, data.row))).toarray()
         return ext, grid
 
-    def plot(self):
+    def plot(self, show=False):
         """
         Plots the top trace in matplotlib.  Useful for data exploration on
         the commandline; not used in the PyQt gui.
         """
         import matplotlib.pyplot as plt
         plt.plot(self.times, self.y)
+        if show:
+            plt.show()
 
     def retime(self, new_times):
         return TimeSeries(self._retime(new_times), new_times, self.ions)
 
-    def _retime(self, new_times):
+    def _retime(self, new_times, fill=0.0):
         if new_times.shape == self.times.shape:
             if np.all(np.equal(new_times, self.times)):
                 return self._rawdata
         f = lambda d: interp1d(self.times, d, \
-            bounds_error=False, fill_value=0.0)(new_times)
+            bounds_error=False, fill_value=fill)(new_times)
         return np.apply_along_axis(f, 0, self._rawdata)
 
     def adjust_time(self, offset=0.0, scale=1.0):
         t = scale * self.times + offset
         return TimeSeries(self._rawdata, t, self.ions)
+
+    def has_ion(self, ion):
+        if ion in self.ions:
+            return True
+        try:  # in case ion is not a number
+            if float(ion) in self.ions:
+                return True
+        except ValueError:
+            pass
+        return False
 
     def _apply_data(self, f, ts):
         """
@@ -232,11 +253,17 @@ class TimeSeries(object):
     def __and__(self, ts):
         if ts is None:
             return self
-        # TODO: shouldn't this use the times of the longest
-        #timeseries and not just the first one?
-        data = np.hstack([self._rawdata, ts._retime(self.times)])
+        t_step = self.times[1] - self.times[0]
+        b_time = min(self.times[0], ts.times[0] + \
+                     (self.times[0] - ts.times[0]) % t_step)
+        e_time = max(self.times[-1], ts.times[-1] + t_step - \
+                     (ts.times[-1] - self.times[-1]) % t_step)
+        t = np.arange(b_time, e_time, t_step)
+        x0 = self._retime(t, fill=np.nan)
+        x1 = ts._retime(t, fill=np.nan)
+        data = np.hstack([x0, x1])
         ions = self.ions + ts.ions
-        ts = TimeSeries(data, self.times, ions)
+        ts = TimeSeries(data, t, ions)
         return ts
 
     @property

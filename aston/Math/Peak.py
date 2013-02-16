@@ -2,9 +2,12 @@ import numpy as np
 
 
 def area(data):
+    # filter out any points that have a nan
+    fdata = data[~np.isnan(data).any(1)]
+
     csum = 0
-    x, y = data[-1, :]
-    for i in data:
+    x, y = fdata[-1, :]
+    for i in fdata:
         csum += i[0] * y - i[1] * x
         x, y = i
     return abs(csum / 2.)
@@ -59,6 +62,10 @@ def contains(data, x, y):
     #from: http://www.ariel.com.au/a/python-point-int-poly.html
     n = len(data)
     inside = False
+
+    # if it's not in the right time bounds, return right away
+    if not (data[:, 0].min() < x < data[:, 0].max()):
+        return False
 
     p1x, p1y = data[0]
     for i in range(n + 1):
