@@ -268,12 +268,16 @@ class TimeSeries(object):
 
     @property
     def y(self):
-        return self._rawdata.T[0]
+        return self.data.T[0]
 
     @property
     def data(self):
         if type(self._rawdata) == np.ndarray:
             return self._rawdata
+        elif type(self._rawdata) == np.matrix:
+            #TODO: something is initializing me with a matrix?
+            # happens somewhere in the sparse decomposition code
+            return self._rawdata.A
         else:
             return self._rawdata.astype(float).toarray()
 

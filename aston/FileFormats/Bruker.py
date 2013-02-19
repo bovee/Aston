@@ -57,7 +57,7 @@ class BrukerMSMS(Datafile.Datafile):
 
             nions = set([int(i) for i in rd_ions \
               if int(i) not in i_lkup])
-            i_lkup.update(dict((ion, i + len(ions)) \
+            i_lkup.update(dict((ion, i + len(ions) - 1) \
               for i, ion in enumerate(nions)))
             ions += nions
 
