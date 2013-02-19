@@ -207,11 +207,11 @@ class TimeSeries(object):
         elif ts is None:
             d = None
         elif all(ts.times == self.times):
-            d = ts._rawdata[:, 0]
+            d = ts.data[:, 0]
         else:
             d = ts._retime(self.times)[:, 0]
 
-        new_data = np.apply_along_axis(f, 0, self._rawdata, d)
+        new_data = np.apply_along_axis(f, 0, self.data, d)
         return TimeSeries(new_data, self.times, self.ions)
 
     def __add__(self, ts):
