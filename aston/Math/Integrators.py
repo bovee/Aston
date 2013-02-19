@@ -49,8 +49,20 @@ def drop_integrate(ts, peak_list):
     for _, pks in _get_windows(peak_list):
         temp_pks = []
         pks = sorted(pks, key=lambda p: p[0])
+        if 'y0' in pks[0][2] and 'y1' in pks[-1][2]:
+            y0, y1 = pks[0][2]['y0'], pks[-1][2]['y1']
+        else:
+            y0 = ts.get_point('!', pks[0][0])
+            y1 = ts.get_point('!', pks[-1][1])
+        ys = np.array([y0, y1])
+        xs = np.array([pks[0][0], pks[-1][1]])
+
         # go through list of peaks to make sure there's no overlap
         for t0, t1, hints in pks:
+            # figure out the y values (using a linear baseline)
+            hints['y0'] = np.interp(t0, xs, ys)
+            hints['y1'] = np.interp(t1, xs, ys)
+
             # if this peak totally overlaps with an existing one, don't add
             if sum(1 for p in temp_pks if t1 <= p[1]) > 0:
                 continue
@@ -68,15 +80,7 @@ def drop_integrate(ts, peak_list):
                         del temp_pks[i]
                         break
 
-                # if there are y-values, interpolate a new one
-                if 'y0' in overlap_pk[2] and 'y1' in hints:
-                    ys = np.array([overlap_pk[2]['y0'], hints['y1']])
-                else:
-                    y0 = ts.get_point('!', overlap_pk[0])
-                    y1 = ts.get_point('!', t1)
-                    overlap_pk[2]['y0'], hints['y1'] = y0, y1
-                    ys = np.array([y0, y1])
-                xs = np.array([overlap_pk[0], t1])
+                # interpolate a new y value
                 y_val = np.interp(min_t, xs, ys)
                 overlap_pk[2]['y1'] = y_val
                 hints['y0'] = y_val

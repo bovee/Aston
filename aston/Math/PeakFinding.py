@@ -11,8 +11,6 @@ def simple_peak_find(ts, init_slope=500, start_slope=500, end_slope=200, \
     their baseline is.
     (t1, t2, hints)
     """
-    #TODO: Isodat uses a PEAK_RESOLUTION, but we don't?
-    #PEAK_RESOLUTION = 0.93
     point_gap = 10
 
     def slid_win(itr, size=2):
@@ -57,8 +55,12 @@ def simple_peak_find(ts, init_slope=500, start_slope=500, end_slope=200, \
     #print([(t[i], i) for i in peak_ens if i in avals])
 
     peak_list = []
-
+    pk2 = 0
     for pk in peak_sts:
+        # don't allow overlapping peaks
+        if pk < pk2:
+            continue
+
         # track backwards to find the true start
         while dxdt[pk] > start_slope and pk > 0:
             pk -= 1
@@ -72,16 +74,17 @@ def simple_peak_find(ts, init_slope=500, start_slope=500, end_slope=200, \
                 # keep going to the next dip
                 peak_list.append((t[pk], t[pk2], {}))
                 pk = pk2
+            elif t[pk2] - t[pk] > max_peak_width:
+                # make sure that peak is short enough
+                pk2 = pk + np.abs(t[pk:] - t[pk] - \
+                                  max_peak_width).argmin()
+                break
             else:
                 break
         else:
             # if no end point is found, the end point
             # is the end of the timeseries
             pk2 = len(ts.y) - 1
-
-        # make sure that peak is short enough
-        if t[pk2] - t[pk] > max_peak_width:
-            pk2 = pk + np.abs(t[pk:] - t[pk] - max_peak_width).argmin()
 
         pk_hgt = max(ts.y[pk:pk2]) - min(ts.y[pk:pk2])
         if pk_hgt < min_peak_height:
