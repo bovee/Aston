@@ -139,11 +139,14 @@ class Peak(DBObject):
 
     def area(self, ion=None):
         if ion == '!':
-            return peakmath.area(self.as_poly())
-        elif ion not in self.data.ions:
+            pk = self.as_poly() #sub_base=True)
+        elif not self.data.has_ion(ion):
             return 0
         else:
-            return peakmath.area(self.as_poly(ion))
+            pk = self.as_poly(ion) #, sub_base=True)
+        #if peakmath.area(pk, method='shoelace') / peakmath.area(pk, method='trapezoid') != 1:
+        #    print(pk)
+        return peakmath.area(pk)
 
     def d13C(self):
         dt = self.getParentOfType('file')

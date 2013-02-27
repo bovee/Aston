@@ -17,6 +17,8 @@ import aston.ui.MenuOptions
 from aston.Math.Integrators import merge_ions, integrate_mpwrap
 from aston.Math.PeakFinding import peak_find_mpwrap
 
+MULTIPROCESSING = False
+
 
 class AstonWindow(QtGui.QMainWindow):
     def __init__(self, parent=None):
@@ -117,6 +119,8 @@ class AstonWindow(QtGui.QMainWindow):
         self.ui.actionColor_Scheme.setMenu(color_menu)
 
         self.ui.actionLegend.triggered.connect(self.set_legend)
+        self.ui.actionGraphGrid.triggered.connect(self.set_legend)
+        self.ui.actionGraphLogYAxis.triggered.connect(self.set_legend)
         self.ui.actionGraphFxnCollection.triggered.connect(self.set_legend)
         self.ui.actionGraphFIA.triggered.connect(self.set_legend)
         self.ui.actionGraphIRMS.triggered.connect(self.set_legend)
@@ -335,28 +339,44 @@ class AstonWindow(QtGui.QMainWindow):
         else:
             f = functools.partial(peak_find_mpwrap, peak_find=peak_find, \
                                   fopts=self.get_f_opts(peak_find), dt=dt)
-            #po = multiprocessing.Pool()
-            #peaks_found = po.map(f, tss)
-            peaks_found = list(map(f, tss))
+            if MULTIPROCESSING:
+                po = multiprocessing.Pool()
+                peaks_found = po.map(f, tss)
+            else:
+                peaks_found = list(map(f, tss))
 
         return peaks_found
 
-    def integrate_peaks(self, tss, peaks_found, dt=None):
+    def integrate_peaks(self, tss, peaks_found, dt=None, isomode=False):
         submnu = self.ui.actionIntegrator.menu().children()
         opt = [i for i in submnu if i.isChecked()][0].text()
         integrate = aston.ui.MenuOptions.integrators[opt]
 
         f = functools.partial(integrate_mpwrap, integrate=integrate, \
                               fopts=self.get_f_opts(integrate))
-        #po = multiprocessing.Pool()
-        #all_pks = po.map(f, zip(tss, peaks_found))
-        all_pks = list(map(f, zip(tss, peaks_found)))
+        if MULTIPROCESSING:
+            po = multiprocessing.Pool()
+            all_pks = po.map(f, zip(tss, peaks_found))
+        else:
+            all_pks = list(map(f, zip(tss, peaks_found)))
 
-        # flatten all_pks, add db info and return it
-        all_pks = [pk for pks in all_pks for pk in pks]
-        for pk in all_pks:
+        # merge peaks from all_pks together
+        if isomode:
+            mrg_pks = []
+            for sub_pks in zip(*all_pks):
+                c_pk = sub_pks[0]
+                for pk in sub_pks[1:]:
+                    ion = pk.data.ions[0]
+                    c_pk.set_baseline(ion, pk.baseline(ion))
+                    c_pk.rawdata = c_pk.rawdata & pk.rawdata
+                mrg_pks.append(c_pk)
+        else:
+            mrg_pks = merge_ions([pk for pks in all_pks for pk in pks])
+
+        # add db info and return it
+        for pk in mrg_pks:
             pk.db, pk.parent_id = dt.db, dt.db_id
-        return all_pks
+        return mrg_pks
 
     def integrate(self):
         dt = self.obj_tab.active_file()
@@ -370,9 +390,8 @@ class AstonWindow(QtGui.QMainWindow):
             tss = dt.active_traces(all_tr=True)
 
         found_peaks = self.find_peaks(tss, dt, isomode)
-        all_pks = self.integrate_peaks(tss, found_peaks, dt)
+        mrg_pks = self.integrate_peaks(tss, found_peaks, dt, isomode)
 
-        mrg_pks = merge_ions(all_pks)
         self.obj_tab.addObjects(dt, mrg_pks)
         dt.info.del_items('s-peaks')
         self.plotter.redraw()

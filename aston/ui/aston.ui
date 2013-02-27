@@ -150,9 +150,17 @@
      <addaction name="actionGraphIRMS"/>
      <addaction name="actionGraphMSMS"/>
     </widget>
+    <widget class="QMenu" name="menuAxes">
+     <property name="title">
+      <string>Axes</string>
+     </property>
+     <addaction name="actionGraphLogYAxis"/>
+     <addaction name="actionGraphGrid"/>
+    </widget>
     <addaction name="actionGraph_Style"/>
     <addaction name="actionLegend"/>
     <addaction name="actionColor_Scheme"/>
+    <addaction name="menuAxes"/>
     <addaction name="menuPeaks"/>
     <addaction name="menuExtras"/>
    </widget>
@@ -770,6 +778,25 @@
   <action name="actionSpecPrevSave">
    <property name="text">
     <string>Save</string>
+   </property>
+  </action>
+  <action name="actionGraphLogYAxis">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Log Y Axis</string>
+   </property>
+  </action>
+  <action name="actionGraphGrid">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Grid</string>
    </property>
   </action>
  </widget>

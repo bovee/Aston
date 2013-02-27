@@ -282,10 +282,7 @@ class TimeSeries(object):
             return self._rawdata.astype(float).toarray()
 
     def compress(self):
-        if type(self._rawdata) != np.ndarray:
-            d = self._rawdata.astype(float).toarray().tostring()
-        else:
-            d = self._rawdata.astype(float).tostring()
+        d = self.data.tostring()
         t = self.times.astype(float).tostring()
         lt = struct.pack('<L', len(t))
         i = json.dumps(self.ions).encode('utf-8')

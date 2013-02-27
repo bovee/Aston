@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'aston.ui'
 #
-# Created: Mon Feb  4 18:27:11 2013
+# Created: Wed Feb 27 14:50:06 2013
 #      by: PyQt4 UI code generator 4.9.6
 #
 # WARNING! All changes made in this file will be lost!
@@ -67,6 +67,8 @@ class Ui_MainWindow(object):
         self.menuExtras = QtGui.QMenu(self.menuSettings)
         self.menuExtras.setEnabled(True)
         self.menuExtras.setObjectName(_fromUtf8("menuExtras"))
+        self.menuAxes = QtGui.QMenu(self.menuSettings)
+        self.menuAxes.setObjectName(_fromUtf8("menuAxes"))
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtGui.QStatusBar(MainWindow)
         self.statusbar.setObjectName(_fromUtf8("statusbar"))
@@ -327,6 +329,13 @@ class Ui_MainWindow(object):
         self.actionSpecMainSave.setObjectName(_fromUtf8("actionSpecMainSave"))
         self.actionSpecPrevSave = QtGui.QAction(MainWindow)
         self.actionSpecPrevSave.setObjectName(_fromUtf8("actionSpecPrevSave"))
+        self.actionGraphLogYAxis = QtGui.QAction(MainWindow)
+        self.actionGraphLogYAxis.setCheckable(True)
+        self.actionGraphLogYAxis.setObjectName(_fromUtf8("actionGraphLogYAxis"))
+        self.actionGraphGrid = QtGui.QAction(MainWindow)
+        self.actionGraphGrid.setCheckable(True)
+        self.actionGraphGrid.setChecked(True)
+        self.actionGraphGrid.setObjectName(_fromUtf8("actionGraphGrid"))
         self.menuExport.addAction(self.actionExportChromatogram)
         self.menuExport.addAction(self.actionExportSpectra)
         self.menuExport.addAction(self.actionExportSelectedItems)
@@ -375,9 +384,12 @@ class Ui_MainWindow(object):
         self.menuExtras.addAction(self.actionGraphFIA)
         self.menuExtras.addAction(self.actionGraphIRMS)
         self.menuExtras.addAction(self.actionGraphMSMS)
+        self.menuAxes.addAction(self.actionGraphLogYAxis)
+        self.menuAxes.addAction(self.actionGraphGrid)
         self.menuSettings.addAction(self.actionGraph_Style)
         self.menuSettings.addAction(self.actionLegend)
         self.menuSettings.addAction(self.actionColor_Scheme)
+        self.menuSettings.addAction(self.menuAxes.menuAction())
         self.menuSettings.addAction(self.menuPeaks.menuAction())
         self.menuSettings.addAction(self.menuExtras.menuAction())
         self.menubar.addAction(self.menuFile.menuAction())
@@ -405,6 +417,7 @@ class Ui_MainWindow(object):
         self.menuSettings.setTitle(_translate("MainWindow", "Graph", None))
         self.menuPeaks.setTitle(_translate("MainWindow", "Peaks", None))
         self.menuExtras.setTitle(_translate("MainWindow", "Extras", None))
+        self.menuAxes.setTitle(_translate("MainWindow", "Axes", None))
         self.filesDockWidget.setWindowTitle(_translate("MainWindow", "Files", None))
         self.lineEdit.setPlaceholderText(_translate("MainWindow", "Seach by Name", None))
         self.settingsDockWidget.setWindowTitle(_translate("MainWindow", "Settings", None))
@@ -475,4 +488,6 @@ class Ui_MainWindow(object):
         self.actionSpecLibLabel.setText(_translate("MainWindow", "Label", None))
         self.actionSpecMainSave.setText(_translate("MainWindow", "Save", None))
         self.actionSpecPrevSave.setText(_translate("MainWindow", "Save", None))
+        self.actionGraphLogYAxis.setText(_translate("MainWindow", "Log Y Axis", None))
+        self.actionGraphGrid.setText(_translate("MainWindow", "Grid", None))
 

@@ -168,8 +168,13 @@ class Plotter(object):
                 self.plt.text(ta, 0, ev[2]['name'], \
                               ha='center', transform=transText)
 
+        # draw the y axis as log
+        if self.masterWindow.ui.actionGraphLogYAxis.isChecked():
+            self.plt.set_yscale('log')
+
         #draw grid lines
-        self.plt.grid(c='black', ls='-', alpha='0.05')
+        if self.masterWindow.ui.actionGraphGrid.isChecked():
+            self.plt.grid(c='black', ls='-', alpha='0.05')
 
         #update the canvas
         self.canvas.draw()
