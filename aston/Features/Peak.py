@@ -34,8 +34,15 @@ class Peak(DBObject):
         if self.info['p-baseline'] == '':
             return None
         bases = json.loads(self.info['p-baseline'])
-        if str(ion) in bases:
-            return np.array(bases[str(ion)])
+        new_bases = bases.copy()
+        #TODO: incredibly hacky and slow
+        for b in bases:
+            try:
+                new_bases[float(b)] = bases[b]
+            except:
+                pass
+        if ion in new_bases:
+            return np.array(new_bases[ion])
         else:
             return None
 
@@ -101,17 +108,30 @@ class Peak(DBObject):
             print(peakmath.contains(self.as_poly(ion), x, y))
         return peakmath.contains(self.as_poly(ion), x, y)
 
-    def as_poly(self, ion=None):
+    def as_poly(self, ion=None, sub_base=False):
         # add in the baseline on either side
         if ion is None:
             row = 0
-        elif ion not in self.data.ions:
+        elif not self.data.has_ion(ion):
             row = 0
         else:
-            row = self.data.ions.index(ion)
+            try:
+                row = self.data.ions.index(float(ion))
+            except ValueError:
+                row = self.data.ions.index(ion)
         pk = np.vstack([self.data.times, self.data.data.T[row]]).T
         base = self.baseline(ion)
-        if base is None:
+        if sub_base:
+            # this subtracts out the base line before returning it
+            # it's useful for numerical fxns that don't take baseline
+            if base is None:
+                base_pts = np.interp(pk[:, 0], [pk[1, 0], pk[-1, 0]], \
+                                     [pk[0, 1], pk[-1, 1]])
+            else:
+                base_pts = np.interp(pk[:, 0], *base)
+
+            ply = np.array([pk[:, 0], pk[:, 1] - base_pts]).T
+        elif base is None:
             ply = pk
         else:
             ply = np.vstack([base[0], pk, base[:0:-1]])

@@ -41,6 +41,22 @@ def _get_windows(peak_list):
     return win_list
 
 
+def constant_bl_integrate(ts, peak_list):
+    #TODO: this doesn't work right yet?
+    # maybe need to eliminate overlapping peaks?
+    temp_pks = []
+    for p in peak_list:
+        min_y = ts.trace('!', twin=p[0:2]).y.min()
+        prop = p[2].copy()
+        prop['y0'], prop['y1'] = min_y, min_y
+        temp_pks.append((p[0], p[1], prop))
+    peaks = simple_integrate(ts, temp_pks)
+    for p in peaks:
+        p.info['p-create'] = p.info['p-create'].split(',')[0] + \
+                ',constant_bl_integrate'
+    return peaks
+
+
 def drop_integrate(ts, peak_list):
     """
     Resolves overlap by breaking at the minimum value.
@@ -97,7 +113,6 @@ def drop_integrate(ts, peak_list):
         for p in peaks:
             p.info['p-create'] = p.info['p-create'].split(',')[0] + \
                     ',drop_integrate'
-
     return peaks
 
 

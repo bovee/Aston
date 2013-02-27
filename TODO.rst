@@ -26,6 +26,8 @@
   coelution spots to be found
 * periodic integration (to replace old "split peaks" code)
 * extract spectra from SIM method file properly (e.g. CM1292)
+* fix extension addition in export window
+* ion ranges are weird?
 
 
 0.7 Checklist

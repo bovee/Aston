@@ -1,16 +1,36 @@
 import numpy as np
+from scipy import convolve
 
 
-def area(data):
+def area(data, method='shoelace'):
     # filter out any points that have a nan
     fdata = data[~np.isnan(data).any(1)]
 
-    csum = 0
-    x, y = fdata[-1, :]
-    for i in fdata:
-        csum += i[0] * y - i[1] * x
-        x, y = i
-    return abs(csum / 2.)
+    if method == 'shoelace':
+        # up to 5e-10 diff from shoelace-slow
+        csum = np.sum(np.fliplr(np.roll(fdata, 1, axis=0)) * fdata, axis=0)
+        return 0.5 * np.abs(csum[0] - csum[1])
+    elif method == 'shoelace-slow':
+        csum = 0
+        x, y = fdata[-1, :]
+        for i in fdata:
+            csum += i[0] * y - i[1] * x
+            x, y = i
+        return abs(csum / 2.)
+    elif method == 'trapezoid':
+        # from http://en.wikipedia.org/wiki/Trapezoidal_rule#Non-uniform_grid
+        #TODO: this essentially ignores baseline data?
+        #fdata[:, 1][fdata[:, 1] < 0] = 0
+        #y = convolve(fdata[:, 1], [0.5, 0.5], mode='valid')
+
+        #y = convolve(np.abs(fdata[:, 1]), [0.5, 0.5], mode='valid')
+
+        y = convolve(fdata[:, 1], [0.5, 0.5], mode='valid')
+        if y.shape[0] != fdata.shape[0] - 1:
+            return 0
+        return np.sum(np.diff(fdata[:, 0]) * y)
+    elif method == 'sum':
+        return np.sum(fdata[:, 1])
 
 
 def length(data, pwhm=False):

@@ -16,6 +16,7 @@ peak_finders[tr('Event')] = ampf.event_peak_find
 
 integrators = OrderedDict()
 integrators[tr('Overlap')] = ami.simple_integrate
+integrators[tr('Constant Background')] = ami.constant_bl_integrate
 integrators[tr('Drop')] = ami.drop_integrate
 integrators[tr('LeastSq')] = ami.leastsq_integrate
 

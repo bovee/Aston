@@ -225,6 +225,8 @@ class Plotter(object):
                 for pk in dt.getAllChildren('peak'):
                     #TODO: there has to be a better way to handle if
                     # the ion is a string or a float
+                    #TODO: allow user to auto subtract out baseline
+                    #if enabled, need to change Peak.contains too.
                     if ts.ions[0] in pk.data.ions or \
                       ts.ions[0] in [str(i) for i in pk.data.ions]:
                         try:
