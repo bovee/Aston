@@ -1,5 +1,3 @@
-import functools
-import multiprocessing
 import codecs
 import os.path as op
 from PyQt4 import QtGui
@@ -14,8 +12,8 @@ from aston.ui.SpecPlot import SpecPlotter
 from aston.Database import AstonDatabase, AstonFileDatabase
 from aston.FileTable import FileTreeModel
 import aston.ui.MenuOptions
-from aston.Math.Integrators import merge_ions, integrate_mpwrap
-from aston.Math.PeakFinding import peak_find_mpwrap
+from aston.Math.PeakFinding import find_peaks
+from aston.Math.Integrators import integrate_peaks
 
 MULTIPROCESSING = False
 
@@ -318,66 +316,6 @@ class AstonWindow(QtGui.QMainWindow):
             p['offset'] = gf('integrate_periodic_period', 1.)
         return p
 
-    def find_peaks(self, tss, dt=None, isomode=False):
-        submnu = self.ui.actionPeak_Finder.menu().children()
-        opt = [i for i in submnu if i.isChecked()][0].text()
-        peak_find = aston.ui.MenuOptions.peak_finders[opt]
-
-        if isomode:
-            peaks_found = [peak_find_mpwrap(tss[0], peak_find, \
-                                            self.get_f_opts(peak_find), dt)]
-            for ts in tss[1:]:
-                tpks = []
-                for p in peaks_found[0]:
-                    old_pk_ts = tss[0].twin((p[0], p[1]))
-                    old_t = old_pk_ts.times[old_pk_ts.y.argmax()]
-                    new_pk_ts = ts.twin((p[0], p[1]))
-                    off = new_pk_ts.times[new_pk_ts.y.argmax()] - old_t
-                    new_p = (p[0] + off, p[1] + off, p[2])
-                    tpks.append(new_p)
-                peaks_found.append(tpks)
-        else:
-            f = functools.partial(peak_find_mpwrap, peak_find=peak_find, \
-                                  fopts=self.get_f_opts(peak_find), dt=dt)
-            if MULTIPROCESSING:
-                po = multiprocessing.Pool()
-                peaks_found = po.map(f, tss)
-            else:
-                peaks_found = list(map(f, tss))
-
-        return peaks_found
-
-    def integrate_peaks(self, tss, peaks_found, dt=None, isomode=False):
-        submnu = self.ui.actionIntegrator.menu().children()
-        opt = [i for i in submnu if i.isChecked()][0].text()
-        integrate = aston.ui.MenuOptions.integrators[opt]
-
-        f = functools.partial(integrate_mpwrap, integrate=integrate, \
-                              fopts=self.get_f_opts(integrate))
-        if MULTIPROCESSING:
-            po = multiprocessing.Pool()
-            all_pks = po.map(f, zip(tss, peaks_found))
-        else:
-            all_pks = list(map(f, zip(tss, peaks_found)))
-
-        # merge peaks from all_pks together
-        if isomode:
-            mrg_pks = []
-            for sub_pks in zip(*all_pks):
-                c_pk = sub_pks[0]
-                for pk in sub_pks[1:]:
-                    ion = pk.data.ions[0]
-                    c_pk.set_baseline(ion, pk.baseline(ion))
-                    c_pk.rawdata = c_pk.rawdata & pk.rawdata
-                mrg_pks.append(c_pk)
-        else:
-            mrg_pks = merge_ions([pk for pks in all_pks for pk in pks])
-
-        # add db info and return it
-        for pk in mrg_pks:
-            pk.db, pk.parent_id = dt.db, dt.db_id
-        return mrg_pks
-
     def integrate(self):
         dt = self.obj_tab.active_file()
 
@@ -389,8 +327,20 @@ class AstonWindow(QtGui.QMainWindow):
         elif self.ui.actionTop_File_All_Traces.isChecked() or isomode:
             tss = dt.active_traces(all_tr=True)
 
-        found_peaks = self.find_peaks(tss, dt, isomode)
-        mrg_pks = self.integrate_peaks(tss, found_peaks, dt, isomode)
+        submnu = self.ui.actionPeak_Finder.menu().children()
+        opt = [i for i in submnu if i.isChecked()][0].text()
+        pf_f = aston.ui.MenuOptions.peak_finders[opt]
+        pf_fopts = self.get_f_opts(pf_f)
+
+        submnu = self.ui.actionIntegrator.menu().children()
+        opt = [i for i in submnu if i.isChecked()][0].text()
+        int_f = aston.ui.MenuOptions.integrators[opt]
+        int_fopts = self.get_f_opts(int_f)
+
+        found_peaks = find_peaks(tss, pf_f, pf_fopts, dt, isomode, \
+                                 MULTIPROCESSING)
+        mrg_pks = integrate_peaks(tss, found_peaks, int_f, int_fopts, \
+                                  dt, isomode, MULTIPROCESSING)
 
         self.obj_tab.addObjects(dt, mrg_pks)
         dt.info.del_items('s-peaks')

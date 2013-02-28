@@ -1,3 +1,5 @@
+import multiprocessing
+import functools
 import numpy as np
 from aston.Features import Peak
 from aston.TimeSeries import TimeSeries
@@ -180,3 +182,31 @@ def integrate_mpwrap(ts_and_pks, integrate, fopts):
     for p in pks:
         p.info['trace'] = str(ts.ions[0])
     return pks
+
+
+def integrate_peaks(tss, peaks_found, int_f, f_opts={}, dt=None, \
+                    isomode=False, mp=False):
+    f = functools.partial(integrate_mpwrap, integrate=int_f, fopts=f_opts)
+    if mp:
+        po = multiprocessing.Pool()
+        all_pks = po.map(f, zip(tss, peaks_found))
+    else:
+        all_pks = list(map(f, zip(tss, peaks_found)))
+
+    # merge peaks from all_pks together
+    if isomode:
+        mrg_pks = []
+        for sub_pks in zip(*all_pks):
+            c_pk = sub_pks[0]
+            for pk in sub_pks[1:]:
+                ion = pk.data.ions[0]
+                c_pk.set_baseline(ion, pk.baseline(ion))
+                c_pk.rawdata = c_pk.rawdata & pk.rawdata
+            mrg_pks.append(c_pk)
+    else:
+        mrg_pks = merge_ions([pk for pks in all_pks for pk in pks])
+
+    # add db info and return it
+    for pk in mrg_pks:
+        pk.db, pk.parent = dt.db, dt
+    return mrg_pks

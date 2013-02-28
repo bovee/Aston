@@ -163,8 +163,11 @@ class Peak(DBObject):
         except:
             return ''
 
-        calc_meth = self.db.get_key('d13c_method', dflt='santrock')
-        consts = self.db.get_key('d13c_const', dflt='Santrock')
+        if self.db is not None:
+            calc_meth = self.db.get_key('d13c_method', dflt='santrock')
+            consts = self.db.get_key('d13c_const', dflt='Santrock')
+        else:
+            calc_meth, consts = 'santrock', 'Santrock'
 
         r45std = dt.get_point('r45std', peakmath.time(self.as_poly(44)))
         r46std = dt.get_point('r46std', peakmath.time(self.as_poly(44)))

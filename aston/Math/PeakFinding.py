@@ -1,3 +1,5 @@
+import multiprocessing
+import functools
 import numpy as np
 #from aston.Math.Chromatograms import savitzkygolay
 from aston.Math.Chromatograms import movingaverage
@@ -215,3 +217,27 @@ def peak_find_mpwrap(ts, peak_find, fopts, dt):
     for pk in tpks:
         pk[2]['pf'] = peak_find.__name__
     return tpks
+
+
+def find_peaks(tss, pf_f, f_opts={}, dt=None, isomode=False, mp=False):
+    if isomode:
+        peaks_found = [peak_find_mpwrap(tss[0], pf_f, f_opts, dt)]
+        for ts in tss[1:]:
+            tpks = []
+            for p in peaks_found[0]:
+                old_pk_ts = tss[0].twin((p[0], p[1]))
+                old_t = old_pk_ts.times[old_pk_ts.y.argmax()]
+                new_pk_ts = ts.twin((p[0], p[1]))
+                off = new_pk_ts.times[new_pk_ts.y.argmax()] - old_t
+                new_p = (p[0] + off, p[1] + off, p[2])
+                tpks.append(new_p)
+            peaks_found.append(tpks)
+    else:
+        f = functools.partial(peak_find_mpwrap, peak_find=pf_f, \
+                              fopts=f_opts, dt=dt)
+        if mp:
+            po = multiprocessing.Pool()
+            peaks_found = po.map(f, tss)
+        else:
+            peaks_found = list(map(f, tss))
+    return peaks_found
