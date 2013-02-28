@@ -15,7 +15,7 @@ def simple_integrate(ts, peak_list):
         pk_ts = ts.trace('!', twin=(t0, t1))
         info = {'name': '{:.2f}-{:.2f}'.format(t0, t1)}
         info['p-create'] = hints.get('pf', '') + ',simple_integrate'
-        pk = Peak(None, None, None, info, pk_ts)
+        pk = Peak(info, pk_ts)
         if 'y0' in hints and 'y1' in hints:
             base = np.array([[t0, hints['y0']], [t1, hints['y1']]])
             pk.set_baseline(ts.ions[0], base)
@@ -141,7 +141,7 @@ def leastsq_integrate(ts, peak_list, f='gaussian'):
             info = {'name': '{:.2f}'.format(p['x'])}
             info['p-create'] = peak_list[0][2].get('pf', '') + \
                     ',' + 'leastsq_integrate'
-            pk = Peak(None, None, None, info, pk_ts)
+            pk = Peak(info, pk_ts)
             peaks.append(pk)
     return peaks
 
@@ -167,7 +167,6 @@ def merge_ions(pks):
         else:
             cleaned_pks.append(pk)
         cur_t = time(pk.as_poly())
-
     return cleaned_pks
 
 

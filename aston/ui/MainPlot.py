@@ -227,7 +227,8 @@ class Plotter(object):
                 tnum += 1
 
                 # plot peaks
-                for pk in dt.getAllChildren('peak'):
+                #for pk in dt.getAllChildren('peak'):
+                for pk in dt.children_of_type('peak'):
                     #TODO: there has to be a better way to handle if
                     # the ion is a string or a float
                     #TODO: allow user to auto subtract out baseline

@@ -13,7 +13,8 @@ peak_models = dict([(pm.__name__, pm) for pm in peak_models])
 
 class Peak(DBObject):
     def __init__(self, *args, **kwargs):
-        super(Peak, self).__init__('peak', *args, **kwargs)
+        super(Peak, self).__init__(*args, **kwargs)
+        self.db_type = 'peak'
 
     @property
     def data(self):
@@ -90,7 +91,7 @@ class Peak(DBObject):
 
     def _calc_info(self, fld):
         if fld == 'p-s-pkcap':
-            prt = self.getParentOfType('file')
+            prt = self.parent_of_type('file')
             if prt is None:
                 return ''
             t = float(prt.info['s-peaks-en']) - \
@@ -149,7 +150,7 @@ class Peak(DBObject):
         return peakmath.area(pk)
 
     def d13C(self):
-        dt = self.getParentOfType('file')
+        dt = self.parent_of_type('file')
         #TODO: not sure if we should do this or not
         # by not doing it, we can show relative error
         # between standard peaks
@@ -187,7 +188,7 @@ class Peak(DBObject):
         return '{0:.3f}'.format(d)
 
     def createSpectrum(self, method=None):
-        prt = self.getParentOfType('file')
+        prt = self.parent_of_type('file')
         time = peakmath.time(self.as_poly())
         if method is None:
             data = prt.scan(time)

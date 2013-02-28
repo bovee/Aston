@@ -54,18 +54,44 @@ class AstonDatabase(object):
             c.close()
         else:
             self.db = sqlite3.connect(database)
-        self.objects = None
+        self._children = None
+        self._curs = None
 
-    def reload(self):
+    def __enter__(self):
+        self._curs = self.db.cursor()
+
+    def __exit__(self, type, value, traceback):
+        self.db.commit()
+        self._curs.close()
+        self._curs = None
+
+    def get_children(self, obj):
         if self.db is None:
-            return
-        #preload all the objects in the database
-        c = self.db.cursor()
-        c.execute('SELECT type, id, parent_id, info, data FROM objs')
-        self.objects = []
-        for i in c:
-            self.objects.append(self._getObjFromRow(i))
-        c.close()
+            return []
+        if self._curs is None:
+            c = self.db.cursor()
+        else:
+            c = self._curs
+
+        if obj is None:
+            c.execute('SELECT type, id, info, data FROM objs ' + \
+                      'WHERE parent_id IS NULL')
+        else:
+            c.execute('SELECT type, id, info, data FROM objs ' + \
+                      'WHERE parent_id = ?', (obj.db_id,))
+        children = []
+        for row in c:
+            row_obj = self._get_obj_from_row(row, obj)
+            children.append(row_obj)
+        if self._curs is None:
+            c.close()
+        return children
+
+    @property
+    def children(self):
+        if self._children is None:
+            self._children = self.get_children(None)
+        return self._children
 
     def all_keys(self):
         c = self.db.cursor()
@@ -77,11 +103,14 @@ class AstonDatabase(object):
     def get_key(self, key, dflt=''):
         if self.db is None:
             return dflt
-        c = self.db.cursor()
+        if self._curs is None:
+            c = self.db.cursor()
+        else:
+            c = self._curs
         c.execute('SELECT value FROM prefs WHERE key = ?', (key,))
         res = c.fetchone()
-        c.close()
-
+        if self._curs is None:
+            c.close()
         if res is None:
             return dflt
         else:
@@ -90,145 +119,124 @@ class AstonDatabase(object):
     def set_key(self, key, val):
         if self.db is None:
             return
-        c = self.db.cursor()
+        if self._curs is None:
+            c = self.db.cursor()
+        else:
+            c = self._curs
+
         c.execute('SELECT * FROM prefs WHERE key = ?', (key,))
         if c.fetchone() is not None:
             c.execute('UPDATE prefs SET value=? WHERE key=?', (val, key))
         else:
             c.execute('INSERT INTO prefs (value,key) VALUES (?,?)', \
                       (val, key))
-        self.db.commit()
-        c.close()
 
-    def updateObject(self, obj):
-        c = self.db.cursor()
-        c.execute('''UPDATE objs SET type=?, parent_id=?, name=?,
-                  info=?, data=? WHERE id=?''', \
-                  self._getRowFromObj(obj) + (obj.db_id,))
-        self.db.commit()
-        c.close()
-
-    def begin_lazy_op(self):
-        if self.objects is None:
-            self.reload()
-        c = self.db.cursor()
-        return c
-
-    def end_lazy_op(self, c):
-        self.db.commit()
-        c.close()
-
-    def lazy_delete(self, c, obj):
-        c.execute('DELETE FROM objs WHERE id=?', (obj.db_id,))
-        del self.objects[self.objects.index(obj)]
-
-    def lazy_add(self, c, obj):
-        result = c.execute('INSERT INTO objs \
-          (type, parent_id, name, info, data) \
-          VALUES (?,?,?,?,?)', self._getRowFromObj(obj))
-        obj.db_id = result.lastrowid
-        self.objects.append(obj)
-
-    def add_objects(self, obj):
-        """
-        Convenience method so lazy methods don't need to be called.
-        """
-        c = self.begin_lazy_op()
-        for o in obj:
-            result = c.execute('''INSERT INTO objs (type, parent_id, name,
-                            info, data) VALUES (?,?,?,?,?)''', \
-                            self._getRowFromObj(o))
-            o.db_id = result.lastrowid
-        self.objects += obj
-        self.end_lazy_op(c)
-
-    def deleteObject(self, obj):
-        c = self.db.cursor()
-        if type(obj) == list:
-            #qs = '(' + ','.join(['?'] * len(obj)) + ')'
-            #c.execute('DELETE FROM objs WHERE id in ' + qs,
-            #          [o.db_id for o in obj])
-            for o in obj:
-                c.execute('DELETE FROM objs WHERE id=?', (o.db_id,))
-                del self.objects[self.objects.index(o)]
+        if self._curs is None:
             self.db.commit()
+            c.close()
+
+    def save_object(self, obj):
+        if self._curs is None:
+            c = self.db.cursor()
         else:
-            c.execute('DELETE FROM objs WHERE id=?', (obj.db_id,))
-            del self.objects[self.objects.index(obj)]
-        self.db.commit()
-        c.close()
+            c = self._curs
 
-    @property
-    def root(self):
-        return self.getChildren()
+        if obj.db_id is not None:
+            # update
+            c.execute('UPDATE objs SET type=?, parent_id=?, name=?, ' + \
+                      'info=?, data=? WHERE id=?', \
+                      self._get_row_from_obj(obj) + (obj.db_id,))
+        else:
+            # add
+            res = c.execute('INSERT INTO objs (type, parent_id, name, ' + \
+                            'info, data) VALUES (?,?,?,?,?)', \
+                            self._get_row_from_obj(obj))
+            obj.db_id = res.lastrowid
 
-    def getChildren(self, db_id=None):
-        if self.db is None:
-            return []
-        if self.objects is None:
-            self.reload()
-        return [obj for obj in self.objects if obj.parent_id == db_id]
+        if self._curs is None:
+            self.db.commit()
+            c.close()
 
-    def getObjectsByClass(self, cls):
-        if self.objects is None:
-            self.reload()
-        return [obj for obj in self.objects if obj.db_type == cls]
+    def delete_object(self, obj):
+        if self._curs is None:
+            c = self.db.cursor()
+        else:
+            c = self._curs
 
-    def getObjectByID(self, db_id):
-        if self.objects is None:
-            self.reload()
+        c.execute('DELETE FROM objs WHERE id=?', (obj.db_id,))
+        if obj in self._children:
+            self._children.remove(obj)
 
-        for obj in self.objects:
+        if self._curs is None:
+            self.db.commit()
+            c.close()
+
+    #def getObjectsByClass(self, cls):
+    #    if self.objects is None:
+    #        self.reload()
+    #    return [obj for obj in self.objects if obj.db_type == cls]
+
+    def object_from_id(self, db_id, parent=None):
+        if parent is None:
+            parent = self
+        for obj in parent.children:
             if obj.db_id == db_id:
                 return obj
+            subobj_id = self.object_from_id(db_id, obj)
+            if subobj_id is not None:
+                return subobj_id
         return None
 
-    def getObjectByName(self, name, type=None):
-        pass
-
-    def _getRowFromObj(self, obj):
+    def _get_row_from_obj(self, obj):
         try:  # python 2/3 code options
             info = buffer(zlib.compress(json.dumps(obj.info)))
         except NameError:
             info = zlib.compress(json.dumps(obj.info).encode('utf-8'))
-        if obj.type == 'peak':
+        if obj.db_type == 'peak':
             data = obj.rawdata.compress()
-        elif obj.type == 'spectrum':
+        elif obj.db_type == 'spectrum':
             data = obj.compress()
         else:
             data = obj.rawdata
-        return (obj.type, obj.parent_id, obj.info['name'], info, data)
+        if obj.parent is None:
+            pid = None
+        else:
+            pid = obj.parent.db_id
+        return (obj.db_type, pid, obj.info['name'], info, data)
 
-    def _getObjFromRow(self, row):
+    def _get_obj_from_row(self, row, parent):
+        # row = (type, id, info, data)
         if row is None:
             return None
 
-        info = json.loads(zlib.decompress(row[3]).decode('utf-8'))
+        args = {}
+        args['info'] = json.loads(zlib.decompress(row[2]).decode('utf-8'))
         otype = str(row[0])
         if otype == 'peak':
-            data = decompress_to_ts(row[4])
+            args['data'] = decompress_to_ts(row[3])
         elif otype == 'spectrum':
-            data = decompress_to_spec(row[4])
+            args['data'] = decompress_to_spec(row[3])
         else:
-            data = str(row[4])
-        args = (row[1], row[2], info, data)
+            args['data'] = str(row[3])
+        args['parent'] = parent
+        args['db'] = (self, row[1])
         if otype == 'file':
-            return ftype_to_class(info['s-file-type'])(self, *args)
+            return ftype_to_class(args['info']['s-file-type'])(**args)
         elif otype == 'peak':
             from aston.Features import Peak
-            return Peak(self, *args)
+            return Peak(**args)
         elif otype == 'spectrum':
             from aston.Features import Spectrum
-            return Spectrum(self, *args)
+            return Spectrum(**args)
         elif otype == 'method':
             from aston.Features import Method
-            return Method(self, *args)
+            return Method(**args)
         elif otype == 'compound':
             from aston.Features import Compound
-            return Compound(self, *args)
+            return Compound(**args)
         else:
             from aston.Features import DBObject
-            return DBObject(otype, self, *args)
+            return DBObject(**args)
 
 
 class AstonFileDatabase(AstonDatabase):
@@ -287,18 +295,16 @@ class AstonFileDatabase(AstonDatabase):
 
         #add the new files into the database
         #TODO: generate projects and project_ids based on folder names?
-        c = self.begin_lazy_op()
-        for fn in set(datafiles.keys()).difference(dnames):
-            fdate = datetime.fromtimestamp(os.path.getctime(fn))
-            fdate = fdate.replace(microsecond=0).isoformat(' ')
-            info = {'s-file-type': datafiles[fn], 'traces': 'TIC', \
-              'name': os.path.splitext(os.path.basename(fn))[0], \
-              'r-date': fdate}
-            args = (None, None, info, fn)
-            obj = ftype_to_class(info['s-file-type'])(self, *args)
-            obj._update_info_from_file()
-            self.lazy_add(c, obj)
-        self.end_lazy_op(c)
+        with self:
+            for fn in set(datafiles.keys()).difference(dnames):
+                fdate = datetime.fromtimestamp(os.path.getctime(fn))
+                fdate = fdate.replace(microsecond=0).isoformat(' ')
+                name = os.path.splitext(os.path.basename(fn))[0]
+                info = {'s-file-type': datafiles[fn], 'traces': 'TIC', \
+                        'name': name, 'r-date': fdate}
+                obj = ftype_to_class(info['s-file-type'])(info, fn)
+                obj._update_info_from_file()
+                self.save_object(obj)
 
         #TODO: update old database entries with new metadata
 

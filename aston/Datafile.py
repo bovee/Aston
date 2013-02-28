@@ -58,17 +58,22 @@ class Datafile(DBObject):
             if ftype is None:
                 ftype = ext2ftype.get(ext, None)
             info = {'s-file-type': ftype}
-            args = (None, None, None, info, fname)
+            args = []
+            kwargs['info'] = info
+            kwargs['data'] = fname
+            autoload = True
+        else:
+            autoload = False
 
-            super(Datafile, self).__init__('file', *args, **kwargs)
-            self.data = None
+        super(Datafile, self).__init__(*args, **kwargs)
+        self.db_type = 'file'
+        self.data = None
 
+        if autoload:
+            # preload everything
             self.__class__ = ftype_to_class(ftype)
             self._cache_data()
             self._update_info_from_file()
-        else:
-            super(Datafile, self).__init__('file', *args, **kwargs)
-            self.data = None
 
     def _sc_off(self, t):
         """
@@ -305,7 +310,7 @@ class Datafile(DBObject):
             else:
                 topion = 46
             std_specs = [o for o in \
-              self.getAllChildren('peak') \
+              self.children_of_type('peak') \
               if o.info['p-type'] == 'Isotope Standard']
             x = [float(o.info['p-s-time']) for o in std_specs]
             y = [o.area(topion) / o.area(44) for o in std_specs \
@@ -405,10 +410,10 @@ class Datafile(DBObject):
             self.info['s-st-time'] = str(min(self.time()))
             self.info['s-en-time'] = str(max(self.time()))
         elif fld == 's-peaks' or fld == 's-spectra':
-            self.info['s-peaks'] = len(self.getAllChildren('peak'))
-            self.info['s-spectra'] = len(self.getAllChildren('spectrum'))
+            self.info['s-peaks'] = len(self.children_of_type('peak'))
+            self.info['s-spectra'] = len(self.children_of_type('spectrum'))
         elif fld == 's-peaks-st' or fld == 's-peaks-en':
-            pks = self.getAllChildren('peak')
+            pks = self.children_of_type('peak')
             if len(pks) > 0:
                 times = [float(pk.info['p-s-time']) for pk in pks]
                 self.info['s-peaks-st'] = str(min(times))

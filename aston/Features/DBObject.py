@@ -7,48 +7,83 @@ class DBObject(object):
     """
     Master class for peaks, features, and datafiles.
     """
-    def __init__(self, db_type='none', db=None, db_id=None, \
-      parent_id=None, info=None, data=None):
-        self.db_type = db_type
-        self.db = db
-        self.db_id = db_id
-        self.parent_id = parent_id
-        self.type = db_type
+    def __init__(self, info=None, data=None, parent=None, db=(None, None)):
         self.info = DBDict(self, info)
         self.rawdata = data
 
+        self._parent = parent
+        self._children = None
+
+        self.db_type = 'none'
+        self.db, self.db_id = db
+
+    def _load_children(self):
+        if self._children is None:
+            if self.db is not None:
+                self._children = self.db.get_children(self)
+            else:
+                self._children = []
+
     @property
     def parent(self):
-        if self.db is None:
-            return None
-        return self.db.getObjectByID(self.parent_id)
+        return self._parent
+
+    @parent.setter
+    def parent(self, value):
+        self._parent = value
+        if value is not None:
+            #TODO: notify the DB if value is None?
+            if value._children is None:
+                value._load_children()
+            value._children.append(self)
+        if self.db is not None:
+            self.db.save_object(self)
+
+    def parent_of_type(self, cls=None):
+        prt = self._parent
+        while True:
+            if prt is None:
+                return prt
+            if prt.db_type == cls:
+                return prt
+            prt = prt._parent
+        else:
+            return prt
 
     @property
     def children(self):
-        if self.db is None:
-            return None
-        return self.db.getChildren(self.db_id)
+        if self._children is None:
+            self._load_children()
+        return self._children
 
-    def getParentOfType(self, cls=None):
-        prt = self.parent
-        if cls is None:
-            return prt
-        while True:
-            if prt is None:
-                return None
-            elif prt.db_type == cls:
-                return prt
-            prt = prt.parent
+    @children.setter
+    def children(self, value):
+        self._children = value
+        for child in value:
+            child._parent = self
+            if self.db is not None:
+                self.db.save_object(child)
 
-    def getAllChildren(self, cls=None):
-        if len(self.children) == 0:
-            return []
+    def children_of_type(self, cls=None):
+        if self._children is None:
+            self._load_children()
         child_list = []
-        for child in self.children:
-            if child.db_type == cls:
-                child_list += [child]
-            child_list += child.getAllChildren(cls)
+        for child in self._children:
+            if child.db_type == cls or cls is None:
+                child_list.append(child)
+            child_list += child.children_of_type(cls=cls)
         return child_list
+
+    def delete(self):
+        if self._parent is not None:
+            self._parent._children.remove(self)
+        if self.db is not None:
+            self.db.delete_object(self)
+        self._parent = None
+
+        for child in self._children:
+            child.delete()
+        self._children = []
 
     def save_changes(self):
         """
@@ -56,13 +91,7 @@ class DBObject(object):
         """
         if self.db is None:
             return
-
-        if self.db_id is not None:
-            #update object
-            self.db.updateObject(self)
-        else:
-            #create object
-            self.db.addObject(self)
+        self.db.save_object(self)
 
     #override in subclasses
     def _load_info(self, fld):

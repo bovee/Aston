@@ -6,7 +6,8 @@ from aston.Math.Other import delta13C_Santrock
 
 class Spectrum(DBObject):
     def __init__(self, *args, **kwargs):
-        super(Spectrum, self).__init__('spectrum', *args, **kwargs)
+        super(Spectrum, self).__init__(*args, **kwargs)
+        self.db_type = 'spectrum'
 
     @property
     def data(self):
