@@ -129,7 +129,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         #TODO: drop files into library?
         fids = data.data('application/x-aston-file')
         if not parent.isValid():
-            new_parent = None
+            new_parent = self.db
         else:
             new_parent = parent.internalPointer()
         objs = []
@@ -179,10 +179,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         else:
             me = index.internalPointer()
             pa = me.parent
-            if pa is None:
-                row = self.db.children.index(me)
-            else:
-                row = pa.children.index(me)
+            row = pa.children.index(me)
             return self.createIndex(row, 0, pa)
 
     def rowCount(self, parent):
@@ -467,19 +464,13 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         #self.tree_view.selectionModel().selectionChanged.emit()
 
     def addObjects(self, head, objs):
-        if head is None:
-            row = len(self.db.children)
-        else:
-            row = len(head.children)
+        row = len(head.children)
         self.beginInsertRows(self._obj_to_index(head), \
           row, row + len(objs) - 1)
         with self.db:
             for obj in objs:
-                if head is None:
-                    obj.parent = None
-                else:
-                    obj.parent = head
-                obj.save_changes()
+                obj.parent = head
+                #obj.save_changes()
         self.endInsertRows()
         self.master_window.plotData(updateBounds=False)
 

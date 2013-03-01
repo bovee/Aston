@@ -65,15 +65,23 @@ class AstonDatabase(object):
         self._curs.close()
         self._curs = None
 
+    def _get_curs(self):
+        if self._curs is not None:
+            return self._curs
+        else:
+            return self.db.cursor()
+
+    def _close_curs(self, c, write=False):
+        if self._curs is None:
+            if write:
+                self.db.commit()
+            c.close()
+
     def get_children(self, obj):
         if self.db is None:
             return []
-        if self._curs is None:
-            c = self.db.cursor()
-        else:
-            c = self._curs
-
-        if obj is None:
+        c = self._get_curs()
+        if obj is self:
             c.execute('SELECT type, id, info, data FROM objs ' + \
                       'WHERE parent_id IS NULL')
         else:
@@ -83,14 +91,13 @@ class AstonDatabase(object):
         for row in c:
             row_obj = self._get_obj_from_row(row, obj)
             children.append(row_obj)
-        if self._curs is None:
-            c.close()
+        self._close_curs(c)
         return children
 
     @property
     def children(self):
         if self._children is None:
-            self._children = self.get_children(None)
+            self._children = self.get_children(self)
         return self._children
 
     def all_keys(self):
@@ -103,10 +110,7 @@ class AstonDatabase(object):
     def get_key(self, key, dflt=''):
         if self.db is None:
             return dflt
-        if self._curs is None:
-            c = self.db.cursor()
-        else:
-            c = self._curs
+        c = self._get_curs()
         c.execute('SELECT value FROM prefs WHERE key = ?', (key,))
         res = c.fetchone()
         if self._curs is None:
@@ -119,28 +123,17 @@ class AstonDatabase(object):
     def set_key(self, key, val):
         if self.db is None:
             return
-        if self._curs is None:
-            c = self.db.cursor()
-        else:
-            c = self._curs
-
+        c = self._get_curs()
         c.execute('SELECT * FROM prefs WHERE key = ?', (key,))
         if c.fetchone() is not None:
             c.execute('UPDATE prefs SET value=? WHERE key=?', (val, key))
         else:
             c.execute('INSERT INTO prefs (value,key) VALUES (?,?)', \
                       (val, key))
-
-        if self._curs is None:
-            self.db.commit()
-            c.close()
+        self._close_curs(c, write=True)
 
     def save_object(self, obj):
-        if self._curs is None:
-            c = self.db.cursor()
-        else:
-            c = self._curs
-
+        c = self._get_curs()
         if obj.db_id is not None:
             # update
             c.execute('UPDATE objs SET type=?, parent_id=?, name=?, ' + \
@@ -152,24 +145,14 @@ class AstonDatabase(object):
                             'info, data) VALUES (?,?,?,?,?)', \
                             self._get_row_from_obj(obj))
             obj.db_id = res.lastrowid
-
-        if self._curs is None:
-            self.db.commit()
-            c.close()
+        self._close_curs(c, write=True)
 
     def delete_object(self, obj):
-        if self._curs is None:
-            c = self.db.cursor()
-        else:
-            c = self._curs
-
+        c = self._get_curs()
         c.execute('DELETE FROM objs WHERE id=?', (obj.db_id,))
         if obj in self._children:
             self._children.remove(obj)
-
-        if self._curs is None:
-            self.db.commit()
-            c.close()
+        self._close_curs(self, write=True)
 
     #def getObjectsByClass(self, cls):
     #    if self.objects is None:
@@ -198,7 +181,7 @@ class AstonDatabase(object):
             data = obj.compress()
         else:
             data = obj.rawdata
-        if obj.parent is None:
+        if obj.parent is self:
             pid = None
         else:
             pid = obj.parent.db_id

@@ -205,8 +205,4 @@ def integrate_peaks(tss, peaks_found, int_f, f_opts={}, dt=None, \
             mrg_pks.append(c_pk)
     else:
         mrg_pks = merge_ions([pk for pks in all_pks for pk in pks])
-
-    # add db info and return it
-    for pk in mrg_pks:
-        pk.db, pk.parent = dt.db, dt
     return mrg_pks

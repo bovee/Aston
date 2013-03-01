@@ -316,6 +316,24 @@ class AstonWindow(QtGui.QMainWindow):
             p['offset'] = gf('integrate_periodic_period', 1.)
         return p
 
+    def find_peaks(self, tss, dt, isomode=False):
+        submnu = self.ui.actionPeak_Finder.menu().children()
+        opt = [i for i in submnu if i.isChecked()][0].text()
+        pf_f = aston.ui.MenuOptions.peak_finders[opt]
+        pf_fopts = self.get_f_opts(pf_f)
+
+        return find_peaks(tss, pf_f, pf_fopts, dt, isomode, \
+                          MULTIPROCESSING)
+
+    def integrate_peaks(self, tss, found_peaks, dt, isomode=False):
+        submnu = self.ui.actionIntegrator.menu().children()
+        opt = [i for i in submnu if i.isChecked()][0].text()
+        int_f = aston.ui.MenuOptions.integrators[opt]
+        int_fopts = self.get_f_opts(int_f)
+
+        return integrate_peaks(tss, found_peaks, int_f, int_fopts, \
+                               dt, isomode, MULTIPROCESSING)
+
     def integrate(self):
         dt = self.obj_tab.active_file()
 
@@ -327,20 +345,8 @@ class AstonWindow(QtGui.QMainWindow):
         elif self.ui.actionTop_File_All_Traces.isChecked() or isomode:
             tss = dt.active_traces(all_tr=True)
 
-        submnu = self.ui.actionPeak_Finder.menu().children()
-        opt = [i for i in submnu if i.isChecked()][0].text()
-        pf_f = aston.ui.MenuOptions.peak_finders[opt]
-        pf_fopts = self.get_f_opts(pf_f)
-
-        submnu = self.ui.actionIntegrator.menu().children()
-        opt = [i for i in submnu if i.isChecked()][0].text()
-        int_f = aston.ui.MenuOptions.integrators[opt]
-        int_fopts = self.get_f_opts(int_f)
-
-        found_peaks = find_peaks(tss, pf_f, pf_fopts, dt, isomode, \
-                                 MULTIPROCESSING)
-        mrg_pks = integrate_peaks(tss, found_peaks, int_f, int_fopts, \
-                                  dt, isomode, MULTIPROCESSING)
+        found_peaks = self.find_peaks(tss, dt, isomode)
+        mrg_pks = self.integrate_peaks(tss, found_peaks, dt, isomode)
 
         self.obj_tab.addObjects(dt, mrg_pks)
         dt.info.del_items('s-peaks')

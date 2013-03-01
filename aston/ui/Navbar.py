@@ -235,7 +235,7 @@ class AstonNavBar(NavigationToolbar2QTAgg):
           event.xdata, linestyle='-')
         if event.key == 'shift':
             info = {'name': str(self._xypress[0])}
-            spc = Spectrum(dt.db, None, dt.db_id, info, scan)
+            spc = Spectrum(info, scan)
             self.parent.obj_tab.addObjects(dt, [spc])
         self._xypress = []
 
