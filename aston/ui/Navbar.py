@@ -88,14 +88,15 @@ class AstonNavBar(NavigationToolbar2QTAgg):
         dt = self.parent.obj_tab.active_file()
         if dt is None:
             return
-        if time.time() - self.ev_time < 1:
+        dclicktime = QtGui.QApplication.doubleClickInterval()
+        if time.time() - self.ev_time < (dclicktime / 1000.):
             self.ev_time = time.time()
             if abs(self._xypress[0] - event.xdata) > 0.01:
                 return
             #TODO: better way to retrieve top ion?
             ion = dt.active_traces(n=0)[0].ions[0]
             #TODO: filter so peak has ion 'ion'
-            for pk in dt.getAllChildren('peak'):
+            for pk in dt.children_of_type('peak'):
                 if pk.contains(event.xdata, event.ydata, ion=ion):
                     self.parent.obj_tab.delObjects([pk])
                     break
