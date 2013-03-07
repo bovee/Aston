@@ -56,14 +56,21 @@ class AstonDatabase(object):
             self.db = sqlite3.connect(database)
         self._children = None
         self._curs = None
+        self._enter_depth = 0
+
+        self._table = None
 
     def __enter__(self):
-        self._curs = self.db.cursor()
+        self._enter_depth += 1
+        if self._curs is None:
+            self._curs = self.db.cursor()
 
     def __exit__(self, type, value, traceback):
-        self.db.commit()
-        self._curs.close()
-        self._curs = None
+        self._enter_depth -= 1
+        if self._enter_depth == 0:
+            self.db.commit()
+            self._curs.close()
+            self._curs = None
 
     def _get_curs(self):
         if self._curs is not None:
@@ -94,11 +101,44 @@ class AstonDatabase(object):
         self._close_curs(c)
         return children
 
+    def _load_children(self):
+        pass
+
     @property
     def children(self):
         if self._children is None:
             self._children = self.get_children(self)
         return self._children
+
+    def start_child_mod(self, parent, add_c=None, del_c=None):
+        if parent is None or self._table is None:
+            return
+        pidx = self._table._obj_to_index(parent)
+        if add_c is not None:
+            if len(add_c) > 0:
+                row = len(parent._children)
+                self._table.beginInsertRows(pidx, row, row + len(add_c) - 1)
+        if del_c is not None:
+            for obj in del_c:
+                row = parent._children.index(obj)
+                self._table.beginRemoveRows(pidx, row, row)
+
+    def end_child_mod(self, parent, add_c=None, del_c=None):
+        if parent is None or self._table is None:
+            return
+        if add_c is not None:
+            if len(add_c) > 0:
+                from PyQt4.QtCore import pyqtRemoveInputHook
+                from pdb import set_trace
+                pyqtRemoveInputHook()
+                set_trace()
+
+                self._table.endInsertRows()
+        if del_c is not None:
+            for _ in del_c:
+                self._table.endRemoveRows()
+        #if add_c is not None or del_c is not None:
+        #    self._table.master_window.plotData(updateBounds=False)
 
     def all_keys(self):
         c = self.db.cursor()
@@ -152,7 +192,7 @@ class AstonDatabase(object):
         c.execute('DELETE FROM objs WHERE id=?', (obj.db_id,))
         if obj in self._children:
             self._children.remove(obj)
-        self._close_curs(self, write=True)
+        self._close_curs(c, write=True)
 
     #def getObjectsByClass(self, cls):
     #    if self.objects is None:
@@ -286,6 +326,7 @@ class AstonFileDatabase(AstonDatabase):
                 info = {'s-file-type': datafiles[fn], 'traces': 'TIC', \
                         'name': name, 'r-date': fdate}
                 obj = ftype_to_class(info['s-file-type'])(info, fn)
+                obj.db, obj._parent = self, self
                 obj._update_info_from_file()
                 self.save_object(obj)
 

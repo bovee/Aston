@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'aston.ui'
 #
-# Created: Wed Feb 27 14:50:06 2013
+# Created: Fri Mar  1 23:26:46 2013
 #      by: PyQt4 UI code generator 4.9.6
 #
 # WARNING! All changes made in this file will be lost!
@@ -212,7 +212,7 @@ class Ui_MainWindow(object):
         self.actionMethods.setObjectName(_fromUtf8("actionMethods"))
         self.actionCompounds = QtGui.QAction(MainWindow)
         self.actionCompounds.setCheckable(True)
-        self.actionCompounds.setEnabled(False)
+        self.actionCompounds.setEnabled(True)
         self.actionCompounds.setObjectName(_fromUtf8("actionCompounds"))
         self.actionAll_Items_as_CSV = QtGui.QAction(MainWindow)
         self.actionAll_Items_as_CSV.setObjectName(_fromUtf8("actionAll_Items_as_CSV"))

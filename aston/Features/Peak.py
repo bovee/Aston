@@ -140,12 +140,13 @@ class Peak(DBObject):
 
     def area(self, ion=None):
         if ion == '!':
-            pk = self.as_poly() #sub_base=True)
+            pk = self.as_poly()  # sub_base=True)
         elif not self.data.has_ion(ion):
             return 0
         else:
-            pk = self.as_poly(ion) #, sub_base=True)
-        #if peakmath.area(pk, method='shoelace') / peakmath.area(pk, method='trapezoid') != 1:
+            pk = self.as_poly(ion)  # , sub_base=True)
+        #if peakmath.area(pk, method='shoelace') / \
+        #   peakmath.area(pk, method='trapezoid') != 1:
         #    print(pk)
         return peakmath.area(pk)
 
@@ -197,8 +198,7 @@ class Peak(DBObject):
             data = prt.scan(time)
             #listify = lambda l: [float(i) for i in l]
             #data = listify(data[0]), listify(data[1])
-        info = {'sp-time': str(time)}
-        return Spectrum(self.db, None, self.db_id, info, data)
+        return Spectrum({'p-s-time': str(time)}, data)
 
     def update_model(self, key):
         # TODO: the model should be applied to *all* of the

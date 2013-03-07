@@ -239,6 +239,7 @@ class AgilentDAD(AgilentMH):
             times[scn] = t[1]
 
             fdata.seek(t[5] + 16)
+            #TODO: use np.fromfile?
             data[scn] = struct.unpack('<' + npts * 'd', fdata.read(npts * 8))
         self.data = TimeSeries(data, times, ions)
 

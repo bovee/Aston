@@ -156,12 +156,10 @@ class SpecPlotter(object):
 
     def save_main_spec(self):
         dt = self.masterWindow.obj_tab.active_file()
-        info = {'name': self.spec_time}
-        spc = Spectrum(dt.db, None, dt.db_id, info, self.mainscan)
-        self.masterWindow.obj_tab.addObjects(dt, [spc])
+        spc = Spectrum({'name': self.spec_time}, self.mainscan)
+        dt.children += [spc]
 
     def save_prev_spec(self):
         dt = self.masterWindow.obj_tab.active_file()
-        info = {'name': self.pspec_time}
-        spc = Spectrum(dt.db, None, dt.db_id, info, self.prevscan)
+        spc = Spectrum({'name': self.pspec_time}, self.prevscan)
         self.masterWindow.obj_tab.addObjects(dt, [spc])

@@ -13,12 +13,10 @@
 * Agilent .REG scraping
   - method parameters
   - fraction collection
-* compound database
-  - hashing code for compounds? numerical match score between spectra?
+* fix compound matching
 * remote database support
 * autoalign chromatograms
-* rewrite database code to use context manager for "lazy" system
-* baseline detection (as a trace type?)
+* baseline detection
 * smarter peak editing?
   - adjustable peaks (little selectors on each end of "baseline")
   - highlight selected (in peak table) peak on graph
@@ -26,7 +24,7 @@
   coelution spots to be found
 * periodic integration (to replace old "split peaks" code)
 * extract spectra from SIM method file properly (e.g. CM1292)
-* fix extension addition in export window
+* fix how extensions are not auto-added in export window
 * ion ranges are weird?
 
 

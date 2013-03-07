@@ -9,7 +9,8 @@ from aston.ui.FilterWindow import FilterWindow
 from aston.ui.MainPlot import Plotter
 from aston.ui.SpecPlot import SpecPlotter
 
-from aston.Database import AstonDatabase, AstonFileDatabase
+from aston.Databases.Database import AstonDatabase, AstonFileDatabase
+from aston.Databases.Chemical import AMDISDatabase
 from aston.FileTable import FileTreeModel
 import aston.ui.MenuOptions
 from aston.Math.PeakFinding import find_peaks
@@ -140,8 +141,8 @@ class AstonWindow(QtGui.QMainWindow):
         self.plotData()
 
         #set up the compound database
-        #cmpd_db = AstonDatabase(self.getPref('Default.COMPOUND_DB'))
-        #self.cmpd_tab = FileTreeModel(cmpd_db, self.ui.compoundTreeView, self)
+        cmpd_db = AMDISDatabase('./data/PURE.MSL')
+        self.cmpd_tab = FileTreeModel(cmpd_db, self.ui.compoundTreeView, self)
 
     def _add_opts_to_menu(self, menu, opts, fxn, dflt=None):
         menu_gp = QtGui.QActionGroup(self)
@@ -325,14 +326,14 @@ class AstonWindow(QtGui.QMainWindow):
         return find_peaks(tss, pf_f, pf_fopts, dt, isomode, \
                           MULTIPROCESSING)
 
-    def integrate_peaks(self, tss, found_peaks, dt, isomode=False):
+    def integrate_peaks(self, tss, found_peaks, isomode=False):
         submnu = self.ui.actionIntegrator.menu().children()
         opt = [i for i in submnu if i.isChecked()][0].text()
         int_f = aston.ui.MenuOptions.integrators[opt]
         int_fopts = self.get_f_opts(int_f)
 
         return integrate_peaks(tss, found_peaks, int_f, int_fopts, \
-                               dt, isomode, MULTIPROCESSING)
+                               isomode, MULTIPROCESSING)
 
     def integrate(self):
         dt = self.obj_tab.active_file()
@@ -346,11 +347,12 @@ class AstonWindow(QtGui.QMainWindow):
             tss = dt.active_traces(all_tr=True)
 
         found_peaks = self.find_peaks(tss, dt, isomode)
-        mrg_pks = self.integrate_peaks(tss, found_peaks, dt, isomode)
+        mrg_pks = self.integrate_peaks(tss, found_peaks, isomode)
 
-        self.obj_tab.addObjects(dt, mrg_pks)
+        with dt.db:
+            dt.children += mrg_pks
         dt.info.del_items('s-peaks')
-        self.plotter.redraw()
+        self.plotData(updateBounds=False)
 
     def showFilterWindow(self):
         if self.obj_tab.active_file() is not None:

@@ -98,7 +98,8 @@ class AstonNavBar(NavigationToolbar2QTAgg):
             #TODO: filter so peak has ion 'ion'
             for pk in dt.children_of_type('peak'):
                 if pk.contains(event.xdata, event.ydata, ion=ion):
-                    self.parent.obj_tab.delObjects([pk])
+                    pk.delete()
+                    self.parent.plotData(updateBounds=False)
                     break
         else:
             self.ev_time = time.time()
@@ -118,11 +119,13 @@ class AstonNavBar(NavigationToolbar2QTAgg):
             else:
                 tss = dt.active_traces(n=0, twin=(t0, t1))
                 pks_found = [[(t0, t1, {'y0': y0, 'y1': y1, 'pf': 'manual'})]]
-            pks = self.parent.integrate_peaks(tss, pks_found, dt)
+            pks = self.parent.integrate_peaks(tss, pks_found)
             if event.key == 'shift':
                 pks = merge_ions(pks)
-            self.parent.obj_tab.addObjects(dt, pks)
+            with dt.db:
+                dt.children += pks
             dt.info.del_items('s-peaks')
+            self.parent.plotData(updateBounds=False)
 
         self._xypress = []
         self.release(event)
@@ -236,7 +239,7 @@ class AstonNavBar(NavigationToolbar2QTAgg):
         if event.key == 'shift':
             info = {'name': str(self._xypress[0])}
             spc = Spectrum(info, scan)
-            self.parent.obj_tab.addObjects(dt, [spc])
+            spc.parent = dt
         self._xypress = []
 
     def disconnect_all(self):

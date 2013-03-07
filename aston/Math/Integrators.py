@@ -184,7 +184,7 @@ def integrate_mpwrap(ts_and_pks, integrate, fopts):
     return pks
 
 
-def integrate_peaks(tss, peaks_found, int_f, f_opts={}, dt=None, \
+def integrate_peaks(tss, peaks_found, int_f, f_opts={}, \
                     isomode=False, mp=False):
     f = functools.partial(integrate_mpwrap, integrate=int_f, fopts=f_opts)
     if mp:

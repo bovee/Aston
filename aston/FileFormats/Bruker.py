@@ -24,7 +24,7 @@ class BrukerMSMS(Datafile.Datafile):
 
         nscans = rd(f, 'ii')[1]
         if nscans == 0:
-            self.data = TimeSeries()
+            self.data = TimeSeries(np.array([]), np.array([]), [])
             return
         times = np.array(rd(f, nscans * 'd')) / 60.0
         f.seek(f.tell() + 4)  # number of scans again
