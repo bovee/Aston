@@ -1,6 +1,6 @@
 from PyQt4 import QtGui
 from aston.ui.aston_settings_ui import Ui_Form
-from aston.Database import AstonDatabase
+from aston.Databases.Database import AstonDatabase
 from aston.ui.MenuOptions import peak_models
 from aston.Math.Other import delta13C_constants
 

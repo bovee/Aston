@@ -50,18 +50,27 @@ class AMDISDatabase(object):
             for c in self.children:
                 ions.update(c.data[0])
             self._ions = np.sort(np.array(list(ions)))
+            self._names = []
             self._speclib = lil_matrix((len(self.children), len(ions)))
             for i, c in enumerate(self.children):
+                self._names.append(c.info['name'])
                 self._speclib[i, self._ions.searchsorted(c.data[0])] = \
                         c.data[1] / float(c.data[1].max())
         #TODO: this next part should be rewritted to be faster
         adj_spc = np.zeros(self._ions.shape)
         for ion, abn in spc.T:
-            adj_spc[np.abs(self._ions - ion) < 0.5] = abn
+            adj_spc[np.abs(self._ions - ion) < 0.5] += abn
 
         spec_num = find_spectrum_match(adj_spc, self._speclib)
-        #from pylab import imshow, plot, show
-        #imshow(self._speclib.A)
+
+        #pic = np.zeros((len(self.children), max(self._ions) + 1))
+        #for abn, ion in zip(self._speclib.A.T, self._ions):
+        #    pic[:, ion] = abn
+        #from pylab import imshow, show
+        #imshow(pic)
+        #show()
+
+        #from pylab import plot, show
         #plot(self._ions, self._speclib.A[spec_num], 'r.')
         #plot(self._ions, adj_spc / np.sum(adj_spc), 'k.')
         #spc[1] = spc[1] / np.sum(spc[1])

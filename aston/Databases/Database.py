@@ -128,11 +128,6 @@ class AstonDatabase(object):
             return
         if add_c is not None:
             if len(add_c) > 0:
-                from PyQt4.QtCore import pyqtRemoveInputHook
-                from pdb import set_trace
-                pyqtRemoveInputHook()
-                set_trace()
-
                 self._table.endInsertRows()
         if del_c is not None:
             for _ in del_c:
