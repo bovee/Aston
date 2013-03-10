@@ -128,16 +128,21 @@ class FileTreeModel(QtCore.QAbstractItemModel):
 
     def dropMimeData(self, data, action, row, col, parent):
         #TODO: drop files into library?
+        #TODO: deal with moving objects between tables
+        # i.e. copy from compounds table into file table
         fids = data.data('application/x-aston-file')
         if not parent.isValid():
             new_parent = self.db
         else:
             new_parent = parent.internalPointer()
         #objs = []
+        #FIXME: table indices are not being properly updated
+        # in Begin/EndInsert/DeleteRows?
         for db_id in [int(i) for i in fids.split(',')]:
             obj = self.db.object_from_id(db_id)
             if obj is not None:
                 obj.parent = new_parent
+                #objs.append(obj)
         #new_parent.children += objs  # doesn't delete old parent?
         return True
 
@@ -174,10 +179,10 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         if not index.isValid():
             return QtCore.QModelIndex()
         obj = index.internalPointer()
-        if obj in self.db.children or obj is None:
+        if obj.parent == self.db or obj is None:
             return QtCore.QModelIndex()
         else:
-            row = obj.parent.children.index(obj)
+            row = obj.parent.parent.children.index(obj.parent)
             return self.createIndex(row, 0, obj.parent)
 
     def rowCount(self, parent):
@@ -477,7 +482,6 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         self.colsChanged()
         #FIXME: selection needs to be updated to new col too?
         #self.tree_view.selectionModel().selectionChanged.emit()
-
 
     def delete_objects(self, objs):
         with self.db:

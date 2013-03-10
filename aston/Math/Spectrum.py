@@ -7,7 +7,7 @@ from scipy.sparse import lil_matrix
 
 def find_spectrum_match(spec, spec_lib, method='euclidian'):
     """
-    Find most spectrum in spec_lib most similar to spec.
+    Find spectrum in spec_lib most similar to spec.
     """
     # filter out any points with abundance below 1 %
     #spec[spec / np.sum(spec) < 0.01] = 0

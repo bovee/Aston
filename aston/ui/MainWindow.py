@@ -322,18 +322,18 @@ class AstonWindow(QtGui.QMainWindow):
         opt = [i for i in submnu if i.isChecked()][0].text()
         pf_f = aston.ui.MenuOptions.peak_finders[opt]
         pf_fopts = self.get_f_opts(pf_f)
+        mp = self.obj_tab.db.get_key('multiprocessing', dflt=True)
 
-        return find_peaks(tss, pf_f, pf_fopts, dt, isomode, \
-                          MULTIPROCESSING)
+        return find_peaks(tss, pf_f, pf_fopts, dt, isomode, mp)
 
     def integrate_peaks(self, tss, found_peaks, isomode=False):
         submnu = self.ui.actionIntegrator.menu().children()
         opt = [i for i in submnu if i.isChecked()][0].text()
         int_f = aston.ui.MenuOptions.integrators[opt]
         int_fopts = self.get_f_opts(int_f)
+        mp = self.obj_tab.db.get_key('multiprocessing', dflt=True)
 
-        return integrate_peaks(tss, found_peaks, int_f, int_fopts, \
-                               isomode, MULTIPROCESSING)
+        return integrate_peaks(tss, found_peaks, int_f, int_fopts, isomode, mp)
 
     def integrate(self):
         dt = self.obj_tab.active_file()

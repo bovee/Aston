@@ -202,8 +202,8 @@ def event_peak_find(ts, events, adjust_times=False):
         return events
 
 
-def peak_find_mpwrap(ts, peak_find, fopts, dt):
-    if peak_find == event_peak_find:
+def peak_find_mpwrap(ts, peak_find, fopts, dt=None):
+    if peak_find == event_peak_find and dt is not None:
         # event_peak_find also needs a list of events
         evts = []
         if dt is not None:
@@ -232,12 +232,15 @@ def find_peaks(tss, pf_f, f_opts={}, dt=None, isomode=False, mp=False):
                 new_p = (p[0] + off, p[1] + off, p[2])
                 tpks.append(new_p)
             peaks_found.append(tpks)
+    elif mp and pf_f != event_peak_find:
+        # event_peak_find needs the datafile, which can't be pickled
+        # and hence can't be passed into any multiprocessing code
+        f = functools.partial(peak_find_mpwrap, peak_find=pf_f, \
+                            fopts=f_opts)
+        po = multiprocessing.Pool()
+        peaks_found = po.map(f, tss)
     else:
         f = functools.partial(peak_find_mpwrap, peak_find=pf_f, \
-                              fopts=f_opts, dt=dt)
-        if mp:
-            po = multiprocessing.Pool()
-            peaks_found = po.map(f, tss)
-        else:
-            peaks_found = list(map(f, tss))
+                            fopts=f_opts, dt=dt)
+        peaks_found = list(map(f, tss))
     return peaks_found

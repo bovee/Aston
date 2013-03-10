@@ -153,7 +153,11 @@ class AstonDatabase(object):
         if res is None:
             return dflt
         else:
-            return res[0]
+            if type(dflt) == bool:
+                # automatically make this a boolean
+                return res[0] == 'T'
+            else:
+                return res[0]
 
     def set_key(self, key, val):
         if self.db is None:
@@ -260,7 +264,7 @@ class AstonDatabase(object):
 class AstonFileDatabase(AstonDatabase):
     def __init__(self, *args, **kwargs):
         super(AstonFileDatabase, self).__init__(*args, **kwargs)
-        if self.get_key('db_reload_on_open', dflt='T') == 'T':
+        if self.get_key('db_reload_on_open', dflt=True):
             self.update_file_list(self.database_path)
 
     def update_file_list(self, path):
@@ -305,7 +309,7 @@ class AstonFileDatabase(AstonDatabase):
         dnames = set([i[0] for i in c])
 
         #compare the two lists -> remove deleted files from the database
-        if self.get_key('db_remove_deleted', dflt='False') == 'T':
+        if self.get_key('db_remove_deleted', dflt=False):
             for fn in dnames.difference(set(datafiles.keys())):
                 c.execute('DELETE FROM files WHERE file_name=?', (fn,))
             self.db.commit()

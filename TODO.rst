@@ -1,9 +1,10 @@
 0.6 Checklist
 *************
 
-* mzML, & mzXML file support
+* mzML & mzXML file support
 * save AIA/CDF, mzML & mzXML
 * RAW file support
+  - look at linking to unfinnigan? (https://code.google.com/p/unfinnigan/)
 * MSMS support
   - Agilent MSMS Peak file format
   - spectral range display (as average) for Agilent MSMS
@@ -13,7 +14,6 @@
 * Agilent .REG scraping
   - method parameters
   - fraction collection
-* fix compound matching
 * remote database support
 * autoalign chromatograms
 * baseline detection
@@ -25,7 +25,8 @@
 * periodic integration (to replace old "split peaks" code)
 * extract spectra from SIM method file properly (e.g. CM1292)
 * fix how extensions are not auto-added in export window
-* ion ranges are weird?
+* ion ranges (34:45) are weird?
+* make aston not freak out if datafile is not found?
 
 
 0.7 Checklist
