@@ -1,6 +1,9 @@
+import os.path as op
 from PyQt4 import QtGui
 from aston.ui.aston_settings_ui import Ui_Form
 from aston.Databases.Database import AstonDatabase
+from aston.Databases.Compound import get_compound_db
+from aston.FileTable import FileTreeModel
 from aston.ui.MenuOptions import peak_models
 from aston.Math.Other import delta13C_constants
 
@@ -13,28 +16,35 @@ class AstonSettings(QtGui.QWidget):
         self.parent = parent
         self.db = db
 
-        if db is not None:
-            self.load_opts()
-            self.ui.pushButtonCopyDB.clicked.connect(self.load_other_db)
+        if db is None:
+            return
 
-            # set up the isotope combo boxes
-            m = ['santrock', 'craig']
-            idx = m.index(self.db.get_key('d13c_method', 'santrock'))
-            self.ui.comboIsotopeMethod.setCurrentIndex(idx)
-            self.ui.comboIsotopeMethod.activated.connect(self.set_isotope)
+        self.load_opts()
+        self.ui.pushButtonCopyDB.clicked.connect(self.load_other_db)
 
-            ks = [k for k in delta13C_constants()]
-            idx = ks.index(self.db.get_key('d13c_const', 'Santrock'))
-            self.ui.comboIsotopeKs.setCurrentIndex(idx)
-            self.ui.comboIsotopeKs.activated.connect(self.set_isotope)
+        # set up the isotope combo boxes
+        m = ['santrock', 'craig']
+        idx = m.index(self.db.get_key('d13c_method', 'santrock'))
+        self.ui.comboIsotopeMethod.setCurrentIndex(idx)
+        self.ui.comboIsotopeMethod.activated.connect(self.set_isotope)
 
-            # fill out the leastsq integration peak model combobox
-            self.ui.comboLeastSqPeakModel.addItems( \
-                [m for m in peak_models if peak_models[m] is not None])
-            pkmod = self.db.get_key('integrate_leastsq_f', dflt='gaussian')
-            ci = [peak_models[m] for m in peak_models].index(pkmod) - 1
-            self.ui.comboLeastSqPeakModel.setCurrentIndex(ci)
-            self.ui.comboLeastSqPeakModel.activated.connect(self.set_lsqmod)
+        ks = [k for k in delta13C_constants()]
+        idx = ks.index(self.db.get_key('d13c_const', 'Santrock'))
+        self.ui.comboIsotopeKs.setCurrentIndex(idx)
+        self.ui.comboIsotopeKs.activated.connect(self.set_isotope)
+
+        # fill out the leastsq integration peak model combobox
+        self.ui.comboLeastSqPeakModel.addItems( \
+            [m for m in peak_models if peak_models[m] is not None])
+        pkmod = self.db.get_key('integrate_leastsq_f', dflt='gaussian')
+        ci = [peak_models[m] for m in peak_models].index(pkmod) - 1
+        self.ui.comboLeastSqPeakModel.setCurrentIndex(ci)
+        self.ui.comboLeastSqPeakModel.activated.connect(self.set_lsqmod)
+
+        self.ui.btnOpenCompoundDB.clicked.connect(self.load_cmpd_db)
+        self.ui.lineCompoundDB.setText(self.db.get_key('db_compound', dflt=''))
+        self.ui.btnOpenMethodDB.clicked.connect(self.load_meth_db)
+        self.ui.lineMethodDB.setText(self.db.get_key('db_method', dflt=''))
 
     def set_lsqmod(self):
         ci = self.ui.comboLeastSqPeakModel.currentIndex()
@@ -64,7 +74,8 @@ class AstonSettings(QtGui.QWidget):
                   'integrate_periodic_offset': self.ui.doublePeriodicOffset,
                   'integrate_periodic_period': self.ui.doublePeriodicPeriod,
                   'db_remove_deleted': self.ui.checkDBRemoveDeleted,
-                  'db_reload_on_open': self.ui.checkDBRescan}
+                  'db_reload_on_open': self.ui.checkDBRescan,
+                  'multiprocessing': self.ui.checkMultiprocessing}
         return k_to_b
 
     def load_opts(self):
@@ -105,3 +116,29 @@ class AstonSettings(QtGui.QWidget):
         other_db_vals = AstonDatabase(path).all_keys()
         for k in other_db_vals:
             self.db.set_key(k, other_db_vals[k])
+
+    def load_cmpd_db(self):
+        #TODO: relative to DB path if possible?
+        fopts = self.tr('AstonDB (*.sqlite); AMDIS DB (*.msl)')
+        path = str(QtGui.QFileDialog.getOpenFileName(self, \
+          self.tr('Open DB'), '', fopts))
+        if path == '':
+            return
+
+        self.db.set_key('db_compound', path)
+        self.ui.lineCompoundDB.setText(path)
+
+        cmpd_db = get_compound_db(path)
+        self.parent.cmpd_tab = FileTreeModel(cmpd_db, \
+                                      self.parent.ui.compoundTreeView, self)
+
+    def load_meth_db(self):
+        #TODO: relative to DB path if possible?
+        fopts = self.tr('AstonDB (*.sqlite);')
+        path = str(QtGui.QFileDialog.getOpenFileName(self, \
+          self.tr('Open DB'), '', fopts))
+        if path == '':
+            return
+
+        self.db.set_key('db_method', path)
+        self.ui.lineMethodDB.setText(path)

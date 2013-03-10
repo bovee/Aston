@@ -10,13 +10,11 @@ from aston.ui.MainPlot import Plotter
 from aston.ui.SpecPlot import SpecPlotter
 
 from aston.Databases.Database import AstonDatabase, AstonFileDatabase
-from aston.Databases.Chemical import AMDISDatabase
+from aston.Databases.Compound import get_compound_db
 from aston.FileTable import FileTreeModel
 import aston.ui.MenuOptions
 from aston.Math.PeakFinding import find_peaks
 from aston.Math.Integrators import integrate_peaks
-
-MULTIPROCESSING = False
 
 
 class AstonWindow(QtGui.QMainWindow):
@@ -141,8 +139,11 @@ class AstonWindow(QtGui.QMainWindow):
         self.plotData()
 
         #set up the compound database
-        cmpd_db = AMDISDatabase('./data/PURE.MSL')
-        self.cmpd_tab = FileTreeModel(cmpd_db, self.ui.compoundTreeView, self)
+        cmpd_loc = self.obj_tab.db.get_key('db_compound', dflt='')
+        if cmpd_loc != '':
+            cmpd_db = get_compound_db(cmpd_loc)
+            self.cmpd_tab = FileTreeModel(cmpd_db, self.ui.compoundTreeView, \
+                                          self)
 
     def _add_opts_to_menu(self, menu, opts, fxn, dflt=None):
         menu_gp = QtGui.QActionGroup(self)

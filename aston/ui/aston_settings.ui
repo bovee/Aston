@@ -55,7 +55,7 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>451</width>
+            <width>499</width>
             <height>170</height>
            </rect>
           </property>
@@ -66,10 +66,10 @@
            <item row="0" column="1">
             <widget class="QDoubleSpinBox" name="doubleSimpleStartSlope">
              <property name="minimum">
-              <double>-10000.000000000000000</double>
+              <double>-100000000.000000000000000</double>
              </property>
              <property name="maximum">
-              <double>10000.000000000000000</double>
+              <double>100000000.000000000000000</double>
              </property>
              <property name="singleStep">
               <double>100.000000000000000</double>
@@ -91,6 +91,9 @@
            </item>
            <item row="0" column="3">
             <widget class="QDoubleSpinBox" name="doubleSimpleMaxPeakWidth">
+             <property name="maximum">
+              <double>600.000000000000000</double>
+             </property>
              <property name="value">
               <double>1.500000000000000</double>
              </property>
@@ -109,7 +112,7 @@
            <item row="2" column="3">
             <widget class="QDoubleSpinBox" name="doubleSimpleMinPeakHgt">
              <property name="maximum">
-              <double>10000000.000000000000000</double>
+              <double>1000000000.000000000000000</double>
              </property>
              <property name="singleStep">
               <double>100.000000000000000</double>
@@ -142,10 +145,10 @@
            <item row="3" column="1">
             <widget class="QDoubleSpinBox" name="doubleSimpleEndSlope">
              <property name="minimum">
-              <double>-10000.000000000000000</double>
+              <double>-100000000.000000000000000</double>
              </property>
              <property name="maximum">
-              <double>10000.000000000000000</double>
+              <double>100000000.000000000000000</double>
              </property>
              <property name="singleStep">
               <double>100.000000000000000</double>
@@ -168,10 +171,10 @@
            <item row="2" column="1">
             <widget class="QDoubleSpinBox" name="doubleSimpleInitSlope">
              <property name="minimum">
-              <double>-10000.000000000000000</double>
+              <double>-100000000.000000000000000</double>
              </property>
              <property name="maximum">
-              <double>10000.000000000000000</double>
+              <double>100000000.000000000000000</double>
              </property>
              <property name="value">
               <double>500.000000000000000</double>
@@ -185,8 +188,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>387</width>
-            <height>82</height>
+            <width>416</width>
+            <height>187</height>
            </rect>
           </property>
           <attribute name="label">
@@ -285,8 +288,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>117</width>
-            <height>29</height>
+            <width>416</width>
+            <height>187</height>
            </rect>
           </property>
           <attribute name="label">
@@ -314,8 +317,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>162</width>
-            <height>31</height>
+            <width>416</width>
+            <height>91</height>
            </rect>
           </property>
           <attribute name="label">
@@ -342,8 +345,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>116</width>
-            <height>56</height>
+            <width>416</width>
+            <height>187</height>
            </rect>
           </property>
           <attribute name="label">
@@ -467,98 +470,206 @@
        </item>
       </layout>
      </widget>
+     <widget class="QWidget" name="tab_3">
+      <attribute name="title">
+       <string>Identification</string>
+      </attribute>
+      <layout class="QFormLayout" name="formLayout_5">
+       <item row="0" column="0">
+        <widget class="QLabel" name="label_21">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="text">
+          <string>Spectral Match Method</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QComboBox" name="comboIdentMethod"/>
+       </item>
+       <item row="1" column="0">
+        <widget class="QLabel" name="label_22">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="text">
+          <string>Match Cutoff</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <widget class="QDoubleSpinBox" name="doubleIdentCutoff">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
      <widget class="QWidget" name="tab_4">
       <attribute name="title">
        <string>Aston</string>
       </attribute>
       <layout class="QVBoxLayout" name="verticalLayout_3">
        <item>
-        <layout class="QFormLayout" name="formLayout_4">
-         <item row="0" column="0">
-          <widget class="QLabel" name="label_8">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
-           <property name="text">
-            <string>Compound DB</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="1">
-          <widget class="QLineEdit" name="lineCompoundDB">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="0">
-          <widget class="QLabel" name="label_9">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
-           <property name="text">
-            <string>Method DB</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="1">
-          <widget class="QLineEdit" name="lineMethodDB">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="1">
-          <widget class="QCheckBox" name="checkDBRescan">
-           <property name="text">
-            <string/>
-           </property>
-           <property name="checked">
-            <bool>true</bool>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="0">
-          <widget class="QLabel" name="label_10">
-           <property name="text">
-            <string>Rescan on Open</string>
-           </property>
-          </widget>
-         </item>
-         <item row="3" column="0">
-          <widget class="QLabel" name="label_11">
-           <property name="text">
-            <string>Remove Deleted Files</string>
-           </property>
-          </widget>
-         </item>
-         <item row="3" column="1">
-          <widget class="QCheckBox" name="checkDBRemoveDeleted">
-           <property name="text">
-            <string/>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </item>
-       <item>
-        <spacer name="verticalSpacer_2">
-         <property name="orientation">
-          <enum>Qt::Vertical</enum>
+        <widget class="QToolBox" name="toolBox_2">
+         <property name="currentIndex">
+          <number>0</number>
          </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>20</width>
-           <height>40</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-       <item>
-        <widget class="QPushButton" name="pushButtonCopyDB">
-         <property name="text">
-          <string>Copy Settings from Other AstonDB</string>
-         </property>
+         <widget class="QWidget" name="page_6">
+          <property name="geometry">
+           <rect>
+            <x>0</x>
+            <y>0</y>
+            <width>416</width>
+            <height>265</height>
+           </rect>
+          </property>
+          <attribute name="label">
+           <string>Database</string>
+          </attribute>
+          <layout class="QVBoxLayout" name="verticalLayout_4">
+           <item>
+            <layout class="QFormLayout" name="formLayout_4">
+             <property name="fieldGrowthPolicy">
+              <enum>QFormLayout::ExpandingFieldsGrow</enum>
+             </property>
+             <item row="0" column="0">
+              <widget class="QLabel" name="label_8">
+               <property name="enabled">
+                <bool>true</bool>
+               </property>
+               <property name="text">
+                <string>Compound DB</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="1">
+              <layout class="QHBoxLayout" name="horizontalLayout_2">
+               <property name="leftMargin">
+                <number>0</number>
+               </property>
+               <item>
+                <widget class="QLineEdit" name="lineCompoundDB">
+                 <property name="enabled">
+                  <bool>true</bool>
+                 </property>
+                 <property name="readOnly">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="btnOpenCompoundDB">
+                 <property name="text">
+                  <string>Open</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </item>
+             <item row="1" column="0">
+              <widget class="QLabel" name="label_9">
+               <property name="enabled">
+                <bool>true</bool>
+               </property>
+               <property name="text">
+                <string>Method DB</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="1">
+              <layout class="QHBoxLayout" name="horizontalLayout">
+               <property name="topMargin">
+                <number>0</number>
+               </property>
+               <item>
+                <widget class="QLineEdit" name="lineMethodDB">
+                 <property name="enabled">
+                  <bool>true</bool>
+                 </property>
+                 <property name="readOnly">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="btnOpenMethodDB">
+                 <property name="text">
+                  <string>Open</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </item>
+             <item row="2" column="0">
+              <widget class="QLabel" name="label_10">
+               <property name="text">
+                <string>Rescan on Open</string>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="1">
+              <widget class="QCheckBox" name="checkDBRescan">
+               <property name="text">
+                <string/>
+               </property>
+               <property name="checked">
+                <bool>true</bool>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="0">
+              <widget class="QLabel" name="label_11">
+               <property name="text">
+                <string>Remove Deleted Files</string>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="1">
+              <widget class="QCheckBox" name="checkDBRemoveDeleted">
+               <property name="text">
+                <string/>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <widget class="QPushButton" name="pushButtonCopyDB">
+             <property name="text">
+              <string>Copy Settings from Other AstonDB</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+         <widget class="QWidget" name="page_7">
+          <property name="geometry">
+           <rect>
+            <x>0</x>
+            <y>0</y>
+            <width>416</width>
+            <height>265</height>
+           </rect>
+          </property>
+          <attribute name="label">
+           <string>Misc Options</string>
+          </attribute>
+          <layout class="QVBoxLayout" name="verticalLayout_5">
+           <item>
+            <widget class="QCheckBox" name="checkMultiprocessing">
+             <property name="text">
+              <string>Use Multiprocessing</string>
+             </property>
+             <property name="checked">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
         </widget>
        </item>
       </layout>

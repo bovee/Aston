@@ -24,13 +24,4 @@ def find_spectrum_match(spec, spec_lib, method='euclidian'):
         # calculate the residual sum of squares from spectrum to library
         dist_sp = spec_lib.multiply(spec_lib) - 2 * spec_lib.dot(st_spc)
         dist = dist_sp.sum(axis=1).A + np.sum(spec ** 2)
-    return dist.argmin()
-
-
-def compare_spectra(a, b):
-    # from AMDIS paper: Stein 1999
-    c = dict(a.T)
-    w = 0.9  # weight was variable?
-    for k, i in b.T:
-        c[k] = w * np.sqrt(i * c.get(k, 0))
-    return sum(c.values()) ** 2 / (a[1].sum() * b[1].sum())
+    return (dist.argmin(), dist.min())

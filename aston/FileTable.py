@@ -315,7 +315,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             self._add_menu_opt(self.tr('Merge Peaks'), \
                                self.merge_peaks, fts, menu)
 
-        fts = [s for s in sel if s.db_type == 'spectrum']
+        fts = [s for s in sel if s.db_type in ('spectrum', 'peak')]
         if len(fts) > 0:
             self._add_menu_opt(self.tr('Find in Lib'), \
                                self.find_in_lib, fts, menu)
@@ -361,19 +361,17 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         self.delete_objects([o for o in objs if o not in new_objs])
 
     def createSpec(self, objs):
-        #TODO: doesn't update?
         with self.db:
             for obj in objs:
-                spc = obj.createSpectrum()
-                #from PyQt4.QtCore import pyqtRemoveInputHook
-                #from pdb import set_trace
-                #pyqtRemoveInputHook()
-                #set_trace()
-                obj.children += [spc]
+                obj.children += [obj.as_spectrum()]
 
     def find_in_lib(self, objs):
         for obj in objs:
-            lib_spc = self.master_window.cmpd_tab.db.find_spectrum(obj.data)
+            if obj.db_type == 'peak':
+                spc = obj.as_spectrum().data
+            elif obj.db_type == 'spectrum':
+                spc = obj.data
+            lib_spc = self.master_window.cmpd_tab.db.find_spectrum(spc)
             obj.info['name'] = lib_spc.info['name']
 
     #def makeMethod(self, objs):

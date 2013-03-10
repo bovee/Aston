@@ -191,13 +191,18 @@ class Peak(DBObject):
 
         return '{0:.3f}'.format(d)
 
-    def createSpectrum(self, method=None):
-        prt = self.parent_of_type('file')
-        time = peakmath.time(self.as_poly())
+    def as_spectrum(self, method=None):
         if method is None:
+            # grab the spectrum from the same time as me
+            prt = self.parent_of_type('file')
+            time = peakmath.time(self.as_poly())
             data = prt.scan(time)
-            #listify = lambda l: [float(i) for i in l]
-            #data = listify(data[0]), listify(data[1])
+        elif method == 'child':
+            # if there's already a sprectum assigned to
+            # me, return it
+            specs = self.children_of_type('spectrum')
+            if len(specs) > 0:
+                return specs[0]
         return Spectrum({'p-s-time': str(time)}, data)
 
     def update_model(self, key):
