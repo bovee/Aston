@@ -30,7 +30,7 @@ from PyQt4 import QtGui, QtCore
 from aston.ui.resources import resfile
 from aston.ui.Fields import aston_fields, aston_groups, aston_field_opts
 from aston.ui.MenuOptions import peak_models
-from aston.Databases.Database import AstonFileDatabase
+from aston.Databases.FileDatabase import AstonFileDatabase, LoadFilesThread
 
 peak_models = {str(k): peak_models[k] for k in peak_models}
 
@@ -101,6 +101,12 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         tree_view.collapseAll()
         tree_view.setColumnWidth(0, 300)
         tree_view.setColumnWidth(1, 60)
+
+        update_db = self.db.get_key('db_reload_on_open', dflt=True)
+        if type(database) == AstonFileDatabase and update_db:
+            self.loadthread = LoadFilesThread(self.db)
+            self.loadthread.file_updated.connect(self.update_obj)
+            self.loadthread.start()
 
     def dragMoveEvent(self, event):
         #TODO: files shouldn't be able to be under peaks
@@ -372,7 +378,9 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             elif obj.db_type == 'spectrum':
                 spc = obj.data
             lib_spc = self.master_window.cmpd_tab.db.find_spectrum(spc)
-            obj.info['name'] = lib_spc.info['name']
+            if lib_spc is not None:
+                obj.info['name'] = lib_spc.info['name']
+                obj.save_changes()
 
     #def makeMethod(self, objs):
     #    self.master_window.cmpd_tab.addObjects(None, objs)
@@ -481,6 +489,16 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         #FIXME: selection needs to be updated to new col too?
         #self.tree_view.selectionModel().selectionChanged.emit()
 
+    def update_obj(self, dbid, obj):
+        if obj is None and dbid is None:
+            self.master_window.show_status(self.tr('All Files Loaded'))
+        elif obj is None:
+            #TODO: delete files if they aren't present
+            #c.execute('DELETE FROM files WHERE id=?', (dbid,))
+            pass
+        else:
+            obj.parent = self.db
+
     def delete_objects(self, objs):
         with self.db:
             for obj in objs:
@@ -488,7 +506,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         self.master_window.plotData(updateBounds=False)
 
     def _obj_to_index(self, obj):
-        if obj is None:
+        if obj is None or obj == self.db:
             return QtCore.QModelIndex()
         elif obj in self.db.children:
             row = self.db.children.index(obj)

@@ -88,10 +88,11 @@ def simple_peak_find(ts, init_slope=500, start_slope=500, end_slope=200, \
             # is the end of the timeseries
             pk2 = len(ts.y) - 1
 
+        if pk == pk2:
+            continue
         pk_hgt = max(ts.y[pk:pk2]) - min(ts.y[pk:pk2])
         if pk_hgt < min_peak_height:
             continue
-
         peak_list.append((t[pk], t[pk2], {}))
     return peak_list
 

@@ -24,12 +24,9 @@ import os
 import sqlite3
 import json
 import zlib
-from datetime import datetime
-from aston.FileFormats.FileFormats import ftype_to_class
-from aston.FileFormats.FileFormats import ext_to_classtable
-from aston.FileFormats.FileFormats import get_magic
 from aston.TimeSeries import decompress_to_ts
 from aston.Features.Spectrum import decompress_to_spec
+from aston.FileFormats.FileFormats import ftype_to_class
 
 
 class AstonDatabase(object):
@@ -40,20 +37,21 @@ class AstonDatabase(object):
     def __init__(self, database):
         self.database_path = database
 
+        self.db = self
         if database is None:
-            self.db = None
+            self._db = None
         elif not os.path.exists(database):
             # create a database file if one doesn't exist
-            self.db = sqlite3.connect(database)
-            c = self.db.cursor()
+            self._db = sqlite3.connect(database)
+            c = self._db.cursor()
             c.execute('''CREATE TABLE prefs (key TEXT, value TEXT)''')
             c.execute('''CREATE TABLE objs (type TEXT,
                       id INTEGER PRIMARY KEY ASC, parent_id INTEGER,
                       name TEXT, info BLOB, data BLOB)''')
-            self.db.commit()
+            self._db.commit()
             c.close()
         else:
-            self.db = sqlite3.connect(database)
+            self._db = sqlite3.connect(database)
         self._children = None
         self._curs = None
         self._enter_depth = 0
@@ -63,12 +61,12 @@ class AstonDatabase(object):
     def __enter__(self):
         self._enter_depth += 1
         if self._curs is None:
-            self._curs = self.db.cursor()
+            self._curs = self._db.cursor()
 
     def __exit__(self, type, value, traceback):
         self._enter_depth -= 1
         if self._enter_depth == 0:
-            self.db.commit()
+            self._db.commit()
             self._curs.close()
             self._curs = None
 
@@ -76,16 +74,16 @@ class AstonDatabase(object):
         if self._curs is not None:
             return self._curs
         else:
-            return self.db.cursor()
+            return self._db.cursor()
 
     def _close_curs(self, c, write=False):
         if self._curs is None:
             if write:
-                self.db.commit()
+                self._db.commit()
             c.close()
 
     def get_children(self, obj):
-        if self.db is None:
+        if self._db is None:
             return []
         c = self._get_curs()
         if obj is self:
@@ -102,12 +100,12 @@ class AstonDatabase(object):
         return children
 
     def _load_children(self):
-        pass
+        self._children = self.get_children(self)
 
     @property
     def children(self):
         if self._children is None:
-            self._children = self.get_children(self)
+            self._load_children()
         return self._children
 
     def start_child_mod(self, parent, add_c=None, del_c=None):
@@ -136,14 +134,14 @@ class AstonDatabase(object):
         #    self._table.master_window.plotData(updateBounds=False)
 
     def all_keys(self):
-        c = self.db.cursor()
+        c = self._db.cursor()
         c.execute('SELECT key, value FROM prefs')
         p = c.fetchall()
         c.close()
         return dict(p)
 
     def get_key(self, key, dflt=''):
-        if self.db is None:
+        if self._db is None:
             return dflt
         c = self._get_curs()
         c.execute('SELECT value FROM prefs WHERE key = ?', (key,))
@@ -160,7 +158,7 @@ class AstonDatabase(object):
                 return res[0]
 
     def set_key(self, key, val):
-        if self.db is None:
+        if self._db is None:
             return
         c = self._get_curs()
         c.execute('SELECT * FROM prefs WHERE key = ?', (key,))
@@ -259,77 +257,6 @@ class AstonDatabase(object):
         else:
             from aston.Features import DBObject
             return DBObject(**args)
-
-
-class AstonFileDatabase(AstonDatabase):
-    def __init__(self, *args, **kwargs):
-        super(AstonFileDatabase, self).__init__(*args, **kwargs)
-        if self.get_key('db_reload_on_open', dflt=True):
-            self.update_file_list(self.database_path)
-
-    def update_file_list(self, path):
-        """
-        Makes sure the database is in sync with the file system.
-        """
-        ext2ftype = ext_to_classtable()
-
-        #TODO: this needs to run in a separate thread
-        #extract a list of lists of file names in my directory
-        foldname = os.path.dirname(path)
-        if foldname == '':
-            foldname = os.curdir
-        datafiles = {}
-        for fold, dirs, files in os.walk(foldname):
-            for filename in files:
-                ext, magic = get_magic(os.path.join(fold, filename))
-
-                #TODO: this MWD stuff is kludgy and will probably break
-                if ext == 'CH':
-                    if filename[:3].upper() == 'MWD':
-                        filename = 'mwd1A.ch'
-                    elif filename[:3].upper() == 'DAD':
-                        filename = 'dad1A.ch'
-
-                ftype = None
-                if magic is not None:
-                    ftype = ext2ftype.get(ext + '.' + magic, None)
-                if ftype is None:
-                    ftype = ext2ftype.get(ext, None)
-
-                #if it's a supported file, add it in
-                if ftype is not None:
-                    datafiles[os.path.join(fold, filename)] = ftype
-            for d in dirs:
-                if d.startswith('.') or d.startswith('_'):
-                    dirs.remove(d)
-
-        #extract a list of files from the database
-        c = self.db.cursor()
-        c.execute('SELECT data FROM objs WHERE type="file"')
-        dnames = set([i[0] for i in c])
-
-        #compare the two lists -> remove deleted files from the database
-        if self.get_key('db_remove_deleted', dflt=False):
-            for fn in dnames.difference(set(datafiles.keys())):
-                c.execute('DELETE FROM files WHERE file_name=?', (fn,))
-            self.db.commit()
-        c.close()
-
-        #add the new files into the database
-        #TODO: generate projects and project_ids based on folder names?
-        with self:
-            for fn in set(datafiles.keys()).difference(dnames):
-                fdate = datetime.fromtimestamp(os.path.getctime(fn))
-                fdate = fdate.replace(microsecond=0).isoformat(' ')
-                name = os.path.splitext(os.path.basename(fn))[0]
-                info = {'s-file-type': datafiles[fn], 'traces': 'TIC', \
-                        'name': name, 'r-date': fdate}
-                obj = ftype_to_class(info['s-file-type'])(info, fn)
-                obj.db, obj._parent = self, self
-                obj._update_info_from_file()
-                self.save_object(obj)
-
-        #TODO: update old database entries with new metadata
 
 
 class AstonMethodDB(AstonDatabase):

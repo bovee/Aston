@@ -119,7 +119,7 @@ class AstonSettings(QtGui.QWidget):
 
     def load_cmpd_db(self):
         #TODO: relative to DB path if possible?
-        fopts = self.tr('AstonDB (*.sqlite); AMDIS DB (*.msl)')
+        fopts = self.tr('AstonDB (*.sqlite);;AMDIS DB (*.msl)')
         path = str(QtGui.QFileDialog.getOpenFileName(self, \
           self.tr('Open DB'), '', fopts))
         if path == '':

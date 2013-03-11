@@ -9,7 +9,8 @@ from aston.ui.FilterWindow import FilterWindow
 from aston.ui.MainPlot import Plotter
 from aston.ui.SpecPlot import SpecPlotter
 
-from aston.Databases.Database import AstonDatabase, AstonFileDatabase
+from aston.Databases.Database import AstonDatabase
+from aston.Databases.FileDatabase import AstonFileDatabase
 from aston.Databases.Compound import get_compound_db
 from aston.FileTable import FileTreeModel
 import aston.ui.MenuOptions
@@ -214,11 +215,25 @@ class AstonWindow(QtGui.QMainWindow):
         self.ui.fileTreeView.header().customContextMenuRequested.disconnect()
         self.ui.fileTreeView.header().sectionMoved.disconnect()
 
+        file_loc = op.join(self.directory, 'aston.sqlite')
+        self.load_new_file_db(file_loc)
+
+    def load_new_file_db(self, file_loc):
+        #TODO: this should be called by init too so opening a new file_db
+        # will load all the preferences from that file_db (like what happens in
+        # init now
+
         #load everything
-        file_db = AstonFileDatabase(op.join(self.directory, 'aston.sqlite'))
+        file_db = AstonFileDatabase(file_loc)
         self.obj_tab = FileTreeModel(file_db, self.ui.fileTreeView, self)
         self.settingsWidget.db = file_db
         self.plotData()
+
+        cmpd_loc = file_db.get_key('db_compound', dflt='')
+        if cmpd_loc != '':
+            cmpd_db = get_compound_db(cmpd_loc)
+            self.cmpd_tab = FileTreeModel(cmpd_db, self.ui.compoundTreeView, \
+                                          self)
 
     def set_color_scheme(self):
         v = self.plotter.setColorScheme(self.sender().data())

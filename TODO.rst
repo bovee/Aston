@@ -33,7 +33,6 @@
 *************
 
 * optimization
-  - seperate thread for database updating
   - tune MSMS file format performance (rewrites in C?)
 * Method Database
   - allow calibration curves to be saved for compounds
