@@ -1,4 +1,5 @@
 import struct
+import re
 import os
 import numpy as np
 from aston import Datafile
@@ -100,7 +101,7 @@ class ThermoDXF(Datafile.Datafile):
         #TODO: there has to be a better way than this to get these values
         # at least don't keep cycling through the file for each one
         foff_o = self._th_off('d 18O/16O'.encode('utf_16_le'))
-        foff_c = self._th_off('d 13C/12C'.encode('utf_16_le'), hint=foff_o)
+        foff_c = self._th_off('d 13C/12C'.encode('utf_16_le'))
         with open(self.rawdata, 'rb') as f:
             if foff_o is not None:
                 f.seek(foff_o + 68)
@@ -115,15 +116,17 @@ class ThermoDXF(Datafile.Datafile):
             hint = 0
         with open(self.rawdata, 'rb') as f:
             f.seek(hint)
-            f.seek(len(search_str))
+            regexp = re.compile(search_str)
             while True:
-                f.seek(f.tell() - len(search_str))
-                if f.read(len(search_str)) == search_str:
+                d = f.read(len(search_str) * 200)
+                srch = regexp.search(d)
+                if srch is not None:
+                    foff = f.tell() - len(d) + srch.end()
                     break
-                if f.read(1) == b'':
+                if len(d) == len(search_str):  # no data read: EOF
                     f.close()
                     return None
-            foff = f.tell()
+                f.seek(f.tell() - len(search_str))
         return foff
 
     def events(self, kind):
