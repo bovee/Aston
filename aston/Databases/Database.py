@@ -130,8 +130,6 @@ class AstonDatabase(object):
         if del_c is not None:
             for _ in del_c:
                 self._table.endRemoveRows()
-        #if add_c is not None or del_c is not None:
-        #    self._table.master_window.plotData(updateBounds=False)
 
     def all_keys(self):
         c = self._db.cursor()
@@ -187,14 +185,7 @@ class AstonDatabase(object):
     def delete_object(self, obj):
         c = self._get_curs()
         c.execute('DELETE FROM objs WHERE id=?', (obj.db_id,))
-        if obj in self._children:
-            self._children.remove(obj)
         self._close_curs(c, write=True)
-
-    #def getObjectsByClass(self, cls):
-    #    if self.objects is None:
-    #        self.reload()
-    #    return [obj for obj in self.objects if obj.db_type == cls]
 
     def object_from_id(self, db_id, parent=None):
         if parent is None:

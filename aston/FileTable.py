@@ -141,15 +141,10 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             new_parent = self.db
         else:
             new_parent = parent.internalPointer()
-        #objs = []
-        #FIXME: table indices are not being properly updated
-        # in Begin/EndInsert/DeleteRows?
         for db_id in [int(i) for i in fids.split(',')]:
             obj = self.db.object_from_id(db_id)
             if obj is not None:
                 obj.parent = new_parent
-                #objs.append(obj)
-        #new_parent.children += objs  # doesn't delete old parent?
         return True
 
     def supportedDropActions(self):
@@ -176,7 +171,7 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             return self.createIndex(row, column, self.db.children[row])
         elif parent.column() == 0:
             sibs = parent.internalPointer().children
-            if row > len(sibs):
+            if row >= len(sibs):
                 return QtCore.QModelIndex()
             return self.createIndex(row, column, sibs[row])
         return QtCore.QModelIndex()

@@ -30,23 +30,32 @@ class DBObject(object):
 
     @parent.setter
     def parent(self, value):
+        if value == self._parent:
+            return
         if value is not None:
             if value.db is not None:
                 self.db = value.db
-        if value != self._parent and self.db is not None:
+
+        # remove it from its old parent (if it has one)
+        if self.db is not None:
             self.db.start_child_mod(self._parent, del_c=[self])
-            self.db.start_child_mod(value, add_c=[self])
-        self._parent, self._oldparent = value, self._parent
-        if value is not None:
+        if self._parent is not None:
+            self._parent._children.remove(self)
+        if self.db is not None:
+            self.db.end_child_mod(self._parent, del_c=[self])
+
+        # add it to its new parent
+        self._parent = value
+        if self.db is not None:
+            self.db.start_child_mod(self._parent, add_c=[self])
+        if self._parent is not None:
             #TODO: notify the DB if value is None?
-            if value._children is None:
-                value._load_children()
-            value._children.append(self)
+            if self._parent._children is None:
+                self._parent._load_children()
+            self._parent._children.append(self)
         if self.db is not None:
             self.db.save_object(self)
-            if value != self._oldparent:
-                self.db.end_child_mod(value, add_c=[self])
-                self.db.end_child_mod(self._oldparent, del_c=[self])
+            self.db.end_child_mod(self._parent, add_c=[self])
 
     def parent_of_type(self, cls=None):
         prt = self._parent
@@ -96,13 +105,13 @@ class DBObject(object):
             self.db.delete_object(self)
         if self._parent is not None:
             self._parent._children.remove(self)
-        self._parent, self._oldparent = None, self._parent
+        self._parent, oldparent = None, self._parent
 
         for child in self._children:
             child.delete(recursed=True)
         self._children = []
         if self.db is not None and not recursed:
-            self.db.end_child_mod(self._oldparent, del_c=[self])
+            self.db.end_child_mod(oldparent, del_c=[self])
 
     def save_changes(self):
         """
