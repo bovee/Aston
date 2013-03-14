@@ -45,8 +45,8 @@ options = {
         'Topic :: Scientific/Engineering :: Chemistry'
     ],
     'long_description': read('README.rst'),
-    'packages': ['aston', 'aston.ui', 'aston.Features', \
-                 'aston.FileFormats', 'aston.Math'],
+    'packages': ['aston', 'aston.ui', 'aston.Databases', 'aston.Features', \
+                 'aston.FileFormats', 'aston.Math', 'aston.test'],
     'scripts': ['astonx.py'],
     'data_files': matplotlib.get_py2exe_datafiles(),
     'package_data': {'aston': \
