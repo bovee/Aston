@@ -72,6 +72,9 @@ class AstonFileDatabase(AstonDatabase):
                         #yield (name_to_dbid[fn], new_obj)
                         pass
                     else:
+                        # update dnames, so we won't find *.CH multiple times
+                        if filename in ['mwd1A.ch', 'dad1A.ch']:
+                            dnames.update([fn])
                         #TODO: generate projects and project_ids based on
                         # folder names?
                         fdate = datetime.fromtimestamp(os.path.getctime(fn))

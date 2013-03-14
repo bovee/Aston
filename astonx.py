@@ -29,6 +29,10 @@ sip.setapi('QVariant', 2)
 import matplotlib
 matplotlib.use('Qt4Agg')
 
+# for multiprocessing to work on Windows
+import multiprocessing
+multiprocessing.freeze_support()
+
 #all the other imports
 import sys
 import PyQt4
