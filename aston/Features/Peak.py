@@ -15,21 +15,24 @@ class Peak(DBObject):
     def __init__(self, *args, **kwargs):
         super(Peak, self).__init__(*args, **kwargs)
         self.db_type = 'peak'
+        self.childtypes = ('spectrum',)
 
     @property
     def data(self):
         if 'p-model' not in self.info:
             return self.rawdata
 
+        #TODO: move this into the loop, so each mz
+        # can theoretically have its own function-type
         f = peak_models.get(self.info['p-model'], None)
         if f is None:
             return self.rawdata
-        #TODO: if p-params is a list, plot each item as current
-        #p-params; allow for multiple functions to fit one peak
 
-        p = json.loads(self.info['p-params'])
-        y = f(self.rawdata.times, **p)
-        return TimeSeries(y, self.rawdata.times, [self.rawdata.ions[0]])
+        all_params = json.loads(self.info['p-params'])
+        y = np.empty(self.rawdata.data.shape)
+        for i, params in enumerate(all_params):
+            y[:, i] = f(self.rawdata.times, **params)
+        return TimeSeries(y, self.rawdata.times, self.rawdata.ions)
 
     def baseline(self, ion=None, interp=False):
         if self.info['p-baseline'] == '':
@@ -206,27 +209,33 @@ class Peak(DBObject):
         return Spectrum({'p-s-time': str(time)}, data)
 
     def update_model(self, key):
-        # TODO: the model should be applied to *all* of the
-        # ions in self.rawdata
         self.info['p-model'] = str(key)
         self.info.del_items('p-s-')
 
         f = peak_models.get(str(key), None)
+        all_params = []
         if f is not None:
-            t = self.rawdata.times
-            y = self.rawdata.y
-            #TODO: subtract baseline
-            #ya = x[1:-1] - np.linspace(x[0], x[-1], len(x) - 2)
+            for i in self.rawdata.ions:
+                t = self.rawdata.times
+                y = self.rawdata.trace('!').y
+                #TODO: subtract baseline
+                #ya = x[1:-1] - np.linspace(x[0], x[-1], len(x) - 2)
 
-            ts = TimeSeries(y, t)
-            initc = guess_initc(ts, f, [t[y.argmax()]])
-            params, res = fit(ts, [f], initc)
-            params = params[0]
+                ts = TimeSeries(y, t)
+                initc = guess_initc(ts, f, [t[y.argmax()]])
+                params, res = fit(ts, [f], initc)
+                params = params[0]
 
-            params['f'] = str(key)
-            self.info['p-s-base'] = str(params['v'])
-            self.info['p-s-height'] = str(params['h'])
-            self.info['p-s-time'] = str(params['x'])
-            self.info['p-s-width'] = str(params['w'])
-            self.info['p-s-model-fit'] = str(res['r^2'])
-            self.info['p-params'] = json.dumps(params)
+                params['mz'] = str(i)
+                params['f'] = str(key)
+                params['r^2'] = str(res['r^2'])
+                all_params.append(params)
+
+            self.info['p-params'] = json.dumps(all_params)
+
+            get_param = lambda k, l: ','.join(str(p[k]) for p in l)
+            self.info['p-s-height'] = str(get_param('h', all_params))
+            self.info['p-s-base'] = str(get_param('v', all_params))
+            self.info['p-s-time'] = str(get_param('x', all_params))
+            self.info['p-s-width'] = str(get_param('w', all_params))
+            self.info['p-s-model-fit'] = str(get_param('r^2', all_params))
