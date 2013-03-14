@@ -149,7 +149,34 @@ def leastsq_integrate(ts, peak_list, f='gaussian'):
 
 
 def periodic_integrate(ts, peak_list, offset=0., period=1.):
-    pass
+    movwin = lambda a, l:  np.lib.stride_tricks.as_strided(a, \
+                 (a.shape[0] - l + 1, l), a.itemsize * np.ones(2))
+    new_peak_list = []
+    for t0, t1, hints in peak_list:
+        # time the first whole "period" starts
+        tpi = offset + period * ((t0 - offset) // period + 1)
+        if tpi > t1:
+            # the entire peak is within one "period"
+            new_peak_list.append([t0, t1, hints])
+            continue
+        tp = np.hstack([[t0], np.arange(tpi, t1, period)])
+        if tp[-1] != t1:
+            # add the last point to the list
+            tp = np.hstack([tp, [t1]])
+        for tp0, tp1 in movwin(tp, 2):
+            new_hints = {'pf': hints.get('pf', '')}
+            if 'y0' in hints and 'y1' in hints:
+                # calculate the new baseline for this peak
+                xs, ys = [t0, t1], [hints['y0'], hints['y1']]
+                new_hints['y0'] = np.interp(tp0, xs, ys)
+                new_hints['y1'] = np.interp(tp1, xs, ys)
+            new_peak_list.append([tp0, tp1, new_hints])
+
+    peaks = simple_integrate(ts, new_peak_list)
+    for p in peaks:
+        p.info['p-create'] = p.info['p-create'].split(',')[0] + \
+                ',periodic_integrate'
+    return peaks
 
 
 def merge_ions(pks):

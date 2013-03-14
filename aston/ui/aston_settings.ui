@@ -48,7 +48,7 @@
           <enum>QFrame::Plain</enum>
          </property>
          <property name="currentIndex">
-          <number>0</number>
+          <number>4</number>
          </property>
          <widget class="QWidget" name="page">
           <property name="geometry">
@@ -318,7 +318,7 @@
             <x>0</x>
             <y>0</y>
             <width>416</width>
-            <height>91</height>
+            <height>92</height>
            </rect>
           </property>
           <attribute name="label">
@@ -356,7 +356,7 @@
            <item row="0" column="0">
             <widget class="QLabel" name="label_15">
              <property name="enabled">
-              <bool>false</bool>
+              <bool>true</bool>
              </property>
              <property name="text">
               <string>Offset</string>
@@ -366,14 +366,14 @@
            <item row="0" column="1">
             <widget class="QDoubleSpinBox" name="doublePeriodicOffset">
              <property name="enabled">
-              <bool>false</bool>
+              <bool>true</bool>
              </property>
             </widget>
            </item>
            <item row="1" column="0">
             <widget class="QLabel" name="label_16">
              <property name="enabled">
-              <bool>false</bool>
+              <bool>true</bool>
              </property>
              <property name="text">
               <string>Period</string>
@@ -383,7 +383,10 @@
            <item row="1" column="1">
             <widget class="QDoubleSpinBox" name="doublePeriodicPeriod">
              <property name="enabled">
-              <bool>false</bool>
+              <bool>true</bool>
+             </property>
+             <property name="value">
+              <double>1.000000000000000</double>
              </property>
             </widget>
            </item>
@@ -650,8 +653,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>416</width>
-            <height>265</height>
+            <width>159</width>
+            <height>29</height>
            </rect>
           </property>
           <attribute name="label">

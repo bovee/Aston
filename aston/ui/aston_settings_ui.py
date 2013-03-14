@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'aston_settings.ui'
 #
-# Created: Sat Mar  9 14:50:26 2013
+# Created: Wed Mar 13 22:09:43 2013
 #      by: PyQt4 UI code generator 4.9.6
 #
 # WARNING! All changes made in this file will be lost!
@@ -161,7 +161,7 @@ class Ui_Form(object):
         self.formLayout.setWidget(0, QtGui.QFormLayout.FieldRole, self.checkEventAdjust)
         self.toolBox.addItem(self.page_2, _fromUtf8(""))
         self.page_4 = QtGui.QWidget()
-        self.page_4.setGeometry(QtCore.QRect(0, 0, 416, 91))
+        self.page_4.setGeometry(QtCore.QRect(0, 0, 416, 92))
         self.page_4.setObjectName(_fromUtf8("page_4"))
         self.formLayout_6 = QtGui.QFormLayout(self.page_4)
         self.formLayout_6.setFieldGrowthPolicy(QtGui.QFormLayout.ExpandingFieldsGrow)
@@ -179,19 +179,20 @@ class Ui_Form(object):
         self.formLayout_3 = QtGui.QFormLayout(self.page_5)
         self.formLayout_3.setObjectName(_fromUtf8("formLayout_3"))
         self.label_15 = QtGui.QLabel(self.page_5)
-        self.label_15.setEnabled(False)
+        self.label_15.setEnabled(True)
         self.label_15.setObjectName(_fromUtf8("label_15"))
         self.formLayout_3.setWidget(0, QtGui.QFormLayout.LabelRole, self.label_15)
         self.doublePeriodicOffset = QtGui.QDoubleSpinBox(self.page_5)
-        self.doublePeriodicOffset.setEnabled(False)
+        self.doublePeriodicOffset.setEnabled(True)
         self.doublePeriodicOffset.setObjectName(_fromUtf8("doublePeriodicOffset"))
         self.formLayout_3.setWidget(0, QtGui.QFormLayout.FieldRole, self.doublePeriodicOffset)
         self.label_16 = QtGui.QLabel(self.page_5)
-        self.label_16.setEnabled(False)
+        self.label_16.setEnabled(True)
         self.label_16.setObjectName(_fromUtf8("label_16"))
         self.formLayout_3.setWidget(1, QtGui.QFormLayout.LabelRole, self.label_16)
         self.doublePeriodicPeriod = QtGui.QDoubleSpinBox(self.page_5)
-        self.doublePeriodicPeriod.setEnabled(False)
+        self.doublePeriodicPeriod.setEnabled(True)
+        self.doublePeriodicPeriod.setProperty("value", 1.0)
         self.doublePeriodicPeriod.setObjectName(_fromUtf8("doublePeriodicPeriod"))
         self.formLayout_3.setWidget(1, QtGui.QFormLayout.FieldRole, self.doublePeriodicPeriod)
         self.toolBox.addItem(self.page_5, _fromUtf8(""))
@@ -310,7 +311,7 @@ class Ui_Form(object):
         self.verticalLayout_4.addWidget(self.pushButtonCopyDB)
         self.toolBox_2.addItem(self.page_6, _fromUtf8(""))
         self.page_7 = QtGui.QWidget()
-        self.page_7.setGeometry(QtCore.QRect(0, 0, 416, 265))
+        self.page_7.setGeometry(QtCore.QRect(0, 0, 159, 29))
         self.page_7.setObjectName(_fromUtf8("page_7"))
         self.verticalLayout_5 = QtGui.QVBoxLayout(self.page_7)
         self.verticalLayout_5.setObjectName(_fromUtf8("verticalLayout_5"))
@@ -325,7 +326,7 @@ class Ui_Form(object):
 
         self.retranslateUi(Form)
         self.tabWidget.setCurrentIndex(0)
-        self.toolBox.setCurrentIndex(0)
+        self.toolBox.setCurrentIndex(4)
         self.comboIsotopeKs.setCurrentIndex(3)
         self.toolBox_2.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(Form)

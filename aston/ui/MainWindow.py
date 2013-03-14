@@ -329,8 +329,8 @@ class AstonWindow(QtGui.QMainWindow):
         elif fname == 'leastsq_integrate':
             p['f'] = gv('integrate_leastsq_f', 'gaussian')
         elif fname == 'periodic_integrate':
-            p['period'] = gf('integrate_periodic_offset', 0.)
-            p['offset'] = gf('integrate_periodic_period', 1.)
+            p['offset'] = gf('integrate_periodic_offset', 0.)
+            p['period'] = gf('integrate_periodic_period', 1.)
         return p
 
     def find_peaks(self, tss, dt, isomode=False):
