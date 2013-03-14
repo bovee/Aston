@@ -255,8 +255,8 @@ class AstonWindow(QtGui.QMainWindow):
           'EMF Image (*.emf);;EPS Image (*.eps);;' + \
           'Portable Document Format (*.pdf);;Postscript Image (*.ps);;' + \
           'Compressed SVG File (*.svgz);;Comma-Delimited Text (*.csv)')
-        fname = str(QtGui.QFileDialog.getSaveFileName(self, \
-          self.tr("Save As..."), filter=fopts))
+        fname = str(QtGui.QFileDialog.getSaveFileNameAndFilter(self, \
+          self.tr("Save As..."), filter=fopts)[0])
         if fname == '':
             return
         elif fname[-4:].lower() == '.csv':
@@ -283,8 +283,8 @@ class AstonWindow(QtGui.QMainWindow):
           'EMF Image (*.emf);;EPS Image (*.eps);;' + \
           'Portable Document Format (*.pdf);;Postscript Image (*.ps);;' + \
           'Compressed SVG File (*.svgz);;Comma-Delimited Text (*.csv)')
-        fname = str(QtGui.QFileDialog.getSaveFileName(self, \
-          self.tr("Save As..."), filter=fopts))
+        fname = str(QtGui.QFileDialog.getSaveFileNameAndFilter(self, \
+          self.tr("Save As..."), filter=fopts)[0])
         if fname == '':
             return
         elif fname[-4:].lower() == '.csv':
@@ -302,8 +302,8 @@ class AstonWindow(QtGui.QMainWindow):
         #TODO: options for exporting different delimiters (e.g. tab) or
         #exporting select items as pictures (e.g. selected spectra)
         fopts = self.tr('Comma-Delimited Text (*.csv)')
-        fname = str(QtGui.QFileDialog.getSaveFileName(self, \
-          self.tr("Save As..."), filter=fopts))
+        fname = str(QtGui.QFileDialog.getSaveFileNameAndFilter(self, \
+          self.tr("Save As..."), filter=fopts)[0])
         if fname == '':
             return
         sel = self.obj_tab.returnSelFiles()

@@ -19,7 +19,6 @@
   - allow user-selected peaks to be re-interpreted &
     coelution spots to be found
 * extract spectra from SIM method file properly (e.g. CM1292)
-* fix how extensions are not auto-added in export window
 * ion ranges (34:45) are weird?
 * make aston not freak out if datafile is not found?
 
