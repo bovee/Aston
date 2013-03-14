@@ -9,7 +9,6 @@
 * Agilent .REG scraping
   - method parameters
   - fraction collection
-* remote database support
 * autoalign chromatograms
 * baseline detection
 * smarter peak editing?
@@ -18,7 +17,8 @@
   - highlight selected (in peak table) peak on graph
   - allow user-selected peaks to be re-interpreted &
     coelution spots to be found
-* extract spectra from SIM method file properly (e.g. CM1292)
+* spectra from Agilent MS SIM method (e.g. CM1292) have a "0" mz
+  that may be erroneous and should be removed?
 * ion ranges (34:45) are weird?
 * make aston not freak out if datafile is not found?
 
@@ -36,10 +36,11 @@
   - allow calibration curves to be saved for compounds
   - method editor?
   - setting to allow run info to be loaded from method DB
+* remote database support
 * have multiple plots and allow user to choose which plot each trace goes on?
   - have datafile return units associated with trace types to allow for multiple y axes
 * allow fake datafiles to be generated and added to the library
-  that model chromatography
+  for chromatography models
 * display x axes in seconds (or hours or scans)
   (http://stackoverflow.com/questions/9451395/customize-x-axis-in-matplotlib)
 * help manual / tutorials

@@ -99,7 +99,7 @@ class AgilentMH(Datafile):
                 if y_units == 'bar':
                     d *= 0.1  # convert to MPa for metricness
                 elif y_units == '':
-                    pass  #TODO: ul/min to ml/min
+                    pass  # TODO: ul/min to ml/min
                 return TimeSeries(d, t, [name])
 
             f.seek(cloc + 87)
@@ -312,6 +312,25 @@ def read_reg_file(f, foff=0x2D):
     return data
 
 
+def read_regb_file(f):
+    pass
+    #CObArray
+    #either 2 bytes long (0100) or 8 (0000 0380 0580 XXXX)
+
+    #CHPAnnText
+    #[j[36:36+2*struct.unpack('<H', j[34:36])[0]].decode('utf-16') \
+    # for i, j in a if i == b'CHPAnnText']
+    #slen = struct.unpack('<H', struct_dat[34:36])
+    #struct_dat[36:36 + slen * 2].decode('utf-16')
+
+    #CHPDatLongRow
+    # starts at byte 14?
+
+    #CHPNdrString
+    [j[12:12+2*struct.unpack('<H', j[10:12])[0]].decode('utf-16') \
+     for i, j in a if i == b'CHPNdrString']
+
+
 def parse_c_serialized(f):
     """
     Reads in a binary file created by a C++ serializer (prob. MFC?)
@@ -319,6 +338,7 @@ def parse_c_serialized(f):
     These are used by Thermo for *.CF and *.DXF files and by Agilent
     for new-style *.REG files.
     """
+    #TODO: rewrite to use re library
     f.seek(0)
     try:
         p_rec_type = None

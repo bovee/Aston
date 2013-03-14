@@ -108,7 +108,13 @@ class AMDISDatabase(object):
 
 
 class AstonCompoundDatabase(object):
-    pass
+    def __init__(self, database):
+        #TODO: not implemented yet
+        self.database_path = database
+        self.children = []
+
+    def get_key(self, key, dflt=''):
+        return dflt
 
 
 def get_compound_db(filename):
@@ -120,3 +126,4 @@ def get_compound_db(filename):
     else:
         return None
     return cmpd_db
+
