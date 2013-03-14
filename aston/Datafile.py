@@ -67,6 +67,7 @@ class Datafile(DBObject):
 
         super(Datafile, self).__init__(*args, **kwargs)
         self.db_type = 'file'
+        self.childtypes = ('peak', 'peakgroup', 'spectrum')
         self.data = None
 
         if autoload:

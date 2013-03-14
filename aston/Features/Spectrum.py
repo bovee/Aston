@@ -8,6 +8,7 @@ class Spectrum(DBObject):
     def __init__(self, *args, **kwargs):
         super(Spectrum, self).__init__(*args, **kwargs)
         self.db_type = 'spectrum'
+        self.childtypes = ()
 
     @property
     def data(self):
