@@ -11,6 +11,8 @@ from aston.Math.PeakFitting import guess_initc, fit
 def simple_integrate(ts, peak_list):
     """
     Integrate each peak naively; without regard to overlap.
+
+    This is used as the terminal step by most of the other integrators.
     """
     peaks = []
     for t0, t1, hints in peak_list:
@@ -112,20 +114,18 @@ def drop_integrate(ts, peak_list):
         # none of our peaks should overlap, so we can just use
         # simple_integrate now
         peaks += simple_integrate(ts, temp_pks)
-        for p in peaks:
-            p.info['p-create'] = p.info['p-create'].split(',')[0] + \
-                    ',drop_integrate'
+    for p in peaks:
+        p.info['p-create'] = p.info['p-create'].split(',')[0] + \
+                ',drop_integrate'
     return peaks
 
 
 def leastsq_integrate(ts, peak_list, f='gaussian'):
-    win_list = _get_windows(peak_list)
-
     # lookup the peak model function to use for fitting
     f = {f.__name__: f for f in peak_models}[f]
 
     peaks = []
-    for w, peak_list in win_list:
+    for w, peak_list in _get_windows(peak_list):
         tr = ts.trace(twin=w)
         # if there's location info, we can use this for
         # our inital params

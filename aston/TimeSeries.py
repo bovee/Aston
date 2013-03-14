@@ -154,6 +154,8 @@ class TimeSeries(object):
         return f(time)[0]
 
     def as_2D(self):
+        if self.times.shape[0] == 0:
+            return (0, 1, 0, 1), np.array([[0]])
         ext = (self.times[0], self.times[-1], min(self.ions), max(self.ions))
         if type(self._rawdata) == np.ndarray:
             grid = self._rawdata[:, np.argsort(self.ions)].transpose()

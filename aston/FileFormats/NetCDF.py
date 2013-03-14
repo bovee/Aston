@@ -42,5 +42,11 @@ class NetCDF(Datafile):
         self.data = TimeSeries(data, t, ions)
 
 
-def write_netcdf(dt):
+def write_netcdf(dt, filename):
+    #f = NetCDFFile(filename, 'w')
+    #f.createVariable('scan_acquisition_time', ??, ??)
+    #f.createVariable('point_count', ??, ??)
+    #f.createVariable('mass_values', ??, ??)
+    #f.createVariable('intensity_values', ??, ??)
+
     raise NotImplementedError

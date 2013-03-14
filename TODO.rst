@@ -1,15 +1,10 @@
-0.6 Checklist
+0.7 Checklist
 *************
 
 * mzML & mzXML file support
 * save AIA/CDF, mzML & mzXML
 * RAW file support
   - look at linking to unfinnigan? (https://code.google.com/p/unfinnigan/)
-* MSMS support
-  - Agilent MSMS Peak file format
-  - spectral range display (as average) for Agilent MSMS
-  - Bruker MSMS spectra
-  - MSMS points on graph / MSMS data display
 * Chemstation B+ REG files
 * Agilent .REG scraping
   - method parameters
@@ -18,29 +13,36 @@
 * autoalign chromatograms
 * baseline detection
 * smarter peak editing?
+  - peak groups
   - adjustable peaks (little selectors on each end of "baseline")
   - highlight selected (in peak table) peak on graph
-* allow user-selected peaks to be re-interpreted &
-  coelution spots to be found
-* periodic integration (to replace old "split peaks" code)
+  - allow user-selected peaks to be re-interpreted &
+    coelution spots to be found
 * extract spectra from SIM method file properly (e.g. CM1292)
 * fix how extensions are not auto-added in export window
 * ion ranges (34:45) are weird?
 * make aston not freak out if datafile is not found?
 
 
-0.7 Checklist
+0.8 Checklist
 *************
 
-* optimization
+* MSMS support
   - tune MSMS file format performance (rewrites in C?)
+  - Agilent MSMS Peak file format
+  - spectral range display (as average) for Agilent MSMS
+  - Bruker MSMS spectra
+  - MSMS points on graph / MSMS data display
 * Method Database
   - allow calibration curves to be saved for compounds
   - method editor?
   - setting to allow run info to be loaded from method DB
 * have multiple plots and allow user to choose which plot each trace goes on?
   - have datafile return units associated with trace types to allow for multiple y axes
+* allow fake datafiles to be generated and added to the library
+  that model chromatography
 * display x axes in seconds (or hours or scans)
+  (http://stackoverflow.com/questions/9451395/customize-x-axis-in-matplotlib)
 * help manual / tutorials
 * package example data with aston (for tests / quality control)
 * write unit tests

@@ -149,10 +149,10 @@ class ThermoDXF(Datafile.Datafile):
                     if d[4] == 2:
                         status.append(d[5])
                     else:
-                        #TODO: 0.9955 is a correction factor
+                        #TODO: needs a correction factor to be
                         # derived from guesswork; timing in
                         # Isodat/Conflo is uncoupled? BAD
-                        time.append(0.9955 * d[4] / 60000.)
+                        time.append(d[4] / 60000.)
                         evt.append(name2)
                     if d[-1] == -1:
                         # first record ends (?) with this, so skip

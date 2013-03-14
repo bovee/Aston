@@ -74,6 +74,8 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         #set up key shortcuts
         delAc = QtGui.QAction("Delete", tree_view, \
             shortcut=QtCore.Qt.Key_Backspace, triggered=self.delItemKey)
+        delAc = QtGui.QAction("Delete", tree_view, \
+            shortcut=QtCore.Qt.Key_Delete, triggered=self.delItemKey)
         tree_view.addAction(delAc)
 
         #set up right-clicking
@@ -311,8 +313,6 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         if len(fts) > 0:
             self._add_menu_opt(self.tr('Create Spec.'), \
                                self.createSpec, fts, menu)
-            #self._add_menu_opt(self.tr('Split Peak'), \
-            #                   self.splitPeaks, fts, menu)
             self._add_menu_opt(self.tr('Merge Peaks'), \
                                self.merge_peaks, fts, menu)
 
@@ -379,55 +379,6 @@ class FileTreeModel(QtCore.QAbstractItemModel):
 
     #def makeMethod(self, objs):
     #    self.master_window.cmpd_tab.addObjects(None, objs)
-
-    #def splitPeaks(self, pks):
-    #    from aston.Features.Peak import Peak
-    #    #db_list = str(self.sender().data()).split(',')
-    #    #pks = [self.db.getObjectByID(int(o)) for o in db_list]
-    #    double_input = QtGui.QInputDialog.getDouble
-    #    SPO, Cancel = double_input(self.master_window, "Aston", \
-    #                               "Slice Offset", 0.0)
-    #    if not Cancel:
-    #        return
-    #    SPL, Cancel = double_input(self.master_window, "Aston", \
-    #                               "Slice Length", 0.2)
-    #    if not Cancel:
-    #        return
-
-    #    for pk in pks:
-    #        ts, te = min(pk.data.times), max(pk.data.times)
-    #        if (ts - SPO) % SPL == 0:
-    #            t0 = pk.time()[0]
-    #        else:
-    #            t0 = SPO + SPL * (np.ceil((ts - SPO) / SPL) - 1)
-    #        t = t0
-
-    #        def y(tm):
-    #            ys, ye = pk.data.y[0], pk.data.y[-1]
-    #            return ys + (ye - ys) * (tm - t0) / (te - ts)
-
-    #        pks = []
-    #        dt = pk.parent
-    #        del pk.info['p-s-']
-    #        info = pk.info
-    #        info['p-int'] = 'split'
-    #        while t < te:
-    #            verts = np.column_stack((pk.time(t, t + SPL), \
-    #              pk.trace(None, t, t + SPL)))
-    #            if t != t0:
-    #                #not the first point
-    #                verts = np.vstack(([t, y(t)], verts))
-    #            if t + SPL < te:
-    #                #not the last point
-    #                verts = np.vstack((verts, [t + SPL, y(t + SPL)]))
-    #            info['name'] = '{:.2f}-{:.2f}'.format(verts[0, 0],\
-    #                                                  verts[-1, 0])
-    #            pks.append(Peak(dt.db, None, dt.db_id, \
-    #                            info.copy(), verts.tolist()))
-    #            t += SPL
-    #        self.delObjects([pk])
-    #        self.addObjects(dt, pks)
-    #        del dt.info['s-peaks']
 
     def click_head(self, point):
         menu = QtGui.QMenu(self.tree_view)
