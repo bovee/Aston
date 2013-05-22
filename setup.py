@@ -137,6 +137,14 @@ elif len(sys.argv) >= 2 and sys.argv[1] == 'py2app':
     os.system('rm -rf dist/Aston.app/Contents/Resources/lib/python2.7/matplotlib/tests')
     os.system('rm -rf dist/Aston.app/Contents/Resources/lib/python2.7/scipy/weave')
     os.system('rm -rf dist/Aston.app/Contents/Resources/lib/python2.7/matplotlib/mpl-data')
+    # Delete the following directories
+    #/Content/Resources/lib/python2.7/matplotlib/testing
+    #/Content/Resources/lib/python2.7/scipy/spatial/tests
+    #/Content/Resources/lib/python2.7/email/test
+    #/Content/Frameworks/QtXmlPatterns.framework
+    #/Content/Frameworks/QtNetwork.framework
+    #/Content/Frameworks/QtScript.framework
+    #/Content/Frameworks/QtScriptTools.framework
     ##TODO: remove stuff from "dist/Aston.app/Contents/Resources/lib/python2.7"
     ##matplotlib.tests, scipy.weave, numpy.f2py
     ##libQtNetwork.4.dylib, libQtXmlPatterns.4.dylib, libtcl8.5.dylib

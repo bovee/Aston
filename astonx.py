@@ -29,6 +29,9 @@ sip.setapi('QVariant', 2)
 import matplotlib
 matplotlib.use('Qt4Agg')
 
+import numpy
+numpy.seterr(divide='raise', invalid='raise', over='raise')
+
 # for multiprocessing to work on Windows
 import multiprocessing
 multiprocessing.freeze_support()

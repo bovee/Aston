@@ -65,15 +65,17 @@ def peak_model(f):
 
         # some functions use location or width parameters explicitly
         # if not, adjust the timeseries accordingly
-        if 'w' in anames and 'x' in anames:
-            ta = t
-        elif 'w' in anames:
-            ta = t - kw['x']
-        else:
-            ta = (t - kw['x']) / kw['w']
+        ta = t
+        if 'x' not in anames:
+            ta = ta - kw['x']
+        if 'w' not in anames:
+            ta = ta / kw['w']
 
         # finally call the function
-        return kw['v'] + kw['h'] * f(ta, **fkw)
+        mod = f(ta, **fkw)
+        # recalcualte, making the peak maximize at x
+        mod = f(ta + ta[mod.argmax()], **fkw)
+        return kw['v'] + kw['h'] / max(mod) * mod
 
     args = set(['v', 'h', 'x', 'w'])
     anames, _, _, _ = inspect.getargspec(f)
@@ -105,7 +107,6 @@ def box(t):
 @peak_model
 def exp_mod_gaussian(t, w, s):
     #http://en.wikipedia.org/wiki/Exponentially_modified_Gaussian_distribution
-
     exp_t = exp((w ** 2 - 2 * s * t) / (2 * s ** 2))
     erf_t = erfc((w ** 2 - s * t) / (s * w))
     return (w ** 1.5) / (1.414214 * s) * exp_t * erf_t
@@ -137,20 +138,24 @@ def gaussian(t):
 @bounds(w=(openlow(0.), np.inf), x=(openlow(0.), np.inf))
 @peak_model
 def giddings(t, w, x):
+    print(w, x)
     # w != 0
     y = np.zeros(len(t))
     y[t > 0] = (1. / w) * sqrt(x / t[t > 0]) * exp((t[t > 0] + x) / -w)
     #TODO: "overflow encountered in i1"
-    y[t > 0] *= i1(2. * sqrt(x * t[t > 0]) / w)
+    #y[t > 0] *= i1(2. * sqrt(x * t[t > 0]) / w)
+    #trying to keep the shape, but not allow such high numbers?
+    y[t > 0] *= i1(np.linspace(2, 10, sum(t > 0)))
     return y
 
 
-@bounds(w=(openlow(0.), np.inf), s=(openlow(0.), np.inf))
+@bounds(w=(openlow(0.1), np.inf), s=(openlow(0.), np.inf))
 @peak_model
 def haarhoffvanderlinde(t, w, s):
     # s here = s * z in Di Marco & Bombi
     # w, s != 0
     y = w * exp(-0.5 * (t / w) ** 2) / (s * sqrt(2 * np.pi))
+    print(s, w)
     y /= 1. / (exp(s / w ** 2) - 1.) + 0.5 * erfc(t / (w * sqrt(2)))
     return y
 
@@ -254,6 +259,7 @@ def weibull3(t, a):
 #def pseudovoight1(t, a):
 #def pseudovoight2(t, s, a):
 #def pulse(t, a):
+
 
 def gram_charlier(t, w, *n):
     #TODO: implement this; Berberan-Santos '07 has

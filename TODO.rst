@@ -1,6 +1,7 @@
 0.7 Checklist
 *************
 
+* allow M-N traces to see fragmentation patterns
 * mzML & mzXML file support
 * save AIA/CDF, mzML & mzXML
 * RAW file support
@@ -56,3 +57,4 @@ Indefinite
 * use hashes of data instead of filenames to match data to database entries
   - but how to handle duplicate files?
 * refactor code to remove references to "ions"; should be mz or wavelength?
+* 2D display of multiple chromatograms at once (i.e. "color bars" of TICs of multiple files vertically stacked)

@@ -71,8 +71,8 @@ def guess_initc(ts, f, rts=[]):
         peak_params = {'x': rt}  # ts.times[ts.y.argmax()]
         top_idx = np.abs(ts.times - rt).argmin()
         side_idx = find_side(ts.y, top_idx)
-        peak_params['h'] = ts.y[top_idx] - \
-                min(ts.y[side_idx[0]], ts.y[side_idx[1]])
+        peak_params['h'] = ts.y[top_idx]
+                # - min(ts.y[side_idx[0]], ts.y[side_idx[1]])
         peak_params['w'] = ts.times[side_idx[1]] - ts.times[side_idx[0]]
         peak_params['s'] = 1.1
         peak_params['e'] = 1.
@@ -103,7 +103,8 @@ def fit(ts, fs=[], all_params=[], fit_vars=None, \
 
     def errfunc_lsq(fit_params, t, y, all_params):
         # first value in fit_params is baseline
-        fit_y = np.ones(len(t)) * fit_params[0]
+        #fit_y = np.ones(len(t)) * fit_params[0]
+        fit_y = np.zeros(len(t))
         param_i = 1
         for f, peak_params, to_fit in zip(fs, all_params, fit_vars):
             for k in to_fit:
@@ -146,7 +147,7 @@ def fit(ts, fs=[], all_params=[], fit_vars=None, \
     fitted_params = []
     for f, to_fit in zip(fs, fit_vars):
         fit_p_dict = {v: fit_pl.pop(0) for v in to_fit}
-        fit_p_dict['v'] = v
+        #fit_p_dict['v'] = v
         if make_bounded and hasattr(f, '_pbounds'):
             fitted_params.append(_to_bound_p(fit_p_dict, f._pbounds))
         else:
