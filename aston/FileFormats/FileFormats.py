@@ -33,9 +33,11 @@ def file_adaptors():
       import AgilentFID, CSVFile
     from aston.FileFormats.Waters import WatersAutospec
     from aston.FileFormats.NetCDF import NetCDF
+    from aston.FileFormats.Inficon import InficonHapsite
     return [AgilentMS, AgilentMSMSScan, BrukerMSMS, \
       ThermoCF, ThermoDXF, AgilentDAD, AgilentMWD, AgilentMWD2, \
-      AgilentCSDAD, AgilentFID, CSVFile, WatersAutospec, NetCDF]
+      AgilentCSDAD, AgilentFID, CSVFile, WatersAutospec, NetCDF, \
+      InficonHapsite]
 
     #for cls_str in dir(fl):
     #    cls = fl.__dict__[cls_str]
