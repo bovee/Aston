@@ -11,6 +11,10 @@ class InficonHapsite(Datafile.Datafile):
     mgc = '0403'
 
     def _ions(self, f):
+        """
+        This is a generator that returns the mzs being measured during
+        each time segment, one segment at a time.
+        """
         outside_pos = f.tell()
         doff = find_offset(f, 4 * b'\xff' + 'HapsSearch'.encode('ascii'))
         # actual end of prev section is 34 bytes before, but assume 1 rec
@@ -32,12 +36,14 @@ class InficonHapsite(Datafile.Datafile):
                 i1, i2, _, _, _, _, itype, _ = \
                         struct.unpack('<' + 8 * 'I', f.read(32))
                 if itype == 0:  # SIM
-                    ions.append(i1 / 100)
+                    ions.append(i1 / 100.)
                 else:  # full scan
                     #TODO: this might be a little hacky?
-                    # ideally we wouldn't need to know n for this
-                    #ions += np.linspace(i1, i2, n).tolist()
-                    ions += np.arange(i1 / 100, i2 / 100 + 1, 1).tolist()
+                    # ideally we would need to know n for this, e.g.:
+                    #ions += np.linspace(i1 / 100, i2 / 100, n).tolist()
+                    ions += np.arange(i1 / 100., i2 / 100. + 1, 1).tolist()
+            # save the file position and load the position
+            # that we were at before we started this code
             inside_pos = f.tell()
             f.seek(outside_pos)
             yield ions
@@ -86,7 +92,9 @@ class InficonHapsite(Datafile.Datafile):
                 # add that row into the list
                 abns.append(empty_row)
 
+        # convert the time from milliseconds to minutes
         times = np.array(times, dtype=float) / 60000
+        # create the data array and populate it
         data = np.zeros((len(times), len(mzs)))
         for i, r in enumerate(abns):
             data[i, 0:len(r)] = r
