@@ -1,12 +1,12 @@
 import numpy as np
-from aston.ui.Navbar import AstonNavBar
+import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg
 from matplotlib.path import Path
 from matplotlib.transforms import offset_copy
 from matplotlib.patches import PathPatch, Polygon
-import matplotlib.pyplot as plt
 from PyQt4.QtCore import Qt, QCoreApplication
+from aston.ui.Navbar import AstonNavBar
 
 
 class Plotter(object):
@@ -39,7 +39,7 @@ class Plotter(object):
         self.canvas.mpl_connect('button_release_event', self.mouseup)
         self.canvas.mpl_connect('scroll_event', self.mousescroll)
 
-        self.spec_line = None
+        self.highlight = None
 
         tr = lambda s: QCoreApplication.translate('', s)
         self._colors = {
@@ -133,10 +133,10 @@ class Plotter(object):
         else:
             self.plt.set_xlim(bnds[0])
             self.plt.set_ylim(bnds[1])
-            if type(self.spec_line) == Polygon:
-                self.plt.add_patch(self.spec_line)
-            elif self.spec_line is not None:
-                self.plt.add_line(self.spec_line)
+            if type(self.highlight) == Polygon:
+                self.plt.add_patch(self.highlight)
+            elif self.highlight is not None:
+                self.plt.add_line(self.highlight)
 
         # plot events on the bottom of the graph
         evts = []
@@ -266,23 +266,34 @@ class Plotter(object):
     def redraw(self):
         self.canvas.draw()
 
-    def draw_spec_line(self, x1, x2, color='black', linestyle='-'):
+    def clear_highlight(self):
+        #try to remove the line from the previous spectrum (if it exists)
+        if self.highlight is not None:
+            if self.highlight in self.plt.lines:
+                self.plt.lines.remove(self.highlight)
+            if self.highlight in self.plt.patches:
+                self.plt.patches.remove(self.highlight)
+        self.highlight = None
+
+    def draw_highlight(self, x1, x2, color='black', linestyle='-'):
         """
         Draw the line that indicates where the spectrum came from.
         """
-        #try to remove the line from the previous spectrum (if it exists)
-        if self.spec_line is not None:
-            if self.spec_line in self.plt.lines:
-                self.plt.lines.remove(self.spec_line)
-            if self.spec_line in self.plt.patches:
-                self.plt.patches.remove(self.spec_line)
+        self.clear_highlight()
         #draw a new line
         if x1 is None:
-            self.spec_line = None
+            self.highlight = None
         elif x1 == x2:
-            self.spec_line = self.plt.axvline(x1, color=color, ls=linestyle)
+            self.highlight = self.plt.axvline(x1, color=color, ls=linestyle)
         else:
-            self.spec_line = self.plt.axvspan(x1, x2, alpha=0.25, color=color)
+            self.highlight = self.plt.axvspan(x1, x2, alpha=0.25, color=color)
+        #redraw the canvas
+        self.canvas.draw()
+
+    def draw_highlight_peak(self, pk, color='white'):
+        coords = pk.as_poly().T
+        self.highlight = self.plt.fill(coords[0], coords[1], \
+                                       fc=color, alpha=0.5)[0]
         #redraw the canvas
         self.canvas.draw()
 

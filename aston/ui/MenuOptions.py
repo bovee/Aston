@@ -2,8 +2,8 @@
 from __future__ import unicode_literals
 from collections import OrderedDict
 from PyQt4.QtCore import QObject
-import aston.Math.Integrators as ami
-import aston.Math.PeakFinding as ampf
+import aston.peaks.Integrators as ami
+import aston.peaks.PeakFinding as ampf
 
 
 tr = lambda s: QObject().trUtf8(s)

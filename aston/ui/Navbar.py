@@ -3,8 +3,8 @@ import os.path as op
 from PyQt4 import QtGui  # , QtCore
 from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg
 from aston.ui.resources import resfile
-from aston.Math.Integrators import merge_ions
-from aston.Features.Spectrum import Spectrum
+from aston.peaks.Integrators import merge_ions
+from aston.spectra.Spectrum import Spectrum
 
 
 class AstonNavBar(NavigationToolbar2QTAgg):

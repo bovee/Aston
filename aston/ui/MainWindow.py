@@ -9,13 +9,13 @@ from aston.ui.FilterWindow import FilterWindow
 from aston.ui.MainPlot import Plotter
 from aston.ui.SpecPlot import SpecPlotter
 
-from aston.Databases.Database import AstonDatabase
-from aston.Databases.FileDatabase import AstonFileDatabase
-from aston.Databases.Compound import get_compound_db
-from aston.FileTable import FileTreeModel
+from aston.databases.Database import AstonDatabase
+from aston.databases.FileDatabase import AstonFileDatabase
+from aston.databases.Compound import get_compound_db
+from aston.ui.FileTable import FileTreeModel
 import aston.ui.MenuOptions
-from aston.Math.PeakFinding import find_peaks
-from aston.Math.Integrators import integrate_peaks
+from aston.peaks.PeakFinding import find_peaks
+from aston.peaks.Integrators import integrate_peaks
 
 
 class AstonWindow(QtGui.QMainWindow):
