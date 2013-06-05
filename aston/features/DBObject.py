@@ -8,7 +8,6 @@ class DBObject(object):
     Master class for peaks, features, and datafiles.
     """
     def __init__(self, info=None, data=None, parent=None, db=(None, None)):
-        print(data)
         self.info = DBDict(self, info)
         self.rawdata = data
 

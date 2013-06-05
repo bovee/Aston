@@ -41,7 +41,15 @@
      <addaction name="actionExportSpectra"/>
      <addaction name="actionExportSelectedItems"/>
     </widget>
+    <widget class="QMenu" name="menuLoad">
+     <property name="title">
+      <string>Load</string>
+     </property>
+     <addaction name="loadAMDISPeaks"/>
+     <addaction name="loadIsodatPeaks"/>
+    </widget>
     <addaction name="actionOpen"/>
+    <addaction name="menuLoad"/>
     <addaction name="menuExport"/>
     <addaction name="separator"/>
     <addaction name="actionQuit"/>
@@ -797,6 +805,16 @@
    </property>
    <property name="text">
     <string>Grid</string>
+   </property>
+  </action>
+  <action name="loadAMDISPeaks">
+   <property name="text">
+    <string>AMDIS Peak List</string>
+   </property>
+  </action>
+  <action name="loadIsodatPeaks">
+   <property name="text">
+    <string>Isodat Results</string>
    </property>
   </action>
  </widget>

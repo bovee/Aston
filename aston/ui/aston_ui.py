@@ -2,8 +2,8 @@
 
 # Form implementation generated from reading ui file 'aston.ui'
 #
-# Created: Sat Mar  9 14:50:57 2013
-#      by: PyQt4 UI code generator 4.9.6
+# Created: Wed Jun  5 00:15:07 2013
+#      by: PyQt4 UI code generator 4.10
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -42,6 +42,8 @@ class Ui_MainWindow(object):
         self.menuFile.setObjectName(_fromUtf8("menuFile"))
         self.menuExport = QtGui.QMenu(self.menuFile)
         self.menuExport.setObjectName(_fromUtf8("menuExport"))
+        self.menuLoad = QtGui.QMenu(self.menuFile)
+        self.menuLoad.setObjectName(_fromUtf8("menuLoad"))
         self.menuChromatogram = QtGui.QMenu(self.menubar)
         self.menuChromatogram.setObjectName(_fromUtf8("menuChromatogram"))
         self.menuIntegrand = QtGui.QMenu(self.menuChromatogram)
@@ -336,10 +338,17 @@ class Ui_MainWindow(object):
         self.actionGraphGrid.setCheckable(True)
         self.actionGraphGrid.setChecked(True)
         self.actionGraphGrid.setObjectName(_fromUtf8("actionGraphGrid"))
+        self.loadAMDISPeaks = QtGui.QAction(MainWindow)
+        self.loadAMDISPeaks.setObjectName(_fromUtf8("loadAMDISPeaks"))
+        self.loadIsodatPeaks = QtGui.QAction(MainWindow)
+        self.loadIsodatPeaks.setObjectName(_fromUtf8("loadIsodatPeaks"))
         self.menuExport.addAction(self.actionExportChromatogram)
         self.menuExport.addAction(self.actionExportSpectra)
         self.menuExport.addAction(self.actionExportSelectedItems)
+        self.menuLoad.addAction(self.loadAMDISPeaks)
+        self.menuLoad.addAction(self.loadIsodatPeaks)
         self.menuFile.addAction(self.actionOpen)
+        self.menuFile.addAction(self.menuLoad.menuAction())
         self.menuFile.addAction(self.menuExport.menuAction())
         self.menuFile.addSeparator()
         self.menuFile.addAction(self.actionQuit)
@@ -406,6 +415,7 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(_translate("MainWindow", "Aston", None))
         self.menuFile.setTitle(_translate("MainWindow", "File", None))
         self.menuExport.setTitle(_translate("MainWindow", "Export", None))
+        self.menuLoad.setTitle(_translate("MainWindow", "Load", None))
         self.menuChromatogram.setTitle(_translate("MainWindow", "Chromatogram", None))
         self.menuIntegrand.setTitle(_translate("MainWindow", "Integrand", None))
         self.menuSpectrum.setTitle(_translate("MainWindow", "Spectrum", None))
@@ -490,4 +500,6 @@ class Ui_MainWindow(object):
         self.actionSpecPrevSave.setText(_translate("MainWindow", "Save", None))
         self.actionGraphLogYAxis.setText(_translate("MainWindow", "Log Y Axis", None))
         self.actionGraphGrid.setText(_translate("MainWindow", "Grid", None))
+        self.loadAMDISPeaks.setText(_translate("MainWindow", "AMDIS Peak List", None))
+        self.loadIsodatPeaks.setText(_translate("MainWindow", "Isodat Results", None))
 
