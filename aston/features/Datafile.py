@@ -281,6 +281,19 @@ class Datafile(DBObject):
     def _named_trace(self, name, twin=None):
         t = self.time(twin, adjust=False)
         lookdict = {'mtemp': 'm-tmp', 'mpres': 'm-prs', 'mflow': 'm-flw'}
+        #TODO: user definable way to set these?
+        shortcuts = {'alkanes': '57+71+85',
+                     'alkenes': '55+69+83',
+                     'alkadienes': '67+81',
+                     'hopanes': '191',
+                     'hopenes': '189',
+                     'steranes': '217',
+                     'ketones': '59',
+                     'amides': '59',
+                     'tms': '73',
+                     'methylesters': '74',
+                     'alcohols': '75',
+                     'pthalates': '149'}
         if name == 't' or name == 'time':
             return TimeSeries(t, t, [name])
         #elif name == 'b' or name == 'base':
@@ -303,6 +316,28 @@ class Datafile(DBObject):
             # a new data processing algorithm for LC-MS data.
             # Journal of Chromatography A 849.1 (1999) 71-85.
             pass
+        elif name == 'molmz':
+            NOISE = 10000
+            d = ((self.data.data > NOISE) * self.data.ions).max(axis=1)
+            return TimeSeries(d, t, ['MOLMZ'])
+        elif name == 'basemz':
+            #TODO: remove non-number values from self.data.ions
+            d = np.array(self.data.ions)[self.data.data.argmax(axis=1)]
+            return TimeSeries(d, t, ['BASEMZ'])
+        elif name.startswith('m_'):
+            NOISE = 10000
+            if name == 'm_':
+                m = 0
+            else:
+                m = float(name.split('_')[1])
+            mol_ions = ((self.data.data > NOISE) * \
+                        self.data.ions).max(axis=1) - m
+            mol_ions[np.abs(mol_ions) < 0] = 0
+            d = np.abs(np.ones(self.data.data.shape) * \
+              self.data.ions - (mol_ions[np.newaxis].T * \
+              np.ones(self.data.data.shape))) < 1
+            d = (self.data.data * d).sum(axis=1)
+            return TimeSeries(d, t, ['M'])
         elif name == 'r45std' or name == 'r46std':
             # calculate isotopic reference for chromatogram
             #from aston.Math.Peak import area
@@ -327,6 +362,8 @@ class Datafile(DBObject):
                 p = p0
             sim_y = np.array(errfunc(p, t, np.zeros(len(t))))
             return TimeSeries(sim_y, t, [name])
+        elif name in shortcuts:
+            return self._parse_ion_string(shortcuts[name], twin)
         elif name in lookdict:
             #we can store time-series data as a list of timepoints
             #in certain info fields and query it here
