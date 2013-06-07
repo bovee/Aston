@@ -4,6 +4,7 @@ import os
 import numpy as np
 from aston.features import Datafile
 from aston.timeseries.TimeSeries import TimeSeries
+from aston.file_adapters.Common import find_offset
 
 
 class ThermoCF(Datafile.Datafile):
@@ -98,11 +99,9 @@ class ThermoDXF(Datafile.Datafile):
         #info['file name'] = os.path.basename(self.filename)
         d['name'] = os.path.splitext(os.path.basename(self.rawdata))[0]
         d['r-type'] = 'Sample'
-        #TODO: there has to be a better way than this to get these values
-        # at least don't keep cycling through the file for each one
-        foff_o = self._th_off('d 18O/16O'.encode('utf_16_le'))
-        foff_c = self._th_off('d 13C/12C'.encode('utf_16_le'))
         with open(self.rawdata, 'rb') as f:
+            foff_o = find_offset(f, 'd 18O/16O'.encode('utf_16_le'))
+            foff_c = find_offset(f, 'd 13C/12C'.encode('utf_16_le'))
             if foff_o is not None:
                 f.seek(foff_o + 68)
                 d['r-d18o-std'] = str(struct.unpack('<d', f.read(8))[0])

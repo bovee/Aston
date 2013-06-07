@@ -234,7 +234,7 @@ class AstonNavBar(NavigationToolbar2QTAgg):
         self.parent.specplotter.plot()
 
         # draw a line on the main plot for the location
-        self.parent.plotter.draw_spec_line(self._xypress[0], \
+        self.parent.plotter.draw_highlight(self._xypress[0], \
           event.xdata, linestyle='-')
         if event.key == 'shift':
             info = {'name': str(self._xypress[0])}

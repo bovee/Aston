@@ -1,5 +1,5 @@
 from PyQt4 import QtCore, QtGui
-from aston.ui.aston_filterwindow_ui import Ui_filterDialog
+from aston.ui.ui_filterwindow import Ui_filterDialog
 from aston.ui.Fields import aston_field_opts
 
 

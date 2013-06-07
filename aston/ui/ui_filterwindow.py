@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'aston_filterwindow.ui'
+# Form implementation generated from reading ui file 'ui_filterwindow.ui'
 #
-# Created: Sat Mar  3 13:34:33 2012
-#      by: PyQt4 UI code generator 4.9.1
+# Created: Thu Jun  6 22:58:23 2013
+#      by: PyQt4 UI code generator 4.10
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -12,7 +12,16 @@ from PyQt4 import QtCore, QtGui
 try:
     _fromUtf8 = QtCore.QString.fromUtf8
 except AttributeError:
-    _fromUtf8 = lambda s: s
+    def _fromUtf8(s):
+        return s
+
+try:
+    _encoding = QtGui.QApplication.UnicodeUTF8
+    def _translate(context, text, disambig):
+        return QtGui.QApplication.translate(context, text, disambig, _encoding)
+except AttributeError:
+    def _translate(context, text, disambig):
+        return QtGui.QApplication.translate(context, text, disambig)
 
 class Ui_filterDialog(object):
     def setupUi(self, filterDialog):
@@ -216,32 +225,32 @@ class Ui_filterDialog(object):
         self.verticalLayout.addWidget(self.buttonBox)
 
         self.retranslateUi(filterDialog)
-        self.addIonsTabWidget.setCurrentIndex(3)
+        self.addIonsTabWidget.setCurrentIndex(1)
         QtCore.QObject.connect(self.buttonBox, QtCore.SIGNAL(_fromUtf8("accepted()")), filterDialog.accept)
         QtCore.QObject.connect(self.buttonBox, QtCore.SIGNAL(_fromUtf8("rejected()")), filterDialog.reject)
         QtCore.QMetaObject.connectSlotsByName(filterDialog)
 
     def retranslateUi(self, filterDialog):
-        filterDialog.setWindowTitle(QtGui.QApplication.translate("filterDialog", "Filter Chromatogram", None, QtGui.QApplication.UnicodeUTF8))
-        self.ionBox.setTitle(QtGui.QApplication.translate("filterDialog", "Ions / Wavelengths", None, QtGui.QApplication.UnicodeUTF8))
-        self.addDefinedIonButton.setText(QtGui.QApplication.translate("filterDialog", "Add", None, QtGui.QApplication.UnicodeUTF8))
-        self.addIonsTabWidget.setTabText(self.addIonsTabWidget.indexOf(self.tab), QtGui.QApplication.translate("filterDialog", "Defined", None, QtGui.QApplication.UnicodeUTF8))
-        self.addSingleIonButton.setText(QtGui.QApplication.translate("filterDialog", "Add", None, QtGui.QApplication.UnicodeUTF8))
-        self.addIonsTabWidget.setTabText(self.addIonsTabWidget.indexOf(self.tab_2), QtGui.QApplication.translate("filterDialog", "Single", None, QtGui.QApplication.UnicodeUTF8))
-        self.label_8.setText(QtGui.QApplication.translate("filterDialog", "-", None, QtGui.QApplication.UnicodeUTF8))
-        self.addRangeIonButton.setText(QtGui.QApplication.translate("filterDialog", "Add", None, QtGui.QApplication.UnicodeUTF8))
-        self.addIonsTabWidget.setTabText(self.addIonsTabWidget.indexOf(self.tab_3), QtGui.QApplication.translate("filterDialog", "Range", None, QtGui.QApplication.UnicodeUTF8))
-        self.addUserIonButton.setText(QtGui.QApplication.translate("filterDialog", "Add", None, QtGui.QApplication.UnicodeUTF8))
-        self.addIonsTabWidget.setTabText(self.addIonsTabWidget.indexOf(self.tab_4), QtGui.QApplication.translate("filterDialog", "User", None, QtGui.QApplication.UnicodeUTF8))
-        self.offsetBox.setTitle(QtGui.QApplication.translate("filterDialog", "Offset && Scaling", None, QtGui.QApplication.UnicodeUTF8))
-        self.label_5.setText(QtGui.QApplication.translate("filterDialog", "Y Offset", None, QtGui.QApplication.UnicodeUTF8))
-        self.label_6.setText(QtGui.QApplication.translate("filterDialog", "X Offset", None, QtGui.QApplication.UnicodeUTF8))
-        self.label_4.setText(QtGui.QApplication.translate("filterDialog", "Y Scaling", None, QtGui.QApplication.UnicodeUTF8))
-        self.label_7.setText(QtGui.QApplication.translate("filterDialog", "X Scaling", None, QtGui.QApplication.UnicodeUTF8))
-        self.noiseBox.setTitle(QtGui.QApplication.translate("filterDialog", "Noise Removal", None, QtGui.QApplication.UnicodeUTF8))
-        self.label_9.setText(QtGui.QApplication.translate("filterDialog", "Not Yet Implemented", None, QtGui.QApplication.UnicodeUTF8))
-        self.smoothBox.setTitle(QtGui.QApplication.translate("filterDialog", "Smoothing", None, QtGui.QApplication.UnicodeUTF8))
-        self.label.setText(QtGui.QApplication.translate("filterDialog", "Type", None, QtGui.QApplication.UnicodeUTF8))
-        self.label_2.setText(QtGui.QApplication.translate("filterDialog", "Window", None, QtGui.QApplication.UnicodeUTF8))
-        self.label_3.setText(QtGui.QApplication.translate("filterDialog", "Order", None, QtGui.QApplication.UnicodeUTF8))
+        filterDialog.setWindowTitle(_translate("filterDialog", "Filter Chromatogram", None))
+        self.ionBox.setTitle(_translate("filterDialog", "Ions / Wavelengths", None))
+        self.addDefinedIonButton.setText(_translate("filterDialog", "Add", None))
+        self.addIonsTabWidget.setTabText(self.addIonsTabWidget.indexOf(self.tab), _translate("filterDialog", "Defined", None))
+        self.addSingleIonButton.setText(_translate("filterDialog", "Add", None))
+        self.addIonsTabWidget.setTabText(self.addIonsTabWidget.indexOf(self.tab_2), _translate("filterDialog", "Single", None))
+        self.label_8.setText(_translate("filterDialog", "-", None))
+        self.addRangeIonButton.setText(_translate("filterDialog", "Add", None))
+        self.addIonsTabWidget.setTabText(self.addIonsTabWidget.indexOf(self.tab_3), _translate("filterDialog", "Range", None))
+        self.addUserIonButton.setText(_translate("filterDialog", "Add", None))
+        self.addIonsTabWidget.setTabText(self.addIonsTabWidget.indexOf(self.tab_4), _translate("filterDialog", "User", None))
+        self.offsetBox.setTitle(_translate("filterDialog", "Offset && Scaling", None))
+        self.label_5.setText(_translate("filterDialog", "Y Offset", None))
+        self.label_6.setText(_translate("filterDialog", "X Offset", None))
+        self.label_4.setText(_translate("filterDialog", "Y Scaling", None))
+        self.label_7.setText(_translate("filterDialog", "X Scaling", None))
+        self.noiseBox.setTitle(_translate("filterDialog", "Noise Removal", None))
+        self.label_9.setText(_translate("filterDialog", "Not Yet Implemented", None))
+        self.smoothBox.setTitle(_translate("filterDialog", "Smoothing", None))
+        self.label.setText(_translate("filterDialog", "Type", None))
+        self.label_2.setText(_translate("filterDialog", "Window", None))
+        self.label_3.setText(_translate("filterDialog", "Order", None))
 

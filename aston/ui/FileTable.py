@@ -27,6 +27,7 @@ import re
 import json
 from collections import OrderedDict
 from PyQt4 import QtGui, QtCore
+from aston.ui.QuantDialog import QuantDialog
 from aston.ui.resources import resfile
 from aston.ui.Fields import aston_fields, aston_groups, aston_field_opts
 from aston.ui.MenuOptions import peak_models
@@ -319,6 +320,8 @@ class FileTreeModel(QtCore.QAbstractItemModel):
                                self.createSpec, fts, menu)
             self._add_menu_opt(self.tr('Merge Peaks'), \
                                self.merge_peaks, fts, menu)
+            self._add_menu_opt(self.tr('Quant'), \
+                               self.quant_peaks, fts, menu)
 
         fts = [s for s in sel if s.db_type in ('spectrum', 'peak')]
         if len(fts) > 0:
@@ -380,6 +383,10 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             if lib_spc is not None:
                 obj.info['name'] = lib_spc.info['name']
                 obj.save_changes()
+
+    def quant_peaks(self, objs):
+        self.dlg = QuantDialog(self.master_window, objs)
+        self.dlg.show()
 
     #def makeMethod(self, objs):
     #    self.master_window.cmpd_tab.addObjects(None, objs)

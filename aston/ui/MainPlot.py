@@ -119,6 +119,7 @@ class Plotter(object):
 
         #plot all of the datafiles
         if len(datafiles) == 0:
+            self.canvas.draw()
             return
         if '2d' in self._style:
             self._plot2D(datafiles[0])
@@ -227,7 +228,6 @@ class Plotter(object):
                 tnum += 1
 
                 # plot peaks
-                #for pk in dt.getAllChildren('peak'):
                 for pk in dt.children_of_type('peak'):
                     #TODO: there has to be a better way to handle if
                     # the ion is a string or a float

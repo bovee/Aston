@@ -45,8 +45,7 @@
      <property name="title">
       <string>Load</string>
      </property>
-     <addaction name="loadAMDISPeaks"/>
-     <addaction name="loadIsodatPeaks"/>
+     <addaction name="loadPeakList"/>
     </widget>
     <addaction name="actionOpen"/>
     <addaction name="menuLoad"/>
@@ -807,9 +806,9 @@
     <string>Grid</string>
    </property>
   </action>
-  <action name="loadAMDISPeaks">
+  <action name="loadPeakList">
    <property name="text">
-    <string>AMDIS Peak List</string>
+    <string>Peak List</string>
    </property>
   </action>
   <action name="loadIsodatPeaks">

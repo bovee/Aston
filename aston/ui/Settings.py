@@ -1,5 +1,5 @@
 from PyQt4 import QtGui
-from aston.ui.aston_settings_ui import Ui_Form
+from aston.ui.ui_settings import Ui_Form
 from aston.databases.Database import AstonDatabase
 from aston.databases.Compound import get_compound_db
 from aston.ui.FileTable import FileTreeModel
@@ -7,7 +7,7 @@ from aston.ui.MenuOptions import peak_models
 from aston.spectra.Isotopes import delta13C_constants
 
 
-class AstonSettings(QtGui.QWidget):
+class SettingsWidget(QtGui.QWidget):
     def __init__(self, parent=None, db=None):
         QtGui.QWidget.__init__(self, parent)
         self.ui = Ui_Form()

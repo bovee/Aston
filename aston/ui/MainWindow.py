@@ -3,8 +3,8 @@ import os.path as op
 from PyQt4 import QtGui
 
 from aston.ui.resources import resfile
-from aston.ui.aston_ui import Ui_MainWindow
-from aston.ui.AstonSettings import AstonSettings
+from aston.ui.ui_mainwindow import Ui_MainWindow
+from aston.ui.Settings import SettingsWidget
 from aston.ui.FilterWindow import FilterWindow
 from aston.ui.MainPlot import Plotter
 from aston.ui.SpecPlot import SpecPlotter
@@ -51,8 +51,7 @@ class AstonWindow(QtGui.QMainWindow):
         self.ui.actionEditFilters.triggered.connect(self.showFilterWindow)
         self.ui.actionRevert.triggered.connect(self.revertChromChange)
         self.ui.actionQuit.triggered.connect(QtGui.qApp.quit)
-        self.ui.loadAMDISPeaks.triggered.connect(self.load_peaks)
-        self.ui.loadIsodatPeaks.triggered.connect(self.load_peaks)
+        self.ui.loadPeakList.triggered.connect(self.load_peaks)
 
         #hook up the windows to the menu
         for ac in [self.ui.actionFiles, self.ui.actionSettings, \
@@ -135,7 +134,7 @@ class AstonWindow(QtGui.QMainWindow):
         self.ui.actionGraph_Style.setMenu(style_menu)
 
         # add settings widget in
-        self.settingsWidget = AstonSettings(self, db=file_db)
+        self.settingsWidget = SettingsWidget(self, db=file_db)
         self.ui.verticalLayout_settings.addWidget(self.settingsWidget)
 
         #plot data
@@ -238,12 +237,14 @@ class AstonWindow(QtGui.QMainWindow):
                                           self)
 
     def load_peaks(self):
-        fname = str(QtGui.QFileDialog.getOpenFileName(self, \
-          self.tr("Open File")))
-        if fname == '':
+        ftypes = 'AMDIS (*.*);;Isodat (*.*)'
+        fname = QtGui.QFileDialog.getOpenFileName(self, \
+          self.tr("Open File"), '', ftypes)
+        if str(fname) == '':
             return
-        from aston.peaks.PeakReader import read_amdis_list
-        read_amdis_list(self.obj_tab.db, fname)
+        from aston.peaks.PeakReader import read_peaks
+        read_peaks(self.obj_tab.db, str(fname))
+        self.plotData(updateBounds=False)
 
     def set_color_scheme(self):
         v = self.plotter.setColorScheme(self.sender().data())

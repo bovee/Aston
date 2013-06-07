@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'aston_settings.ui'
+# Form implementation generated from reading ui file 'ui_settings.ui'
 #
-# Created: Wed Mar 13 22:09:43 2013
-#      by: PyQt4 UI code generator 4.9.6
+# Created: Thu Jun  6 22:59:33 2013
+#      by: PyQt4 UI code generator 4.10
 #
 # WARNING! All changes made in this file will be lost!
 

@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'aston.ui'
+# Form implementation generated from reading ui file 'ui_mainwindow.ui'
 #
-# Created: Wed Jun  5 00:15:07 2013
+# Created: Thu Jun  6 23:09:38 2013
 #      by: PyQt4 UI code generator 4.10
 #
 # WARNING! All changes made in this file will be lost!
@@ -338,15 +338,14 @@ class Ui_MainWindow(object):
         self.actionGraphGrid.setCheckable(True)
         self.actionGraphGrid.setChecked(True)
         self.actionGraphGrid.setObjectName(_fromUtf8("actionGraphGrid"))
-        self.loadAMDISPeaks = QtGui.QAction(MainWindow)
-        self.loadAMDISPeaks.setObjectName(_fromUtf8("loadAMDISPeaks"))
+        self.loadPeakList = QtGui.QAction(MainWindow)
+        self.loadPeakList.setObjectName(_fromUtf8("loadPeakList"))
         self.loadIsodatPeaks = QtGui.QAction(MainWindow)
         self.loadIsodatPeaks.setObjectName(_fromUtf8("loadIsodatPeaks"))
         self.menuExport.addAction(self.actionExportChromatogram)
         self.menuExport.addAction(self.actionExportSpectra)
         self.menuExport.addAction(self.actionExportSelectedItems)
-        self.menuLoad.addAction(self.loadAMDISPeaks)
-        self.menuLoad.addAction(self.loadIsodatPeaks)
+        self.menuLoad.addAction(self.loadPeakList)
         self.menuFile.addAction(self.actionOpen)
         self.menuFile.addAction(self.menuLoad.menuAction())
         self.menuFile.addAction(self.menuExport.menuAction())
@@ -500,6 +499,6 @@ class Ui_MainWindow(object):
         self.actionSpecPrevSave.setText(_translate("MainWindow", "Save", None))
         self.actionGraphLogYAxis.setText(_translate("MainWindow", "Log Y Axis", None))
         self.actionGraphGrid.setText(_translate("MainWindow", "Grid", None))
-        self.loadAMDISPeaks.setText(_translate("MainWindow", "AMDIS Peak List", None))
+        self.loadPeakList.setText(_translate("MainWindow", "Peak List", None))
         self.loadIsodatPeaks.setText(_translate("MainWindow", "Isodat Results", None))
 
