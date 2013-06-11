@@ -273,6 +273,7 @@ class Plotter(object):
                 self.plt.lines.remove(self.highlight)
             if self.highlight in self.plt.patches:
                 self.plt.patches.remove(self.highlight)
+            self.redraw()
         self.highlight = None
 
     def draw_highlight(self, x1, x2, color='black', linestyle='-'):

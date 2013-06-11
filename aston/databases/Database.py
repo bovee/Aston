@@ -52,6 +52,7 @@ class AstonDatabase(object):
             c.close()
         else:
             self._db = sqlite3.connect(database)
+        self.dbtype = None
         self._children = None
         self._curs = None
         self._enter_depth = 0

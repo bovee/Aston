@@ -118,8 +118,10 @@ class Peak(DBObject):
         # add in the baseline on either side
         if ion is None:
             row = 0
+            ion = self.data.ions[0]
         elif not self.data.has_ion(ion):
             row = 0
+            ion = self.data.ions[0]
         else:
             try:
                 row = self.data.ions.index(float(ion))

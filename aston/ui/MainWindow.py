@@ -211,7 +211,8 @@ class AstonWindow(QtGui.QMainWindow):
         self.directory = folder
 
         #need to discard old connections
-        self.ui.fileTreeView.clicked.disconnect()
+        #self.ui.fileTreeView.clicked.disconnect()
+        self.ui.fileTreeView.selectionModel().currentChanged.disconnect()
         self.ui.fileTreeView.customContextMenuRequested.disconnect()
         self.ui.fileTreeView.header().customContextMenuRequested.disconnect()
         self.ui.fileTreeView.header().sectionMoved.disconnect()

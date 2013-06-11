@@ -71,8 +71,8 @@ class FileTreeModel(QtCore.QAbstractItemModel):
         tree_view.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
         tree_view.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
         #TODO: this works, but needs to be detached when opening a new folder
-        #tree_view.selectionModel().currentChanged.connect(self.itemSelected)
-        tree_view.clicked.connect(self.itemSelected)
+        tree_view.selectionModel().currentChanged.connect(self.itemSelected)
+        #tree_view.clicked.connect(self.itemSelected)
 
         #set up key shortcuts
         delAc = QtGui.QAction("Delete", tree_view, \
@@ -296,7 +296,8 @@ class FileTreeModel(QtCore.QAbstractItemModel):
             #            sel.getAllChildren('peak'))
                 pass
             elif sel.db_type == 'peak':
-                self.master_window.plotter.draw_highlight_peak(sel)
+                if sel.parent_of_type('file').info['vis'] == 'y':
+                    self.master_window.plotter.draw_highlight_peak(sel)
             elif sel.db_type == 'spectrum':
                 self.master_window.specplotter.libscans = [sel.data]
                 self.master_window.specplotter.plot()
