@@ -2,6 +2,7 @@ import re
 import os.path as op
 from collections import defaultdict
 import numpy as np
+from scipy.optimize import leastsq
 from aston.peaks.Peak import Peak
 from aston.peaks.PeakModels import gaussian
 from aston.timeseries.TimeSeries import TimeSeries
@@ -53,9 +54,11 @@ def read_peaks(db, filename, ftype='isodat'):
                 'p-s-time': 'rt[s]',
                 'p-s-area': 'area all[vs]',
                 'p-s-width': 'width[s]',
-                'p-s-d13c': 'd 13c/12c[per mil]vs. vpdb'}
+                'p-s-d13c': 'd 13c/12c[per mil]vs. vpdb',
+                'p-s-d18o': 'd 18o/16o[per mil]vs. vsmow'}
     headers = None
     mapping = defaultdict(list)
+    ref_pk_info = {}
     get_val = lambda line, cols, key: line.split(delim)[cols.index(key)]
     with open(filename, 'r') as f:
         for line in f:
@@ -93,13 +96,51 @@ def read_peaks(db, filename, ftype='isodat'):
                     #                       'bgd ' + ion + '[mv]'))
                     height = float(get_val(line, headers, \
                                            'ampl. ' + ion + '[mv]'))
+                    # save the height at 44 into the info for linearity
+                    if ion == '44':
+                        info['p-s-ampl44'] = height
                     # 0.8 is a empirical number to make things look better
                     data.append(gaussian(t, x=rt, w=0.5 * area / height, \
                                          h=height))
+                # save info if this is the main ref gas peak
+                if info['name'].endswith('*'):
+                    ref_pk_info[dt] = info
                 ts = TimeSeries(np.array(data).T, t, [44, 45, 46])
             else:
                 ts = TimeSeries(np.array([np.nan]), np.array([np.nan]), [''])
             mapping[dt] += [Peak(info, ts)]
+    # do linearity correction
+    if ftype == 'isodat':
+        for dt in mapping:
+            ref_pks = []
+            hgt44 = ref_pk_info[dt]['p-s-ampl44']
+            d18o = float(ref_pk_info[dt]['p-s-d18o'])
+            d13c = float(ref_pk_info[dt]['p-s-d13c'])
+            for pk in mapping[dt]:
+                # if the d18o and height are similar, it's a ref peak
+                if abs(pk.info['p-s-ampl44'] - hgt44) < 10. and \
+                   abs(float(pk.info['p-s-d18o']) - d18o) < 2.:
+                    ref_pks.append(pk)
+
+            # get out the Dd13C values and times for the ref gas peaks
+            d13cs = [float(pk.info['p-s-d13c']) for pk in ref_pks]
+            Dd13cs = np.array(d13cs) - d13c
+            rts = [float(pk.info['p-s-time']) for pk in ref_pks]
+
+            # try to fit a linear model through all of them
+            p0 = [d13cs[0], 0]
+            errfunc = lambda p, x, y: p[0] + p[1] * x - y
+            try:
+                p, succ = leastsq(errfunc, p0, args=(np.array(rts), Dd13cs))
+            except:
+                p = p0
+            # apply the linear model to get the Dd13C linearity correction
+            # for a given time and add it to the value of this peak
+            for pk in mapping[dt]:
+                pk.info['p-s-d13c'] = str(-errfunc(p, float(pk.info['p-s-time']), \
+                                               float(pk.info['p-s-d13c'])))
+
+    # save everything
     with db:
         for dt in mapping:
             dt.children += mapping[dt]
