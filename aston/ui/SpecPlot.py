@@ -100,22 +100,24 @@ class SpecPlotter(object):
             #always have at least 10 labels, but no more than 50 (arbitrary)
             #if an ion is close to one seen previously, don't display it
             v2lbl = {}  # values to label
-            plbl = []  # skip labeling these values
-            #number of labels
-            nls = -1 * min(max(int(len(scn) / 10.0), 10), 50)
-            for i in np.array(scn[1]).argsort()[:nls:-1]:
+            plbl = []  # all values so far
+            max_val = max(np.array(scn[1]))  # only label peaks X % of this
+            for i in np.array(scn[1]).argsort()[::-1]:
                 mz = scn[0][i]
                 #don't allow a new label within 1.5 units of another
-                if not np.any(np.abs(np.array(plbl) - mz) < 1.5):
+                if not np.any(np.abs(np.array(plbl) - mz) < 1.5) and \
+                  scn[1][i] > 0.01 * max_val:
                     v2lbl[mz] = scn[1][i]
                 plbl.append(mz)
 
             #add peak labels
             for v in v2lbl:
                 self.plt.text(v, v2lbl[v], str(v), ha='center', \
-                    va='bottom', rotation=90, size=10, color=clr, \
-                    bbox={'boxstyle': 'larrow,pad=0.3', 'fc': clr, \
-                        'ec': clr, 'lw': 1, 'alpha': '0.25'})
+                    va='bottom', rotation=90, size=10, color=clr)
+                #self.plt.text(v, v2lbl[v], str(v), ha='center', \
+                #    va='bottom', rotation=90, size=10, color=clr, \
+                #    bbox={'boxstyle': 'larrow,pad=0.3', 'fc': clr, \
+                #        'ec': clr, 'lw': 1, 'alpha': '0.25'})
 
     def mousedown(self, event):
         if event.button == 1:
