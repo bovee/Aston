@@ -132,25 +132,53 @@ class AgilentCS(Datafile):
         pass
 
     def events(self, kind):
-        #TODO: get fia from new-style *.REG files.
         evts = super(AgilentCS, self).events(kind)
-        if kind == 'fia':
+        if kind in ('fia', 'fxn'):
             folder = op.dirname(self.rawdata)
-            acq_file = op.join(folder, 'ACQRES.REG')
+            if kind == 'fia':
+                acq_file = op.join(folder, 'ACQRES.REG')
+            elif kind == 'fxn':
+                acq_file = op.join(folder, 'LAFC1FD.REG')
 
-            if op.exists(acq_file):
-                d = read_reg_file(open(acq_file, 'rb'))
-                if not d.get('FIARun', False):
-                    return {}
-                prev_f = d['FIASeriesInfo'][1][1]
-                for f in d['FIASeriesInfo'][1][2:]:
-                    evts.append([prev_f[0], f[0], {'name': prev_f[2]}])
-                    prev_f = f
-                else:
-                    if len(evts) > 0:
-                        off_t = evts[-1][1] - evts[-1][0]
-                        evts.append([prev_f[0], prev_f[0] + off_t, \
-                                     {'name': prev_f[2]}])
+            if not op.exists(acq_file):
+                return {}
+            else:
+                acq_file = open(acq_file, 'rb')
+            acq_file.seek(0x19)
+            vers = acq_file.read(7)
+
+        if kind == 'fia' and vers.startswith(b'A'):
+            d = read_reg_file(acq_file)
+            if not d.get('FIARun', False):
+                return {}
+            prev_f = d['FIASeriesInfo'][1][1]
+            for f in d['FIASeriesInfo'][1][2:]:
+                evts.append([prev_f[0], f[0], {'name': prev_f[2]}])
+                prev_f = f
+            else:
+                if len(evts) > 0:
+                    off_t = evts[-1][1] - evts[-1][0]
+                    evts.append([prev_f[0], prev_f[0] + off_t, \
+                                    {'name': prev_f[2]}])
+        elif kind == 'fia' and vers == b'notused':
+            #TODO: get fia from new-style *.REG files.
+            pass
+        elif kind == 'fxn' and vers.startswith(b'A'):
+            #TODO: get fxn from old-style *.REG files.
+            pass
+        elif kind == 'fxn' and vers == b'notused':
+            acq_file.seek(0xED)
+            nfxns = struct.unpack('<I', acq_file.read(4))[0]
+            acq_file.seek(0x33F)
+            evts = []
+            for _ in range(nfxns):
+                d = struct.unpack('<Q9fI4f7I', acq_file.read(92))
+                evts.append([d[13] / 60000., d[14] / 60000., {}])
+
+            acq_file.seek(acq_file.tell() + 264)
+            for i in range(nfxns):
+                slen = struct.unpack('<H', acq_file.read(2))[0] - 1
+                evts[i][2]['name'] = acq_file.read(2 * slen).decode('utf-16')
         return evts
 
     def _other_trace(self, name, twin=None):
@@ -327,5 +355,9 @@ def read_regb_file(f):
     # starts at byte 14?
 
     #CHPNdrString
-    [j[12:12+2*struct.unpack('<H', j[10:12])[0]].decode('utf-16') \
-     for i, j in a if i == b'CHPNdrString']
+    #[j[12:12 + 2 * struct.unpack('<H', j[10:12])[0]].decode('utf-16') \
+    # for i, j in a if i == b'CHPNdrString']
+
+    #CHPNdrObject
+
+    #CHPTable

@@ -208,7 +208,7 @@ def peak_find_mpwrap(ts, peak_find, fopts, dt=None):
         # event_peak_find also needs a list of events
         evts = []
         if dt is not None:
-            for n in ('fia', 'refgas'):
+            for n in ('fia', 'fxn', 'refgas'):
                 evts += dt.events(n)
             tpks = peak_find(ts, evts, **fopts)
         else:
