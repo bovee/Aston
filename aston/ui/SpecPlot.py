@@ -82,9 +82,10 @@ class SpecPlotter(object):
         self.canvas.draw()
 
     def plot_spec(self, scn, clr, label=False):
-        if scn.shape[1] > 10 and np.all(np.diff(scn[0]) - \
-          (scn[0, 1] - scn[0, 0]) < 1e-9):
+        if scn.shape[1] > 10 and np.all(np.abs(np.diff(scn[0]) - \
+          (scn[0, 1] - scn[0, 0])) < 1e-9):
             #if the spacing between all the points is equal, plot as a line
+            scn = scn[:, np.argsort(scn)[0]]
             self.plt.plot(scn[0], scn[1], '-', color=clr)
         else:
             try:
