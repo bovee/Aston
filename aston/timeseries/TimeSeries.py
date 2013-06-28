@@ -99,6 +99,12 @@ class TimeSeries(object):
             data = self._rawdata[st_idx:en_idx, 0]
             val = self.ions[0]
         else:
+            # try to make this into a number if possible
+            try:
+                val = float(val)
+            except ValueError:
+                pass
+
             # depending on the val, find the rows differently
             if type(val) is int or type(val) is float:
                 #FIXME: this doesn't track the new positions
@@ -109,6 +115,7 @@ class TimeSeries(object):
                 ions = np.array([i for i in self.ions if is_num(i)])
                 rows = np.where(np.abs(ions - val) < tol)[0]
             elif val in self.ions:
+                # this is a named trace (hopefully!)
                 rows = np.array([self.ions.index(val)])
             else:
                 rows = []

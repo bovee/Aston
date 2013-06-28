@@ -97,28 +97,34 @@ class SpecPlotter(object):
             self.plt.plot(scn[0], scn[1], ',', color=clr)
 
         if label:
-            #go through the top 10% highest ions from highest to lowest
-            #always have at least 10 labels, but no more than 50 (arbitrary)
-            #if an ion is close to one seen previously, don't display it
-            v2lbl = {}  # values to label
-            plbl = []  # all values so far
+            #FIXME: doesn't look good if less than AMU spacing
             max_val = max(np.array(scn[1]))  # only label peaks X % of this
-            for i in np.array(scn[1]).argsort()[::-1]:
-                mz = scn[0][i]
-                #don't allow a new label within 1.5 units of another
-                if not np.any(np.abs(np.array(plbl) - mz) < 1.5) and \
-                  scn[1][i] > 0.01 * max_val:
-                    v2lbl[mz] = scn[1][i]
-                plbl.append(mz)
-
-            #add peak labels
-            for v in v2lbl:
-                self.plt.text(v, v2lbl[v], str(v), ha='center', \
+            filt_scn = scn[:, 0.5 * np.roll(scn[1], 1) - scn[1] <= 0]
+            for s in filt_scn[:, filt_scn[1] > 0.01 * max_val].T:
+                self.plt.text(s[0], s[1], str(s[0]), ha='center', \
                     va='bottom', rotation=90, size=10, color=clr)
-                #self.plt.text(v, v2lbl[v], str(v), ha='center', \
-                #    va='bottom', rotation=90, size=10, color=clr, \
-                #    bbox={'boxstyle': 'larrow,pad=0.3', 'fc': clr, \
-                #        'ec': clr, 'lw': 1, 'alpha': '0.25'})
+        #    #go through the top 10% highest ions from highest to lowest
+        #    #always have at least 10 labels, but no more than 50 (arbitrary)
+        #    #if an ion is close to one seen previously, don't display it
+        #    v2lbl = {}  # values to label
+        #    plbl = []  # all values so far
+        #    max_val = max(np.array(scn[1]))  # only label peaks X % of this
+        #    for i in np.array(scn[1]).argsort()[::-1]:
+        #        mz = scn[0][i]
+        #        #don't allow a new label within 1.5 units of another
+        #        if not np.any(np.abs(np.array(plbl) - mz) < 1.5) and \
+        #          scn[1][i] > 0.01 * max_val:
+        #            v2lbl[mz] = scn[1][i]
+        #        plbl.append(mz)
+
+        #    #add peak labels
+        #    for v in v2lbl:
+        #        self.plt.text(v, v2lbl[v], str(v), ha='center', \
+        #            va='bottom', rotation=90, size=10, color=clr)
+        #        #self.plt.text(v, v2lbl[v], str(v), ha='center', \
+        #        #    va='bottom', rotation=90, size=10, color=clr, \
+        #        #    bbox={'boxstyle': 'larrow,pad=0.3', 'fc': clr, \
+        #        #        'ec': clr, 'lw': 1, 'alpha': '0.25'})
 
     def mousedown(self, event):
         if event.button == 1:
