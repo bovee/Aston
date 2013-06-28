@@ -1,7 +1,6 @@
 0.7 Checklist
 *************
 
-* allow M-N traces to see fragmentation patterns
 * mzML & mzXML file support
 * save AIA/CDF, mzML & mzXML
 * RAW file support
@@ -9,18 +8,15 @@
 * Chemstation B+ REG files
 * Agilent .REG scraping
   - method parameters
-  - fraction collection
 * autoalign chromatograms
 * baseline detection
 * smarter peak editing?
   - peak groups
   - adjustable peaks (little selectors on each end of "baseline")
-  - highlight selected (in peak table) peak on graph
   - allow user-selected peaks to be re-interpreted &
     coelution spots to be found
 * spectra from Agilent MS SIM method (e.g. CM1292) have a "0" mz
   that may be erroneous and should be removed?
-* ion ranges (34:45) are weird?
 * make aston not freak out if datafile is not found?
 
 
