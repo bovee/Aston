@@ -110,8 +110,8 @@ class TimeSeries(object):
                 #FIXME: this doesn't track the new positions
                 # in the array "ions" back the positions in
                 # self.ions
-                is_num = lambda i: type(i) is int or \
-                  type(i) is float or type(i) is np.float32
+                is_num = lambda i: type(i) in (int, float, \
+                                               np.float32, np.float64)
                 ions = np.array([i for i in self.ions if is_num(i)])
                 rows = np.where(np.abs(ions - val) < tol)[0]
             elif val in self.ions:
@@ -147,7 +147,8 @@ class TimeSeries(object):
             if type(self._rawdata) == np.ndarray:
                 ion_abs = self._rawdata[idx:en_idx + 1, :].copy()
             else:
-                ion_abs = self._rawdata[idx:en_idx + 1, :].astype(float).toarray()[0]
+                ion_abs = self._rawdata[idx:en_idx + 1, :]
+                ion_abs = ion_abs.astype(float).toarray()[0]
             return np.vstack([np.array([float(i) for i in self.ions]), \
               ion_abs.sum(axis=0)])
 

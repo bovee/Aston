@@ -252,7 +252,7 @@ class AgilentCSDAD(AgilentCS):
     Interpreter for *.UV files from Agilent Chemstation
     """
     ext = 'UV'
-    mgc = '0233'
+    mgc = '0331'
 
     def _cache_data(self):
         #TODO: the chromatograms this generates are not exactly the
@@ -273,6 +273,9 @@ class AgilentCSDAD(AgilentCS):
             nm_srt = struct.unpack('<H', f.read(2))[0] / 20.
             nm_end = struct.unpack('<H', f.read(2))[0] / 20.
             nm_stp = struct.unpack('<H', f.read(2))[0] / 20.
+            print(times, nm_srt, nm_end, nm_stp)
+            if i > 4:
+                break
             f.read(8)
             s = {}
             v = struct.unpack('<h', f.read(2))[0] / 2000.
@@ -297,26 +300,97 @@ class AgilentCSDAD(AgilentCS):
     def _update_info_from_file(self):
         super(AgilentCSDAD, self)._update_info_from_file()
         d = {}
+        with open(self.rawdata, 'rb') as f:
+            string_read = lambda f: f.read(struct.unpack('>B', \
+                f.read(1))[0]).decode('ascii').strip()
+            f.seek(0x18)
+            d['name'] = string_read(f)
+            f.seek(0x94)
+            d['r-opr'] = string_read(f)
+            f.seek(0xE4)
+            d['m'] = string_read(f)
+            f.seek(0xB2)
+            rawdate = string_read(f)
+            try:  # fails on 0331 UV files
+                d['r-date'] = datetime.strptime(rawdate, \
+                    "%d-%b-%y, %H:%M:%S").isoformat(' ')
+            except:
+                pass
+            f.seek(0x146)
+            d['m-y-units'] = string_read(f)
+            f.seek(0xD0)
+            d['r-inst'] = string_read(f)
+            #TODO: are the next values correct?
+            f.seek(0xFE)
+            d['r-vial-pos'] = string_read(f)
+            f.seek(0xFE)
+            d['r-seq-num'] = string_read(f)
+        self.info.update(d)
+
+
+class AgilentCSDAD2(AgilentCS):
+    """
+    Interpreter for *.UV files from Agilent Chemstation
+    """
+    ext = 'UV'
+    mgc = '0331'
+
+    def _cache_data(self):
         f = open(self.rawdata, 'rb')
-        f.seek(0x18)
-        d['name'] = f.read(struct.unpack('>B', f.read(1))[0]).decode().strip()
-        f.seek(0x94)
-        d['r-opr'] = f.read(struct.unpack('>B', f.read(1))[0]).decode()
-        f.seek(0xE4)
-        d['m'] = f.read(struct.unpack('>B', f.read(1))[0]).decode().strip()
-        f.seek(0xB2)
-        rawdate = f.read(struct.unpack('>B', f.read(1))[0]).decode()
-        d['r-date'] = datetime.strptime(rawdate, \
-          "%d-%b-%y, %H:%M:%S").isoformat(' ')
-        f.seek(0x146)
-        d['m-y-units'] = f.read(struct.unpack('>B', f.read(1))[0]).decode()
-        f.seek(0xD0)
-        d['r-inst'] = f.read(struct.unpack('>B', f.read(1))[0]).decode()
-        #TODO: are the next values correct?
-        f.seek(0xFE)
-        d['r-vial-pos'] = str(struct.unpack('>h', f.read(2))[0])
-        f.seek(0xFE)
-        d['r-seq-num'] = str(struct.unpack('>h', f.read(2))[0])
-        d['r-type'] = 'Sample'
-        f.close()
+
+        f.seek(0x116)
+        nscans = struct.unpack('>i', f.read(4))[0]
+
+        times = np.zeros(nscans)
+        data = nscans * [{}]
+        ions = []
+        npos = 0x1002
+        import binascii
+        for i in range(nscans):
+            f.seek(npos)
+            npos += struct.unpack('<H', f.read(2))[0]
+            times[i] = struct.unpack('<L', f.read(4))[0] / 60000.
+            nm_srt = struct.unpack('<H', f.read(2))[0] / 20.
+            nm_end = struct.unpack('<H', f.read(2))[0] / 20.
+            nm_stp = struct.unpack('<H', f.read(2))[0] / 20.
+            #something = struct.unpack('<H', f.read(2))[0]
+            #f.read(6)
+            f.read(6)
+            s = {}
+            v = struct.unpack('<h', f.read(2))[0] / 2000.
+            s[nm_srt] = v
+            for wv in np.arange(nm_srt, nm_end, nm_stp):
+                ov = struct.unpack('<h', f.read(2))[0]
+                if ov == -32768:
+                    v = struct.unpack('<i', f.read(4))[0] / 2000.
+                else:
+                    v += ov / 2000.
+                s[wv] = v
+                if wv not in ions:
+                    ions.append(wv)
+            data[i] = s
+
+        ndata = np.zeros((nscans, len(ions)))
+        for i, d in zip(range(nscans), data):
+            for ion, abn in d.items():
+                ndata[i, ions.index(ion)] = abn
+        self.data = TimeSeries(ndata, times, ions)
+
+    def _update_info_from_file(self):
+        super(AgilentCSDAD2, self)._update_info_from_file()
+        d = {}
+        with open(self.rawdata, 'rb') as f:
+            string_read = lambda f: f.read(2 * struct.unpack('>B', \
+                f.read(1))[0]).decode('utf-16').strip()
+            f.seek(0x35A)
+            d['name'] = string_read(f)
+            f.seek(0x758)
+            d['r-opr'] = string_read(f)
+            # get date into correct format before using this
+            #f.seek(0x957)
+            #d['r-date'] = string_read()
+            f.seek(0xA0E)
+            d['m'] = string_read(f)
+            f.seek(0xC15)
+            d['m-y-units'] = string_read(f)
         self.info.update(d)

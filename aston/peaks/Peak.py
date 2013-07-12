@@ -96,6 +96,9 @@ class Peak(DBObject):
             self.info[fld] = str(peakmath.time(self.as_poly()))
         elif fld == 'p-s-pwhm':
             self.info[fld] = str(peakmath.length(self.as_poly(), pwhm=True))
+        elif fld == 'r-filename':
+            prt = self.parent_of_type('file')
+            self.info[fld] = prt.info['r-filename']
 
     def _calc_info(self, fld):
         if fld == 'p-s-pkcap':

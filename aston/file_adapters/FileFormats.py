@@ -1,7 +1,6 @@
 #File types from http://en.wikipedia.org/wiki/Mass_spectrometry_data_format
 #and http://www.amdis.net/What_is_AMDIS/AMDIS_Detailed/amdis_detailed.html
 #TODO: .ABI | DNA Chromatogram format
-#TODO: .ACQ | Inficon GCMS
 #TODO: .FID | Bruker instrument data format
 #TODO: .LRP | Shrader/GCMate
 #TODO: .MS  | Varian Saturn Files
@@ -28,7 +27,8 @@ def file_adaptors():
       import ThermoCF, ThermoDXF
     from aston.file_adapters.Bruker import BrukerMSMS
     from aston.file_adapters.AgilentUV \
-      import AgilentDAD, AgilentMWD, AgilentMWD2, AgilentCSDAD
+      import AgilentDAD, AgilentMWD, AgilentMWD2, \
+            AgilentCSDAD, AgilentCSDAD2
     from aston.file_adapters.OtherFiles \
       import AgilentFID, CSVFile
     from aston.file_adapters.Waters import WatersAutospec
@@ -36,8 +36,8 @@ def file_adaptors():
     from aston.file_adapters.Inficon import InficonHapsite
     return [AgilentMS, AgilentMSMSScan, BrukerMSMS, \
       ThermoCF, ThermoDXF, AgilentDAD, AgilentMWD, AgilentMWD2, \
-      AgilentCSDAD, AgilentFID, CSVFile, WatersAutospec, NetCDF, \
-      InficonHapsite]
+      AgilentCSDAD, AgilentCSDAD2, AgilentFID, CSVFile, \
+      WatersAutospec, NetCDF, InficonHapsite]
 
     #for cls_str in dir(fl):
     #    cls = fl.__dict__[cls_str]
