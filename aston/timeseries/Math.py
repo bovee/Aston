@@ -1,5 +1,9 @@
-import numpy as np
 
+"""
+Functions which mathematically manipulate TimeSeries.
+"""
+
+import numpy as np
 import scipy.ndimage
 from scipy.stats import gaussian_kde
 from scipy.optimize import fmin, brentq
@@ -7,6 +11,9 @@ from aston.timeseries.TimeSeries import TimeSeries, ts_func
 
 
 def fft(ts):
+    """
+    Perform a fast-fourier transform on a TimeSeries
+    """
     oc = np.abs(np.fft.fftshift(np.fft.fft(ts.y))) / len(ts.y)
     t = np.fft.fftshift(np.fft.fftfreq(len(oc), d=ts.times[1] - ts.times[0]))
     return TimeSeries(oc, t)
@@ -18,7 +25,7 @@ def ifft(ic, t):
     pass
 
 
-def noisefilter(y, bandwidth=0.2):
+def noisefilter_(y, bandwidth=0.2):
     #adapted from http://glowingpython.blogspot.com/
     #2011/08/fourier-transforms-and-image-filtering.html
     I = np.fft.fftshift(np.fft.fft(y))  # entering to frequency domain
@@ -112,6 +119,10 @@ def CODA(ts, window, level):
 
 
 def movingaverage(ts, window):
+    """
+    Calculates the moving average ("rolling mean") of a timeseries
+    of a certain window size.
+    """
     m = np.ones(int(window)) / int(window)
     return TimeSeries(_smooth(ts.data, m), ts.times, ts.ions)
 
@@ -130,11 +141,22 @@ def savitzkygolay(ts, window, order, deriv=0):
 
 
 def _smooth(ic, m):
+    """
+    Function with performs a convolution on an array, ic, with
+    a smoothing array, m, that's been generated in the
+    movingaverage/savitskygolay functions.
+    """
     return scipy.ndimage.convolve1d(ic, m, axis=0, mode='reflect')
 
 
+noisefilter = ts_func(noisefilter_)
+abs = ts_func(np.abs)
+sin = ts_func(np.sin)
+cos = ts_func(np.cos)
+tan = ts_func(np.tan)
+derivative = ts_func(np.gradient)
 fxns = {'fft': fft,
-        'noise': ts_func(noisefilter),
+        'noise': ts_func(noisefilter_),
         'abs': ts_func(np.abs),
         'sin': ts_func(np.sin),
         'cos': ts_func(np.cos),

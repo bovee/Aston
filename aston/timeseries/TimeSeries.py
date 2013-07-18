@@ -19,18 +19,37 @@
 
 
 """
-
+Core functions for dealing with TimeSeries.
 """
 
 import json
 import zlib
 import struct
-import numpy as np
-from scipy.sparse import coo_matrix
-from scipy.interpolate import interp1d
+try:  # preliminary support for pypy
+    import numpypy as np
+except:
+    import numpy as np
 
 
 class TimeSeries(object):
+    """
+    A TimeSeries is any set of observations (self.data) taken at
+    definite time points (self.time) of certain types (self.ions).
+    These types can include m/z's for mass spec data, wavelengths
+    for UV/Visible data, string descriptors for "actuals" data
+    (like Presure/Temperature/etc).
+
+    Interally, all times are assumed to be in minutes elapsed
+    since start of experiment (although an internal "x-units"
+    variable may be added at some point).
+
+    Self.data may be a two-dimensional array or a sparse matrix
+    depending on which holds the data more space efficiently.
+
+    Many functions in TimeSeries can take a time window (twin)
+    argument which only selects a certain x-range to perform
+    that function on.
+    """
     def __init__(self, data, times, ions=[]):
         if data is not None:
             if len(data.shape) == 1:
@@ -155,19 +174,30 @@ class TimeSeries(object):
     def get_point(self, trace, time):
         """
         Return the value of the trace at a certain time.
+
+        This has the advantage of interpolating the value
+        if the time is not exact.
         """
+        from scipy.interpolate import interp1d
         ts = self.trace(trace)
         f = interp1d(ts.times, ts.data.T, \
           bounds_error=False, fill_value=0.0)
         return f(time)[0]
 
     def as_2D(self):
+        """
+        Returns two matrices, one of the data and the other of
+        the times and trace corresponding to that data.
+
+        Useful for making two-dimensional "heat" plots.
+        """
         if self.times.shape[0] == 0:
             return (0, 1, 0, 1), np.array([[0]])
         ext = (self.times[0], self.times[-1], min(self.ions), max(self.ions))
         if type(self._rawdata) == np.ndarray:
             grid = self._rawdata[:, np.argsort(self.ions)].transpose()
         else:
+            from scipy.sparse import coo_matrix
             data = self._rawdata[:, 1:].tocoo()
             data_ions = np.array([self.ions[i] for i in data.col])
             grid = coo_matrix((data.data, (data_ions, data.row))).toarray()
@@ -187,6 +217,7 @@ class TimeSeries(object):
         return TimeSeries(self._retime(new_times), new_times, self.ions)
 
     def _retime(self, new_times, fill=0.0):
+        from scipy.interpolate import interp1d
         if new_times.shape == self.times.shape:
             if np.all(np.equal(new_times, self.times)):
                 return self._rawdata
@@ -261,6 +292,9 @@ class TimeSeries(object):
         return self._apply_data(lambda x, y: abs(x), None)
 
     def __and__(self, ts):
+        """
+        Merge together two TimeSeries.
+        """
         if ts is None:
             return self
         t_step = self.times[1] - self.times[0]
