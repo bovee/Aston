@@ -18,6 +18,7 @@
 * spectra from Agilent MS SIM method (e.g. CM1292) have a "0" mz
   that may be erroneous and should be removed?
 * make aston not freak out if datafile is not found?
+* fix color scaling as more chromatograms added: hard to keep track
 
 
 0.8 Checklist

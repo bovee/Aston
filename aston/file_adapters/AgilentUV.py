@@ -273,9 +273,6 @@ class AgilentCSDAD(AgilentCS):
             nm_srt = struct.unpack('<H', f.read(2))[0] / 20.
             nm_end = struct.unpack('<H', f.read(2))[0] / 20.
             nm_stp = struct.unpack('<H', f.read(2))[0] / 20.
-            print(times, nm_srt, nm_end, nm_stp)
-            if i > 4:
-                break
             f.read(8)
             s = {}
             v = struct.unpack('<h', f.read(2))[0] / 2000.
@@ -335,46 +332,80 @@ class AgilentCSDAD2(AgilentCS):
     ext = 'UV'
     mgc = '0331'
 
+    #@profile
     def _cache_data(self):
         f = open(self.rawdata, 'rb')
 
         f.seek(0x116)
         nscans = struct.unpack('>i', f.read(4))[0]
 
-        times = np.zeros(nscans)
-        data = nscans * [{}]
-        ions = []
+        # get all wavelengths and times
+        wvs = set()
+        times = np.empty(nscans)
         npos = 0x1002
-        import binascii
         for i in range(nscans):
             f.seek(npos)
             npos += struct.unpack('<H', f.read(2))[0]
-            times[i] = struct.unpack('<L', f.read(4))[0] / 60000.
-            nm_srt = struct.unpack('<H', f.read(2))[0] / 20.
-            nm_end = struct.unpack('<H', f.read(2))[0] / 20.
-            nm_stp = struct.unpack('<H', f.read(2))[0] / 20.
-            #something = struct.unpack('<H', f.read(2))[0]
-            #f.read(6)
-            f.read(6)
-            s = {}
-            v = struct.unpack('<h', f.read(2))[0] / 2000.
-            s[nm_srt] = v
-            for wv in np.arange(nm_srt, nm_end, nm_stp):
+            times[i] = struct.unpack('<L', f.read(4))[0]
+            nm_srt, nm_end, nm_stp = struct.unpack('<HHH', f.read(6))
+            n_wvs = np.arange(nm_srt, nm_end, nm_stp) / 20.
+            wvs.update(set(n_wvs).difference(wvs))
+        wvs = list(wvs)
+
+        ndata = np.empty((nscans, len(wvs)), dtype="<i4")
+        npos = 0x1002
+        for i in range(nscans):
+            f.seek(npos)
+            npos += struct.unpack('<H', f.read(2))[0]
+            f.seek(f.tell() + 4)
+            nm_srt, nm_end, nm_stp = struct.unpack('<HHH', f.read(6))
+            f.seek(f.tell() + 6)
+            v = struct.unpack('<h', f.read(2))[0]
+
+            pos = f.tell()
+            for wv in np.arange(nm_srt, nm_end, nm_stp) / 20.:
                 ov = struct.unpack('<h', f.read(2))[0]
                 if ov == -32768:
-                    v = struct.unpack('<i', f.read(4))[0] / 2000.
+                    v = struct.unpack('<i', f.read(4))[0]
                 else:
-                    v += ov / 2000.
-                s[wv] = v
-                if wv not in ions:
-                    ions.append(wv)
-            data[i] = s
+                    v += ov
+                ndata[i, wvs.index(wv)] = v
+            f.seek(pos)
 
-        ndata = np.zeros((nscans, len(ions)))
-        for i, d in zip(range(nscans), data):
-            for ion, abn in d.items():
-                ndata[i, ions.index(ion)] = abn
-        self.data = TimeSeries(ndata, times, ions)
+            ### WORKING ON A FASTER WAY TO READ ALL THIS DATA BELOW
+            ## read in all the data
+            #npts = int((nm_end - nm_srt) / nm_stp)
+            #data = np.fromfile(f, dtype="<i2", count=npts)
+
+            ## if there are any records marked -32768, we need to reinterpret
+            ## parts of the array as i4's which means we need more data
+            #new_pts = 0
+            #oob_idxs = np.where(data == -32768)[0]
+            #while new_pts != oob_idxs.shape[0]:
+            #    new_pts = oob_idxs.shape[0]
+            #    data = np.hstack([data, np.fromfile(f, dtype="<i2", \
+            #                                       count=2 * new_pts)])
+            #    oob_idxs = np.where(data == -32768)[0]
+            ##data[0] += v
+
+            ## correct the i4's
+            #if new_pts != 0:
+            #    big_idxs = np.repeat(oob_idxs, 2) + \
+            #            np.tile([1, 2], oob_idxs.shape[0])
+            #    big_data = data[big_idxs].view('<i4').copy()
+            #    data = np.delete(data, big_idxs).astype("<i4")
+
+            #    oob_idxs -= np.arange(0, 2 * len(oob_idxs), 2)
+            #    data[oob_idxs] = big_data
+            #    #FIXME: still wrong
+            #    if 0 not in oob_idxs:
+            #        data[oob_idxs] -= big_data
+            #    else:
+            #        data[oob_idxs[1:] - 1] -= big_data[1:]
+            #ndata[i] = np.cumsum(data)[:npts]
+            ##ndata[i, wvs.index(wv)] = v
+
+        self.data = TimeSeries(ndata / 2000., times / 60000., wvs)
 
     def _update_info_from_file(self):
         super(AgilentCSDAD2, self)._update_info_from_file()
