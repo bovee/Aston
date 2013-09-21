@@ -199,7 +199,7 @@ def merge_ions(pks):
     return cleaned_pks
 
 
-def integrate_mpwrap(ts_and_pks, integrate, fopts):
+def _integrate_mpwrap(ts_and_pks, integrate, fopts):
     """
     Take a zipped timeseries and peaks found in it
     and integrate it to return peaks.
@@ -213,10 +213,12 @@ def integrate_mpwrap(ts_and_pks, integrate, fopts):
 
 def integrate_peaks(tss, peaks_found, int_f, f_opts={}, \
                     isomode=False, mp=False):
-    f = functools.partial(integrate_mpwrap, integrate=int_f, fopts=f_opts)
+    f = functools.partial(_integrate_mpwrap, integrate=int_f, fopts=f_opts)
     if mp:
         po = multiprocessing.Pool()
         all_pks = po.map(f, zip(tss, peaks_found))
+        po.close()
+        po.join()
     else:
         all_pks = list(map(f, zip(tss, peaks_found)))
 

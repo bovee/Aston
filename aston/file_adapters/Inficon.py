@@ -98,4 +98,4 @@ class InficonHapsite(Datafile.Datafile):
         data = np.zeros((len(times), len(mzs)))
         for i, r in enumerate(abns):
             data[i, 0:len(r)] = r
-        self.data = TimeSeries(data, times, mzs)
+        self.data = TimeSeries(data, times, [str(m) for m in mzs])

@@ -70,7 +70,7 @@ class BrukerMSMS(Datafile.Datafile):
         data = scipy.sparse.csr_matrix((vals, idxs, indptr), \
                                     shape=(nscans, len(ions)), \
                                     dtype=float)
-        self.data = TimeSeries(data, times, ions)
+        self.data = TimeSeries(data, times, [str(i) for i in ions])
 
         #self.data = np.zeros((recs, 2))
         #times = rd(f, nscans * 'd')

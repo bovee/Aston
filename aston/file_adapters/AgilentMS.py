@@ -106,7 +106,7 @@ class AgilentMS(AgilentCS):
         #cols += 1
         data = scipy.sparse.csr_matrix((vals, cols, rowst), \
           shape=(nscans, len(ions)), dtype=float)
-        ions = [i / 20. for i in ions]
+        ions = [str(i / 20.) for i in ions]
         self.data = TimeSeries(data, times, ions)
 
     def _update_info_from_file(self):
@@ -224,7 +224,7 @@ class AgilentMSMSScan(AgilentMH):
             ic.append(sum(pd[ion_loc]))
 
         f.close()
-        return TimeSeries(np.array(ic), np.array(tme), [val])
+        return TimeSeries(np.array(ic), np.array(tme), [str(val)])
 
     def scan(self, time, to_time=None):
         #TODO: support time ranges

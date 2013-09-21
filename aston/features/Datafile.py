@@ -131,7 +131,14 @@ class Datafile(DBObject):
         if twin is not None:
             twin = (self._sc_off(twin[0]), self._sc_off(twin[1]))
 
-        if type(ion) == str or type(ion) == unicode:
+        def is_str(s):
+            try:
+                return isinstance(s, basestring)
+            except:
+                return isinstance(s, str)
+
+        #if type(ion) == str or type(ion) == unicode:
+        if is_str(ion):
             ts = self._parse_ion_string(ion.lower(), twin)
         elif type(ion) == int or type(ion) == float:
             #if the ion is a number, do the straightforward thing

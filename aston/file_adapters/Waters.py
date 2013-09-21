@@ -65,7 +65,7 @@ class WatersAutospec(Datafile.Datafile):
                 break
         fdat.close()
         fidx.close()
-        self.data = TimeSeries(np.array(data), np.array(tme), ions)
+        self.data = TimeSeries(np.array(data), np.array(tme), [str(i) for i in ions])
 
     def _update_info_from_file(self):
         pass

@@ -55,3 +55,4 @@ Indefinite
   - but how to handle duplicate files?
 * refactor code to remove references to "ions"; should be mz or wavelength?
 * 2D display of multiple chromatograms at once (i.e. "color bars" of TICs of multiple files vertically stacked)
+* make TimeSeries either have a string descriptor for ions *or* an array of numbers

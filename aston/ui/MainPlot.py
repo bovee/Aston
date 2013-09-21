@@ -175,7 +175,7 @@ class Plotter(object):
 
         #draw grid lines
         if self.masterWindow.ui.actionGraphGrid.isChecked():
-            self.plt.grid(c='black', ls='-', alpha='0.05')
+            self.plt.grid(c='black', ls='-', alpha=0.05)
 
         #update the canvas
         self.canvas.draw()
@@ -258,6 +258,7 @@ class Plotter(object):
 
         ext, grid = dt.as_2D()
 
+        print(type(ext), type(grid), ext)
         img = self.plt.imshow(grid, origin='lower', aspect='auto', \
           extent=ext, cmap=self._color)
         if self.legend:

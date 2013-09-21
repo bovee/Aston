@@ -58,6 +58,10 @@ class TimeSeries(object):
                     ions = ['']
             assert times.shape[0] == data.shape[0]
             assert len(ions) == data.shape[1]
+            try:  # python 2
+                assert all(isinstance(i, basestring) for i in ions)
+            except:  # python 3
+                assert all(isinstance(i, str) for i in ions)
         self._rawdata = data
         self.times = times
         self.ions = ions
@@ -105,6 +109,9 @@ class TimeSeries(object):
     def trace(self, val='TIC', tol=0.5, twin=None):
         st_idx, en_idx = self._slice_idxs(twin)
 
+        if isinstance(val, (int, float, np.float32, np.float64)):
+            val = str(val)
+
         if val == 'TIC' and 'TIC' not in self.ions:
             # if a TIC is being requested and we don't have
             # a prebuilt one, sum up the axes
@@ -113,28 +120,17 @@ class TimeSeries(object):
             #data = np.array(self._rawdata[st_idx:en_idx, :].sum(axis=0).T)[0]
         elif val == '!':
             # this is for peaks, where we return the first
-            # ion by default; should be accessible from the
+            # ion by default; shouldn't be accessible from the
             # ions dialog box because !'s are stripped out
             data = self._rawdata[st_idx:en_idx, 0]
-            val = self.ions[0]
+            val = str(self.ions[0])
         else:
-            # try to make this into a number if possible
-            try:
-                val = float(val)
-            except ValueError:
-                pass
-
-            # depending on the val, find the rows differently
-            if type(val) is int or type(val) is float:
-                #FIXME: this doesn't track the new positions
-                # in the array "ions" back the positions in
-                # self.ions
-                is_num = lambda i: type(i) in (int, float, \
-                                               np.float32, np.float64)
-                ions = np.array([i for i in self.ions if is_num(i)])
-                rows = np.where(np.abs(ions - val) < tol)[0]
+            is_num = lambda x: set(x).issubset('1234567890.')
+            if is_num(val):
+                ions = np.array([float(i) if is_num(i) else np.nan \
+                                 for i in self.ions])
+                rows = np.where(np.abs(ions - float(val)) < tol)[0]
             elif val in self.ions:
-                # this is a named trace (hopefully!)
                 rows = np.array([self.ions.index(val)])
             else:
                 rows = []
@@ -161,13 +157,14 @@ class TimeSeries(object):
             return np.vstack([np.array([float(i) for i in self.ions]), \
               ion_abs])
         else:
+            #TODO: should there be an option to average instead of summing?
             en_idx = (np.abs(self.times - to_time)).argmin()
             idx, en_idx = min(idx, en_idx), max(idx, en_idx)
             if type(self._rawdata) == np.ndarray:
                 ion_abs = self._rawdata[idx:en_idx + 1, :].copy()
             else:
                 ion_abs = self._rawdata[idx:en_idx + 1, :]
-                ion_abs = ion_abs.astype(float).toarray()[0]
+                ion_abs = ion_abs.astype(float).toarray()
             return np.vstack([np.array([float(i) for i in self.ions]), \
               ion_abs.sum(axis=0)])
 
@@ -193,15 +190,65 @@ class TimeSeries(object):
         """
         if self.times.shape[0] == 0:
             return (0, 1, 0, 1), np.array([[0]])
-        ext = (self.times[0], self.times[-1], min(self.ions), max(self.ions))
+        ions = [float(i) for i in self.ions]
+        ext = (self.times[0], self.times[-1], min(ions), max(ions))
         if type(self._rawdata) == np.ndarray:
             grid = self._rawdata[:, np.argsort(self.ions)].transpose()
         else:
             from scipy.sparse import coo_matrix
             data = self._rawdata[:, 1:].tocoo()
-            data_ions = np.array([self.ions[i] for i in data.col])
+            data_ions = np.array([float(self.ions[i]) for i in data.col])
             grid = coo_matrix((data.data, (data_ions, data.row))).toarray()
         return ext, grid
+
+    def as_text(self, width=80, height=20):
+        raise NotImplementedError
+
+    def as_sound(self, speed=60, cutoff=50):
+        import scipy.io.wavfile
+        import scipy.signal
+
+        # make a 1d array for the sound
+        to_t = lambda t: (t - self.times[0]) / speed
+        wav_len = int(to_t(self.times[-1]) * 60 * 44100)
+        wav = np.zeros(wav_len)
+
+        # create an artificial array to interpolate times out of
+        tmask = np.linspace(0, 1, len(self.times))
+
+        # come up with a mapping from mz to tone
+        min_hz, max_hz = 50, 1000
+        is_num = lambda x: set(x).issubset('1234567890.')
+        min_mz = min(float(i) if is_num(i) else np.inf for i in self.ions)
+        max_mz = max(float(i) if is_num(i) else 0 for i in self.ions)
+
+        def mz_to_wv(mz):
+            """
+            Maps a wavelength/mz to a tone.
+            """
+            try:
+                mz = float(mz)
+            except:
+                return 100
+            wv = (mz * (max_hz - min_hz) - max_hz * min_mz + min_hz * max_mz) \
+                    / (max_mz - min_mz)
+            return int(44100 / wv)
+
+        # go through each trace and map it into the sound array
+        for i, mz in enumerate(self.ions):
+            if float(mz) < cutoff:
+                # clip out mz/wv below a certain threshold
+                # handy if data has low level noise
+                continue
+            print(str(i) + '/' + str(len(self.ions)))
+            inter_x = np.linspace(0, 1, wav[::mz_to_wv(mz)].shape[0])
+            wav[::mz_to_wv(mz)] += np.interp(inter_x, tmask, self.data[:, i])
+
+        # scale the new array and write it out
+        scaled = wav / np.max(np.abs(wav))
+        scaled = scipy.signal.fftconvolve(scaled, np.ones(5) / 5, mode='same')
+        scaled = np.int16(scaled * 32767)
+        scipy.io.wavfile.write('test.wav', 44100, scaled)
 
     def plot(self, show=False):
         """
@@ -232,11 +279,6 @@ class TimeSeries(object):
     def has_ion(self, ion):
         if ion in self.ions:
             return True
-        try:  # in case ion is not a number
-            if float(ion) in self.ions:
-                return True
-        except ValueError:
-            pass
         return False
 
     def _apply_data(self, f, ts):
@@ -312,6 +354,7 @@ class TimeSeries(object):
 
     @property
     def y(self):
+        #TODO: should be defined in terms of self.trace('!') ?
         return self.data.T[0]
 
     @property

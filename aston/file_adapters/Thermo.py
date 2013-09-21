@@ -29,7 +29,7 @@ class ThermoCF(Datafile.Datafile):
         nscans = struct.unpack('H', f.read(2))[0]
 
         #TODO: this shouldn't be hardcoded
-        ions = [44, 45, 46]
+        ions = ['44', '45', '46']
         ni = len(ions)
 
         f.seek(f.tell() + 35)
@@ -75,7 +75,7 @@ class ThermoDXF(Datafile.Datafile):
         #45.0 0x1420ef
         #46.0 0x14211c
         #
-        ions = [44, 45, 46]
+        ions = ['44', '45', '46']
         ni = len(ions)
 
         #bytes until the end converted to # of records

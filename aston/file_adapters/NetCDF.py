@@ -39,7 +39,7 @@ class NetCDF(Datafile):
 
         data = scipy.sparse.csr_matrix((vals, cols, rowst), \
           shape=(len(t), len(ions)), dtype=float)
-        self.data = TimeSeries(data, t, ions)
+        self.data = TimeSeries(data, t, [str(i) for i in ions])
 
 
 def write_netcdf(dt, filename):

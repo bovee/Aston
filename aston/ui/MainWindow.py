@@ -14,7 +14,7 @@ from aston.databases.FileDatabase import AstonFileDatabase
 from aston.databases.Compound import get_compound_db
 from aston.ui.FileTable import FileTreeModel
 import aston.ui.MenuOptions
-from aston.peaks.PeakFinding import find_peaks
+from aston.peaks.PeakFinding import find_peaks, find_peaks_iso
 from aston.peaks.Integrators import integrate_peaks
 
 
@@ -352,7 +352,10 @@ class AstonWindow(QtGui.QMainWindow):
         pf_fopts = self.get_f_opts(pf_f)
         mp = self.obj_tab.db.get_key('multiprocessing', dflt=True)
 
-        return find_peaks(tss, pf_f, pf_fopts, dt, isomode, mp)
+        if isomode:
+            return find_peaks_iso(tss, pf_f, pf_fopts, dt, mp)
+        else:
+            return find_peaks(tss, pf_f, pf_fopts, dt, mp)
 
     def integrate_peaks(self, tss, found_peaks, isomode=False):
         submnu = self.ui.actionIntegrator.menu().children()
@@ -374,7 +377,10 @@ class AstonWindow(QtGui.QMainWindow):
         elif self.ui.actionTop_File_All_Traces.isChecked() or isomode:
             tss = dt.active_traces(all_tr=True)
 
-        found_peaks = self.find_peaks(tss, dt, isomode)
+        if isomode:
+            found_peaks = self.find_peaks_iso(tss, dt)
+        else:
+            found_peaks = self.find_peaks(tss, dt)
         mrg_pks = self.integrate_peaks(tss, found_peaks, isomode)
 
         with dt.db:

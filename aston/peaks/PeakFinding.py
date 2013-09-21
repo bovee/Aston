@@ -8,17 +8,15 @@ from aston.timeseries.Math import movingaverage
 def simple_peak_find(ts, init_slope=500, start_slope=500, end_slope=200, \
                      min_peak_height=50, max_peak_width=1.5):
     """
-    Given a TimeSeries, return a list of tuples
-    indicating when peaks start and stop and what
-    their baseline is.
-    (t1, t2, hints)
+    Given a TimeSeries, return a list of tuples indicating when
+    peaks start and stop and what their baseline is.
+    [(t_start, t_end, hints) ...]
     """
     point_gap = 10
 
     def slid_win(itr, size=2):
-        """Returns a sliding window of size size along itr."""
-        itr = iter(itr)
-        buf = []
+        """Returns a sliding window of size 'size' along itr."""
+        itr, buf = iter(itr), []
         for _ in range(size):
             buf += [next(itr)]
         for l in itr:
@@ -110,13 +108,16 @@ def wavelet_peak_find(ts, min_snr=1., assume_sig=4., min_length=8.0,
     filt_ridges = spf._filter_ridge_lines(cwtm, ridges, \
       min_length=cwtm.shape[0] / min_length, min_snr=min_snr)
 
-    ## the next code is just to visualize how this works
+    ### the next code is just to visualize how this works
     #import matplotlib.pyplot as plt
-    #plt.imshow(cwtm)  # extent=(widths[0], widths[-1], times[0], times[-1]))
+    #ctr_x, ctr_y = np.meshgrid(t, widths)
+    #ctr_y *= (t[1] - t[0])
+    #plt.contourf(ctr_x, ctr_y, cwtm)
+    ##plt.imshow(cwtm) #, extent=(widths[0], widths[-1], times[0], times[-1]))
     #for l in ridges:
-    #    plt.plot(l[1], l[0], 'k-')
+    #    plt.plot(t[l[1]], l[0] * 0.5 * (t[1] - t[0]), 'k-')
     #for l in filt_ridges:
-    #    plt.plot(l[1], l[0], 'r-')
+    #    plt.plot(t[l[1]], l[0] * 0.5 * (t[1] - t[0]), 'r-')
     ##plt.plot(peaks_t, peaks_w, 'k*')  # not working
     #plt.show()
 
@@ -203,7 +204,7 @@ def event_peak_find(ts, events, adjust_times=False):
         return events
 
 
-def peak_find_mpwrap(ts, peak_find, fopts, dt=None):
+def _peak_find_mpwrap(ts, peak_find, fopts, dt=None):
     if peak_find == event_peak_find and dt is not None:
         # event_peak_find also needs a list of events
         evts = []
@@ -220,28 +221,35 @@ def peak_find_mpwrap(ts, peak_find, fopts, dt=None):
     return tpks
 
 
-def find_peaks(tss, pf_f, f_opts={}, dt=None, isomode=False, mp=False):
-    if isomode:
-        peaks_found = [peak_find_mpwrap(tss[0], pf_f, f_opts, dt)]
-        for ts in tss[1:]:
-            tpks = []
-            for p in peaks_found[0]:
-                old_pk_ts = tss[0].twin((p[0], p[1]))
-                old_t = old_pk_ts.times[old_pk_ts.y.argmax()]
-                new_pk_ts = ts.twin((p[0], p[1]))
-                off = new_pk_ts.times[new_pk_ts.y.argmax()] - old_t
-                new_p = (p[0] + off, p[1] + off, p[2])
-                tpks.append(new_p)
-            peaks_found.append(tpks)
-    elif mp and pf_f != event_peak_find:
+def find_peaks(tss, pf_f, f_opts={}, dt=None, mp=False):
+    if mp and pf_f != event_peak_find:
         # event_peak_find needs the datafile, which can't be pickled
         # and hence can't be passed into any multiprocessing code
-        f = functools.partial(peak_find_mpwrap, peak_find=pf_f, \
+        f = functools.partial(_peak_find_mpwrap, peak_find=pf_f, \
                             fopts=f_opts)
         po = multiprocessing.Pool()
         peaks_found = po.map(f, tss)
+        po.close()
+        po.join()
     else:
-        f = functools.partial(peak_find_mpwrap, peak_find=pf_f, \
+        f = functools.partial(_peak_find_mpwrap, peak_find=pf_f, \
                             fopts=f_opts, dt=dt)
         peaks_found = list(map(f, tss))
+    return peaks_found
+
+
+def find_peaks_iso(tss, pf_f, f_opts={}, dt=None, mp=False):
+    peaks_found = [_peak_find_mpwrap(tss[0], pf_f, f_opts, dt)]
+    for ts in tss[1:]:
+        tpks = []
+        for p in peaks_found[0]:
+            # move peak times over to correspond to first integrated
+            # signal: similar to, but different from Ricci et al '94
+            old_pk_ts = tss[0].twin((p[0], p[1]))
+            old_t = old_pk_ts.times[old_pk_ts.y.argmax()]
+            new_pk_ts = ts.twin((p[0], p[1]))
+            off = new_pk_ts.times[new_pk_ts.y.argmax()] - old_t
+            new_p = (p[0] + off, p[1] + off, p[2])
+            tpks.append(new_p)
+        peaks_found.append(tpks)
     return peaks_found
