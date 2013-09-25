@@ -3,17 +3,17 @@ import struct
 import os.path as op
 from xml.etree import ElementTree
 import numpy as np
-from aston.timeseries.TimeSeries import TimeSeries
-from aston.features.Datafile import Datafile
+from pandas import Series
+from aston.file_adapters.Common import FileAdapter
 
 
-class AgilentMH(Datafile):
+class AgilentMH(FileAdapter):
     """
     Base class for Agilent files from Masshunter.
     """
-    def _update_info_from_file(self):
+    def info(self):
         folder = op.dirname(self.rawdata)
-        d = {}
+        d = super(AgilentMH, self).info()
         try:
             u = lambda s: s.decode('utf-8')
             u('')
@@ -24,7 +24,7 @@ class AgilentMH(Datafile):
             xml_file = op.join(folder, 'sample_info.xml')
             r = ElementTree.parse(xml_file).getroot()
             info = dict((i.find('Name').text, i.find('Value').text) \
-            for i in r.findall('Field'))
+              for i in r.findall('Field'))
             d['name'] = info.get('Sample Name', '')
             d['r-vial-pos'] = info.get('Sample Position', '')
             d['r-inst'] = info.get('InstrumentName', '')
@@ -53,9 +53,9 @@ class AgilentMH(Datafile):
             #return None and None has no attribute text
             #TODO: better fix for this
             pass
-        self.info.update(d)
+        return d
 
-    def _other_trace(self, name, twin=None):
+    def named_trace(self, name, twin=None):
         if name in ['pres', 'flow', 'slvb']:
             fname = op.join(op.dirname(self.rawdata), 'CapPump1.cd')
             ttab = {'pres': 'Pressure', 'flow': 'Flow', \
@@ -64,11 +64,11 @@ class AgilentMH(Datafile):
             fname = op.join(op.dirname(self.rawdata), 'TCC1.cd')
             ttab = {'temp': 'Temperature of Left Heat Exchanger'}
         else:
-            return super(AgilentMH, self)._other_trace(name, twin)
+            return super(AgilentMH, self).named_trace(name, twin)
 
         if not op.exists(fname) or not op.exists(fname[:-3] + '.cg'):
             # file doesn't exist, kick it up to the parent
-            return super(AgilentMH, self)._other_trace(name, twin)
+            return super(AgilentMH, self).named_trace(name, twin)
 
         f = open(fname, 'rb')
         fdat = open(fname[:-3] + '.cg', 'rb')
@@ -100,36 +100,37 @@ class AgilentMH(Datafile):
                     d *= 0.1  # convert to MPa for metricness
                 elif y_units == '':
                     pass  # TODO: ul/min to ml/min
-                return TimeSeries(d, t, [name])
+                return Series(d, t, name=name)
 
             f.seek(cloc + 87)
 
 
-class AgilentCS(Datafile):
+class AgilentCS(FileAdapter):
     """
     Base class for Agilent files from ChemStation.
     """
-    def _update_info_from_file(self):
+    def info(self):
         folder = op.dirname(self.rawdata)
+        d = super(AgilentCS, self).info()
         pmp_file = op.join(folder, 'RUN.M', 'LPMP1.REG')
         if op.exists(pmp_file):
-            d = read_reg_file(open(pmp_file, 'rb'))
-            if d.get('TIMETABLE', False):
+            fd = read_reg_file(open(pmp_file, 'rb'))
+            if fd.get('TIMETABLE', False):
                 # get solv_B, solv_C, solv_D, flow
                 # calculate solv_A
                 pass
             else:
-                if d.get('SOLV_RATIO_A', False):
+                if fd.get('SOLV_RATIO_A', False):
                     pass
-                if d.get('SOLV_RATIO_B', False):
+                if fd.get('SOLV_RATIO_B', False):
                     pass
-                if d.get('SOLV_RATIO_C', False):
+                if fd.get('SOLV_RATIO_C', False):
                     pass
-                if d.get('SOLV_RATIO_D', False):
+                if fd.get('SOLV_RATIO_D', False):
                     pass
-                if d.get('FLOW', False):
+                if fd.get('FLOW', False):
                     pass
-        pass
+        return d
 
     def events(self, kind):
         evts = super(AgilentCS, self).events(kind)
@@ -181,7 +182,7 @@ class AgilentCS(Datafile):
                 evts[i][2]['name'] = acq_file.read(2 * slen).decode('utf-16')
         return evts
 
-    def _other_trace(self, name, twin=None):
+    def named_trace(self, name, twin=None):
         #TODO: use twin
         #TODO: read info from new style REG files
         rf = op.join(op.dirname(self.rawdata), 'LCDIAG.REG')
@@ -194,7 +195,7 @@ class AgilentCS(Datafile):
             ts.ions = [name]
             return ts
         else:
-            return self._const(0.0, twin=twin)
+            return Series()
 
 
 def read_multireg_file(f, title=None):
@@ -319,7 +320,7 @@ def read_reg_file(f, foff=0x2D):
             if y_units == 'bar':
                 y_arr *= 0.1  # convert to MPa
             #TODO: what to call this?
-            data['TimeSeries'] = TimeSeries(y_arr, x_arr, [''])
+            data['TimeSeries'] = Series(y_arr, x_arr, name='')
         #elif r[1] == 1025:  # b'0104'
         #    # lots of zeros? maybe one or two numbers?
         #    # only found in REG entries that have long 0280 records

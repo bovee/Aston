@@ -1,10 +1,11 @@
 import struct
 import os.path as op
 import numpy as np
-from aston.features import Datafile
-from aston.timeseries.TimeSeries import TimeSeries
+from pandas import DataFrame
+from aston.file_adapters.Common import FileAdapter
 
-class WatersAutospec(Datafile.Datafile):
+
+class WatersAutospec(FileAdapter):
     """
     Reads *.IDX and *.DAT files from a Waters Autospec.
     Will need to be extended to other Waters files?
@@ -34,7 +35,7 @@ class WatersAutospec(Datafile.Datafile):
     #    fidx.close()
     #    return TimeSeries(np.array(tic), np.array(tme), ['TIC']).trace(twin=twin)
 
-    def _cache_data(self):
+    def data(self):
         fidx = open(self.rawdata, 'rb')
         fdat = open(op.splitext(self.rawdata)[0] + '.DAT', 'rb')
 
@@ -65,7 +66,4 @@ class WatersAutospec(Datafile.Datafile):
                 break
         fdat.close()
         fidx.close()
-        self.data = TimeSeries(np.array(data), np.array(tme), [str(i) for i in ions])
-
-    def _update_info_from_file(self):
-        pass
+        return DataFrame(np.array(data), np.array(tme), ions)

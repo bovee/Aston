@@ -1,5 +1,6 @@
 import re
 import struct
+from pandas import Series, DataFrame
 
 
 def find_offset(f, search_str, hint=None):
@@ -52,3 +53,23 @@ def parse_c_serialized(f):
         rec_len = f.tell() - 6 - len(rec_type) - rec_off
         f.seek(rec_off)
         yield p_rec_type, f.read(rec_len)
+
+
+class FileAdapter(object):
+    def __init__(self, filename):
+        self.rawdata = filename
+
+    def data(self):
+        return DataFrame()
+
+    def total_trace(self, twin=None):
+        return self.data().sum(axis=1)
+
+    def named_trace(self, name, twin=None):
+        return Series()
+
+    def info(self):
+        return {}
+
+    def events(self, kind):
+        return []

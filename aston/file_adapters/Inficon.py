@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 import struct
 import numpy as np
-from aston.features import Datafile
-from aston.timeseries.TimeSeries import TimeSeries
-from aston.file_adapters.Common import find_offset
+from pandas import DataFrame
+from aston.file_adapters.Common import find_offset, FileAdapter
 
 
-class InficonHapsite(Datafile.Datafile):
+class InficonHapsite(FileAdapter):
     ext = 'HPS'
     mgc = '0403'
 
@@ -51,7 +50,7 @@ class InficonHapsite(Datafile.Datafile):
             f.seek(inside_pos)
         f.seek(outside_pos)
 
-    def _cache_data(self):
+    def data(self):
         #TODO: handle skip mass ranges
         with open(self.rawdata, 'rb') as f:
             # read in the time segments/mz ranges for the run
@@ -98,4 +97,4 @@ class InficonHapsite(Datafile.Datafile):
         data = np.zeros((len(times), len(mzs)))
         for i, r in enumerate(abns):
             data[i, 0:len(r)] = r
-        self.data = TimeSeries(data, times, [str(m) for m in mzs])
+        return DataFrame(data, times, mzs)

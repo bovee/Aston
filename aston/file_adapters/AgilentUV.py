@@ -3,7 +3,7 @@ import re
 import struct
 from datetime import datetime
 import numpy as np
-from aston.timeseries.TimeSeries import TimeSeries
+from pandas import DataFrame
 from aston.file_adapters.AgilentCommon import AgilentMH, AgilentCS
 
 
@@ -15,12 +15,9 @@ class AgilentMWD(AgilentCS):
         super(AgilentMWD, self).__init__(*args, **kwargs)
         #self.filename = os.path.split(self.filename)[0] + '/mwd.ch'
 
-    def _cache_data(self):
+    def data(self):
         #Because the spectra are stored in several files in the same
         #directory, we need to loop through them and return them together.
-        if self.data is not None:
-            return
-
         ions = []
         dtraces = []
         foldname = os.path.dirname(self.rawdata)
@@ -41,10 +38,10 @@ class AgilentMWD(AgilentCS):
                     times = np.linspace(st_t, en_t, len(dtrace))
 
                 #add the wavelength and trace into the appropriate places
-                ions.append(wv)
+                ions.append(float(wv))
                 dtraces.append(dtrace)
         data = np.array(dtraces).transpose()
-        self.data = TimeSeries(data, times, ions)
+        return DataFrame(data, times, ions)
 
     def _read_ind_file(self, fname):
         f = open(fname, 'rb')
@@ -80,9 +77,8 @@ class AgilentMWD(AgilentCS):
         f.close()
         return wv, data
 
-    def _update_info_from_file(self):
-        super(AgilentMWD, self)._update_info_from_file()
-        d = {}
+    def info(self):
+        d = super(AgilentMWD, self).info()
         #TODO: fix this so that it doesn't rely upon MWD1A.CH?
         f = open(self.rawdata, 'rb')
         f.seek(0x18)
@@ -104,19 +100,16 @@ class AgilentMWD(AgilentCS):
         #d['signal name'] = f.read(struct.unpack('>B', f.read(1))[0]).decode()
         d['r-type'] = 'Sample'
         f.close()
-        self.info.update(d)
+        return d
 
 
 class AgilentMWD2(AgilentCS):
     ext = 'CH'
     mgc = '0331'
 
-    def _cache_data(self):
+    def data(self):
         #Because the spectra are stored in several files in the same
         #directory, we need to loop through them and return them together.
-        if self.data is not None:
-            return
-
         ions = []
         dtraces = []
         foldname = os.path.dirname(self.rawdata)
@@ -136,10 +129,10 @@ class AgilentMWD2(AgilentCS):
                     times = np.linspace(st_t, en_t, len(dtrace))
 
                 #add the wavelength and trace into the appropriate places
-                ions.append(wv)
+                ions.append(float(wv))
                 dtraces.append(dtrace)
         data = np.array(dtraces).transpose()
-        self.data = TimeSeries(data, times, ions)
+        return DataFrame(data, times, ions)
 
     def _read_ind_file(self, fname):
         f = open(fname, 'rb')
@@ -173,9 +166,8 @@ class AgilentMWD2(AgilentCS):
         f.close()
         return wv, np.array(data)
 
-    def _update_info_from_file(self):
-        super(AgilentMWD2, self)._update_info_from_file()
-        d = {}
+    def info(self):
+        d = super(AgilentMWD2, self).info()
         #TODO: fix this so that it doesn't rely upon MWD1A.CH?
 
         def get_str(f, off):
@@ -198,7 +190,7 @@ class AgilentMWD2(AgilentCS):
         #d['signal name'] = f.read(struct.unpack('>B', f.read(1))[0]).decode()
         d['r-type'] = 'Sample'
         f.close()
-        self.info.update(d)
+        return d
 
 
 class AgilentDAD(AgilentMH):
@@ -213,7 +205,7 @@ class AgilentDAD(AgilentMH):
     #time series in DAD1.sg
     #all doubles, starts at 0x44
     #750x 54 double entries
-    def _cache_data(self):
+    def data(self):
         if self.data is not None:
             return
 
@@ -254,7 +246,7 @@ class AgilentCSDAD(AgilentCS):
     ext = 'UV'
     mgc = '0331'
 
-    def _cache_data(self):
+    def data(self):
         #TODO: the chromatograms this generates are not exactly the
         #same as the ones in the *.CH files. Maybe they need to be 0'd?
         f = open(self.rawdata, 'rb')
@@ -292,11 +284,10 @@ class AgilentCSDAD(AgilentCS):
         for i, d in zip(range(nscans), data):
             for ion, abn in d.items():
                 ndata[i, ions.index(ion)] = abn
-        self.data = TimeSeries(ndata, times, [str(i) for i in ions])
+        return DataFrame(ndata, times, ions)
 
-    def _update_info_from_file(self):
-        super(AgilentCSDAD, self)._update_info_from_file()
-        d = {}
+    def info(self):
+        d = super(AgilentCSDAD, self).info()
         with open(self.rawdata, 'rb') as f:
             string_read = lambda f: f.read(struct.unpack('>B', \
                 f.read(1))[0]).decode('ascii').strip()
@@ -322,7 +313,7 @@ class AgilentCSDAD(AgilentCS):
             d['r-vial-pos'] = string_read(f)
             f.seek(0xFE)
             d['r-seq-num'] = string_read(f)
-        self.info.update(d)
+        return d
 
 
 class AgilentCSDAD2(AgilentCS):
@@ -333,7 +324,7 @@ class AgilentCSDAD2(AgilentCS):
     mgc = '0331'
 
     #@profile
-    def _cache_data(self):
+    def data(self):
         f = open(self.rawdata, 'rb')
 
         f.seek(0x116)
@@ -402,11 +393,10 @@ class AgilentCSDAD2(AgilentCS):
             #    ndata[i, pidx:idx] = np.cumsum(data[pidx:idx])
             #    pidx = idx
 
-        self.data = TimeSeries(ndata / 2000., times / 60000., [str(i) for i in wvs])
+        return DataFrame(ndata / 2000., times / 60000., wvs)
 
-    def _update_info_from_file(self):
-        super(AgilentCSDAD2, self)._update_info_from_file()
-        d = {}
+    def info(self):
+        d = super(AgilentCSDAD2, self).info()
         with open(self.rawdata, 'rb') as f:
             string_read = lambda f: f.read(2 * struct.unpack('>B', \
                 f.read(1))[0]).decode('utf-16').strip()
@@ -421,4 +411,4 @@ class AgilentCSDAD2(AgilentCS):
             d['m'] = string_read(f)
             f.seek(0xC15)
             d['m-y-units'] = string_read(f)
-        self.info.update(d)
+        return d

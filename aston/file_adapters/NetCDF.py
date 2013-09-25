@@ -1,8 +1,8 @@
 import numpy as np
 import scipy.sparse
 from scipy.io.netcdf import NetCDFFile
-from aston.features.Datafile import Datafile
-from aston.timeseries.TimeSeries import TimeSeries
+from pandas import DataFrame, Series
+from aston.file_adapters.Common import FileAdapter
 
 
 class NetCDF(Datafile):
@@ -13,11 +13,9 @@ class NetCDF(Datafile):
         f = NetCDFFile(open(self.rawdata, 'rb'))
         tme = f.variables['scan_acquisition_time'].data / 60.
         tic = f.variables['total_intensity'].data
-        return TimeSeries(tic, tme, ['TIC'])
+        return Series(tic, tme, name='TIC')
 
     def _cache_data(self):
-        if self.data is not None:
-            return
         f = NetCDFFile(open(self.rawdata, 'rb'))
         t = f.variables['scan_acquisition_time'].data / 60.
 
@@ -39,10 +37,10 @@ class NetCDF(Datafile):
 
         data = scipy.sparse.csr_matrix((vals, cols, rowst), \
           shape=(len(t), len(ions)), dtype=float)
-        self.data = TimeSeries(data, t, [str(i) for i in ions])
+        return DataFrame(data.todense(), t, ions)
 
 
-def write_netcdf(dt, filename):
+def write_netcdf(df, info, filename):
     #FIXME: still a lot of issues here
     f = NetCDFFile(filename, 'w')
 

@@ -1,21 +1,18 @@
 import struct
 import numpy as np
 import scipy.sparse
-from aston.features import Datafile
-from aston.timeseries.TimeSeries import TimeSeries
+from pandas import DataFrame
+from aston.file_adapters.Common import FileAdapter
 
 
-class BrukerMSMS(Datafile.Datafile):
+class BrukerMSMS(FileAdapter):
     ext = 'AMI'
     mgc = None
 
     #def _getTotalTrace(self):
     #    pass
 
-    def _cache_data(self):
-        if self.data is not None:
-            return
-
+    def data(self):
         # convenience function for reading in data
         rd = lambda f, st: struct.unpack(st, f.read(struct.calcsize(st)))
 
@@ -70,7 +67,7 @@ class BrukerMSMS(Datafile.Datafile):
         data = scipy.sparse.csr_matrix((vals, idxs, indptr), \
                                     shape=(nscans, len(ions)), \
                                     dtype=float)
-        self.data = TimeSeries(data, times, [str(i) for i in ions])
+        return DataFrame(data, times, ions)
 
         #self.data = np.zeros((recs, 2))
         #times = rd(f, nscans * 'd')
@@ -87,11 +84,11 @@ class BrukerMSMS(Datafile.Datafile):
         #f.close()
         #self.ions = [1]
 
-    def _update_info_from_file(self):
-        self.info.update({'r-type': 'Sample'})
+    #def info(self):
+    #    self.info.update({'r-type': 'Sample'})
 
 
-class BrukerBAF(Datafile.Datafile):
+class BrukerBAF(FileAdapter):
     ext = 'BAF'
     mgc = '2400'
     pass

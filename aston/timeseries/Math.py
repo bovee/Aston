@@ -7,22 +7,24 @@ import numpy as np
 import scipy.ndimage
 from scipy.stats import gaussian_kde
 from scipy.optimize import fmin, brentq
-from aston.timeseries.TimeSeries import TimeSeries, ts_func
+from pandas import Series
+#from aston.timeseries.TimeSeries import TimeSeries, ts_func
 
 
 def fft(ts):
     """
     Perform a fast-fourier transform on a TimeSeries
     """
-    oc = np.abs(np.fft.fftshift(np.fft.fft(ts.y))) / len(ts.y)
-    t = np.fft.fftshift(np.fft.fftfreq(len(oc), d=ts.times[1] - ts.times[0]))
-    return TimeSeries(oc, t)
+    t_step = ts.index[1] - ts.index[0]
+    oc = np.abs(np.fft.fftshift(np.fft.fft(ts.values))) / len(ts.values)
+    t = np.fft.fftshift(np.fft.fftfreq(len(oc), d=t_step))
+    return Series(oc, t)
 #elif fxn == 'ifft':
 #    ic = np.fft.ifft(np.fft.fftshift(ic * len(ic)))# / len(ic)
 
 
 def ifft(ic, t):
-    pass
+    raise NotImplementedError
 
 
 def noisefilter_(y, bandwidth=0.2):
@@ -41,7 +43,7 @@ def noisefilter_(y, bandwidth=0.2):
 
 def base(ts, slope_tol='5.0', off_tol='5.0'):
     ic = savitzkygolay(ts, 5, 3)[0]
-    slopes = np.diff(ic) / np.diff(ts.times)
+    slopes = np.diff(ic) / np.diff(ts.index)
     wind = np.array([0.5, 0.5])
     offsets = np.convolve(ic, wind, mode='valid') - \
       slopes * np.convolve(ts.times, wind, mode='valid')
@@ -65,8 +67,8 @@ def base(ts, slope_tol='5.0', off_tol='5.0'):
 
     msk = np.logical_and(valid, offsets > o1)
     msk = np.logical_and(valid, offsets < o2)
-    new_ic = np.interp(ts.times, ts.times[msk], ic[msk])
-    return TimeSeries(new_ic, ts.times)
+    new_ic = np.interp(ts.index, ts.index[msk], ic[msk])
+    return DataFrame(new_ic, ts.index)
 
 
 def base2(ic, t):
@@ -96,15 +98,15 @@ def base2(ic, t):
     oc[-1] = oc[-2]  # FIXME: there's definitely a bug in here somewhere
 
 
-def CODA(ts, window, level):
+def CODA(df, window, level):
     """
     CODA processing from Windig, Phalp, & Payne 1996 Anal Chem
     """
     # pull out the data
-    d = ts.data
+    d = df.values
 
     # smooth the data and standardize it
-    smooth_data = movingaverage(d, ts.times, window)[0]
+    smooth_data = movingaverage(d, df.index, window)[0]
     stand_data = (smooth_data - smooth_data.mean()) / smooth_data.std()
 
     #scale the data to have unit length
@@ -114,7 +116,7 @@ def CODA(ts, window, level):
     mcq = np.sum(stand_data * scale_data, axis=0) / np.sqrt(d.shape[0] - 1)
 
     # filter out ions with an mcq below level
-    good_ions = [i for i, q in zip(ts.ions, mcq) if q >= level]
+    good_ions = [i for i, q in zip(ts.columns, mcq) if q >= level]
     return good_ions
 
 
@@ -123,14 +125,16 @@ def movingaverage(ts, window):
     Calculates the moving average ("rolling mean") of a timeseries
     of a certain window size.
     """
+    #TODO: take either a Series or DataFrame
     m = np.ones(int(window)) / int(window)
-    return TimeSeries(_smooth(ts.data, m), ts.times, ts.ions)
+    return DataFrame(_smooth(ts.data, m), ts.times, ts.ions)
 
 
 def savitzkygolay(ts, window, order, deriv=0):
     # adapted from http://www.scipy.org/Cookbook/SavitzkyGolay
     # but uses ndimage.convolve now, so we don't have to
     # do the padding ourselves
+    #TODO: take either a Series or DataFrame
     half_wind = (int(window) - 1) // 2
     order_range = range(int(order) + 1)
     # precompute coefficients

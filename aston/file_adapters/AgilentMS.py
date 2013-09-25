@@ -6,7 +6,7 @@ import gzip
 import io
 from datetime import datetime
 from xml.etree import ElementTree
-from aston.timeseries.TimeSeries import TimeSeries
+from pandas import DataFrame, Series
 from aston.file_adapters.AgilentCommon import AgilentMH, AgilentCS
 
 
@@ -14,7 +14,7 @@ class AgilentMS(AgilentCS):
     ext = 'MS'
     mgc = '0132'
 
-    def _total_trace(self, twin=None):
+    def total_trace(self, twin=None):
         #TODO: use twin?
         f = open(self.rawdata, 'rb')
 
@@ -39,12 +39,9 @@ class AgilentMS(AgilentCS):
             tic[i] = struct.unpack('>I', f.read(4))[0]
             f.seek(npos)
         f.close()
-        return TimeSeries(tic, tme, ['TIC'])
+        return Series(tic, tme, name='TIC')
 
-    def _cache_data(self):
-        if self.data is not None:
-            return
-
+    def data(self):
         f = open(self.rawdata, 'rb')
 
         # get number of scans to read in
@@ -106,12 +103,11 @@ class AgilentMS(AgilentCS):
         #cols += 1
         data = scipy.sparse.csr_matrix((vals, cols, rowst), \
           shape=(nscans, len(ions)), dtype=float)
-        ions = [str(i / 20.) for i in ions]
-        self.data = TimeSeries(data, times, ions)
+        ions = np.array(ions) / 20
+        return DataFrame(data.todense(), times, ions)
 
-    def _update_info_from_file(self):
-        super(AgilentMS, self)._update_info_from_file()
-        d = {}
+    def info(self):
+        d = super(AgilentMS, self).info()
         f = open(self.rawdata, 'rb')
         f.seek(0x18)
         d['name'] = f.read(struct.unpack('>B', f.read(1))[0]).decode().strip()
@@ -134,7 +130,7 @@ class AgilentMS(AgilentCS):
         ## read info from the acqmeth.txt file
         #fname = op.join(op.dirname(self.rawdata), 'acqmeth.txt')
 
-        self.info.update(d)
+        return d
 
 
 class AgilentMSMSScan(AgilentMH):
@@ -189,16 +185,17 @@ class AgilentMSMSScan(AgilentMH):
             yield (data[l] for l in loc)
         f.close()
 
-    def _total_trace(self, twin=None):
+    def total_trace(self, twin=None):
         #TODO: use twin
         tme = []
         tic = []
         for t, z in self._msscan_iter(['ScanTime', 'TIC']):
             tme.append(t)
             tic.append(z)
-        return TimeSeries(np.array(tic), np.array(tme), ['TIC']).twin(twin)
+        return Series(np.array(tic), np.array(tme), name='TIC')
+        #TODO: set .twin(twin) bounds on this
 
-    def _ion_trace(self, val, tol=0.5, twin=None):
+    def named_trace(self, val, tol=0.5, twin=None):
         #super hack-y way to disable checksum and length checking
         gzip.GzipFile._read_eof = lambda _: None
         # standard prefix for every zip chunk
@@ -224,7 +221,7 @@ class AgilentMSMSScan(AgilentMH):
             ic.append(sum(pd[ion_loc]))
 
         f.close()
-        return TimeSeries(np.array(ic), np.array(tme), [str(val)])
+        return Series(np.array(ic), np.array(tme), name=str(val))
 
     def scan(self, time, to_time=None):
         #TODO: support time ranges

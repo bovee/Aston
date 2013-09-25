@@ -2,19 +2,16 @@ import struct
 import re
 import os
 import numpy as np
-from aston.features import Datafile
-from aston.timeseries.TimeSeries import TimeSeries
+from aston.file_adapters.Common import FileAdapter
 from aston.file_adapters.Common import find_offset
+from pandas import DataFrame
 
 
-class ThermoCF(Datafile.Datafile):
+class ThermoCF(FileAdapter):
     ext = 'CF'
     mgc = 'FFFF'
 
-    def _cache_data(self):
-        if self.data is not None:
-            return
-
+    def data(self):
         f = open(self.rawdata, 'rb')
         f.seek(19)
         while True:
@@ -29,35 +26,34 @@ class ThermoCF(Datafile.Datafile):
         nscans = struct.unpack('H', f.read(2))[0]
 
         #TODO: this shouldn't be hardcoded
-        ions = ['44', '45', '46']
+        ions = [44, 45, 46]
         ni = len(ions)
 
         f.seek(f.tell() + 35)
         data = np.array([struct.unpack('<f' + ni * 'd', \
           f.read(4 + ni * 8)) for _ in range(nscans)])
         data[:, 0] /= 60.  # convert time to minutes
-        self.data = TimeSeries(data[:, 1:], data[:, 0], ions)
+        #self.data = TimeSeries(data[:, 1:], data[:, 0], ions)
         f.close()
+        return DataFrame(data[:, 1:], data[:, 0], ions)
 
-    def _update_info_from_file(self):
-        d = {}
+    def info(self):
+        d = super(ThermoCF, self).info()
         d['r-opr'] = ''
         d['m'] = ''
         #info['file name'] = os.path.basename(self.filename)
         d['name'] = os.path.splitext(os.path.basename(self.rawdata))[0]
         d['r-type'] = 'Sample'
-        self.info.update(d)
+        return d
 
 
-class ThermoDXF(Datafile.Datafile):
+class ThermoDXF(FileAdapter):
     ext = 'DXF'
     mgc = 'FFFF'
 
-    def _cache_data(self):
-        if self.data is not None:
-            return
-
+    def data(self):
         f = open(self.rawdata, 'rb')
+
         f.seek(11)
         while True:
             f.seek(f.tell() - 11)
@@ -75,7 +71,7 @@ class ThermoDXF(Datafile.Datafile):
         #45.0 0x1420ef
         #46.0 0x14211c
         #
-        ions = ['44', '45', '46']
+        ions = [44, 45, 46]
         ni = len(ions)
 
         #bytes until the end converted to # of records
@@ -86,11 +82,11 @@ class ThermoDXF(Datafile.Datafile):
           f.read(4 + ni * 8)) for _ in range(nscans)])
 
         data[:, 0] /= 60.  # convert time to minutes
-        self.data = TimeSeries(data[:, 1:], data[:, 0], ions)
         f.close()
+        return DataFrame(data[:, 1:], data[:, 0], ions)
 
-    def _update_info_from_file(self):
-        d = {}
+    def info(self):
+        d = super(ThermoDXF, self).info()
         d['r-opr'] = ''
         d['m'] = ''
         #try: #TODO: this crashes in python 3; not clear why?
@@ -108,9 +104,10 @@ class ThermoDXF(Datafile.Datafile):
             if foff_c is not None:
                 f.seek(foff_c + 68)
                 d['r-d13c-std'] = str(struct.unpack('<d', f.read(8))[0])
-        self.info.update(d)
+        return d
 
     def _th_off(self, search_str, hint=None):
+        #TODO: replace all occurances with find_offset?
         if hint is None:
             hint = 0
         with open(self.rawdata, 'rb') as f:
@@ -169,7 +166,7 @@ class ThermoDXF(Datafile.Datafile):
         return evts
 
 
-class ThermoRAW(Datafile.Datafile):
+class ThermoRAW(FileAdapter):
     ext = 'RAW'
     mgc = '01A1'
 
