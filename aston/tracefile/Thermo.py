@@ -2,17 +2,17 @@ import struct
 import re
 import os
 import numpy as np
-from aston.file_adapters.Common import FileAdapter
-from aston.file_adapters.Common import find_offset
 from pandas import DataFrame
+from aston.tracefile.Common import TraceFile, find_offset
 
 
-class ThermoCF(FileAdapter):
+class ThermoCF(TraceFile):
     ext = 'CF'
     mgc = 'FFFF'
 
+    @property
     def data(self):
-        f = open(self.rawdata, 'rb')
+        f = open(self.filename, 'rb')
         f.seek(19)
         while True:
             f.seek(f.tell() - 19)
@@ -37,22 +37,24 @@ class ThermoCF(FileAdapter):
         f.close()
         return DataFrame(data[:, 1:], data[:, 0], ions)
 
+    @property
     def info(self):
-        d = super(ThermoCF, self).info()
+        d = super(ThermoCF, self).info
         d['r-opr'] = ''
         d['m'] = ''
         #info['file name'] = os.path.basename(self.filename)
-        d['name'] = os.path.splitext(os.path.basename(self.rawdata))[0]
+        d['name'] = os.path.splitext(os.path.basename(self.filename))[0]
         d['r-type'] = 'Sample'
         return d
 
 
-class ThermoDXF(FileAdapter):
+class ThermoDXF(TraceFile):
     ext = 'DXF'
     mgc = 'FFFF'
 
+    @property
     def data(self):
-        f = open(self.rawdata, 'rb')
+        f = open(self.filename, 'rb')
 
         f.seek(11)
         while True:
@@ -85,17 +87,18 @@ class ThermoDXF(FileAdapter):
         f.close()
         return DataFrame(data[:, 1:], data[:, 0], ions)
 
+    @property
     def info(self):
-        d = super(ThermoDXF, self).info()
+        d = super(ThermoDXF, self).info
         d['r-opr'] = ''
         d['m'] = ''
         #try: #TODO: this crashes in python 3; not clear why?
         #except:
         #    pass
         #info['file name'] = os.path.basename(self.filename)
-        d['name'] = os.path.splitext(os.path.basename(self.rawdata))[0]
+        d['name'] = os.path.splitext(os.path.basename(self.filename))[0]
         d['r-type'] = 'Sample'
-        with open(self.rawdata, 'rb') as f:
+        with open(self.filename, 'rb') as f:
             foff_o = find_offset(f, 'd 18O/16O'.encode('utf_16_le'))
             foff_c = find_offset(f, 'd 13C/12C'.encode('utf_16_le'))
             if foff_o is not None:
@@ -110,7 +113,7 @@ class ThermoDXF(FileAdapter):
         #TODO: replace all occurances with find_offset?
         if hint is None:
             hint = 0
-        with open(self.rawdata, 'rb') as f:
+        with open(self.filename, 'rb') as f:
             f.seek(hint)
             regexp = re.compile(search_str)
             while True:
@@ -129,7 +132,7 @@ class ThermoDXF(FileAdapter):
         #TODO: read in ref gas pulses
         evts = super(ThermoDXF, self).events(kind)
         if kind == 'refgas':
-            with open(self.rawdata, 'rb') as f:
+            with open(self.filename, 'rb') as f:
                 f.seek(self._th_off('CActionHwTransferContainer'))
                 evt, time, status = [], [], []
                 while True:
@@ -166,7 +169,7 @@ class ThermoDXF(FileAdapter):
         return evts
 
 
-class ThermoRAW(FileAdapter):
+class ThermoRAW(TraceFile):
     ext = 'RAW'
     mgc = '01A1'
 

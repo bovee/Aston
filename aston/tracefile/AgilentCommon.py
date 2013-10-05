@@ -4,16 +4,17 @@ import os.path as op
 from xml.etree import ElementTree
 import numpy as np
 from pandas import Series
-from aston.file_adapters.Common import FileAdapter
+from aston.tracefile.Common import TraceFile
 
 
-class AgilentMH(FileAdapter):
+class AgilentMH(TraceFile):
     """
     Base class for Agilent files from Masshunter.
     """
+    @property
     def info(self):
-        folder = op.dirname(self.rawdata)
-        d = super(AgilentMH, self).info()
+        folder = op.dirname(self.filename)
+        d = super(AgilentMH, self).info
         try:
             u = lambda s: s.decode('utf-8')
             u('')
@@ -55,20 +56,27 @@ class AgilentMH(FileAdapter):
             pass
         return d
 
-    def named_trace(self, name, twin=None):
+    def trace_names(self, named):
+        if named:
+            names = ['pres', 'flow', 'slvb', 'temp']
+        else:
+            names = []
+        return super(AgilentMH, self).trace_names(named) + names
+
+    def trace(self, name='', twin=None):
         if name in ['pres', 'flow', 'slvb']:
-            fname = op.join(op.dirname(self.rawdata), 'CapPump1.cd')
+            fname = op.join(op.dirname(self.filename), 'CapPump1.cd')
             ttab = {'pres': 'Pressure', 'flow': 'Flow', \
                     'slvb': '%B'}
         elif name in ['temp']:
-            fname = op.join(op.dirname(self.rawdata), 'TCC1.cd')
+            fname = op.join(op.dirname(self.filename), 'TCC1.cd')
             ttab = {'temp': 'Temperature of Left Heat Exchanger'}
         else:
-            return super(AgilentMH, self).named_trace(name, twin)
+            return super(AgilentMH, self).trace(name, twin)
 
         if not op.exists(fname) or not op.exists(fname[:-3] + '.cg'):
             # file doesn't exist, kick it up to the parent
-            return super(AgilentMH, self).named_trace(name, twin)
+            return super(AgilentMH, self).trace(name, twin)
 
         f = open(fname, 'rb')
         fdat = open(fname[:-3] + '.cg', 'rb')
@@ -105,13 +113,14 @@ class AgilentMH(FileAdapter):
             f.seek(cloc + 87)
 
 
-class AgilentCS(FileAdapter):
+class AgilentCS(TraceFile):
     """
     Base class for Agilent files from ChemStation.
     """
+    @property
     def info(self):
-        folder = op.dirname(self.rawdata)
-        d = super(AgilentCS, self).info()
+        folder = op.dirname(self.filename)
+        d = super(AgilentCS, self).info
         pmp_file = op.join(folder, 'RUN.M', 'LPMP1.REG')
         if op.exists(pmp_file):
             fd = read_reg_file(open(pmp_file, 'rb'))
@@ -135,7 +144,7 @@ class AgilentCS(FileAdapter):
     def events(self, kind):
         evts = super(AgilentCS, self).events(kind)
         if kind in ('fia', 'fxn'):
-            folder = op.dirname(self.rawdata)
+            folder = op.dirname(self.filename)
             if kind == 'fia':
                 acq_file = op.join(folder, 'ACQRES.REG')
             elif kind == 'fxn':
@@ -182,10 +191,18 @@ class AgilentCS(FileAdapter):
                 evts[i][2]['name'] = acq_file.read(2 * slen).decode('utf-16')
         return evts
 
-    def named_trace(self, name, twin=None):
+    def trace_names(self, named):
+        if named:
+            names = ['pres', 'flow', 'slva', 'slvb', 'slvc', 'slvd',
+                     'temp']
+        else:
+            names = []
+        return super(AgilentCS, self).trace_names(named) + names
+
+    def trace(self, name='', twin=None):
         #TODO: use twin
         #TODO: read info from new style REG files
-        rf = op.join(op.dirname(self.rawdata), 'LCDIAG.REG')
+        rf = op.join(op.dirname(self.filename), 'LCDIAG.REG')
         if name in ['pres', 'flow', 'slva', 'slvb', 'slvc', 'slvd']:
             t = {'pres': 'PMP1, Pressure', 'flow': 'PMP1, Flow',
                  'slva': 'PMP1, Solvent A', 'slvb': 'PMP1, Solvent B',
@@ -195,7 +212,7 @@ class AgilentCS(FileAdapter):
             ts.ions = [name]
             return ts
         else:
-            return Series()
+            return super(AgilentCS, self).trace(name, twin)
 
 
 def read_multireg_file(f, title=None):

@@ -2,22 +2,23 @@ import struct
 import numpy as np
 import scipy.sparse
 from pandas import DataFrame
-from aston.file_adapters.Common import FileAdapter
+from aston.tracefile.Common import TraceFile
 
 
-class BrukerMSMS(FileAdapter):
+class BrukerMSMS(TraceFile):
     ext = 'AMI'
     mgc = None
 
     #def _getTotalTrace(self):
     #    pass
 
+    @property
     def data(self):
         # convenience function for reading in data
         rd = lambda f, st: struct.unpack(st, f.read(struct.calcsize(st)))
 
         # open the file
-        f = open(self.rawdata, 'rb')
+        f = open(self.filename, 'rb')
 
         nscans = rd(f, 'ii')[1]
         if nscans == 0:
@@ -84,12 +85,10 @@ class BrukerMSMS(FileAdapter):
         #f.close()
         #self.ions = [1]
 
-    #def info(self):
-    #    self.info.update({'r-type': 'Sample'})
 
-
-class BrukerBAF(FileAdapter):
+class BrukerBAF(TraceFile):
     ext = 'BAF'
     mgc = '2400'
+
     pass
     #TODO: implement this

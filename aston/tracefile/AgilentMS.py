@@ -7,7 +7,7 @@ import io
 from datetime import datetime
 from xml.etree import ElementTree
 from pandas import DataFrame, Series
-from aston.file_adapters.AgilentCommon import AgilentMH, AgilentCS
+from aston.tracefile.AgilentCommon import AgilentMH, AgilentCS
 
 
 class AgilentMS(AgilentCS):
@@ -16,7 +16,7 @@ class AgilentMS(AgilentCS):
 
     def total_trace(self, twin=None):
         #TODO: use twin?
-        f = open(self.rawdata, 'rb')
+        f = open(self.filename, 'rb')
 
         # get number of scans to read in
         f.seek(0x5)
@@ -41,8 +41,9 @@ class AgilentMS(AgilentCS):
         f.close()
         return Series(tic, tme, name='TIC')
 
+    @property
     def data(self):
-        f = open(self.rawdata, 'rb')
+        f = open(self.filename, 'rb')
 
         # get number of scans to read in
         # note that GC and LC chemstation store this in slightly different
@@ -106,9 +107,10 @@ class AgilentMS(AgilentCS):
         ions = np.array(ions) / 20
         return DataFrame(data.todense(), times, ions)
 
+    @property
     def info(self):
-        d = super(AgilentMS, self).info()
-        f = open(self.rawdata, 'rb')
+        d = super(AgilentMS, self).info
+        f = open(self.filename, 'rb')
         f.seek(0x18)
         d['name'] = f.read(struct.unpack('>B', f.read(1))[0]).decode().strip()
         f.seek(0x94)
@@ -128,7 +130,7 @@ class AgilentMS(AgilentCS):
 
         #TODO: fill this out
         ## read info from the acqmeth.txt file
-        #fname = op.join(op.dirname(self.rawdata), 'acqmeth.txt')
+        #fname = op.join(op.dirname(self.filename), 'acqmeth.txt')
 
         return d
 
@@ -138,8 +140,8 @@ class AgilentMSMSScan(AgilentMH):
     mgc = '0101'
 
     def _msscan_iter(self, keylist):
-        f = open(self.rawdata, 'rb')
-        r = ElementTree.parse(op.splitext(self.rawdata)[0] + '.xsd').getroot()
+        f = open(self.filename, 'rb')
+        r = ElementTree.parse(op.splitext(self.filename)[0] + '.xsd').getroot()
 
         xml_to_struct = {'xs:int': 'i', 'xs:long': 'q', \
                          'xs:byte': 'b', 'xs:double': 'd'}
@@ -195,13 +197,18 @@ class AgilentMSMSScan(AgilentMH):
         return Series(np.array(tic), np.array(tme), name='TIC')
         #TODO: set .twin(twin) bounds on this
 
-    def named_trace(self, val, tol=0.5, twin=None):
+    #FIXME: need to define a trace_names with ions in it
+    def trace(self, name='', tol=0.5, twin=None):
+        #TODO: should be able to call my parent classes too
+        if name in ['', 'X', 'TIC']:
+            return self.total_trace(twin)
+
         #super hack-y way to disable checksum and length checking
         gzip.GzipFile._read_eof = lambda _: None
         # standard prefix for every zip chunk
         gzprefix = b'\x1f\x8b\x08\x00\x00\x00\x00\x00\x04\x00'
         uncompress = lambda d: gzip.GzipFile(fileobj=io.BytesIO(d)).read()
-        f = open(op.join(op.split(self.rawdata)[0], 'MSProfile.bin'), 'rb')
+        f = open(op.join(op.split(self.filename)[0], 'MSProfile.bin'), 'rb')
 
         tme = []
         ic = []
@@ -215,13 +222,13 @@ class AgilentMSMSScan(AgilentMH):
             pd = np.array(struct.unpack('dd' + pc * 'i', profdata)[2:])
             if sminx != minx or smaxx != maxx:
                 ions = np.linspace(minx, maxx, len(pd))
-                ion_loc = np.logical_and(ions > val - tol, \
-                  ions < val + tol)
+                ion_loc = np.logical_and(ions > name - tol, \
+                  ions < name + tol)
                 sminx, smaxx = minx, maxx
             ic.append(sum(pd[ion_loc]))
 
         f.close()
-        return Series(np.array(ic), np.array(tme), name=str(val))
+        return Series(np.array(ic), np.array(tme), name=str(name))
 
     def scan(self, time, to_time=None):
         #TODO: support time ranges
@@ -230,7 +237,7 @@ class AgilentMSMSScan(AgilentMH):
         # standard prefix for every zip chunk
         gzprefix = b'\x1f\x8b\x08\x00\x00\x00\x00\x00\x04\x00'
         uncompress = lambda d: gzip.GzipFile(fileobj=io.BytesIO(d)).read()
-        f = open(op.join(op.split(self.rawdata)[0], 'MSProfile.bin'), 'rb')
+        f = open(op.join(op.split(self.filename)[0], 'MSProfile.bin'), 'rb')
 
         time_dist = np.inf
         time = self._sc_off(time)
@@ -249,11 +256,3 @@ class AgilentMSMSScan(AgilentMH):
         f.close()
         ions = np.linspace(minx, maxx, len(pd))
         return np.vstack([ions, pd])
-
-    def time(self, twin=None, adjust=True):
-        t = self._total_trace(twin=twin).times
-        if adjust and 't-scale' in self.info:
-            t *= float(self.info['t-scale'])
-        if adjust and 't-offset' in self.info:
-            t += float(self.info['t-offset'])
-        return t

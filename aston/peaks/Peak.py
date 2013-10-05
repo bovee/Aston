@@ -11,7 +11,12 @@ from aston.peaks.PeakModels import peak_models
 peak_models = dict([(pm.__name__, pm) for pm in peak_models])
 
 
-class Peak(DBObject):
+class Peak(object):
+    trace = None
+    baseline = None
+
+
+class OldPeak(DBObject):
     def __init__(self, *args, **kwargs):
         super(Peak, self).__init__(*args, **kwargs)
         self.db_type = 'peak'

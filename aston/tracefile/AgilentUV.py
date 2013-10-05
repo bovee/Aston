@@ -4,23 +4,20 @@ import struct
 from datetime import datetime
 import numpy as np
 from pandas import DataFrame
-from aston.file_adapters.AgilentCommon import AgilentMH, AgilentCS
+from aston.tracefile.AgilentCommon import AgilentMH, AgilentCS
 
 
 class AgilentMWD(AgilentCS):
     ext = 'CH'
     mgc = '0233'
 
-    def __init__(self, *args, **kwargs):
-        super(AgilentMWD, self).__init__(*args, **kwargs)
-        #self.filename = os.path.split(self.filename)[0] + '/mwd.ch'
-
+    @property
     def data(self):
         #Because the spectra are stored in several files in the same
         #directory, we need to loop through them and return them together.
         ions = []
         dtraces = []
-        foldname = os.path.dirname(self.rawdata)
+        foldname = os.path.dirname(self.filename)
         #if foldname == '': foldname = os.curdir
         for i in [os.path.join(foldname, i) for i \
           in os.listdir(foldname)]:
@@ -77,10 +74,11 @@ class AgilentMWD(AgilentCS):
         f.close()
         return wv, data
 
+    @property
     def info(self):
-        d = super(AgilentMWD, self).info()
+        d = super(AgilentMWD, self).info
         #TODO: fix this so that it doesn't rely upon MWD1A.CH?
-        f = open(self.rawdata, 'rb')
+        f = open(self.filename, 'rb')
         f.seek(0x18)
         d['name'] = f.read(struct.unpack('>B', f.read(1))[0]).decode()
         f.seek(0x94)
@@ -107,12 +105,13 @@ class AgilentMWD2(AgilentCS):
     ext = 'CH'
     mgc = '0331'
 
+    @property
     def data(self):
         #Because the spectra are stored in several files in the same
         #directory, we need to loop through them and return them together.
         ions = []
         dtraces = []
-        foldname = os.path.dirname(self.rawdata)
+        foldname = os.path.dirname(self.filename)
         for i in [os.path.join(foldname, i) for i \
           in os.listdir(foldname)]:
             if i[-3:].upper() == '.CH':
@@ -166,8 +165,9 @@ class AgilentMWD2(AgilentCS):
         f.close()
         return wv, np.array(data)
 
+    @property
     def info(self):
-        d = super(AgilentMWD2, self).info()
+        d = super(AgilentMWD2, self).info
         #TODO: fix this so that it doesn't rely upon MWD1A.CH?
 
         def get_str(f, off):
@@ -178,7 +178,7 @@ class AgilentMWD2(AgilentCS):
             return f.read(2 * struct.unpack('>B', \
               f.read(1))[0]).decode('utf-16')
 
-        f = open(self.rawdata, 'rb')
+        f = open(self.filename, 'rb')
         d['name'] = get_str(f, 0x35A)
         d['r-opr'] = get_str(f, 0x758)
         d['m'] = get_str(f, 0xA0E)
@@ -195,7 +195,7 @@ class AgilentMWD2(AgilentCS):
 
 class AgilentDAD(AgilentMH):
     ext = 'SD'
-    mgc = None
+
     #header data in DAD1.sd
     #80 byte repetition
     #offset = 0xA4, format = 'IIfIfffQIIdddd'
@@ -205,12 +205,10 @@ class AgilentDAD(AgilentMH):
     #time series in DAD1.sg
     #all doubles, starts at 0x44
     #750x 54 double entries
+    @property
     def data(self):
-        if self.data is not None:
-            return
-
-        fhead = open(self.rawdata[:-3] + '.sd', 'rb')
-        fdata = open(self.rawdata[:-3] + '.sp', 'rb')
+        fhead = open(self.filename[:-3] + '.sd', 'rb')
+        fdata = open(self.filename[:-3] + '.sp', 'rb')
 
         fhead.seek(0x50)
         nscans = struct.unpack('Q', fhead.read(8))[0]
@@ -233,7 +231,7 @@ class AgilentDAD(AgilentMH):
             fdata.seek(t[5] + 16)
             #TODO: use np.fromfile?
             data[scn] = struct.unpack('<' + npts * 'd', fdata.read(npts * 8))
-        self.data = TimeSeries(data, times, ions)
+        return DataFrame(data, times, ions)
 
         fhead.close()
         fdata.close()
@@ -246,10 +244,11 @@ class AgilentCSDAD(AgilentCS):
     ext = 'UV'
     mgc = '0331'
 
+    @property
     def data(self):
         #TODO: the chromatograms this generates are not exactly the
         #same as the ones in the *.CH files. Maybe they need to be 0'd?
-        f = open(self.rawdata, 'rb')
+        f = open(self.filename, 'rb')
 
         f.seek(0x116)
         nscans = struct.unpack('>i', f.read(4))[0]
@@ -286,9 +285,10 @@ class AgilentCSDAD(AgilentCS):
                 ndata[i, ions.index(ion)] = abn
         return DataFrame(ndata, times, ions)
 
+    @property
     def info(self):
-        d = super(AgilentCSDAD, self).info()
-        with open(self.rawdata, 'rb') as f:
+        d = super(AgilentCSDAD, self).info
+        with open(self.filename, 'rb') as f:
             string_read = lambda f: f.read(struct.unpack('>B', \
                 f.read(1))[0]).decode('ascii').strip()
             f.seek(0x18)
@@ -324,8 +324,9 @@ class AgilentCSDAD2(AgilentCS):
     mgc = '0331'
 
     #@profile
+    @property
     def data(self):
-        f = open(self.rawdata, 'rb')
+        f = open(self.filename, 'rb')
 
         f.seek(0x116)
         nscans = struct.unpack('>i', f.read(4))[0]
@@ -395,9 +396,10 @@ class AgilentCSDAD2(AgilentCS):
 
         return DataFrame(ndata / 2000., times / 60000., wvs)
 
+    @property
     def info(self):
-        d = super(AgilentCSDAD2, self).info()
-        with open(self.rawdata, 'rb') as f:
+        d = super(AgilentCSDAD2, self).info
+        with open(self.filename, 'rb') as f:
             string_read = lambda f: f.read(2 * struct.unpack('>B', \
                 f.read(1))[0]).decode('utf-16').strip()
             f.seek(0x35A)

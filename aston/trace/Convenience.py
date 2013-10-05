@@ -41,22 +41,22 @@ def div(s1, s2):
     return _apply_f(lambda x, y: x / y, s1, s2)
 
 
-def and(s1, s2):
-    pass
+#def and(s1, s2):
+#    pass
 
 
 def _retime(s, new_times, fill=0.0):
     from scipy.interpolate import interp1d
-    if new_times.shape == self.index.shape:
-        if np.all(np.equal(new_times, self.index)):
+    if new_times.shape == s.index.shape:
+        if np.all(np.equal(new_times, s.index)):
             return s
-    f = lambda d: interp1d(self.index, d, \
+    f = lambda d: interp1d(s.index, d, \
         bounds_error=False, fill_value=fill)(new_times)
     return np.apply_along_axis(f, 0, s.values)
 
 
 def retime(s, new_times):
-    return Series(self._retime(s), new_times, name=s.name)
+    return Series(_retime(s), new_times, name=s.name)
 
 
 def adjust_time(s, offset=0.0, scale=1.0):
@@ -67,7 +67,7 @@ def adjust_time(s, offset=0.0, scale=1.0):
 
 def twin(s, st_t, en_t):
     if twin is None:
-        return df
+        return s
 
     if st_t is None:
         st_idx = 0
@@ -162,6 +162,11 @@ def as_sound(df, speed=60, cutoff=50):
     scaled = scipy.signal.fftconvolve(scaled, np.ones(5) / 5, mode='same')
     scaled = np.int16(scaled * 32767)
     scipy.io.wavfile.write('test.wav', 44100, scaled)
+
+
+def as_colors(df):
+    df.columns.values
+    pass
 
 
 def dump(df):

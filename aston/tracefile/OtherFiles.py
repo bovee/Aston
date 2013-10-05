@@ -1,8 +1,8 @@
 import numpy as np
 import struct
 from pandas import DataFrame, Series
-from aston.file_adapters.Common import FileAdapter
-from aston.file_adapters.AgilentCommon import AgilentCS
+from aston.tracefile.Common import TraceFile
+from aston.tracefile.AgilentCommon import AgilentCS
 
 
 class AgilentFID(AgilentCS):
@@ -13,8 +13,9 @@ class AgilentFID(AgilentCS):
     ext = 'CH'
     mgc = '0238'
 
+    @property
     def data(self):
-        f = open(self.rawdata, 'rb')
+        f = open(self.filename, 'rb')
 
         f.seek(0x11A)
         start_time = struct.unpack('>f', f.read(4))[0] / 60000.
@@ -47,19 +48,19 @@ class AgilentFID(AgilentCS):
         return Series(np.array([data]).T, times, name='TIC')
 
 
-class CSVFile(FileAdapter):
+class CSVFile(TraceFile):
     '''
     Reads in a *.CSV. Assumes that the first line is the header and
     that the file is comma delimited.
     '''
     ext = 'CSV'
-    mgc = None
     #TODO: use pandas to make this much better
 
+    @property
     def data(self):
         delim = ','
         try:  # TODO: better, smarter error checking than this
-            with open(self.rawdata, 'r') as f:
+            with open(self.filename, 'r') as f:
                 lns = f.readlines()
                 ions = [float(i) for i in lns[0].split(delim)[1:]]
                 data = np.array([np.fromstring(ln, sep=delim) \

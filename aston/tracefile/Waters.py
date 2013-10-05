@@ -2,20 +2,19 @@ import struct
 import os.path as op
 import numpy as np
 from pandas import DataFrame
-from aston.file_adapters.Common import FileAdapter
+from aston.tracefile.Common import TraceFile
 
 
-class WatersAutospec(FileAdapter):
+class WatersAutospec(TraceFile):
     """
     Reads *.IDX and *.DAT files from a Waters Autospec.
     Will need to be extended to other Waters files?
     """
 
     ext = 'IDX'
-    mgc = None
 
     #def _total_trace(self, twin=None):
-    #    fidx = open(self.rawdata, 'rb')
+    #    fidx = open(self.filename, 'rb')
     #    tme, tic = [], []
     #    while True:
     #        try:
@@ -35,9 +34,10 @@ class WatersAutospec(FileAdapter):
     #    fidx.close()
     #    return TimeSeries(np.array(tic), np.array(tme), ['TIC']).trace(twin=twin)
 
+    @property
     def data(self):
-        fidx = open(self.rawdata, 'rb')
-        fdat = open(op.splitext(self.rawdata)[0] + '.DAT', 'rb')
+        fidx = open(self.filename, 'rb')
+        fdat = open(op.splitext(self.filename)[0] + '.DAT', 'rb')
 
         ions = set([])
         while True:

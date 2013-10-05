@@ -2,21 +2,22 @@ import numpy as np
 import scipy.sparse
 from scipy.io.netcdf import NetCDFFile
 from pandas import DataFrame, Series
-from aston.file_adapters.Common import FileAdapter
+from aston.tracefile.Common import TraceFile
 
 
-class NetCDF(Datafile):
+class NetCDF(TraceFile):
     ext = 'CDF'
     mgc = '4344'
 
-    def _total_trace(self, twin=None):
-        f = NetCDFFile(open(self.rawdata, 'rb'))
+    def total_trace(self, twin=None):
+        f = NetCDFFile(open(self.filename, 'rb'))
         tme = f.variables['scan_acquisition_time'].data / 60.
         tic = f.variables['total_intensity'].data
         return Series(tic, tme, name='TIC')
 
-    def _cache_data(self):
-        f = NetCDFFile(open(self.rawdata, 'rb'))
+    @property
+    def data(self):
+        f = NetCDFFile(open(self.filename, 'rb'))
         t = f.variables['scan_acquisition_time'].data / 60.
 
         ## this is half the speed of the following code
@@ -60,28 +61,28 @@ def write_netcdf(df, info, filename):
     f.languages = 'English'
     f.flush()
 
-    f.experiment_title = dt.info.get('name', ' ')
-    f.operator_name = dt.info.get('r-opr', ' ')
+    f.experiment_title = info.get('name', ' ')
+    f.operator_name = info.get('r-opr', ' ')
     # TODO: wrong format for injection_date_time_stamp
-    f.injection_date_time_stamp = dt.info.get('r-date', ' ')
-    f.company_method_id = dt.info.get('m', ' ')
-    f.sample_name = dt.info.get('r-smp', ' ')
+    f.injection_date_time_stamp = info.get('r-date', ' ')
+    f.company_method_id = info.get('m', ' ')
+    f.sample_name = info.get('r-smp', ' ')
     f.flush()
 
-    f.createDimension('scan_number', len(dt.data.times))
+    f.createDimension('scan_number', len(df.index))
     v = f.createVariable('scan_acquisition_time', '>d', ('scan_number',))
-    v[:] = dt.data.times.astype('d')
+    v[:] = df.index.astype('d')
     v = f.createVariable('total_intensity', '>d', ('scan_number',))
-    v[:] = dt.data.data.sum(axis=1).astype('d')
+    v[:] = df.sum(axis=1).astype('d')
     v = f.createVariable('point_count', '>i', ('scan_number',))
-    v[:] = np.sum(dt.data.data != 0, axis=1).astype('i')
+    v[:] = np.sum(df.values != 0, axis=1).astype('i')
     f.flush()
 
-    f.createDimension('point_number', np.sum(dt.data.data != 0))
-    stretch_t = np.resize(dt.data.times, dt.data.data.T.shape).T
+    f.createDimension('point_number', np.sum(df.values != 0))
+    stretch_t = np.resize(df.index, df.values.T.shape).T
     v = f.createVariable('mass_values', '>f', ('point_number',))
-    v[:] = stretch_t[dt.data.data != 0]
+    v[:] = stretch_t[df.values != 0]
     v = f.createVariable('intensity_values', '>f', ('point_number',))
-    v[:] = dt.data.data[dt.data.data != 0]
+    v[:] = df.values[df.values != 0]
 
     f.close()

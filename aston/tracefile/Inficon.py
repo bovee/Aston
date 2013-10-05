@@ -2,10 +2,10 @@
 import struct
 import numpy as np
 from pandas import DataFrame
-from aston.file_adapters.Common import find_offset, FileAdapter
+from aston.tracefile.Common import find_offset, TraceFile
 
 
-class InficonHapsite(FileAdapter):
+class InficonHapsite(TraceFile):
     ext = 'HPS'
     mgc = '0403'
 
@@ -50,9 +50,10 @@ class InficonHapsite(FileAdapter):
             f.seek(inside_pos)
         f.seek(outside_pos)
 
+    @property
     def data(self):
         #TODO: handle skip mass ranges
-        with open(self.rawdata, 'rb') as f:
+        with open(self.filename, 'rb') as f:
             # read in the time segments/mz ranges for the run
 
             # read in the data itself
