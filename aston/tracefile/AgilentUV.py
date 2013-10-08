@@ -224,7 +224,7 @@ class AgilentDAD(AgilentMH):
                 #change through the run.
                 data = np.zeros((nscans, npts))
                 times = np.zeros((nscans))
-                ions = [str(t[8] + x * t[3]) for x in range(npts)]
+                ions = [t[8] + x * t[3] for x in range(npts)]
 
             times[scn] = t[1]
 

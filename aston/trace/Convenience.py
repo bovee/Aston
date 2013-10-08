@@ -165,8 +165,46 @@ def as_sound(df, speed=60, cutoff=50):
 
 
 def as_colors(df):
-    df.columns.values
-    pass
+    """
+    Given a dataframe containing UV-Vis data, return an array
+    of RGB values corresponding to how the UV-Vis run would look.
+    """
+    from aston.peaks.PeakModels import gaussian
+
+    wvs = df.columns.values.astype(float)
+
+    # set up an array modelling visual response to
+    # a full spectrum
+    vis_filt = np.zeros((3, len(wvs)))
+    vis_filt[0] = gaussian(wvs, w=40, x=575)  # red
+    vis_filt[1] = gaussian(wvs, w=40, x=535)  # green
+    vis_filt[2] = gaussian(wvs, w=40, x=445)  # blue
+
+    # multiply response matrix by data to get list of colors
+    colors = np.dot(df, vis_filt.T)
+
+    # normalize and invert data
+    #colors -= np.min(colors)
+    colors /= np.max(colors) - np.min(colors)
+    colors = 1 - np.abs(colors)
+    return colors
+
+
+def uv_dfs(folder, fs):
+    import os.path as op
+    from matplotlib.colors import ListedColormap
+    import matplotlib.pyplot as plt
+    from aston.tracefile.Common import TraceFile
+
+    for i, f in enumerate(fs):
+        df = TraceFile(op.join(folder, f)).data
+        colors = as_colors(df)
+        color_mask = np.meshgrid(0, np.arange(colors.shape[0], 0, -1) - 1)[1]
+        ax = plt.subplot(1, len(fs), i)
+        ax.imshow(color_mask, cmap=ListedColormap(colors), \
+                  extent=(0, 10, df.index[0], df.index[-1]))
+        ax.xaxis.set_ticks([])
+    plt.show()
 
 
 def dump(df):
