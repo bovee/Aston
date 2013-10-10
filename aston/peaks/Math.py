@@ -18,8 +18,8 @@ def area(data, method='shoelace'):
             x, y = i
         return abs(csum / 2.)
     elif method == 'trapezoid':
-        # from http://en.wikipedia.org/wiki/Trapezoidal_rule#Non-uniform_grid
-        #TODO: this essentially ignores baseline data?
+        # from http://en.wikipedia.org/wiki/trapezoidal_rule#non-uniform_grid
+        #todo: this essentially ignores baseline data?
         #fdata[:, 1][fdata[:, 1] < 0] = 0
         #y = convolve(fdata[:, 1], [0.5, 0.5], mode='valid')
 

@@ -143,8 +143,8 @@ class AgilentMSMSScan(AgilentMH):
         f = open(self.filename, 'rb')
         r = ElementTree.parse(op.splitext(self.filename)[0] + '.xsd').getroot()
 
-        xml_to_struct = {'xs:int': 'i', 'xs:long': 'q', \
-                         'xs:byte': 'b', 'xs:double': 'd'}
+        xml_to_struct = {'xs:int': 'i', 'xs:long': 'q', 'xs:short': 'h', \
+                         'xs:byte': 'b', 'xs:double': 'd', 'xs:float': 'f'}
         rfrmt = {}
 
         for n in r.getchildren():
@@ -188,10 +188,15 @@ class AgilentMSMSScan(AgilentMH):
         f.close()
 
     def total_trace(self, twin=None):
-        #TODO: use twin
+        if twin is None:
+            twin = (-np.inf, np.inf)
         tme = []
         tic = []
         for t, z in self._msscan_iter(['ScanTime', 'TIC']):
+            if t < twin[0]:
+                continue
+            elif t > twin[1]:
+                break
             tme.append(t)
             tic.append(z)
         return Series(np.array(tic), np.array(tme), name='TIC')
@@ -202,6 +207,8 @@ class AgilentMSMSScan(AgilentMH):
         #TODO: should be able to call my parent classes too
         if name in ['', 'X', 'TIC']:
             return self.total_trace(twin)
+        if twin is None:
+            twin = (-np.inf, np.inf)
 
         #super hack-y way to disable checksum and length checking
         gzip.GzipFile._read_eof = lambda _: None
@@ -210,12 +217,15 @@ class AgilentMSMSScan(AgilentMH):
         uncompress = lambda d: gzip.GzipFile(fileobj=io.BytesIO(d)).read()
         f = open(op.join(op.split(self.filename)[0], 'MSProfile.bin'), 'rb')
 
-        tme = []
-        ic = []
+        tme, ic = [], []
         sminx, smaxx = np.inf, np.inf
         for t, off, bc, pc, minx, maxx in self._msscan_iter( \
           ['ScanTime', 'SpectrumOffset', 'ByteCount', \
           'PointCount', 'MinX', 'MaxX']):
+            if t < twin[0]:
+                continue
+            elif t > twin[1]:
+                break
             tme.append(t)
             f.seek(off)
             profdata = uncompress(gzprefix + f.read(bc))
@@ -229,6 +239,30 @@ class AgilentMSMSScan(AgilentMH):
 
         f.close()
         return Series(np.array(ic), np.array(tme), name=str(name))
+
+    def mrm_trace(self, parent=None, daughter=None, tol=0.5, twin=None):
+        if twin is None:
+            twin = (-np.inf, np.inf)
+
+        tme, ic = [], []
+        for t, off, bc, pc, minx, maxx, d_mz, p_mz, z in self._msscan_iter( \
+          ['ScanTime', 'SpectrumOffset', 'ByteCount', 'PointCount', \
+           'MinX', 'MaxX', 'BasePeakMZ', 'MzOfInterest', 'TIC']):
+            if t < twin[0]:
+                continue
+            elif t > twin[1]:
+                break
+            if parent is not None:
+                if np.abs(parent - p_mz) > tol:
+                    continue
+            if daughter is not None:
+                if np.abs(daughter - d_mz) > tol:
+                    continue
+            tme.append(t)
+            ic.append(z)
+
+        return Series(np.array(ic), np.array(tme), \
+                      name=str(str(parent) + '->' + str(daughter)))
 
     def scan(self, time, to_time=None):
         #TODO: support time ranges
