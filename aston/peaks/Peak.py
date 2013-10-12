@@ -23,7 +23,14 @@ class Peak(object):
             self.primary_mz = self.trace.columns[0]
 
     def plot(self, mz=None, ax=None):
-        pass
+        from matplotlib.path import Path
+        from matplotlib.patches import PathPatch
+        ply = Path(self.as_poly(mz))
+        if ax is None:
+            import matplotlib.pyplot as plt
+            plt.add_patch(PathPatch(ply))
+        else:
+            ax.add_patch(PathPatch(ply))
 
     def as_poly(self, mz=None, sub_base=False):
         if mz is None:
