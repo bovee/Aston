@@ -1,6 +1,7 @@
 import struct
 import numpy as np
-import scipy
+#import scipy
+import scipy.sparse
 import os.path as op
 import gzip
 import io
