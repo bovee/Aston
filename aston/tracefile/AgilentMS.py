@@ -1,10 +1,10 @@
-import struct
-import numpy as np
-#import scipy
-import scipy.sparse
 import os.path as op
 import gzip
 import io
+import struct
+from functools import lru_cache
+import numpy as np
+#import scipy
 from datetime import datetime
 from xml.etree import ElementTree
 from pandas import DataFrame, Series
@@ -60,53 +60,46 @@ class AgilentMS(AgilentCS):
         f.seek(0x10A)
         f.seek(2 * struct.unpack('>H', f.read(2))[0] - 2)
 
-        tot_pts = 0
-        rowst = np.empty(nscans + 1, dtype=int)
-        rowst[0] = 0
-        for scn in range(nscans):
-            npos = f.tell() + 2 * struct.unpack('>H', f.read(2))[0]
-            #f.seek(f.tell()+10)
-            #tot_pts += 1+struct.unpack('>H',f.read(2))[0]
-            tot_pts += (npos - f.tell() - 22) / 4
-            rowst[scn + 1] = tot_pts
-            f.seek(npos)
-
-        # find the starting location of the data
-        f.seek(0x10A)
-        # jump to the start of the data
-        f.seek(2 * struct.unpack('>H', f.read(2))[0] - 2)
-
-        ions = []
-        i_lkup = {}
-        cols = np.empty(tot_pts, dtype=int)
-        vals = np.empty(tot_pts, dtype=float)
-
+        # make a list of all of the ions and also read in times
+        ions = set()
         times = np.empty(nscans)
+        scan_locs = np.empty(nscans, dtype=int)
+        scan_pts = np.empty(nscans, dtype=int)
         for scn in range(nscans):
             npos = f.tell() + 2 * struct.unpack('>H', f.read(2))[0]
+
             # the sampling rate is evidentally 60 kHz on all Agilent's MS's
             times[scn] = struct.unpack('>I', f.read(4))[0] / 60000.
 
+            f.seek(f.tell() + 6)
+            npts = struct.unpack('>H', f.read(2))[0]
+
+            # jump to the data and save relevant parameters for later
             f.seek(f.tell() + 4)
-            npts = rowst[scn + 1] - rowst[scn]
-            mzs = struct.unpack('>' + npts * 'HH', f.read(npts * 4))
+            scan_locs[scn] = f.tell()
+            scan_pts[scn] = npts
 
-            nions = set([mz for mz in mzs[0::2] if mz not in i_lkup])
-            i_lkup.update(dict((ion, i + len(ions)) \
-              for i, ion in enumerate(nions)))
-            ions += nions
-
-            cols[rowst[scn]:rowst[scn + 1]] = \
-              [i_lkup[i] for i in mzs[0::2]]
-            vals[rowst[scn]:rowst[scn + 1]] = mzs[1::2]
+            #TODO: use numpy.fromfile?
+            nions = struct.unpack('>' + npts * 'HH', f.read(npts * 4))[0::2]
+            ions.update(nions)
             f.seek(npos)
+
+        ions = np.array(sorted(list(ions)))
+        data = np.empty((len(times), len(ions)), dtype=float)
+        for scn in range(nscans):
+            f.seek(scan_locs[scn])
+            npts = scan_pts[scn]
+            #TODO: use numpy.fromfile?
+            mzs = np.array(struct.unpack('>' + npts * 'HH', f.read(npts * 4)))
+            if len(mzs) == 0:
+                continue
+            ilocs = np.searchsorted(ions, mzs[0::2])
+            abn = (mzs[1::2] & 16383) * 8 ** (mzs[1::2] >> 14)
+            data[scn][ilocs] = abn
         f.close()
 
-        #cols += 1
-        data = scipy.sparse.csr_matrix((vals, cols, rowst), \
-          shape=(nscans, len(ions)), dtype=float)
-        ions = np.array(ions) / 20
-        return DataFrame(data.todense(), times, ions)
+        ions = ions / 20
+        return DataFrame(data, times, ions)
 
     @property
     def info(self):

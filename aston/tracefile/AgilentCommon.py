@@ -63,7 +63,7 @@ class AgilentMH(TraceFile):
             names = []
         return super(AgilentMH, self).trace_names(named) + names
 
-    def trace(self, name='', twin=None):
+    def trace(self, name='', tol=0.5, twin=None):
         if name in ['pres', 'flow', 'slvb']:
             fname = op.join(op.dirname(self.filename), 'CapPump1.cd')
             ttab = {'pres': 'Pressure', 'flow': 'Flow', \
@@ -72,11 +72,11 @@ class AgilentMH(TraceFile):
             fname = op.join(op.dirname(self.filename), 'TCC1.cd')
             ttab = {'temp': 'Temperature of Left Heat Exchanger'}
         else:
-            return super(AgilentMH, self).trace(name, twin=twin)
+            return super(AgilentMH, self).trace(name, tol=None, twin=twin)
 
         if not op.exists(fname) or not op.exists(fname[:-3] + '.cg'):
             # file doesn't exist, kick it up to the parent
-            return super(AgilentMH, self).trace(name, twin=twin)
+            return super(AgilentMH, self).trace(name, tol=None, twin=twin)
 
         f = open(fname, 'rb')
         fdat = open(fname[:-3] + '.cg', 'rb')
@@ -199,7 +199,7 @@ class AgilentCS(TraceFile):
             names = []
         return super(AgilentCS, self).trace_names(named) + names
 
-    def trace(self, name='', twin=None):
+    def trace(self, name='', tol=0.5, twin=None):
         #TODO: use twin
         #TODO: read info from new style REG files
         rf = op.join(op.dirname(self.filename), 'LCDIAG.REG')
@@ -212,7 +212,7 @@ class AgilentCS(TraceFile):
             ts.ions = [name]
             return ts
         else:
-            return super(AgilentCS, self).trace(name, twin=twin)
+            return super(AgilentCS, self).trace(name, tol=tol, twin=twin)
 
 
 def read_multireg_file(f, title=None):

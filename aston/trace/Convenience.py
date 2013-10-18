@@ -190,7 +190,7 @@ def as_colors(df):
     return colors
 
 
-def uv_dfs(folder, fs):
+def color_strips(folder, fs):
     import os.path as op
     from matplotlib.colors import ListedColormap
     import matplotlib.pyplot as plt
