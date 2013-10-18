@@ -190,7 +190,7 @@ def as_colors(df):
     return colors
 
 
-def color_strips(folder, fs):
+def color_strips(folder, fs, width=10):
     import os.path as op
     from matplotlib.colors import ListedColormap
     import matplotlib.pyplot as plt
@@ -202,7 +202,7 @@ def color_strips(folder, fs):
         color_mask = np.meshgrid(0, np.arange(colors.shape[0], 0, -1) - 1)[1]
         ax = plt.subplot(1, len(fs), i)
         ax.imshow(color_mask, cmap=ListedColormap(colors), \
-                  extent=(0, 10, df.index[0], df.index[-1]))
+                  extent=(0, width, df.index[0], df.index[-1]))
         ax.xaxis.set_ticks([])
     plt.show()
 
