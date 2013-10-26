@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, Unicode, UnicodeText, \
                        DateTime, ForeignKey, Table
 from sqlalchemy.orm import relationship
-from chemiris.models import Base, JSONDict
+from chemiris.models import Base
 
 
 group_user = Table('group_user', Base.metadata,
@@ -35,21 +35,6 @@ class Group(Base):
 
     def __init__(self, name):
         self.name = name
-
-
-class View(Base):
-    __tablename__ = 'views'
-    view_id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey('users.user_id'))
-    group_id = Column(Integer, ForeignKey('groups.group_id'))
-    name = Column(Unicode(255))
-    graph_bounds = Column(UnicodeText)
-    graph_style = Column(JSONDict)
-    columns = Column(UnicodeText)
-
-    def __init__(self, name, group_id):
-        self.name = name
-        self.group_id = group_id
 
 
 class Pref(Base):

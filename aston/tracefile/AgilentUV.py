@@ -82,21 +82,20 @@ class AgilentMWD(AgilentCS):
         f.seek(0x18)
         d['name'] = f.read(struct.unpack('>B', f.read(1))[0]).decode()
         f.seek(0x94)
-        d['r-opr'] = f.read(struct.unpack('>B', f.read(1))[0]).decode()
+        d['operator'] = f.read(struct.unpack('>B', f.read(1))[0]).decode()
         f.seek(0xE4)
-        d['m'] = f.read(struct.unpack('>B', f.read(1))[0]).decode()
+        d['method'] = f.read(struct.unpack('>B', f.read(1))[0]).decode()
         #try:
         f.seek(0xB2)
         rawdate = f.read(struct.unpack('>B', f.read(1))[0]).decode()
-        d['r-date'] = datetime.strptime(rawdate, \
+        d['date'] = datetime.strptime(rawdate, \
           "%d-%b-%y, %H:%M:%S").isoformat(' ')
         #except: pass #TODO: find out why this chokes
         f.seek(0x244)
-        d['m-y-units'] = f.read(struct.unpack('>B', f.read(1))[0]).decode()
+        d['y_units'] = f.read(struct.unpack('>B', f.read(1))[0]).decode()
         f.seek(0x254)
         #TODO: replace signal name with reference_wavelength?
         #d['signal name'] = f.read(struct.unpack('>B', f.read(1))[0]).decode()
-        d['r-type'] = 'Sample'
         f.close()
         return d
 
@@ -180,15 +179,14 @@ class AgilentMWD2(AgilentCS):
 
         f = open(self.filename, 'rb')
         d['name'] = get_str(f, 0x35A)
-        d['r-opr'] = get_str(f, 0x758)
-        d['m'] = get_str(f, 0xA0E)
+        d['operator'] = get_str(f, 0x758)
+        d['method'] = get_str(f, 0xA0E)
         rawdate = get_str(f, 0x957)
-        d['r-date'] = datetime.strptime(rawdate, \
+        d['date'] = datetime.strptime(rawdate, \
           "%d-%b-%y, %H:%M:%S").isoformat(' ')
-        d['m-y-units'] = get_str(f, 0x104C)
+        d['y_units'] = get_str(f, 0x104C)
         #TODO: replace signal name with reference_wavelength?
         #d['signal name'] = f.read(struct.unpack('>B', f.read(1))[0]).decode()
-        d['r-type'] = 'Sample'
         f.close()
         return d
 
@@ -294,25 +292,25 @@ class AgilentCSDAD(AgilentCS):
             f.seek(0x18)
             d['name'] = string_read(f)
             f.seek(0x94)
-            d['r-opr'] = string_read(f)
+            d['operator'] = string_read(f)
             f.seek(0xE4)
-            d['m'] = string_read(f)
+            d['method'] = string_read(f)
             f.seek(0xB2)
             rawdate = string_read(f)
             try:  # fails on 0331 UV files
-                d['r-date'] = datetime.strptime(rawdate, \
+                d['date'] = datetime.strptime(rawdate, \
                     "%d-%b-%y, %H:%M:%S").isoformat(' ')
             except:
                 pass
             f.seek(0x146)
-            d['m-y-units'] = string_read(f)
+            d['y_units'] = string_read(f)
             f.seek(0xD0)
-            d['r-inst'] = string_read(f)
+            d['inst'] = string_read(f)
             #TODO: are the next values correct?
             f.seek(0xFE)
-            d['r-vial-pos'] = string_read(f)
+            d['vial_pos'] = string_read(f)
             f.seek(0xFE)
-            d['r-seq-num'] = string_read(f)
+            d['seq_num'] = string_read(f)
         return d
 
 
@@ -405,12 +403,12 @@ class AgilentCSDAD2(AgilentCS):
             f.seek(0x35A)
             d['name'] = string_read(f)
             f.seek(0x758)
-            d['r-opr'] = string_read(f)
+            d['operator'] = string_read(f)
             # get date into correct format before using this
             #f.seek(0x957)
             #d['r-date'] = string_read()
             f.seek(0xA0E)
-            d['m'] = string_read(f)
+            d['method'] = string_read(f)
             f.seek(0xC15)
-            d['m-y-units'] = string_read(f)
+            d['y_units'] = string_read(f)
         return d

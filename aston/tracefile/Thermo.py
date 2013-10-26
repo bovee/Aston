@@ -40,11 +40,8 @@ class ThermoCF(TraceFile):
     @property
     def info(self):
         d = super(ThermoCF, self).info
-        d['r-opr'] = ''
-        d['m'] = ''
         #info['file name'] = os.path.basename(self.filename)
         d['name'] = os.path.splitext(os.path.basename(self.filename))[0]
-        d['r-type'] = 'Sample'
         return d
 
 
@@ -90,23 +87,20 @@ class ThermoDXF(TraceFile):
     @property
     def info(self):
         d = super(ThermoDXF, self).info
-        d['r-opr'] = ''
-        d['m'] = ''
         #try: #TODO: this crashes in python 3; not clear why?
         #except:
         #    pass
         #info['file name'] = os.path.basename(self.filename)
         d['name'] = os.path.splitext(os.path.basename(self.filename))[0]
-        d['r-type'] = 'Sample'
         with open(self.filename, 'rb') as f:
             foff_o = find_offset(f, 'd 18O/16O'.encode('utf_16_le'))
             foff_c = find_offset(f, 'd 13C/12C'.encode('utf_16_le'))
             if foff_o is not None:
                 f.seek(foff_o + 68)
-                d['r-d18o-std'] = str(struct.unpack('<d', f.read(8))[0])
+                d['d18o_std'] = str(struct.unpack('<d', f.read(8))[0])
             if foff_c is not None:
                 f.seek(foff_c + 68)
-                d['r-d13c-std'] = str(struct.unpack('<d', f.read(8))[0])
+                d['d13c_std'] = str(struct.unpack('<d', f.read(8))[0])
         return d
 
     def _th_off(self, search_str, hint=None):

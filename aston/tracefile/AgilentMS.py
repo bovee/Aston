@@ -108,17 +108,17 @@ class AgilentMS(AgilentCS):
         f.seek(0x18)
         d['name'] = f.read(struct.unpack('>B', f.read(1))[0]).decode().strip()
         f.seek(0x94)
-        d['r-opr'] = f.read(struct.unpack('>B', f.read(1))[0]).decode()
+        d['operator'] = f.read(struct.unpack('>B', f.read(1))[0]).decode()
         f.seek(0xE4)
-        d['m'] = f.read(struct.unpack('>B', f.read(1))[0]).decode().strip()
+        d['method'] = \
+                f.read(struct.unpack('>B', f.read(1))[0]).decode().strip()
         f.seek(0xB2)
         rawdate = f.read(struct.unpack('>B', f.read(1))[0]).decode()
         try:
-            d['r-date'] = datetime.strptime(rawdate, \
+            d['date'] = datetime.strptime(rawdate, \
               "%d %b %y %H:%M %p").isoformat(' ')
         except ValueError:
             pass  # date is not in correct format to parse?
-        d['r-type'] = 'Sample'
         #TODO: vial number in here too?
         f.close()
 

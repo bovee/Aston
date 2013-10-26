@@ -1,6 +1,7 @@
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.engine import create_engine
+from aston.database.models.Trace import DBTrace, Project
 
 Base = declarative_base()
 
@@ -19,10 +20,9 @@ class AlchemyDatabase(object):
     def __exit__(self, type, value, traceback):
         pass
 
-    def get_children(self, obj):
-        pass
-
     def children(self):
+        DBTrace.project_id == None
+        Project
         self.db.query(DBObject).filter_by(parent=None)
 
     def start_child_mod(self, parent, add_c, del_c):

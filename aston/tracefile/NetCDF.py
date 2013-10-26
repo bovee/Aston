@@ -62,11 +62,11 @@ def write_netcdf(df, info, filename):
     f.flush()
 
     f.experiment_title = info.get('name', ' ')
-    f.operator_name = info.get('r-opr', ' ')
+    f.operator_name = info.get('operator', ' ')
     # TODO: wrong format for injection_date_time_stamp
-    f.injection_date_time_stamp = info.get('r-date', ' ')
-    f.company_method_id = info.get('m', ' ')
-    f.sample_name = info.get('r-smp', ' ')
+    f.injection_date_time_stamp = info.get('date', ' ')
+    f.company_method_id = info.get('method', ' ')
+    f.sample_name = info.get('sample', ' ')
     f.flush()
 
     f.createDimension('scan_number', len(df.index))

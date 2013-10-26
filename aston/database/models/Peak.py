@@ -12,9 +12,7 @@ class Peak(Base):
     peak_id = Column(Integer, primary_key=True)
     peak_type = Column(String(8))
     name = Column(Unicode(255))
-    view_id = Column(Integer, ForeignKey('views.view_id'))
-    cgram_id = Column(Integer, ForeignKey('chromatograms.cgram_id'))
-    cgram = relationship('Cgram')
+    pt_id = Column(Integer, ForeignKey('palette_traces.palette_id'))
     peakgroup_id = Column(Integer, ForeignKey('peakgroups.peakgroup_id'))
     model = Column(JSONDict)
     other = Column(JSONDict)  # name, p-create, trace
@@ -96,7 +94,7 @@ class PeakGroup(Base):
     peakgroup_id = Column(Integer, primary_key=True)
     cgram_id = Column(Integer, \
                              ForeignKey('chromatograms.cgram_id'))
-    cgram = relationship('Cgram', backref='pkgps')
+    cgram = relationship('traces', backref='pkgps')
     start_time = ''
     end_time = ''
     peaks = relationship('Peak', backref='peakgroup')

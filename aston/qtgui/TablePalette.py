@@ -33,10 +33,8 @@ from aston.ui.Fields import aston_fields, aston_groups, aston_field_opts
 from aston.ui.MenuOptions import peak_models
 from aston.databases.FileDatabase import AstonFileDatabase, LoadFilesThread
 
-peak_models = {str(k): peak_models[k] for k in peak_models}
 
-
-class FileTreeModel(QtCore.QAbstractItemModel):
+class PaletteTree(QtCore.QAbstractItemModel):
     """
     Handles interfacing with QTreeView and other file-related duties.
     """
