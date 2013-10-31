@@ -184,13 +184,13 @@ def as_colors(df):
     colors = np.dot(df, vis_filt.T)
 
     # normalize and invert data
-    #colors -= np.min(colors)
+    colors -= np.min(colors)
     colors /= np.max(colors) - np.min(colors)
     colors = 1 - np.abs(colors)
     return colors
 
 
-def color_strips(folder, fs, width=10):
+def color_strips(folder, fs, width=10, twin=None):
     import os.path as op
     from matplotlib.colors import ListedColormap
     import matplotlib.pyplot as plt
@@ -198,6 +198,8 @@ def color_strips(folder, fs, width=10):
 
     for i, f in enumerate(fs):
         df = TraceFile(op.join(folder, f)).data
+        if twin is not None:
+            df = df.select(lambda t: t >= twin[0] and t < twin[1])
         colors = as_colors(df)
         color_mask = np.meshgrid(0, np.arange(colors.shape[0], 0, -1) - 1)[1]
         ax = plt.subplot(1, len(fs), i)
