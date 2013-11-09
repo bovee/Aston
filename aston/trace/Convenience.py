@@ -198,14 +198,13 @@ def as_colors(dfs):
     return colors
 
 
-def color_strips(folder, fs, width=10, twin=None, names=None):
+def color_strips(folder, fs, width=10, twin=None, names=None, norm_all=True):
     import os.path as op
     from matplotlib.colors import ListedColormap
     import matplotlib.pyplot as plt
     from aston.tracefile.Common import TraceFile
 
     dfs = []
-    norm_all = True
     if norm_all:
         for f in fs:
             df = TraceFile(op.join(folder, f)).data
