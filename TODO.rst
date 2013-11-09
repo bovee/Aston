@@ -19,6 +19,8 @@
   that may be erroneous and should be removed?
 * make aston not freak out if datafile is not found?
 * fix color scaling as more chromatograms added: hard to keep track
+* put retention time on extracted spectra
+* buttons for spectral navigation?
 
 
 0.8 Checklist

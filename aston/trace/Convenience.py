@@ -164,48 +164,75 @@ def as_sound(df, speed=60, cutoff=50):
     scipy.io.wavfile.write('test.wav', 44100, scaled)
 
 
-def as_colors(df):
+def as_colors(dfs):
     """
     Given a dataframe containing UV-Vis data, return an array
     of RGB values corresponding to how the UV-Vis run would look.
     """
     from aston.peaks.PeakModels import gaussian
 
-    wvs = df.columns.values.astype(float)
+    colors = []
 
-    # set up an array modelling visual response to
-    # a full spectrum
-    vis_filt = np.zeros((3, len(wvs)))
-    vis_filt[0] = gaussian(wvs, w=40, x=575)  # red
-    vis_filt[1] = gaussian(wvs, w=40, x=535)  # green
-    vis_filt[2] = gaussian(wvs, w=40, x=445)  # blue
+    for df in dfs:
+        wvs = df.columns.values.astype(float)
 
-    # multiply response matrix by data to get list of colors
-    colors = np.dot(df, vis_filt.T)
+        # set up an array modelling visual response to
+        # a full spectrum
+        vis_filt = np.zeros((3, len(wvs)))
+        vis_filt[0] = gaussian(wvs, w=40, x=575)  # red
+        vis_filt[1] = gaussian(wvs, w=40, x=535)  # green
+        vis_filt[2] = gaussian(wvs, w=40, x=445)  # blue
+
+        # multiply response matrix by data to get list of colors
+        colors.append(np.dot(df, vis_filt.T))
 
     # normalize and invert data
-    colors -= np.min(colors)
-    colors /= np.max(colors) - np.min(colors)
-    colors = 1 - np.abs(colors)
+    mincolor = min(np.min(c) for c in colors)
+    maxcolor = max(np.max(c) for c in colors)
+
+    for i in range(len(colors)):
+        colors[i] -= mincolor
+        colors[i] /= maxcolor - mincolor
+        colors[i] = 1 - np.abs(colors[i])
+
     return colors
 
 
-def color_strips(folder, fs, width=10, twin=None):
+def color_strips(folder, fs, width=10, twin=None, names=None):
     import os.path as op
     from matplotlib.colors import ListedColormap
     import matplotlib.pyplot as plt
     from aston.tracefile.Common import TraceFile
 
-    for i, f in enumerate(fs):
-        df = TraceFile(op.join(folder, f)).data
-        if twin is not None:
-            df = df.select(lambda t: t >= twin[0] and t < twin[1])
-        colors = as_colors(df)
-        color_mask = np.meshgrid(0, np.arange(colors.shape[0], 0, -1) - 1)[1]
-        ax = plt.subplot(1, len(fs), i)
-        ax.imshow(color_mask, cmap=ListedColormap(colors), \
+    dfs = []
+    norm_all = True
+    if norm_all:
+        for f in fs:
+            df = TraceFile(op.join(folder, f)).data
+            if twin is not None:
+                df = df.select(lambda t: t >= twin[0] and t < twin[1])
+            dfs.append(df)
+        colors = as_colors(dfs)
+    else:
+        colors = []
+        for f in fs:
+            df = TraceFile(op.join(folder, f)).data
+            if twin is not None:
+                df = df.select(lambda t: t >= twin[0] and t < twin[1])
+            colors.append(as_colors([df])[0])
+
+    for i, c in enumerate(colors):
+        color_mask = np.meshgrid(0, np.arange(c.shape[0], 0, -1) - 1)[1]
+        ax = plt.subplot(1, len(colors), i + 1)
+        ax.imshow(color_mask, cmap=ListedColormap(c), \
                   extent=(0, width, df.index[0], df.index[-1]))
         ax.xaxis.set_ticks([])
+        if i != 0:
+            ax.yaxis.set_ticks([])
+        else:
+            ax.set_ylabel('R.T. (min)')
+        if names is not None:
+            ax.set_xlabel(names[i])
     plt.show()
 
 
