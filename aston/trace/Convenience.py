@@ -178,6 +178,7 @@ def as_colors(dfs):
 
         # set up an array modelling visual response to
         # a full spectrum
+        #TODO: use http://www.ppsloan.org/publications/XYZJCGT.pdf
         vis_filt = np.zeros((3, len(wvs)))
         vis_filt[0] = gaussian(wvs, w=40, x=575)  # red
         vis_filt[1] = gaussian(wvs, w=40, x=535)  # green
@@ -229,7 +230,7 @@ def color_strips(folder, fs, width=10, twin=None, names=None, norm_all=True):
         if i != 0:
             ax.yaxis.set_ticks([])
         else:
-            ax.set_ylabel('R.T. (min)')
+            ax.set_ylabel('Retention Time (min)')
         if names is not None:
             ax.set_xlabel(names[i])
     plt.show()
