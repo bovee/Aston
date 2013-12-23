@@ -187,7 +187,8 @@ class TraceFile(object):
 
         # try to quickly extract the relevant trace
         if isinstance(name, numbers.Number):
-            cols = np.where(np.abs(self.data.columns.values - name) <= tol)[0]
+            col_nums = self.data.columns.values.astype(float)
+            cols = np.where(np.abs(col_nums - name) <= tol)[0]
             d = self.data[self.data.columns[cols]].sum(axis=1)
         elif name in self.data.columns:
             d = self.data[name]
