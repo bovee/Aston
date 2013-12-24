@@ -34,13 +34,14 @@ def tfclasses():
     from aston.tracefile.Bruker import BrukerMSMS
     from aston.tracefile.AgilentUV import AgilentDAD, AgilentMWD, \
             AgilentMWD2, AgilentCSDAD, AgilentCSDAD2
-    from aston.tracefile.OtherFiles import AgilentFID, CSVFile
+    from aston.tracefile.AgilentFID import AgilentFID, AgilentFID2
+    from aston.tracefile.OtherFiles import CSVFile
     from aston.tracefile.Waters import WatersAutospec
     from aston.tracefile.NetCDF import NetCDF
     from aston.tracefile.Inficon import InficonHapsite
     return [AgilentMS, AgilentMSMSScan, BrukerMSMS, \
       ThermoCF, ThermoDXF, AgilentDAD, AgilentMWD, AgilentMWD2, \
-      AgilentCSDAD, AgilentCSDAD2, AgilentFID, CSVFile, \
+      AgilentCSDAD, AgilentCSDAD2, AgilentFID, AgilentFID2, CSVFile, \
       WatersAutospec, NetCDF, InficonHapsite]
 
     #for cls_str in dir(fl):
