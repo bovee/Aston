@@ -23,3 +23,7 @@ class CSVFile(TraceFile):
                 return DataFrame(data[:, 1:], data[:, 0], ions)
         except:
             return DataFrame()
+
+
+def write_csv(filename, df, info=None):
+    pass

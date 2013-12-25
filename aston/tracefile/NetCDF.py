@@ -41,8 +41,11 @@ class NetCDF(TraceFile):
         return DataFrame(data.todense(), t, ions)
 
 
-def write_netcdf(df, info, filename):
+def write_netcdf(filename, df, info=None):
     #FIXME: still a lot of issues here
+    if info is None:
+        info = {}
+
     f = NetCDFFile(filename, 'w')
 
     f.createDimension('_2_byte_string', 2)
