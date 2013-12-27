@@ -2,12 +2,14 @@
 import struct
 import numpy as np
 from pandas import DataFrame
-from aston.tracefile.Common import find_offset, TraceFile
+from aston.tracefile.TraceFile import TraceFile
+from aston.tracefile.Common import find_offset
 
 
 class InficonHapsite(TraceFile):
     ext = 'HPS'
     mgc = '0403'
+    traces = ['#ms']
 
     def _ions(self, f):
         """

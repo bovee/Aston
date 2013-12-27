@@ -2,12 +2,13 @@ import struct
 import numpy as np
 import scipy.sparse
 from pandas import DataFrame
-from aston.tracefile.Common import TraceFile
+from aston.tracefile.TraceFile import TraceFile
 
 
 class BrukerMSMS(TraceFile):
     ext = 'AMI'
     mgc = None
+    traces = ['#ms']
 
     #def _getTotalTrace(self):
     #    pass

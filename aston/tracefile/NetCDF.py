@@ -2,12 +2,13 @@ import numpy as np
 import scipy.sparse
 from scipy.io.netcdf import NetCDFFile
 from pandas import DataFrame, Series
-from aston.tracefile.Common import TraceFile
+from aston.tracefile.TraceFile import TraceFile
 
 
 class NetCDF(TraceFile):
     ext = 'CDF'
     mgc = '4344'
+    traces = ['#ms']
 
     def total_trace(self, twin=None):
         f = NetCDFFile(open(self.filename, 'rb'))

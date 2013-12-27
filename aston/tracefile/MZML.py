@@ -4,7 +4,7 @@ import base64
 from xml.etree import ElementTree
 import numpy as np
 from pandas import DataFrame, Series
-from aston.tracefile.Common import TraceFile
+from aston.tracefile.TraceFile import TraceFile
 
 
 def t_to_min(x):
@@ -20,6 +20,7 @@ def t_to_min(x):
 #class mzXML(TraceFile):
 class mzXML(object):
     ext = 'MZXML'
+    traces = ['#ms']
 
     ns = {'m': 'http://sashimi.sourceforge.net/schema_revision/mzXML_2.1'}
 
@@ -52,6 +53,7 @@ class mzXML(object):
 
 class mzML(TraceFile):
     ext = 'MZML'
+    traces = ['#ms']
 
     @property
     def data(self):

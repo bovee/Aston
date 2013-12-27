@@ -4,12 +4,13 @@ import struct
 from datetime import datetime
 import numpy as np
 from pandas import DataFrame
-from aston.tracefile.AgilentCommon import AgilentMH, AgilentCS
+from aston.tracefile.TraceFile import TraceFile
 
 
-class AgilentMWD(AgilentCS):
+class AgilentMWD(TraceFile):
     ext = 'CH'
     mgc = '0233'
+    traces = ['#uv']
 
     @property
     def data(self):
@@ -100,9 +101,10 @@ class AgilentMWD(AgilentCS):
         return d
 
 
-class AgilentMWD2(AgilentCS):
+class AgilentMWD2(TraceFile):
     ext = 'CH'
     mgc = '0331'
+    traces = ['#uv']
 
     @property
     def data(self):
@@ -191,8 +193,9 @@ class AgilentMWD2(AgilentCS):
         return d
 
 
-class AgilentDAD(AgilentMH):
+class AgilentDAD(TraceFile):
     ext = 'SD'
+    traces = ['#uv']
 
     #header data in DAD1.sd
     #80 byte repetition
@@ -235,12 +238,13 @@ class AgilentDAD(AgilentMH):
         fdata.close()
 
 
-class AgilentCSDAD(AgilentCS):
+class AgilentCSDAD(TraceFile):
     """
     Interpreter for *.UV files from Agilent Chemstation
     """
     ext = 'UV'
     mgc = '0331'
+    traces = ['#uv']
 
     @property
     def data(self):
@@ -314,12 +318,13 @@ class AgilentCSDAD(AgilentCS):
         return d
 
 
-class AgilentCSDAD2(AgilentCS):
+class AgilentCSDAD2(TraceFile):
     """
     Interpreter for *.UV files from Agilent Chemstation
     """
     ext = 'UV'
     mgc = '0331'
+    traces = ['#uv']
 
     #@profile
     @property

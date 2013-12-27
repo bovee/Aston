@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+ -*- coding: utf-8 -*-
 
 #    Copyright 2011-2013 Roderick Bovee
 #
@@ -32,8 +32,6 @@ from aston.ui.resources import resfile
 from aston.ui.Fields import aston_fields, aston_groups, aston_field_opts
 from aston.ui.MenuOptions import peak_models
 from aston.databases.FileDatabase import AstonFileDatabase, LoadFilesThread
-
-peak_models = {str(k): peak_models[k] for k in peak_models}
 
 
 class FileTree(QtCore.QAbstractItemModel):

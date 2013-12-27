@@ -2,7 +2,7 @@ import struct
 import os.path as op
 import numpy as np
 from pandas import DataFrame
-from aston.tracefile.Common import TraceFile
+from aston.tracefile.TraceFile import TraceFile
 
 
 class WatersAutospec(TraceFile):
@@ -12,6 +12,7 @@ class WatersAutospec(TraceFile):
     """
 
     ext = 'IDX'
+    traces = ['#ms']
 
     #def _total_trace(self, twin=None):
     #    fidx = open(self.filename, 'rb')

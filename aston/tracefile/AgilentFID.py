@@ -1,19 +1,19 @@
 import numpy as np
 import struct
 from pandas import Series
-from aston.tracefile.AgilentCommon import AgilentCS
+from aston.tracefile.TraceFile import TraceFile
 
 
-class AgilentFID(AgilentCS):
+class AgilentFID(TraceFile):
     # TODO: preliminary support, math is probably not correct
     """
     Reads a Agilent FID *.ch file.
     """
     ext = 'CH'
     mgc = '0238'
+    traces = ['fid']
 
-    @property
-    def data(self):
+    def total_trace(self, twin=None):
         f = open(self.filename, 'rb')
 
         f.seek(0x11A)
@@ -49,16 +49,16 @@ class AgilentFID(AgilentCS):
         return Series(np.array([data]).T, times, name='TIC')
 
 
-class AgilentFID2(AgilentCS):
+class AgilentFID2(TraceFile):
     # TODO: preliminary support, math is probably not correct
     """
     Reads a Agilent FID *.ch file.
     """
     ext = 'CH'
     mgc = '0331'
+    traces = ['fid']
 
-    @property
-    def data(self):
+    def total_trace(self, twin=None):
         f = open(self.filename, 'rb')
 
         f.seek(0x11A)

@@ -3,12 +3,14 @@ import re
 import os
 import numpy as np
 from pandas import DataFrame
-from aston.tracefile.Common import TraceFile, find_offset
+from aston.tracefile.Common import find_offset
+from aston.tracefile.TraceFile import TraceFile
 
 
 class ThermoCF(TraceFile):
     ext = 'CF'
     mgc = 'FFFF'
+    traces = ['#irms']
 
     @property
     def data(self):
@@ -48,6 +50,7 @@ class ThermoCF(TraceFile):
 class ThermoDXF(TraceFile):
     ext = 'DXF'
     mgc = 'FFFF'
+    traces = ['#irms', '*refgas']
 
     @property
     def data(self):
@@ -122,49 +125,53 @@ class ThermoDXF(TraceFile):
                 f.seek(f.tell() - len(search_str))
         return foff
 
-    def events(self, kind):
+    def events(self, name='refgas', twin=None):
+        #TODO: use twin
         #TODO: read in ref gas pulses
-        evts = super(ThermoDXF, self).events(kind)
-        if kind == 'refgas':
-            with open(self.filename, 'rb') as f:
-                f.seek(self._th_off('CActionHwTransferContainer'))
-                evt, time, status = [], [], []
-                while True:
-                    d = struct.unpack('<ihHBB', f.read(10))
-                    if d[0] != 3:
-                        #TODO: probably a better way to figure this out
-                        break
-                    #name1 = f.read(2 * d[4]).decode('utf-16')
-                    f.read(2 * d[4])
-                    d = struct.unpack('<HBB', f.read(4))
-                    name2 = f.read(2 * d[2]).decode('utf-16')
-                    d = struct.unpack('<iiiiiiiih', f.read(34))
-                    if d[4] == 2:
-                        status.append(d[5])
-                    else:
-                        #TODO: needs a correction factor to be
-                        # derived from guesswork; timing in
-                        # Isodat/Conflo is uncoupled? BAD
-                        time.append(d[4] / 60000.)
-                        evt.append(name2)
-                    if d[-1] == -1:
-                        # first record ends (?) with this, so skip
-                        # the CValveTransfer part afterwards
-                        f.read(22)
-            p_st, gas_on, i = None, False, 0
-            for e, t, s in zip(evt, time, status):
-                if e.startswith('Reference'):
-                    gas_on = (s == 1)
-                    if gas_on:
-                        p_st = t
-                    elif not gas_on and p_st is not None:
-                        i += 1
-                        evts.append([p_st, t, {'name': 'R' + str(i)}])
+        evts = super(ThermoDXF, self).events(name, twin)
+        if name != 'refgas':
+            return evts
+
+        with open(self.filename, 'rb') as f:
+            f.seek(self._th_off('CActionHwTransferContainer'))
+            evt, time, status = [], [], []
+            while True:
+                d = struct.unpack('<ihHBB', f.read(10))
+                if d[0] != 3:
+                    #TODO: probably a better way to figure this out
+                    break
+                #name1 = f.read(2 * d[4]).decode('utf-16')
+                f.read(2 * d[4])
+                d = struct.unpack('<HBB', f.read(4))
+                name2 = f.read(2 * d[2]).decode('utf-16')
+                d = struct.unpack('<iiiiiiiih', f.read(34))
+                if d[4] == 2:
+                    status.append(d[5])
+                else:
+                    #TODO: needs a correction factor to be
+                    # derived from guesswork; timing in
+                    # Isodat/Conflo is uncoupled? BAD
+                    time.append(d[4] / 60000.)
+                    evt.append(name2)
+                if d[-1] == -1:
+                    # first record ends (?) with this, so skip
+                    # the CValveTransfer part afterwards
+                    f.read(22)
+        p_st, gas_on, i = None, False, 0
+        for e, t, s in zip(evt, time, status):
+            if e.startswith('Reference'):
+                gas_on = (s == 1)
+                if gas_on:
+                    p_st = t
+                elif not gas_on and p_st is not None:
+                    i += 1
+                    evts.append([p_st, t, {'name': 'R' + str(i)}])
         return evts
 
 
 class ThermoRAW(TraceFile):
     ext = 'RAW'
     mgc = '01A1'
+    traces = ['#ms']
 
     #TODO: write the rest of this!

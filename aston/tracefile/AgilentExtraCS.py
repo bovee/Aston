@@ -1,166 +1,56 @@
 # -*- coding: utf-8 -*-
-import struct
 import os.path as op
-from xml.etree import ElementTree
+import struct
 import numpy as np
 from pandas import Series
-from aston.tracefile.Common import TraceFile
+from aston.tracefile.TraceFile import TraceFile
 
 
-class AgilentMH(TraceFile):
-    """
-    Base class for Agilent files from Masshunter.
-    """
+class AgilentCSPump(TraceFile):
+    ext = 'LPMP1.REG'
+    mgc = '0233'
+    traces = ['mslva', 'mslvb', 'mslvc', 'mslvd', 'mflow']
+
     @property
     def info(self):
-        folder = op.dirname(self.filename)
-        d = super(AgilentMH, self).info
-        try:
-            u = lambda s: s.decode('utf-8')
-            u('')
-        except:
-            u = lambda s: s
-
-        try:
-            xml_file = op.join(folder, 'sample_info.xml')
-            r = ElementTree.parse(xml_file).getroot()
-            info = dict((i.find('Name').text, i.find('Value').text) \
-              for i in r.findall('Field'))
-            d['name'] = info.get('Sample Name', '')
-            d['vial_pos'] = info.get('Sample Position', '')
-            d['inst'] = info.get('InstrumentName', '')
-            d['operator'] = info.get('OperatorName', '')
-            d['date'] = info.get('AcqTime', '').replace('T', \
-            ' ').rstrip('Z')
-            d['inj_size'] = info.get(u('Inj Vol (µl)'), '')
-        except IOError:
+        fd = read_reg_file(open(self.filename, 'rb'))
+        if fd.get('TIMETABLE', False):
+            # get solv_B, solv_C, solv_D, flow
+            # calculate solv_A
             pass
-
-        try:
-            xml_file = op.join(folder, 'acqmethod.xml')
-            r = ElementTree.parse(xml_file).getroot()
-            d['run_length'] = r.find('.//CapPump//Stoptime').text
-            d['flow'] = r.find('.//CapPump//Flow').text
-            d['solv'] = r.find('.//CapPump//SolvNameA').text
-            d['solv-b'] = r.find('.//CapPump//SolvNameB').text
-            d['solv-b-per'] = r.find('.//CapPump//SolvRatioB').text
-            d['solv-c'] = r.find('.//CapPump//SolvNameC').text
-            d['solv-d'] = r.find('.//CapPump//SolvNameD').text
-            d['temp'] = r.find('.//TCC//LeftTemp').text
-        except IOError:
-            pass
-        except AttributeError:
-            #e.g. if LeftTemp is not set, find will
-            #return None and None has no attribute text
-            #TODO: better fix for this
-            pass
-        return d
-
-    def trace_names(self, named):
-        if named:
-            names = ['pres', 'flow', 'slvb', 'temp']
         else:
-            names = []
-        return super(AgilentMH, self).trace_names(named) + names
-
-    def trace(self, name='', tol=0.5, twin=None):
-        if name in ['pres', 'flow', 'slvb']:
-            fname = op.join(op.dirname(self.filename), 'CapPump1.cd')
-            ttab = {'pres': 'Pressure', 'flow': 'Flow', \
-                    'slvb': '%B'}
-        elif name in ['temp']:
-            fname = op.join(op.dirname(self.filename), 'TCC1.cd')
-            ttab = {'temp': 'Temperature of Left Heat Exchanger'}
-        else:
-            return super(AgilentMH, self).trace(name, tol, twin)
-
-        if not op.exists(fname) or not op.exists(fname[:-3] + '.cg'):
-            # file doesn't exist, kick it up to the parent
-            return super(AgilentMH, self).trace(name, tol, twin)
-
-        f = open(fname, 'rb')
-        fdat = open(fname[:-3] + '.cg', 'rb')
-
-        # convenience function for reading in data
-        rd = lambda st: struct.unpack(st, f.read(struct.calcsize(st)))
-
-        f.seek(0x4c)
-        num_traces = rd('<I')[0]
-        for _ in range(num_traces):
-            cloc = f.tell()
-            f.seek(cloc + 2)
-            sl = rd('<B')[0]
-            trace_name = rd('<' + str(sl) + 's')[0]
-            if ttab[name] == trace_name:
-                f.seek(f.tell() + 4)
-                foff = rd('<Q')[0]
-                npts = rd('<I')[0] + 2  # +2 for the extra time info
-                fdat.seek(foff)
-                pts = struct.unpack('<' + npts * 'd', fdat.read(8 * npts))
-                #TODO: pts[0] is not the true offset?
-                t = pts[0] + pts[1] * np.arange(npts - 2)
-                d = np.array(pts[2:])
-                # get the units
-                f.seek(f.tell() + 40)
-                sl = rd('<B')[0]
-                y_units = rd('<' + str(sl) + 's')[0]
-                if y_units == 'bar':
-                    d *= 0.1  # convert to MPa for metricness
-                elif y_units == '':
-                    pass  # TODO: ul/min to ml/min
-                return Series(d, t, name=name)
-
-            f.seek(cloc + 87)
-
-
-class AgilentCS(TraceFile):
-    """
-    Base class for Agilent files from ChemStation.
-    """
-    @property
-    def info(self):
-        folder = op.dirname(self.filename)
-        d = super(AgilentCS, self).info
-        pmp_file = op.join(folder, 'RUN.M', 'LPMP1.REG')
-        if op.exists(pmp_file):
-            fd = read_reg_file(open(pmp_file, 'rb'))
-            if fd.get('TIMETABLE', False):
-                # get solv_B, solv_C, solv_D, flow
-                # calculate solv_A
+            if fd.get('SOLV_RATIO_A', False):
                 pass
-            else:
-                if fd.get('SOLV_RATIO_A', False):
-                    pass
-                if fd.get('SOLV_RATIO_B', False):
-                    pass
-                if fd.get('SOLV_RATIO_C', False):
-                    pass
-                if fd.get('SOLV_RATIO_D', False):
-                    pass
-                if fd.get('FLOW', False):
-                    pass
-        return d
+            if fd.get('SOLV_RATIO_B', False):
+                pass
+            if fd.get('SOLV_RATIO_C', False):
+                pass
+            if fd.get('SOLV_RATIO_D', False):
+                pass
+            if fd.get('FLOW', False):
+                pass
+        return {}
 
-    def events(self, kind):
-        evts = super(AgilentCS, self).events(kind)
-        if kind in ('fia', 'fxn'):
-            folder = op.dirname(self.filename)
-            if kind == 'fia':
-                acq_file = op.join(folder, 'ACQRES.REG')
-            elif kind == 'fxn':
-                acq_file = op.join(folder, 'LAFC1FD.REG')
 
-            if not op.exists(acq_file):
-                return {}
-            else:
-                acq_file = open(acq_file, 'rb')
-            acq_file.seek(0x19)
-            vers = acq_file.read(7)
+class AgilentCSFraction(TraceFile):
+    ext = 'LAFC1FD.REG'
+    mgc = '0233'
+    traces = ['*fia']
 
-        if kind == 'fia' and vers.startswith(b'A'):
+    def events(self, name='fia', twin=None):
+        #TODO: use twin
+        evts = super(AgilentCSFraction, self).events(name, twin)
+        if name != 'fia':
+            return evts
+
+        acq_file = open(self.filename, 'rb')
+        acq_file.seek(0x19)
+        vers = acq_file.read(7)
+
+        if vers.startswith(b'A'):
             d = read_reg_file(acq_file)
             if not d.get('FIARun', False):
-                return {}
+                return []
             prev_f = d['FIASeriesInfo'][1][1]
             for f in d['FIASeriesInfo'][1][2:]:
                 evts.append([prev_f[0], f[0], {'name': prev_f[2]}])
@@ -170,17 +60,34 @@ class AgilentCS(TraceFile):
                     off_t = evts[-1][1] - evts[-1][0]
                     evts.append([prev_f[0], prev_f[0] + off_t, \
                                     {'name': prev_f[2]}])
-        elif kind == 'fia' and vers == b'notused':
+        elif vers == b'notused':
             #TODO: get fia from new-style *.REG files.
             pass
-        elif kind == 'fxn' and vers.startswith(b'A'):
+        return evts
+
+
+class AgilentCSFlowInject(TraceFile):
+    ext = 'ACQRES.REG'
+    mgc = '0233'
+    traces = ['*fxn']
+
+    def events(self, name='fxn', twin=None):
+        #TODO: use twin
+        evts = super(AgilentCSFlowInject, self).events(name, twin)
+        if name != 'fxn':
+            return evts
+
+        acq_file = open(self.filename, 'rb')
+        acq_file.seek(0x19)
+        vers = acq_file.read(7)
+
+        if vers.startswith(b'A'):
             #TODO: get fxn from old-style *.REG files.
             pass
-        elif kind == 'fxn' and vers == b'notused':
+        elif vers == b'notused':
             acq_file.seek(0xED)
             nfxns = struct.unpack('<I', acq_file.read(4))[0]
             acq_file.seek(0x33F)
-            evts = []
             for _ in range(nfxns):
                 d = struct.unpack('<Q9fI4f7I', acq_file.read(92))
                 evts.append([d[13] / 60000., d[14] / 60000., {}])
@@ -191,13 +98,16 @@ class AgilentCS(TraceFile):
                 evts[i][2]['name'] = acq_file.read(2 * slen).decode('utf-16')
         return evts
 
-    def trace_names(self, named):
-        if named:
-            names = ['pres', 'flow', 'slva', 'slvb', 'slvc', 'slvd',
-                     'temp']
-        else:
-            names = []
-        return super(AgilentCS, self).trace_names(named) + names
+
+class AgilentCSLC(TraceFile):
+    ext = 'LCDIAG.REG'
+    mgc = '0233'
+
+    @property
+    def traces(self):
+        #TODO: check that these all actually exist
+        return ['pres', 'flow', 'slva', 'slvb', 'slvc', \
+                'slvd', 'temp']
 
     def trace(self, name='', tol=0.5, twin=None):
         #TODO: use twin
@@ -211,8 +121,6 @@ class AgilentCS(TraceFile):
             ts = df['TimeSeries']
             ts.ions = [name]
             return ts
-        else:
-            return super(AgilentCS, self).trace(name, tol, twin)
 
 
 def read_multireg_file(f, title=None):

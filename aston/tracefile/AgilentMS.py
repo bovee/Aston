@@ -8,12 +8,13 @@ import numpy as np
 from datetime import datetime
 from xml.etree import ElementTree
 from pandas import DataFrame, Series
-from aston.tracefile.AgilentCommon import AgilentMH, AgilentCS
+from aston.tracefile.TraceFile import TraceFile
 
 
-class AgilentMS(AgilentCS):
+class AgilentMS(TraceFile):
     ext = 'MS'
     mgc = '0132'
+    traces = ['#ms']
 
     def total_trace(self, twin=None):
         #TODO: use twin?
@@ -129,9 +130,10 @@ class AgilentMS(AgilentCS):
         return d
 
 
-class AgilentMSMSScan(AgilentMH):
+class AgilentMSMSScan(TraceFile):
     ext = 'BIN'
     mgc = '0101'
+    traces = ['#ms']
 
     def _msscan_iter(self, keylist):
         f = open(self.filename, 'rb')

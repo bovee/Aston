@@ -1,6 +1,6 @@
 import numpy as np
 from pandas import DataFrame
-from aston.tracefile.Common import TraceFile
+from aston.tracefile.TraceFile import TraceFile
 
 
 class CSVFile(TraceFile):
@@ -9,7 +9,9 @@ class CSVFile(TraceFile):
     that the file is comma delimited.
     '''
     ext = 'CSV'
+    traces = ['#']
     #TODO: use pandas to make this much better
+    #TODO: determine traces to list
 
     @property
     def data(self):
