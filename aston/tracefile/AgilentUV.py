@@ -184,8 +184,15 @@ class AgilentMWD2(TraceFile):
         d['operator'] = get_str(f, 0x758)
         d['method'] = get_str(f, 0xA0E)
         rawdate = get_str(f, 0x957)
-        d['date'] = datetime.strptime(rawdate, \
-          "%d-%b-%y, %H:%M:%S").isoformat(' ')
+        try:
+            d['date'] = datetime.strptime(rawdate, \
+              '%d-%b-%y, %H:%M:%S').isoformat(' ')
+        except ValueError:
+            try:
+                d['date'] = datetime.strptime(rawdate, \
+                  '%d %b %y  %I:%M %p').isoformat(' ')
+            except ValueError:
+                pass
         d['y_units'] = get_str(f, 0x104C)
         #TODO: replace signal name with reference_wavelength?
         #d['signal name'] = f.read(struct.unpack('>B', f.read(1))[0]).decode()

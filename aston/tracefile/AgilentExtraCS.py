@@ -13,6 +13,7 @@ class AgilentCSPump(TraceFile):
 
     @property
     def info(self):
+        d = super(AgilentCSPump, self).info
         fd = read_reg_file(open(self.filename, 'rb'))
         if fd.get('TIMETABLE', False):
             # get solv_B, solv_C, solv_D, flow
@@ -29,7 +30,7 @@ class AgilentCSPump(TraceFile):
                 pass
             if fd.get('FLOW', False):
                 pass
-        return {}
+        return d
 
 
 class AgilentCSFraction(TraceFile):

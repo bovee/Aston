@@ -87,9 +87,9 @@ class BrukerMSMS(TraceFile):
         #self.ions = [1]
 
 
-class BrukerBAF(TraceFile):
-    ext = 'BAF'
-    mgc = '2400'
-
-    pass
-    #TODO: implement this
+#class BrukerBAF(TraceFile):
+#    ext = 'BAF'
+#    mgc = '2400'
+#
+#    pass
+#    #TODO: implement this

@@ -31,7 +31,7 @@ class TraceFile(object):
                         self.__class__ = cls
                         self.ftype = ftype
         else:
-            self.ftype = str(self.__class__)
+            self.ftype = self.__class__.__name__
 
     #TODO: define a private function for twin filtering in here
 
