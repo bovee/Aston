@@ -1,7 +1,7 @@
 import numpy as np
 import scipy.sparse
 from scipy.io.netcdf import NetCDFFile
-from pandas import DataFrame, Series
+from aston.trace.Trace import AstonFrame, AstonSeries
 from aston.tracefile.TraceFile import TraceFile
 
 
@@ -14,7 +14,7 @@ class NetCDF(TraceFile):
         f = NetCDFFile(open(self.filename, 'rb'))
         tme = f.variables['scan_acquisition_time'].data / 60.
         tic = f.variables['total_intensity'].data
-        return Series(tic, tme, name='TIC')
+        return AstonSeries(tic, tme, name='TIC')
 
     @property
     def data(self):
@@ -39,7 +39,7 @@ class NetCDF(TraceFile):
 
         data = scipy.sparse.csr_matrix((vals, cols, rowst), \
           shape=(len(t), len(ions)), dtype=float)
-        return DataFrame(data.todense(), t, ions)
+        return AstonFrame(data.todense(), t, ions)
 
 
 def write_netcdf(filename, df, info=None):

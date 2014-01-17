@@ -1,12 +1,18 @@
 import numbers
 import numpy as np
+from aston.trace.Trace import AstonSeries, AstonFrame
 from aston.tracefile.Common import tfclasses, file_type
-from pandas import Series, DataFrame
 
 
 class TraceFile(object):
-    ext = None
-    mgc = None
+    fnm = None  # file name, if constant
+    ext = None  # file extension, if constant
+    mgc = None  # first two bytes of the file, if constant
+
+    # traces is a list of possible traces:
+    # each item may start with a * indicating a events
+    # a # indicating a 2d trace or nothing indicating a single trace name
+    traces = []
 
     def __init__(self, filename=None, ftype=None, data=None):
         self.filename = filename
@@ -33,21 +39,34 @@ class TraceFile(object):
         else:
             self.ftype = self.__class__.__name__
 
-    #TODO: define a private function for twin filtering in here
+    #TODO: define a private function for time win filtering in here
+    def _twin(self, s, twin=None):
+        #TODO: accept None's in twin
+        if twin is not None:
+            return s[s.between(twin[0], twin[1])]
+        else:
+            return s
 
     @property
     def data(self):
         if self._data is not None:
             return self._data
         else:
-            return DataFrame()
+            return AstonFrame()
 
     def total_trace(self, twin=None):
         d = self.data.sum(axis=1)
-        if twin is not None:
-            return d[d.between(twin[0], twin[1])]
-        else:
-            return d
+        return self._twin(d, twin)
+
+    def plot(self, name='', ax=None):
+        if ax is None:
+            import matplotlib.pyplot as plt
+            ax = plt.gca()
+
+        #TODO: colors?
+        #TODO: plot events
+        #TODO: plot 2d/colors
+        #TODO: plot traces
 
     def trace(self, name='', tol=0.5, twin=None):
         # this is the only string we handle; all others handled in subclasses
@@ -70,13 +89,10 @@ class TraceFile(object):
         elif name in self.data.columns:
             d = self.data[name]
         else:
-            d = Series()
+            d = AstonSeries()
 
         # return the appropriate time window of the trace
-        if twin is not None:
-            return d[d.between(twin[0], twin[1])]
-        else:
-            return d
+        return self._twin(d, twin)
 
     def scan(self, time, to_time=None, aggfunc=np.sum):
         """
@@ -101,4 +117,5 @@ class TraceFile(object):
                 'filetype': self.ftype}
 
     def events(self, name, twin=None):
+        #TODO: check for '*' trace in self.traces
         return []

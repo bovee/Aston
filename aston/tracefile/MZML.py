@@ -3,7 +3,7 @@ import zlib
 import base64
 from xml.etree import ElementTree
 import numpy as np
-from pandas import DataFrame, Series
+from aston.trace.Trace import AstonSeries, AstonFrame
 from aston.tracefile.TraceFile import TraceFile
 
 
@@ -48,7 +48,7 @@ class mzXML(object):
         s = r.findall('*//m:scan', namespaces=self.ns)
         d = np.array([float(i.get('totIonCurrent')) for i in s])
         t = np.array([t_to_min(i.get('retentionTime')) for i in s])
-        return Series(d, t, name='TIC')
+        return AstonSeries(d, t, name='TIC')
 
 
 class mzML(TraceFile):
@@ -61,7 +61,7 @@ class mzML(TraceFile):
         s = r.findall('*//{http://psi.hupo.org/ms/mzml}spectrumList/')
         d = None
         data = zlib.decompress(base64.b64decode(d))
-        return DataFrame()
+        return AstonFrame()
 
 
 def write_mzxml(df, info=None, precision='f'):

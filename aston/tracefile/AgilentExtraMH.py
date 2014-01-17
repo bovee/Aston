@@ -1,12 +1,12 @@
 import struct
 from xml.etree import ElementTree
 import numpy as np
-from pandas import Series
+from aston.trace.Trace import AstonSeries
 from aston.tracefile.TraceFile import TraceFile
 
 
 class AgilentMHPump(TraceFile):
-    ext = 'CAPPUMP1.CD'
+    fnm = 'CAPPUMP1.CD'
     traces = ['pres', 'flow', 'slvb']
 
     def trace(self, name='', tol=0.5, twin=None):
@@ -15,7 +15,7 @@ class AgilentMHPump(TraceFile):
 
 
 class AgilentMHTemp(TraceFile):
-    ext = 'TCC1.CD'
+    fnm = 'TCC1.CD'
     traces = ['temp']
 
     def trace(self, name='', tol=0.5, twin=None):
@@ -24,7 +24,7 @@ class AgilentMHTemp(TraceFile):
 
 
 class AgilentMHAcqMethod(TraceFile):
-    ext = 'ACQ_METHOD.XML'
+    fnm = 'ACQ_METHOD.XML'
 
     @property
     def info(self):
@@ -48,7 +48,7 @@ class AgilentMHAcqMethod(TraceFile):
 
 
 class AgilentMHSampleInfo(TraceFile):
-    ext = 'SAMPLE_INFO.XML'
+    fnm = 'SAMPLE_INFO.XML'
 
     @property
     def info(self):
@@ -106,6 +106,6 @@ def read_mh_trace(filename, trace_name):
                 d *= 0.1  # convert to MPa for metricness
             elif y_units == '':
                 pass  # TODO: ul/min to ml/min
-            return Series(d, t, name=trace_name)
+            return AstonSeries(d, t, name=trace_name)
 
         f.seek(cloc + 87)

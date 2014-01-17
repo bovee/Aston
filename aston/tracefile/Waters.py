@@ -1,7 +1,7 @@
 import struct
 import os.path as op
 import numpy as np
-from pandas import DataFrame
+from aston.trace.Trace import AstonFrame
 from aston.tracefile.TraceFile import TraceFile
 
 
@@ -33,7 +33,8 @@ class WatersAutospec(TraceFile):
     #        tme.append(d[4])
     #        tic.append(d[3])
     #    fidx.close()
-    #    return TimeSeries(np.array(tic), np.array(tme), ['TIC']).trace(twin=twin)
+    #    return TimeSeries(np.array(tic), np.array(tme), \
+    #                      ['TIC']).trace(twin=twin)
 
     @property
     def data(self):
@@ -67,4 +68,4 @@ class WatersAutospec(TraceFile):
                 break
         fdat.close()
         fidx.close()
-        return DataFrame(np.array(data), np.array(tme), ions)
+        return AstonFrame(np.array(data), np.array(tme), ions)

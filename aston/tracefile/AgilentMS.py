@@ -2,12 +2,11 @@ import os.path as op
 import gzip
 import io
 import struct
-from functools import lru_cache
 import numpy as np
 #import scipy
 from datetime import datetime
 from xml.etree import ElementTree
-from pandas import DataFrame, Series
+from aston.trace.Trace import AstonSeries, AstonFrame
 from aston.tracefile.TraceFile import TraceFile
 
 
@@ -41,7 +40,7 @@ class AgilentMS(TraceFile):
             tic[i] = struct.unpack('>I', f.read(4))[0]
             f.seek(npos)
         f.close()
-        return Series(tic, tme, name='TIC')
+        return AstonSeries(tic, tme, name='TIC')
 
     @property
     def data(self):
@@ -100,7 +99,7 @@ class AgilentMS(TraceFile):
         f.close()
 
         ions = ions / 20
-        return DataFrame(data, times, ions)
+        return AstonFrame(data, times, ions)
 
     @property
     def info(self):
@@ -135,6 +134,7 @@ class AgilentMSMSScan(TraceFile):
     mgc = '0101'
     traces = ['#ms']
 
+    # TODO: __init__ method that adds mrm trace names to traces
     def _msscan_iter(self, keylist):
         f = open(self.filename, 'rb')
         r = ElementTree.parse(op.splitext(self.filename)[0] + '.xsd').getroot()
@@ -195,7 +195,7 @@ class AgilentMSMSScan(TraceFile):
                 break
             tme.append(t)
             tic.append(z)
-        return Series(np.array(tic), np.array(tme), name='TIC')
+        return AstonSeries(np.array(tic), np.array(tme), name='TIC')
         #TODO: set .twin(twin) bounds on this
 
     #FIXME: need to define a trace_names with ions in it
@@ -234,7 +234,7 @@ class AgilentMSMSScan(TraceFile):
             ic.append(sum(pd[ion_loc]))
 
         f.close()
-        return Series(np.array(ic), np.array(tme), name=str(name))
+        return AstonSeries(np.array(ic), np.array(tme), name=str(name))
 
     def mrm_trace(self, parent=None, daughter=None, tol=0.5, twin=None):
         if twin is None:
@@ -257,7 +257,7 @@ class AgilentMSMSScan(TraceFile):
             tme.append(t)
             ic.append(z)
 
-        return Series(np.array(ic), np.array(tme), \
+        return AstonSeries(np.array(ic), np.array(tme), \
                       name=str(str(parent) + '->' + str(daughter)))
 
     def scan(self, time, to_time=None):

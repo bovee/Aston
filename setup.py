@@ -45,13 +45,13 @@ options = {
         'Topic :: Scientific/Engineering :: Chemistry'
     ],
     'long_description': read('README.rst'),
-    'packages': ['aston', 'aston.ui', 'aston.databases', 'aston.features', \
-                 'aston.file_adapters', 'aston.peaks', 'aston.spectra', \
-                 'aston.test', 'aston.timeseries'],
+    'packages': ['aston', 'aston.qtgui', 'aston.database', 'aston.peaks', \
+                 'aston.qtgui', 'aston.spectra', 'aston.trace', \
+                 'aston.tracefile', 'aston.tracevis', 'aston.test'],
     'scripts': ['astonx.py'],
     'data_files': matplotlib.get_py2exe_datafiles(),
     'package_data': {'aston': \
-      ['i18n/*.qm', 'ui/icons/*.png']},
+      ['qtgui/i18n/*.qm', 'qtgui/icons/*.png']},
     'include_package_data': True,
     'install_requires': ['numpy', 'scipy', 'matplotlib'],
     'test_suite': 'nose.collector'
@@ -70,10 +70,10 @@ if len(sys.argv) >= 2 and sys.argv[1] == 'py2exe':
     #options['data_files'] += [('Microsoft.VC90.CRT', \
     #      glob(r'C:\Program Files\Microsoft Visual Studio 9.0' + \
     #      r'\VC\redist\x86\Microsoft.VC90.CRT\*.*'))]
-    options['data_files'] += [(r'aston\i18n', \
-      glob(os.path.abspath(r'aston\i18n\*.qm')))]
-    options['data_files'] += [(r'aston\ui\icons', \
-      glob(os.path.abspath(r'aston\ui\icons\*.png')))]
+    options['data_files'] += [(r'aston\qtgui\i18n', \
+      glob(os.path.abspath(r'aston\qtgui\i18n\*.qm')))]
+    options['data_files'] += [(r'aston\qtgui\icons', \
+      glob(os.path.abspath(r'aston\qtgui\icons\*.png')))]
     options['zipfile'] = None
     options['options'] = {
         'py2exe': {'skip_archive': False,
@@ -100,11 +100,11 @@ elif len(sys.argv) >= 2 and sys.argv[1] == 'py2app':
 
     options['app'] = ['astonx.py']
     options['setup_requires'] = ['py2app']
-    options['iconfile'] = 'aston/ui/icons/logo.icns'
-    options['data_files'] += [('aston/i18n', \
-      glob(os.path.abspath('aston/i18n/*.qm')))]
-    options['data_files'] += [('aston/ui/icons', \
-      glob(os.path.abspath('aston/ui/icons/*.png')))]
+    options['iconfile'] = 'aston/qtgui/icons/logo.icns'
+    options['data_files'] += [('aston/qtgui/i18n', \
+      glob(os.path.abspath('aston/qtgui/i18n/*.qm')))]
+    options['data_files'] += [('aston/qtgui/icons', \
+      glob(os.path.abspath('aston/qtgui/icons/*.png')))]
     options['options'] = {'py2app': {
         'argv_emulation': False,
         'includes': ['sip', 'PyQt4', 'PyQt4.QtCore', \
@@ -125,7 +125,7 @@ setup(**options)
 if len(sys.argv) >= 2 and sys.argv[1] == 'py2exe':
     os.system('rmdir build /s /q')
     os.system('rmdir dist\\mpl-data\\sample_data /s /q')
-    os.system('copy platform\\win\\*.ico dist\\aston\\ui\\icons\\')
+    os.system('copy platform\\win\\*.ico dist\\aston\\qtgui\\icons\\')
     #TODO: create the Microsoft.VC90.CRT folder and copy the DLLs
     # and manifest into it
     #TODO: run the aston.nsi

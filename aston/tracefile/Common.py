@@ -3,6 +3,7 @@ import os.path as op
 import binascii
 import re
 import struct
+from itertools import product
 from glob import glob
 import inspect
 from importlib import import_module
@@ -14,7 +15,6 @@ except ImportError:  # Python 2
 
 #File types from http://en.wikipedia.org/wiki/Mass_spectrometry_data_format
 #and http://www.amdis.net/What_is_AMDIS/AMDIS_Detailed/amdis_detailed.html
-#TODO: .ABI | DNA Chromatogram format
 #TODO: .FID | Bruker instrument data format
 #TODO: .LRP | Shrader/GCMate
 #TODO: .MS  | Varian Saturn Files
@@ -24,8 +24,6 @@ except ImportError:  # Python 2
 #TODO: .PKL | MassLynx associated format
 #TODO: .RAW | Micromass MassLynx directory format
 #TODO: .RAW | PerkinElmer TurboMass file format
-#TODO: .SCF | "Standard Chromatogram Format" for DNA
-#      http://staden.sourceforge.net/manual/formats_unix_2.html
 #TODO: .SMS | Saturn SMS
 #TODO: .WIFF| ABI/Sciex (QSTAR and QTRAP instrument) format
 #TODO: .YEP | Bruker instrument data format
@@ -36,7 +34,6 @@ def tfclasses():
     """
     A list of every class for reading data files.
     """
-    #TODO: should be cached
     # automatically find any subclasses of TraceFile in the same
     # directory as me
     classes = []
@@ -59,19 +56,29 @@ def tfclasses_lookup():
     Create a lookup table for determining what type a file might
     potentially be.
     """
-    #TODO: should be cached
+    def mi(d):
+        """
+        Make something iterable, if it's not already (but not strings).
+        """
+        if isinstance(d, (tuple, list)):
+            return d
+        else:
+            return (d,)
 
     # create the lookup table
     lookup = {}
     for cls in tfclasses():
-        if cls.mgc is None:
-            # if there's no magic
-            lookup[cls.ext] = cls.__name__
-        elif type(cls.mgc) == tuple:
-            for mgc in cls.mgc:
-                lookup[cls.ext + '|' + mgc] = cls.__name__
-        else:
-            lookup[cls.ext + '|' + cls.mgc] = cls.__name__
+        for mgc, ext, fnm in product(mi(cls.mgc), mi(cls.ext), mi(cls.fnm)):
+            if mgc is None:
+                if fnm is not None:
+                    lookup[fnm] = cls.__name__
+                else:
+                    lookup[ext] = cls.__name__
+            else:
+                if fnm is not None:
+                    lookup[fnm + '|' + mgc] = cls.__name__
+                else:
+                    lookup[ext + '|' + mgc] = cls.__name__
     return lookup
 
 

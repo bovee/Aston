@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import struct
 import numpy as np
-from pandas import DataFrame
+from aston.trace.Trace import AstonFrame
 from aston.tracefile.TraceFile import TraceFile
 from aston.tracefile.Common import find_offset
 
@@ -100,4 +100,4 @@ class InficonHapsite(TraceFile):
         data = np.zeros((len(times), len(mzs)))
         for i, r in enumerate(abns):
             data[i, 0:len(r)] = r
-        return DataFrame(data, times, mzs)
+        return AstonFrame(data, times, mzs)

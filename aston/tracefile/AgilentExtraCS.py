@@ -2,12 +2,12 @@
 import os.path as op
 import struct
 import numpy as np
-from pandas import Series
+from aston.trace.Trace import AstonSeries
 from aston.tracefile.TraceFile import TraceFile
 
 
 class AgilentCSPump(TraceFile):
-    ext = 'LPMP1.REG'
+    fnm = 'LPMP1.REG'
     mgc = '0233'
     traces = ['mslva', 'mslvb', 'mslvc', 'mslvd', 'mflow']
 
@@ -34,7 +34,7 @@ class AgilentCSPump(TraceFile):
 
 
 class AgilentCSFraction(TraceFile):
-    ext = 'LAFC1FD.REG'
+    fnm = 'LAFC1FD.REG'
     mgc = '0233'
     traces = ['*fia']
 
@@ -68,7 +68,7 @@ class AgilentCSFraction(TraceFile):
 
 
 class AgilentCSFlowInject(TraceFile):
-    ext = 'ACQRES.REG'
+    fnm = 'ACQRES.REG'
     mgc = '0233'
     traces = ['*fxn']
 
@@ -101,7 +101,7 @@ class AgilentCSFlowInject(TraceFile):
 
 
 class AgilentCSLC(TraceFile):
-    ext = 'LCDIAG.REG'
+    fnm = 'LCDIAG.REG'
     mgc = '0233'
 
     @property
@@ -111,6 +111,7 @@ class AgilentCSLC(TraceFile):
                 'slvd', 'temp']
 
     def trace(self, name='', tol=0.5, twin=None):
+        #TODO: return parent trace
         #TODO: use twin
         #TODO: read info from new style REG files
         rf = op.join(op.dirname(self.filename), 'LCDIAG.REG')
@@ -119,8 +120,8 @@ class AgilentCSLC(TraceFile):
                  'slva': 'PMP1, Solvent A', 'slvb': 'PMP1, Solvent B',
                  'slvc': 'PMP1, Solvent C', 'slvd': 'PMP1, Solvent D'}
             df = read_multireg_file(open(rf, 'rb'), title=t[name])
-            ts = df['TimeSeries']
-            ts.ions = [name]
+            ts = df['AstonSeries']
+            ts.name = name
             return ts
 
 
@@ -246,7 +247,7 @@ def read_reg_file(f, foff=0x2D):
             if y_units == 'bar':
                 y_arr *= 0.1  # convert to MPa
             #TODO: what to call this?
-            data['TimeSeries'] = Series(y_arr, x_arr, name='')
+            data['AstonSeries'] = AstonSeries(y_arr, x_arr, name='')
         #elif r[1] == 1025:  # b'0104'
         #    # lots of zeros? maybe one or two numbers?
         #    # only found in REG entries that have long 0280 records

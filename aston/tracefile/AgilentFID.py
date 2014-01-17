@@ -1,11 +1,11 @@
 import numpy as np
 import struct
-from pandas import Series
+from aston.trace.Trace import AstonSeries
 from aston.tracefile.TraceFile import TraceFile
 
 
 class AgilentFID(TraceFile):
-    # TODO: preliminary support, math is probably not correct
+    # TODO: preliminary support, math may not be correct
     """
     Reads a Agilent FID *.ch file.
     """
@@ -46,11 +46,11 @@ class AgilentFID(TraceFile):
         # TODO: 0.4/60.0 should be obtained from the file???
         times = np.array(start_time + np.arange(len(data)) * (0.2 / 60.0))
         #times = np.linspace(start_time, end_time, data.shape[0])
-        return Series(np.array([data]).T, times, name='TIC')
+        return AstonSeries(np.array([data]).T, times, name='TIC')
 
 
 class AgilentFID2(TraceFile):
-    # TODO: preliminary support, math is probably not correct
+    # TODO: preliminary support, math may not be correct
     """
     Reads a Agilent FID *.ch file.
     """
@@ -74,4 +74,4 @@ class AgilentFID2(TraceFile):
         f.seek(0x1800)
         data = np.fromfile(f, '<f8')
         times = np.linspace(start_time, end_time, data.shape[0])
-        return Series(data, times, name='TIC')
+        return AstonSeries(data, times, name='TIC')

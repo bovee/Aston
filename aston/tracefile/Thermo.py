@@ -2,7 +2,7 @@ import struct
 import re
 import os
 import numpy as np
-from pandas import DataFrame
+from aston.trace.Trace import AstonFrame
 from aston.tracefile.Common import find_offset
 from aston.tracefile.TraceFile import TraceFile
 
@@ -37,7 +37,7 @@ class ThermoCF(TraceFile):
         data[:, 0] /= 60.  # convert time to minutes
         #self.data = TimeSeries(data[:, 1:], data[:, 0], ions)
         f.close()
-        return DataFrame(data[:, 1:], data[:, 0], ions)
+        return AstonFrame(data[:, 1:], data[:, 0], ions)
 
     @property
     def info(self):
@@ -85,7 +85,7 @@ class ThermoDXF(TraceFile):
 
         data[:, 0] /= 60.  # convert time to minutes
         f.close()
-        return DataFrame(data[:, 1:], data[:, 0], ions)
+        return AstonFrame(data[:, 1:], data[:, 0], ions)
 
     @property
     def info(self):

@@ -3,7 +3,7 @@ import re
 import struct
 from datetime import datetime
 import numpy as np
-from pandas import DataFrame
+from aston.trace.Trace import AstonFrame
 from aston.tracefile.TraceFile import TraceFile
 
 
@@ -39,7 +39,7 @@ class AgilentMWD(TraceFile):
                 ions.append(float(wv))
                 dtraces.append(dtrace)
         data = np.array(dtraces).transpose()
-        return DataFrame(data, times, ions)
+        return AstonFrame(data, times, ions)
 
     def _read_ind_file(self, fname):
         f = open(fname, 'rb')
@@ -132,7 +132,7 @@ class AgilentMWD2(TraceFile):
                 ions.append(float(wv))
                 dtraces.append(dtrace)
         data = np.array(dtraces).transpose()
-        return DataFrame(data, times, ions)
+        return AstonFrame(data, times, ions)
 
     def _read_ind_file(self, fname):
         f = open(fname, 'rb')
@@ -239,7 +239,7 @@ class AgilentDAD(TraceFile):
             fdata.seek(t[5] + 16)
             #TODO: use np.fromfile?
             data[scn] = struct.unpack('<' + npts * 'd', fdata.read(npts * 8))
-        return DataFrame(data, times, ions)
+        return AstonFrame(data, times, ions)
 
         fhead.close()
         fdata.close()
@@ -292,7 +292,7 @@ class AgilentCSDAD(TraceFile):
         for i, d in zip(range(nscans), data):
             for ion, abn in d.items():
                 ndata[i, ions.index(ion)] = abn
-        return DataFrame(ndata, times, ions)
+        return AstonFrame(ndata, times, ions)
 
     @property
     def info(self):
@@ -404,7 +404,7 @@ class AgilentCSDAD2(TraceFile):
             #    ndata[i, pidx:idx] = np.cumsum(data[pidx:idx])
             #    pidx = idx
 
-        return DataFrame(ndata / 2000., times / 60000., wvs)
+        return AstonFrame(ndata / 2000., times / 60000., wvs)
 
     @property
     def info(self):

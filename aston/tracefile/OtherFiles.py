@@ -1,5 +1,6 @@
 import numpy as np
-from pandas import DataFrame
+from pandas import read_csv
+from aston.trace.Trace import AstonFrame
 from aston.tracefile.TraceFile import TraceFile
 
 
@@ -22,9 +23,9 @@ class CSVFile(TraceFile):
                 ions = [float(i) for i in lns[0].split(delim)[1:]]
                 data = np.array([np.fromstring(ln, sep=delim) \
                                  for ln in lns[1:]])
-                return DataFrame(data[:, 1:], data[:, 0], ions)
+                return AstonFrame(data[:, 1:], data[:, 0], ions)
         except:
-            return DataFrame()
+            return AstonFrame()
 
 
 def write_csv(filename, df, info=None):

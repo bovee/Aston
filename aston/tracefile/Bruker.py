@@ -1,7 +1,7 @@
 import struct
 import numpy as np
 import scipy.sparse
-from pandas import DataFrame
+from aston.trace.Trace import AstonFrame, AstonSeries
 from aston.tracefile.TraceFile import TraceFile
 
 
@@ -23,7 +23,7 @@ class BrukerMSMS(TraceFile):
 
         nscans = rd(f, 'ii')[1]
         if nscans == 0:
-            self.data = TimeSeries(np.array([]), np.array([]), [])
+            self.data = AstonSeries(np.array([]), np.array([]), [])
             return
         times = np.array(rd(f, nscans * 'd')) / 60.0
         f.seek(f.tell() + 4)  # number of scans again
@@ -69,7 +69,7 @@ class BrukerMSMS(TraceFile):
         data = scipy.sparse.csr_matrix((vals, idxs, indptr), \
                                     shape=(nscans, len(ions)), \
                                     dtype=float)
-        return DataFrame(data, times, ions)
+        return AstonFrame(data, times, ions)
 
         #self.data = np.zeros((recs, 2))
         #times = rd(f, nscans * 'd')
