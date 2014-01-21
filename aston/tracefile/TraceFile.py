@@ -119,3 +119,8 @@ class TraceFile(object):
     def events(self, name, twin=None):
         #TODO: check for '*' trace in self.traces
         return []
+
+    def md5hash(self):
+        #TODO: calculate md5hash of this file
+        # to be used for determining if files in db are unique
+        raise NotImplementedError

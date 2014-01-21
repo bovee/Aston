@@ -2,7 +2,7 @@
 from __future__ import unicode_literals
 from collections import OrderedDict
 from PyQt4.QtCore import QObject
-from aston.ui.MenuOptions import peak_models
+from aston.qtgui.MenuOptions import peak_models
 
 tr = lambda s: QObject().trUtf8(s)
 

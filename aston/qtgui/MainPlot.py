@@ -6,7 +6,7 @@ from matplotlib.path import Path
 from matplotlib.transforms import offset_copy
 from matplotlib.patches import PathPatch, Polygon
 from PyQt4.QtCore import Qt, QCoreApplication
-from aston.ui.Navbar import AstonNavBar
+from aston.qtgui.Navbar import AstonNavBar
 
 
 class Plotter(object):

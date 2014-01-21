@@ -2,7 +2,7 @@ import multiprocessing
 import functools
 import numpy as np
 from aston.peaks.Peak import Peak
-from aston.timeseries.TimeSeries import TimeSeries
+from aston.trace.Trace import AstonSeries
 from aston.peaks.Math import time
 from aston.peaks.PeakModels import peak_models
 from aston.peaks.PeakFitting import guess_initc, fit

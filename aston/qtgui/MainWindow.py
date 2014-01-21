@@ -2,18 +2,17 @@ import codecs
 import os.path as op
 from PyQt4 import QtGui
 
-from aston.ui.resources import resfile
-from aston.ui.ui_mainwindow import Ui_MainWindow
-from aston.ui.Settings import SettingsWidget
-from aston.ui.FilterWindow import FilterWindow
-from aston.ui.MainPlot import Plotter
-from aston.ui.SpecPlot import SpecPlotter
+from aston.qtgui.resources import resfile
+from aston.qtgui.ui_mainwindow import Ui_MainWindow
+from aston.qtgui.Settings import SettingsWidget
+from aston.qtgui.FilterWindow import FilterWindow
+from aston.qtgui.MainPlot import Plotter
+from aston.qtgui.SpecPlot import SpecPlotter
 
-from aston.databases.Database import AstonDatabase
-from aston.databases.FileDatabase import AstonFileDatabase
-from aston.databases.Compound import get_compound_db
-from aston.ui.FileTable import FileTreeModel
-import aston.ui.MenuOptions
+from aston.database import quick_sqlite
+#from aston.database.Compound import get_compound_db
+from aston.qtgui.TableFile import FileTreeModel
+import aston.qtgui.MenuOptions
 from aston.peaks.PeakFinding import find_peaks, find_peaks_iso
 from aston.peaks.Integrators import integrate_peaks
 
@@ -25,7 +24,7 @@ class AstonWindow(QtGui.QMainWindow):
         self.ui.setupUi(self)
 
         #my icon!
-        icn_path = resfile('aston/ui', 'icons/logo.png')
+        icn_path = resfile('aston/qtgui', 'icons/logo.png')
         self.setWindowIcon(QtGui.QIcon(icn_path))
 
         #quick fix for Mac OS menus
@@ -35,11 +34,11 @@ class AstonWindow(QtGui.QMainWindow):
         fdir = self.getPref('Default.FILE_DIRECTORY')
         if fdir is not None:
             self.directory = op.expanduser(fdir)
-            file_db = AstonFileDatabase(op.join(self.directory, \
-                                                'aston.sqlite'))
+            file_db = quick_sqlite(op.join(self.directory, 'aston.sqlite'))
         else:
-            file_db = AstonDatabase(None)
-        self.obj_tab = FileTreeModel(file_db, self.ui.fileTreeView, self)
+            #file_db = AstonDatabase(None)
+            pass
+        self.file_tab = FileTreeModel(file_db, self.ui.fileTreeView, self)
 
         #connect the menu logic
         self.ui.actionOpen.triggered.connect(self.open_folder)
@@ -72,6 +71,8 @@ class AstonWindow(QtGui.QMainWindow):
         self.ui.compoundDockWidget.setVisible(False)
         self.ui.methodDockWidget.setVisible(False)
 
+        #FIXME
+        return
         #hook up the search box
         self.ui.lineEdit.textChanged.connect(self.updateSearch)
 

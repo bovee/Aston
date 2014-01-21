@@ -39,13 +39,13 @@ multiprocessing.freeze_support()
 #all the other imports
 import sys
 import PyQt4
-from aston.ui.MainWindow import AstonWindow
+from aston.qtgui.MainWindow import AstonWindow
 qt = PyQt4.QtGui.QApplication(sys.argv)
 
 # translation stuff
 import locale
 import pkg_resources
-from aston.ui.resources import resfile
+from aston.qtgui.resources import resfile
 try:
     locale.setlocale(locale.LC_ALL, '')
     if locale.getlocale()[0] is not None:

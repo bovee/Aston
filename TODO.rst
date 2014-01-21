@@ -1,6 +1,13 @@
 0.7 Checklist
 *************
 
+* full update to use sqlalchemy
+* isotope runs should expose their individual ions as traces
+
+
+0.8 Checklist
+*************
+
 * mzML & mzXML file support
 * save AIA/CDF, mzML & mzXML
 * RAW file support
@@ -23,7 +30,7 @@
 * buttons for spectral navigation?
 
 
-0.8 Checklist
+0.9 Checklist
 *************
 
 * MSMS support

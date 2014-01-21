@@ -1,5 +1,5 @@
 from PyQt4 import QtGui, QtCore
-from aston.ui.ui_quant import Ui_Dialog
+from aston.qtgui.ui_quant import Ui_Dialog
 
 class QuantDialog(QtGui.QDialog):
     def __init__(self, parent=None, peaks=None):

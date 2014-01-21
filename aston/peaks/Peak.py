@@ -5,7 +5,7 @@ from pandas import Series, DataFrame
 from aston.features.DBObject import DBObject
 import aston.peaks.Math as peakmath
 from aston.spectra.Spectrum import Spectrum
-from aston.timeseries.TimeSeries import TimeSeries
+from aston.trace.Trace import AstonSeries
 from aston.spectra.Isotopes import delta13C_Santrock, delta13C_Craig
 from aston.peaks.PeakFitting import fit, guess_initc
 from aston.peaks.PeakModels import peak_models

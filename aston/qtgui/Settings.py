@@ -1,9 +1,9 @@
 from PyQt4 import QtGui
-from aston.ui.ui_settings import Ui_Form
-from aston.databases.Database import AstonDatabase
-from aston.databases.Compound import get_compound_db
-from aston.ui.FileTable import FileTreeModel
-from aston.ui.MenuOptions import peak_models
+from aston.qtgui.ui_settings import Ui_Form
+#from aston.database.Database import AstonDatabase
+#from aston.database.Compound import get_compound_db
+from aston.qtgui.TableFile import FileTreeModel
+from aston.qtgui.MenuOptions import peak_models
 from aston.spectra.Isotopes import delta13C_constants
 
 

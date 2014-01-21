@@ -1,6 +1,6 @@
- -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
-#    Copyright 2011-2013 Roderick Bovee
+#    Copyright 2011-2014 Roderick Bovee
 #
 #    This file is part of Aston.
 #
@@ -27,14 +27,14 @@ import re
 import json
 from collections import OrderedDict
 from PyQt4 import QtGui, QtCore
-from aston.ui.QuantDialog import QuantDialog
-from aston.ui.resources import resfile
-from aston.ui.Fields import aston_fields, aston_groups, aston_field_opts
-from aston.ui.MenuOptions import peak_models
-from aston.databases.FileDatabase import AstonFileDatabase, LoadFilesThread
+from aston.qtgui.QuantDialog import QuantDialog
+from aston.qtgui.resources import resfile
+from aston.qtgui.Fields import aston_fields, aston_groups, aston_field_opts
+from aston.qtgui.MenuOptions import peak_models
+from aston.database.Files import Project, Run
 
 
-class FileTree(QtCore.QAbstractItemModel):
+class FileTreeModel(QtCore.QAbstractItemModel):
     """
     Handles interfacing with QTreeView and other file-related duties.
     """
@@ -43,73 +43,76 @@ class FileTree(QtCore.QAbstractItemModel):
         QtCore.QAbstractItemModel.__init__(self, *args)
 
         self.db = database
-        self.db._table = self
         self.master_window = master_window
-        if type(database) == AstonFileDatabase:
-            def_fields = '["name", "vis", "traces", "r-filename"]'
-        else:
-            def_fields = '["name"]'
-        self.fields = json.loads(self.db.get_key('main_cols', dflt=def_fields))
+        #TODO: load custom fields from the database
+        self.fields = ['name', 'sel']
 
         if tree_view is None:
             return
         else:
             self.tree_view = tree_view
 
-        #set up proxy model
-        self.proxyMod = FilterModel()
-        self.proxyMod.setSourceModel(self)
-        self.proxyMod.setDynamicSortFilter(True)
-        self.proxyMod.setFilterKeyColumn(0)
-        self.proxyMod.setFilterCaseSensitivity(False)
-        tree_view.setModel(self.proxyMod)
-        tree_view.setSortingEnabled(True)
+        # create a list with all of the root items in it
+        self.children = self.db.query(Project).filter(Project.name != '').all()
+        prj = self.db.query(Project).filter_by(name='').first()._project_id
+        self.children += self.db.query(Run).filter_by(_project_id=prj).all()
 
-        #set up selections
-        tree_view.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
-        tree_view.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
-        #TODO: this works, but needs to be detached when opening a new folder
-        tree_view.selectionModel().currentChanged.connect(self.itemSelected)
-        #tree_view.clicked.connect(self.itemSelected)
+        tree_view.setModel(self)
 
-        #set up key shortcuts
-        delAc = QtGui.QAction("Delete", tree_view, \
-            shortcut=QtCore.Qt.Key_Backspace, triggered=self.delItemKey)
-        delAc = QtGui.QAction("Delete", tree_view, \
-            shortcut=QtCore.Qt.Key_Delete, triggered=self.delItemKey)
-        tree_view.addAction(delAc)
+        ##set up proxy model
+        #self.proxyMod = FilterModel()
+        #self.proxyMod.setSourceModel(self)
+        #self.proxyMod.setDynamicSortFilter(True)
+        #self.proxyMod.setFilterKeyColumn(0)
+        #self.proxyMod.setFilterCaseSensitivity(False)
+        #tree_view.setModel(self.proxyMod)
+        #tree_view.setSortingEnabled(True)
 
-        #set up right-clicking
-        tree_view.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-        tree_view.customContextMenuRequested.connect(self.click_main)
-        tree_view.header().setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-        tree_view.header().customContextMenuRequested.connect( \
-            self.click_head)
-        tree_view.header().setStretchLastSection(False)
+        ##set up selections
+        #tree_view.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
+        #tree_view.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
+        ##TODO: this works, but needs to be detached when opening a new folder
+        #tree_view.selectionModel().currentChanged.connect(self.itemSelected)
+        ##tree_view.clicked.connect(self.itemSelected)
 
-        #set up drag and drop
-        tree_view.setDragEnabled(True)
-        tree_view.setAcceptDrops(True)
-        tree_view.setDragDropMode(QtGui.QAbstractItemView.DragDrop)
-        tree_view.dragMoveEvent = self.dragMoveEvent
+        ##set up key shortcuts
+        #delAc = QtGui.QAction("Delete", tree_view, \
+        #    shortcut=QtCore.Qt.Key_Backspace, triggered=self.delItemKey)
+        #delAc = QtGui.QAction("Delete", tree_view, \
+        #    shortcut=QtCore.Qt.Key_Delete, triggered=self.delItemKey)
+        #tree_view.addAction(delAc)
 
-        #keep us aware of column reordering
-        self.tree_view.header().sectionMoved.connect(self.colsChanged)
+        ##set up right-clicking
+        #tree_view.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        #tree_view.customContextMenuRequested.connect(self.click_main)
+        #tree_view.header().setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        #tree_view.header().customContextMenuRequested.connect( \
+        #    self.click_head)
+        #tree_view.header().setStretchLastSection(False)
 
-        #deal with combo boxs in table
-        self.cDelegates = {}
-        self.enableComboCols()
+        ##set up drag and drop
+        #tree_view.setDragEnabled(True)
+        #tree_view.setAcceptDrops(True)
+        #tree_view.setDragDropMode(QtGui.QAbstractItemView.DragDrop)
+        #tree_view.dragMoveEvent = self.dragMoveEvent
 
-        #prettify
-        tree_view.collapseAll()
-        tree_view.setColumnWidth(0, 300)
-        tree_view.setColumnWidth(1, 60)
+        ##keep us aware of column reordering
+        #self.tree_view.header().sectionMoved.connect(self.colsChanged)
 
-        update_db = self.db.get_key('db_reload_on_open', dflt=True)
-        if type(database) == AstonFileDatabase and update_db:
-            self.loadthread = LoadFilesThread(self.db)
-            self.loadthread.file_updated.connect(self.update_obj)
-            self.loadthread.start()
+        ##deal with combo boxs in table
+        #self.cDelegates = {}
+        #self.enableComboCols()
+
+        ##prettify
+        #tree_view.collapseAll()
+        #tree_view.setColumnWidth(0, 300)
+        #tree_view.setColumnWidth(1, 60)
+
+        #update_db = self.db.get_key('db_reload_on_open', dflt=True)
+        #if type(database) == AstonFileDatabase and update_db:
+        #    self.loadthread = LoadFilesThread(self.db)
+        #    self.loadthread.file_updated.connect(self.update_obj)
+        #    self.loadthread.start()
 
     def dragMoveEvent(self, event):
         #TODO: files shouldn't be able to be under peaks
@@ -169,61 +172,91 @@ class FileTree(QtCore.QAbstractItemModel):
 
     def index(self, row, column, parent):
         if row < 0 or column < 0 or column > len(self.fields):
+            # item is out of bounds; return blank QModelIndex
             return QtCore.QModelIndex()
-        elif not parent.isValid() and row < len(self.db.children):
-            return self.createIndex(row, column, self.db.children[row])
+
+        if not parent.isValid() and row < len(self.children):
+            # at the root level
+            return self.createIndex(row, column, self.children[row])
         elif parent.column() == 0:
-            sibs = parent.internalPointer().children
-            if row >= len(sibs):
+            if type(parent.internalPointer()) is Run:
+                # runs don't have children
                 return QtCore.QModelIndex()
-            return self.createIndex(row, column, sibs[row])
+            elif type(parent.internalPointer()) is Project:
+                #TODO: projects could have child projects?
+                runs = parent.internalPointer().runs
+                if row >= len(runs):
+                    return QtCore.QModelIndex()
+                return self.createIndex(row, column, runs[row])
+
+        # just in case something else falls through
         return QtCore.QModelIndex()
 
     def parent(self, index):
         if not index.isValid():
             return QtCore.QModelIndex()
         obj = index.internalPointer()
-        if obj.parent == self.db or obj is None:
+        if type(obj) is Run:
+            if obj.project.name == '':
+                return QtCore.QModelIndex()
+            #TODO: this will fail if there are projects not at the root
+            row = self.children.index(obj.project)
+            return self.createIndex(row, 0, obj.project)
+        elif type(obj) is Project:
+            #TODO: in case projects have parent projects
             return QtCore.QModelIndex()
         else:
-            row = obj.parent.parent.children.index(obj.parent)
-            return self.createIndex(row, 0, obj.parent)
+            # fall through
+            return QtCore.QModelIndex()
 
     def rowCount(self, parent):
         if not parent.isValid():
-            return len(self.db.children)
+            return len(self.children)
         elif parent.column() == 0:
-            return len(parent.internalPointer().children)
-        else:
-            return 0
+            if type(parent.internalPointer()) is Project:
+                #TODO: should add support for child projects?
+                return len(parent.internalPointer().runs)
+        return 0
 
     def columnCount(self, parent):
         return len(self.fields)
 
     def data(self, index, role):
+        fld = self.fields[index.column()]
+        obj = index.internalPointer()
         rslt = None
-        fld = self.fields[index.column()].lower()
-        f = index.internalPointer()
-        if f is None:
-            rslt = None
-        elif fld == 'vis' and f.db_type == 'file':
-            if role == QtCore.Qt.CheckStateRole:
-                if f.info['vis'] == 'y':
-                    rslt = QtCore.Qt.Checked
-                else:
-                    rslt = QtCore.Qt.Unchecked
-        elif role == QtCore.Qt.DisplayRole or role == QtCore.Qt.EditRole:
-            if fld == 'p-model' and f.db_type == 'peak':
-                rpeakmodels = {peak_models[k]: k for k in peak_models}
-                rslt = rpeakmodels.get(f.info[fld], 'None')
-            else:
-                rslt = f.info[fld]
-        elif role == QtCore.Qt.DecorationRole and index.column() == 0:
-            #TODO: icon for method, compound
-            fname = {'file': 'file.png', 'peak': 'peak.png', \
-                    'spectrum': 'spectrum.png'}
-            loc = resfile('aston/ui', 'icons/' + fname.get(f.db_type, ''))
-            rslt = QtGui.QIcon(loc)
+        if type(obj) == Project:
+            if role == QtCore.Qt.DisplayRole or role == QtCore.Qt.EditRole:
+                if fld == 'name':
+                    rslt = obj.name
+            elif role == QtCore.Qt.DecorationRole and index.column() == 0:
+                #TODO: icon for projects
+                pass
+        elif type(obj) == Run:
+            if fld == 'sel' and role == QtCore.Qt.CheckStateRole:
+                #TODO: if obj in current palette
+                #if obj.info['vis'] == 'y':
+                #    rslt = QtCore.Qt.Checked
+                #else:
+                rslt = QtCore.Qt.Unchecked
+            elif role == QtCore.Qt.DisplayRole or role == QtCore.Qt.EditRole:
+                if fld == 'name':
+                    rslt = obj.name
+            elif role == QtCore.Qt.DecorationRole and index.column() == 0:
+                loc = resfile('aston/qtgui', 'icons/file.png')
+                rslt = QtGui.QIcon(loc)
+        #elif role == QtCore.Qt.DisplayRole or role == QtCore.Qt.EditRole:
+        #    if fld == 'p-model' and f.db_type == 'peak':
+        #        rpeakmodels = {peak_models[k]: k for k in peak_models}
+        #        rslt = rpeakmodels.get(f.info[fld], 'None')
+        #    else:
+        #        rslt = f.info[fld]
+        #elif role == QtCore.Qt.DecorationRole and index.column() == 0:
+        #    #TODO: icon for method, compound
+        #    fname = {'file': 'file.png', 'peak': 'peak.png', \
+        #            'spectrum': 'spectrum.png'}
+        #    loc = resfile('aston/ui', 'icons/' + fname.get(f.db_type, ''))
+        #    rslt = QtGui.QIcon(loc)
         return rslt
 
     def headerData(self, col, orientation, role):
@@ -258,16 +291,18 @@ class FileTree(QtCore.QAbstractItemModel):
         return True
 
     def flags(self, index):
-        col = self.fields[index.column()].lower()
+        col = self.fields[index.column()]
         obj = index.internalPointer()
         dflags = QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
         dflags |= QtCore.Qt.ItemIsDropEnabled
         if not index.isValid():
             return dflags
         dflags |= QtCore.Qt.ItemIsDragEnabled
-        if col == 'vis' and obj.db_type == 'file':
-            dflags |= QtCore.Qt.ItemIsUserCheckable
-        elif col in ['r-filename'] or col[:2] == 's-' or col == 'vis':
+        #if col == 'sel' and type(obj) is Run:
+        #    dflags |= QtCore.Qt.ItemIsUserCheckable
+        return dflags
+        #TODO: reenable the rest of this
+        if col in ['r-filename'] or col[:2] == 's-' or col == 'vis':
             pass
         elif obj.db_type == 'file' and (col[:2] == 'p-' or col[:3] == 'sp-'):
             pass

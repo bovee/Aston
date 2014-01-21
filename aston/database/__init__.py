@@ -18,7 +18,6 @@ class JSONDict(TypeDecorator):
 
 MutableDict.associate_with(JSONDict)
 
-
 DBSession = scoped_session(sessionmaker(expire_on_commit=False))
 Base = declarative_base()
 
@@ -28,3 +27,12 @@ def initialize_sql(engine):
     Base.metadata.bind = engine
     Base.metadata.create_all(engine)
     return DBSession
+
+
+def quick_sqlite(filename):
+    #TODO: close old session if still open?
+    from sqlalchemy import create_engine
+    DBSession.close_all()
+    engine = create_engine('sqlite:///' + filename)
+    session = initialize_sql(engine)
+    return session

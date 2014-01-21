@@ -2,7 +2,7 @@ import multiprocessing
 import functools
 import numpy as np
 #from aston.Math.Chromatograms import savitzkygolay
-from aston.timeseries.Math import movingaverage
+from aston.trace.Math import movingaverage
 
 
 def simple_peak_find(ts, init_slope=500, start_slope=500, end_slope=200, \
