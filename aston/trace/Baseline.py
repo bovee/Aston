@@ -1,8 +1,8 @@
 import numpy as np
 from scipy.stats import gaussian_kde
 from scipy.optimize import fmin, brentq
-from pandas import DataFrame, Series
-from aston.chromatograms.Math import savitzkygolay
+from aston.trace.Trace import AstonSeries
+from aston.trace.MathSeries import savitzkygolay
 
 
 def base(s, slope_tol='5.0', off_tol='5.0'):
@@ -32,7 +32,7 @@ def base(s, slope_tol='5.0', off_tol='5.0'):
     msk = np.logical_and(valid, offsets > o1)
     msk = np.logical_and(valid, offsets < o2)
     new_ic = np.interp(s.index, s.index[msk], ic[msk])
-    return Series(new_ic, s.index)
+    return AstonSeries(new_ic, s.index)
 
 
 def base2(ic, t):

@@ -1,25 +1,23 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 from collections import OrderedDict
-from PyQt4.QtCore import QObject
-import aston.peaks.Integrators as ami
-import aston.peaks.PeakFinding as ampf
+from aston.resources import tr
+#import aston.peaks.Integrators as ami
+#import aston.peaks.PeakFinding as ampf
 
-
-tr = lambda s: QObject().trUtf8(s)
 
 peak_finders = OrderedDict()
-peak_finders[tr('Simple')] = ampf.simple_peak_find
-peak_finders[tr('StatSlope')] = ampf.stat_slope_peak_find
-peak_finders[tr('Wavelet')] = ampf.wavelet_peak_find
-peak_finders[tr('Event')] = ampf.event_peak_find
+#peak_finders[tr('Simple')] = ampf.simple_peak_find
+#peak_finders[tr('StatSlope')] = ampf.stat_slope_peak_find
+#peak_finders[tr('Wavelet')] = ampf.wavelet_peak_find
+#peak_finders[tr('Event')] = ampf.event_peak_find
 
 integrators = OrderedDict()
-integrators[tr('Overlap')] = ami.simple_integrate
-integrators[tr('Constant Background')] = ami.constant_bl_integrate
-integrators[tr('Periodic')] = ami.periodic_integrate
-integrators[tr('Drop')] = ami.drop_integrate
-integrators[tr('LeastSq')] = ami.leastsq_integrate
+#integrators[tr('Overlap')] = ami.simple_integrate
+#integrators[tr('Constant Background')] = ami.constant_bl_integrate
+#integrators[tr('Periodic')] = ami.periodic_integrate
+#integrators[tr('Drop')] = ami.drop_integrate
+#integrators[tr('LeastSq')] = ami.leastsq_integrate
 
 peak_models = OrderedDict()
 peak_models[tr('None')] = None

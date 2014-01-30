@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 from collections import OrderedDict
-from PyQt4.QtCore import QObject
+from aston.resources import tr
 from aston.qtgui.MenuOptions import peak_models
 
-tr = lambda s: QObject().trUtf8(s)
 
 aston_groups = OrderedDict()
 aston_groups['m'] = tr('Method')
@@ -16,6 +15,7 @@ aston_groups['p'] = tr('Peaks')
 aston_fields = OrderedDict()
 # aston specific information
 aston_fields['name'] = tr('Name')
+aston_fields['sel'] = tr('Sel?')
 aston_fields['vis'] = tr('Vis?')
 aston_fields['traces'] = tr('Traces')
 # method information

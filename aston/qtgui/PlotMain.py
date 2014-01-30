@@ -6,7 +6,7 @@ from matplotlib.path import Path
 from matplotlib.transforms import offset_copy
 from matplotlib.patches import PathPatch, Polygon
 from PyQt4.QtCore import Qt, QCoreApplication
-from aston.qtgui.Navbar import AstonNavBar
+from aston.qtgui.PlotNavbar import AstonNavBar
 
 
 class Plotter(object):
@@ -25,7 +25,8 @@ class Plotter(object):
         plotArea.addWidget(self.canvas)
 
         #TODO this next line is the slowest in this module
-        self.plt = tfig.add_subplot(111, frameon=False)
+        #self.plt = tfig.add_subplot(111, frameon=False)
+        self.plt = tfig.add_axes((0.05, 0.1, 0.9, 0.85), frame_on=False)
         self.plt.xaxis.set_ticks_position('none')
         self.plt.yaxis.set_ticks_position('none')
         self.cb = None
@@ -97,34 +98,34 @@ class Plotter(object):
         l_ord = ['default', 'scaled', 'stacked', 'scaled stacked', '2d']
         return [self._styles[s] for s in l_ord]
 
-    def plotData(self, datafiles, updateBounds=True):
+    def plotData(self, traces, updateBounds=True):
         if not updateBounds:
             bnds = self.plt.get_xlim(), self.plt.get_ylim()
 
         # clean up anything on the graph already
         self.plt.cla()
-        if self.cb is not None:
-            #TODO: make this not horrific!
-            #the next two lines used to work?
-            #self.plt.figure.delaxes(self.cb.ax)
-            #self.cb = None
-            tfig = self.plt.figure
-            tfig.clf()
-            self.plt = tfig.add_subplot(111, frameon=False)
-            self.plt.xaxis.set_ticks_position('none')
-            self.plt.yaxis.set_ticks_position('none')
-            self.cb = None
-        self.plt.figure.subplots_adjust(left=0.05, right=0.95)
-        self.patches = {}
+        #if self.cb is not None:
+        #    #TODO: make this not horrific!
+        #    #the next two lines used to work?
+        #    #self.plt.figure.delaxes(self.cb.ax)
+        #    #self.cb = None
+        #    tfig = self.plt.figure
+        #    tfig.clf()
+        #    self.plt = tfig.add_subplot(111, frameon=False)
+        #    self.plt.xaxis.set_ticks_position('none')
+        #    self.plt.yaxis.set_ticks_position('none')
+        #    self.cb = None
+        #self.plt.figure.subplots_adjust(left=0.05, right=0.95)
+        #self.patches = {}
 
         #plot all of the datafiles
-        if len(datafiles) == 0:
+        if len(traces) == 0:
             self.canvas.draw()
             return
-        if '2d' in self._style:
-            self._plot2D(datafiles[0])
+        #if '2d' in self._style:
+        #    self._plot2D(datafiles[0])
         else:
-            self._plot(datafiles)
+            self._plot(traces)
 
         #update the view bounds in the navbar's history
         if updateBounds:
@@ -134,40 +135,40 @@ class Plotter(object):
         else:
             self.plt.set_xlim(bnds[0])
             self.plt.set_ylim(bnds[1])
-            if type(self.highlight) == Polygon:
-                self.plt.add_patch(self.highlight)
-            elif self.highlight is not None:
-                self.plt.add_line(self.highlight)
+            #if type(self.highlight) == Polygon:
+            #    self.plt.add_patch(self.highlight)
+            #elif self.highlight is not None:
+            #    self.plt.add_line(self.highlight)
 
         # plot events on the bottom of the graph
-        evts = []
-        if self.masterWindow.ui.actionGraphFxnCollection.isChecked():
-            evts += datafiles[0].events('fxn')
-        if self.masterWindow.ui.actionGraphFIA.isChecked():
-            evts += datafiles[0].events('fia')
-        if self.masterWindow.ui.actionGraphIRMS.isChecked():
-            evts += datafiles[0].events('refgas')
-        if self.masterWindow.ui.actionGraph_Peaks_Found.isChecked():
-            dt = self.masterWindow.obj_tab.active_file()
-            tss = dt.active_traces(n=0)
-            pevts = self.masterWindow.find_peaks(tss, dt)
-            for i, p in enumerate(pevts[0]):
-                p[2]['name'] = 'P' + str(i + 1)
-            evts += pevts[0]
+        #evts = []
+        #if self.masterWindow.ui.actionGraphFxnCollection.isChecked():
+        #    evts += datafiles[0].events('fxn')
+        #if self.masterWindow.ui.actionGraphFIA.isChecked():
+        #    evts += datafiles[0].events('fia')
+        #if self.masterWindow.ui.actionGraphIRMS.isChecked():
+        #    evts += datafiles[0].events('refgas')
+        #if self.masterWindow.ui.actionGraph_Peaks_Found.isChecked():
+        #    dt = self.masterWindow.obj_tab.active_file()
+        #    tss = dt.active_traces(n=0)
+        #    pevts = self.masterWindow.find_peaks(tss, dt)
+        #    for i, p in enumerate(pevts[0]):
+        #        p[2]['name'] = 'P' + str(i + 1)
+        #    evts += pevts[0]
 
-        if evts != []:
-            # TODO: save the text and lines to delete later?
-            # TODO: make this prettier
+        #if evts != []:
+        #    # TODO: save the text and lines to delete later?
+        #    # TODO: make this prettier
 
-            trans = self.plt.get_xaxis_transform()
-            transText = offset_copy(trans, fig=self.plt.figure, \
-                                    x=3, units='points')
-            for ev in evts:
-                t0, t1, ta = ev[0], ev[1], (ev[1] + ev[0]) / 2.
-                self.plt.vlines(t1, 0, 0.1, color='0.75', transform=trans)
-                self.plt.vlines(t0, 0, 0.1, transform=trans)
-                self.plt.text(ta, 0, ev[2]['name'], \
-                              ha='center', transform=transText)
+        #    trans = self.plt.get_xaxis_transform()
+        #    transText = offset_copy(trans, fig=self.plt.figure, \
+        #                            x=3, units='points')
+        #    for ev in evts:
+        #        t0, t1, ta = ev[0], ev[1], (ev[1] + ev[0]) / 2.
+        #        self.plt.vlines(t1, 0, 0.1, color='0.75', transform=trans)
+        #        self.plt.vlines(t0, 0, 0.1, transform=trans)
+        #        self.plt.text(ta, 0, ev[2]['name'], \
+        #                      ha='center', transform=transText)
 
         # draw the y axis as log
         if self.masterWindow.ui.actionGraphLogYAxis.isChecked():
@@ -180,7 +181,7 @@ class Plotter(object):
         #update the canvas
         self.canvas.draw()
 
-    def _plot(self, datafiles):
+    def _plot(self, traces):
         """
         Plots times series on the graph.
         """
@@ -191,57 +192,55 @@ class Plotter(object):
             intensity = 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]
             return [intensity * k + i * (1 - k) for i in c]
 
-        # make up a factor to separate traces by
-        if 'stacked' in self._style:
-            fts = datafiles[0].trace(datafiles[0].info['traces'].split(',')[0])
-            sc_factor = (max(fts.data[:, 0]) - min(fts.data[:, 0])) / 5.
+        ## make up a factor to separate traces by
+        #if 'stacked' in self._style:
+        #    fts = datafiles[0].trace(datafiles[0].info['traces'].split(',')[0])
+        #    sc_factor = (max(fts.data[:, 0]) - min(fts.data[:, 0])) / 5.
 
-        # count the number of traces that will be displayed
-        trs = sum(1 for x in datafiles for _ in x.info['traces'].split(','))
-        if trs < 6:
-            alpha = 0.75 - trs * 0.1
-        else:
-            alpha = 0.15
+        ## count the number of traces that will be displayed
+        #trs = sum(1 for x in datafiles for _ in x.info['traces'].split(','))
+        #if trs < 6:
+        #    alpha = 0.75 - trs * 0.1
+        #else:
+        #    alpha = 0.15
 
-        tnum = 0
-        for dt in datafiles:
-            for ts in dt.active_traces():
-                trace = ts.y
-                if 'scaled' in self._style:
-                    #TODO: fails at negative chromatograms
-                    trace -= min(trace)
-                    trace /= max(trace)
-                    trace *= 100
-                if 'stacked' in self._style:
-                    trace += tnum * sc_factor
-                # stretch out the color spectrum if there are under 7
-                if trs > 7:
-                    c = self._color(int(tnum % 7) / 6.0, 1)
-                elif trs == 1:
-                    c = self._color(0, 1)
-                else:
-                    c = self._color(int(tnum % trs) / float(trs - 1), 1)
-                ls = self._linestyle[int(np.floor((tnum % 28) / 7))]
-                nm = dt.info['name'].strip('_') + ' ' + ts.ions[0]
-                self.plt.plot(ts.times, trace, color=c, \
-                  ls=ls, lw=1.2, label=nm)
-                tnum += 1
+        for tnum, ts in enumerate(traces):
+            ts.plot(self.plt)
+        #        if 'scaled' in self._style:
+        #            #TODO: fails at negative chromatograms
+        #            trace -= min(trace)
+        #            trace /= max(trace)
+        #            trace *= 100
+        #        if 'stacked' in self._style:
+        #            trace += tnum * sc_factor
+        #        # stretch out the color spectrum if there are under 7
+        #        if trs > 7:
+        #            c = self._color(int(tnum % 7) / 6.0, 1)
+        #        elif trs == 1:
+        #            c = self._color(0, 1)
+        #        else:
+        #            c = self._color(int(tnum % trs) / float(trs - 1), 1)
+        #        ls = self._linestyle[int(np.floor((tnum % 28) / 7))]
+        #        nm = dt.info['name'].strip('_') + ' ' + ts.ions[0]
+        #        self.plt.plot(ts.times, trace, color=c, \
+        #          ls=ls, lw=1.2, label=nm)
+        #        tnum += 1
 
-                # plot peaks
-                for pk in dt.children_of_type('peak'):
-                    #TODO: there has to be a better way to handle if
-                    # the ion is a string or a float
-                    #TODO: allow user to auto subtract out baseline
-                    #if enabled, need to change Peak.contains too.
-                    if ts.ions[0] in pk.data.ions or \
-                      ts.ions[0] in [str(i) for i in pk.data.ions]:
-                        try:
-                            ply = Path(pk.as_poly(float(ts.ions[0])))
-                        except:
-                            ply = Path(pk.as_poly(ts.ions[0]))
-                        self.patches[pk.db_id] = PathPatch(ply, \
-                          facecolor=desaturate(c, 0.2), alpha=alpha, lw=0)
-                        self.plt.add_patch(self.patches[pk.db_id])
+        #        # plot peaks
+        #        for pk in dt.children_of_type('peak'):
+        #            #TODO: there has to be a better way to handle if
+        #            # the ion is a string or a float
+        #            #TODO: allow user to auto subtract out baseline
+        #            #if enabled, need to change Peak.contains too.
+        #            if ts.ions[0] in pk.data.ions or \
+        #              ts.ions[0] in [str(i) for i in pk.data.ions]:
+        #                try:
+        #                    ply = Path(pk.as_poly(float(ts.ions[0])))
+        #                except:
+        #                    ply = Path(pk.as_poly(ts.ions[0]))
+        #                self.patches[pk.db_id] = PathPatch(ply, \
+        #                  facecolor=desaturate(c, 0.2), alpha=alpha, lw=0)
+        #                self.plt.add_patch(self.patches[pk.db_id])
 
         #add a legend and make it pretty
         if self.legend:

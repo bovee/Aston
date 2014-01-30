@@ -112,7 +112,7 @@ class ThermoDXF(TraceFile):
             hint = 0
         with open(self.filename, 'rb') as f:
             f.seek(hint)
-            regexp = re.compile(search_str)
+            regexp = re.compile(search_str.encode('ascii'))
             while True:
                 d = f.read(len(search_str) * 200)
                 srch = regexp.search(d)

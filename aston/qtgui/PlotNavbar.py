@@ -1,10 +1,8 @@
 import time
-import os.path as op
-from PyQt4 import QtGui  # , QtCore
+from PyQt4 import QtGui
 from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg
-from aston.qtgui.resources import resfile
+from aston.resources import resfile
 from aston.peaks.Integrators import merge_ions
-from aston.spectra.Spectrum import Spectrum
 
 
 class AstonNavBar(NavigationToolbar2QTAgg):
@@ -15,7 +13,7 @@ class AstonNavBar(NavigationToolbar2QTAgg):
         self._xypress = []
 
         #quick function to return icon locs
-        icon = lambda l: resfile('aston/ui', 'icons/' + l + '.png')
+        icon = lambda l: resfile('aston/qtgui', 'icons/' + l + '.png')
 
         #remove the plot adjustment buttons
         self.removeAction(self.actions()[-1])
@@ -220,26 +218,27 @@ class AstonNavBar(NavigationToolbar2QTAgg):
         if event.button != 1 or self.mode != 'spectrum':
             return
         #get the specral data of the current point
-        dt = self.parent.obj_tab.active_file()
-        if dt is None:
+        trace = self.parent.pal_tab.active_trace()
+        if trace is None:
             return
         if event.xdata == self._xypress[0]:
-            scan = dt.scan(self._xypress[0])
-            spec_time = str(self._xypress[0])
+            scan = trace.scan(self._xypress[0])
+            scan.name = str(self._xypress[0])
         else:
-            scan = dt.scan(self._xypress[0], to_time=event.xdata)
-            spec_time = str(self._xypress[0]) + '-' + str(event.xdata)
+            dt = event.xdata - self._xypress[0]
+            scan = trace.scan(self._xypress[0], dt=dt)
+            scan.name = str(self._xypress[0]) + '-' + str(event.xdata)
 
-        self.parent.specplotter.set_main_spec(scan, spec_time)
+        self.parent.specplotter.set_main_spec(scan)
         self.parent.specplotter.plot()
 
         # draw a line on the main plot for the location
         self.parent.plotter.draw_highlight(self._xypress[0], \
           event.xdata, linestyle='-')
-        if event.key == 'shift':
-            info = {'name': str(self._xypress[0])}
-            spc = Spectrum(info, scan)
-            spc.parent = dt
+        #if event.key == 'shift':
+        #    info = {'name': str(self._xypress[0])}
+        #    spc = Spectrum(info, scan)
+        #    spc.parent = dt
         self._xypress = []
 
     def disconnect_all(self):

@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import os.path as op
 import struct
 import numpy as np
 from aston.trace.Trace import AstonSeries
@@ -10,6 +9,8 @@ class AgilentCSPump(TraceFile):
     fnm = 'LPMP1.REG'
     mgc = '0233'
     traces = ['mslva', 'mslvb', 'mslvc', 'mslvd', 'mflow']
+
+    #TODO: _trace function that returns method traces
 
     @property
     def info(self):
@@ -110,19 +111,15 @@ class AgilentCSLC(TraceFile):
         return ['pres', 'flow', 'slva', 'slvb', 'slvc', \
                 'slvd', 'temp']
 
-    def trace(self, name='', tol=0.5, twin=None):
-        #TODO: return parent trace
-        #TODO: use twin
+    def _trace(self, name, twin):
         #TODO: read info from new style REG files
-        rf = op.join(op.dirname(self.filename), 'LCDIAG.REG')
-        if name in ['pres', 'flow', 'slva', 'slvb', 'slvc', 'slvd']:
-            t = {'pres': 'PMP1, Pressure', 'flow': 'PMP1, Flow',
-                 'slva': 'PMP1, Solvent A', 'slvb': 'PMP1, Solvent B',
-                 'slvc': 'PMP1, Solvent C', 'slvd': 'PMP1, Solvent D'}
-            df = read_multireg_file(open(rf, 'rb'), title=t[name])
-            ts = df['AstonSeries']
-            ts.name = name
-            return ts
+        t = {'pres': 'PMP1, Pressure', 'flow': 'PMP1, Flow',
+                'slva': 'PMP1, Solvent A', 'slvb': 'PMP1, Solvent B',
+                'slvc': 'PMP1, Solvent C', 'slvd': 'PMP1, Solvent D'}
+        df = read_multireg_file(open(self.filename, 'rb'), title=t[name])
+        ts = df['AstonSeries']
+        ts.name = name
+        return ts.twin(twin)
 
 
 def read_multireg_file(f, title=None):

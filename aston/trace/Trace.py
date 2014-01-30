@@ -2,34 +2,129 @@ import numpy as np
 import scipy.io.wavfile
 import scipy.signal
 from pandas import Series, DataFrame
+from aston.spectra.Scan import Scan
 
 
 class AstonSeries(Series):
-    def plot(self, color=None, ax=None):
-        pass
+    def __new__(cls, *args, **kwargs):
+        self = super(AstonSeries, cls).__new__(cls, *args, **kwargs)
+        self.__class__ = AstonSeries
+        return self
+
+    def plot(self, color=None, scale=False, ax=None):
+        if ax is None:
+            import matplotlib.pyplot as plt
+            ax = plt.gca()
+
+        if scale:
+            # normalize data to 0 to 1
+            y = (self.values - np.min(self.values)) / np.max(self.values)
+        else:
+            y = self.values
+
+        ax.plot(self.index, y, label=self.name)
+
+    def twin(self, twin):
+        return self[_slice_idxs(self, twin)]
+
+    def as_text(self, width=80, height=20):
+        raise NotImplementedError
+        #break s.index into width chunks
+        #find max and min of each chunk along with start and stop?
+
+    def adjust_time(self, offset=0.0, scale=1.0):
+        adjs = self.copy()
+        adjs.index = adjs.index * scale + offset
+        return adjs
+
+    def _retime(self, new_times, fill=0.0):
+        from scipy.interpolate import interp1d
+        if new_times.shape == self.shape[0]:
+            if np.all(np.equal(new_times, self.index)):
+                return self
+        f = lambda d: interp1d(self.index, d, \
+            bounds_error=False, fill_value=fill)(new_times)
+        return np.apply_along_axis(f, 0, self.values)
+
+    def _apply_data(self, f, ts):
+        """
+        Convenience function for all of the math stuff.
+        """
+        if isinstance(ts, (int, float)):
+            d = ts * np.ones(self.shape[0])
+        elif ts is None:
+            d = None
+        elif np.array_equal(ts.index, self.index):
+            d = ts.values
+        else:
+            d = ts._retime(self.index)
+
+        new_data = np.apply_along_axis(f, 0, self.values, d)
+        return AstonSeries(new_data, self.index, name=self.name)
+
+    def __add__(self, ts):
+        return self._apply_data(lambda x, y: x + y, ts)
+
+    def __sub__(self, ts):
+        return self._apply_data(lambda x, y: x - y, ts)
+
+    def __mul__(self, ts):
+        return self._apply_data(lambda x, y: x * y, ts)
+
+    def __div__(self, ts):
+        return self._apply_data(lambda x, y: x / y, ts)
+
+    def __truediv__(self, ts):
+        return self.__div__(ts)
+
+    def __reversed(self):
+        raise NotImplementedError
+
+    def __iadd__(self, ts):
+        return self._apply_data(lambda x, y: x + y, ts)
+
+    def __isub__(self, ts):
+        return self._apply_data(lambda x, y: x - y, ts)
+
+    def __imul__(self, ts):
+        return self._apply_data(lambda x, y: x * y, ts)
+
+    def __idiv__(self, ts):
+        return self._apply_data(lambda x, y: x / y, ts)
+
+    def __neg__(self):
+        return self._apply_data(lambda x, y: -x, None)
+
+    def __abs__(self):
+        return self._apply_data(lambda x, y: abs(x), None)
 
 
 class AstonFrame(DataFrame):
-    def twin(self, st_t, en_t):
-        """
-        Time window
-        """
-        if st_t is None:
-            st_idx = 0
+    def trace(self, name='tic', tol=0.5, twin=None):
+        #TODO: aggfunc in here for tic and numeric
+        st_idx, en_idx = _slice_idxs(self, twin)
+
+        if isinstance(name, (int, float, np.float32, np.float64)):
+            name = str(name)
+
+        if name in ['tic', 'x', '']:
+            data = self.values.sum(axis=1)
+            name = 'tic'
+        elif name == '!':
+            data = self[self.columns[0]].values
+            name = self.columns[0]
+        elif set(name).issubset('1234567890.'):
+            cols = np.abs(self.columns.values - float(name)) < tol
+            data = self.values[:, cols].sum(axis=1)
         else:
-            st_idx = (np.abs(self.index - st_t)).arg_min()
+            data = np.zeros(self.shape[0]) * np.nan
+            name = ''
 
-        if en_t is None:
-            en_idx = -1
-        else:
-            en_idx = (np.abs(self.index - en_t)).arg_min()
+        #TODO: better way to coerce this into the right class?
+        #TODO: use twin
+        return AstonSeries(data, index=self.index, name=name)
 
-        return self[st_idx:en_idx]
-
-    def trace(self, name='tic', twin=None):
-        pass
-
-    def plot(self, style='heatmap', color=None, ax=None):
+    def plot(self, style='heatmap', legend=False, color=None, ax=None):
         #styles: 2d, colors, otherwise interpret as trace?
         if ax is None:
             import matplotlib.pyplot as plt
@@ -39,9 +134,41 @@ class AstonFrame(DataFrame):
             ions = self.columns
             ext = (self.index[0], self.index[-1], min(ions), max(ions))
             grid = self.values[:, np.argsort(self.columns)].transpose()
-            pass
+            img = ax.imshow(grid, origin='lower', aspect='auto', \
+                            extent=ext, cmap=color)
+            if legend:
+                ax.figure.colorbar(img)
         elif style == 'colors':
-            pass
+            from matplotlib.colors import ListedColormap
+            gaussian = lambda wvs, x, w: np.exp(-0.5 * ((wvs - x) / w) ** 2)
+
+            wvs = self.columns.values.astype(float)
+
+            #http://www.ppsloan.org/publications/XYZJCGT.pdf
+            vis_filt = np.zeros((3, len(wvs)))
+            vis_filt[0] = 1.065 * gaussian(wvs, 595.8, 33.33) \
+                        + 0.366 * gaussian(wvs, 446.8, 19.44)
+            vis_filt[1] = 1.014 * gaussian(np.log(wvs), np.log(556.3), 0.075)
+            vis_filt[2] = 1.839 * gaussian(np.log(wvs), np.log(449.8), 0.051)
+            xyz = np.dot(self.values.copy(), vis_filt.T)
+
+            #http://www.brucelindbloom.com/index.html?Eqn_RGB_XYZ_Matrix.html
+            xyz_rgb = [[3.2404542, -1.5371385, -0.4985314],
+                       [-0.9692660, 1.8760108, 0.0415560],
+                       [0.0556434, -0.2040259, 1.0572252]]
+            xyz_rgb = np.array(xyz_rgb)
+            rgb = np.dot(xyz_rgb, xyz.T).T
+
+            # normalize
+            rgb[rgb < 0] = 0
+            rgb /= np.max(rgb)
+            rgb = 1 - np.abs(rgb)
+
+            # plot
+            cmask = np.meshgrid(np.arange(rgb.shape[0]), 0)[0]
+            ax.imshow(cmask, cmap=ListedColormap(rgb), aspect='auto', \
+                      extent=(self.index[0], self.index[-1], 0, 1))
+            ax.yaxis.set_ticks([])
         else:
             self.trace().plot(color=color, ax=ax)
 
@@ -93,19 +220,39 @@ class AstonFrame(DataFrame):
         """
         Returns the spectrum from a specific time.
         """
-        #TODO: option for averaging spectra instead of summing?
-        # "aggfunc"
-        idx = (np.abs(self.index - t)).argmin()
+        idx = (np.abs(self.index.values - t)).argmin()
 
         if dt is None:
             # only take the spectra at the nearest time
             mz_abn = self.values[idx, :].copy()
         else:
             # sum up all the spectra over a range
-            en_idx = (np.abs(self.index - t - dt)).argmin()
+            en_idx = (np.abs(self.index.values - t - dt)).argmin()
             idx, en_idx = min(idx, en_idx), max(idx, en_idx)
             if aggfunc is None:
                 mz_abn = self.values[idx:en_idx + 1, :].copy().sum(axis=0)
             else:
                 mz_abn = aggfunc(self.values[idx:en_idx + 1, :].copy())
-        return np.vstack([self.columns, mz_abn])
+        return Scan(self.columns, mz_abn)
+
+
+def _slice_idxs(df, twin=None):
+    """
+    Returns a slice of the incoming array filtered between
+    the two times specified. Assumes the array is the same
+    length as self.data. Acts in the time() and trace() functions.
+    """
+    if twin is None:
+        return 0, df.shape[0]
+
+    tme = df.index.copy()
+
+    if twin[0] is None:
+        st_idx = 0
+    else:
+        st_idx = (np.abs(tme - twin[0])).argmin()
+    if twin[1] is None:
+        en_idx = df.shape[0]
+    else:
+        en_idx = (np.abs(tme - twin[1])).argmin() + 1
+    return st_idx, en_idx

@@ -7,11 +7,7 @@ from itertools import product
 from glob import glob
 import inspect
 from importlib import import_module
-try:
-    from functools import lru_cache
-except ImportError:  # Python 2
-    def lru_cache(maxsize):
-        return lambda x: x
+from aston.resources import cache
 
 #File types from http://en.wikipedia.org/wiki/Mass_spectrometry_data_format
 #and http://www.amdis.net/What_is_AMDIS/AMDIS_Detailed/amdis_detailed.html
@@ -29,7 +25,7 @@ except ImportError:  # Python 2
 #TODO: .YEP | Bruker instrument data format
 
 
-@lru_cache(maxsize=1)
+@cache(maxsize=1)
 def tfclasses():
     """
     A list of every class for reading data files.
@@ -50,7 +46,7 @@ def tfclasses():
     return classes
 
 
-@lru_cache(maxsize=1)
+@cache(maxsize=1)
 def tfclasses_lookup():
     """
     Create a lookup table for determining what type a file might

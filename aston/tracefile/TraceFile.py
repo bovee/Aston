@@ -1,4 +1,3 @@
-import numbers
 import numpy as np
 from aston.trace.Trace import AstonSeries, AstonFrame
 from aston.tracefile.Common import tfclasses, file_type
@@ -39,14 +38,6 @@ class TraceFile(object):
         else:
             self.ftype = self.__class__.__name__
 
-    #TODO: define a private function for time win filtering in here
-    def _twin(self, s, twin=None):
-        #TODO: accept None's in twin
-        if twin is not None:
-            return s[s.between(twin[0], twin[1])]
-        else:
-            return s
-
     @property
     def data(self):
         if self._data is not None:
@@ -55,60 +46,58 @@ class TraceFile(object):
             return AstonFrame()
 
     def total_trace(self, twin=None):
-        d = self.data.sum(axis=1)
-        return self._twin(d, twin)
+        return self.data.trace(twin=twin)
 
     def plot(self, name='', ax=None):
         if ax is None:
             import matplotlib.pyplot as plt
             ax = plt.gca()
 
+        for t in self.traces:
+            if t.startswith('#'):
+                #self.trace(t[1:]).plot(ax=ax)
+                self.trace('').plot(ax=ax)
+            elif t.startswith('*'):
+                #TODO: plot events
+                pass
+            else:
+                self.trace(t).plot(ax=ax)
+
         #TODO: colors?
-        #TODO: plot events
         #TODO: plot 2d/colors
-        #TODO: plot traces
 
     def trace(self, name='', tol=0.5, twin=None):
-        # this is the only string we handle; all others handled in subclasses
-        if name in ['', 'X', 'TIC']:
-            return self.total_trace(twin)
-
-        # if the string is actually a number, handle that
-        try:
-            name = float(name)
-        except TypeError:
-            pass
-
-        #TODO: check for '#' trace in self.traces
-
-        # try to quickly extract the relevant trace
-        if isinstance(name, numbers.Number):
-            col_nums = self.data.columns.values.astype(float)
-            cols = np.where(np.abs(col_nums - name) <= tol)[0]
-            d = self.data[self.data.columns[cols]].sum(axis=1)
-        elif name in self.data.columns:
-            d = self.data[name]
+        if isinstance(name, (int, float, np.float32, np.float64)):
+            name = str(name)
         else:
-            d = AstonSeries()
+            name = name.lower()
 
-        # return the appropriate time window of the trace
-        return self._twin(d, twin)
+        # name of the 2d trace, if it exists
+        if any(t.startswith('#') for t in self.traces):
+            t2d = [t[1:] for t in self.traces if t.startswith('#')][0]
 
-    def scan(self, time, to_time=None, aggfunc=np.sum):
+            # clip out the starting 'MS' if present
+            if name.startswith(t2d):
+                name = name[len(t2d):]
+        else:
+            t2d = ''
+
+        # this is the only string we handle; all others handled in subclasses
+        if name in ['tic', 'x', '']:
+            return self.total_trace(twin)
+        elif name in self.traces:
+            return self._trace(name, twin)
+        elif t2d != '':
+            # this file contains 2d data; find the trace in that
+            return self.data.trace(name, tol, twin)
+        else:
+            return AstonSeries()
+
+    def scan(self, t, dt=None, aggfunc=None):
         """
         Returns the spectrum from a specific time or range of times.
         """
-        #FIXME: use aggfunc
-        t = self.data.index.values
-        idx = (np.abs(t - time)).argmin()
-        if to_time is None:
-            ion_abs = self.data.values[idx, :].copy()
-            return np.vstack([self.data.columns, ion_abs])
-        else:
-            en_idx = (np.abs(t - to_time)).argmin()
-            idx, en_idx = min(idx, en_idx), max(idx, en_idx)
-            ion_abs = self.data.values[idx:en_idx + 1, :].copy()
-            return np.vstack([self.data.columns, ion_abs.sum(axis=0)])
+        return self.data.scan(t, dt, aggfunc)
 
     @property
     def info(self):

@@ -13,12 +13,16 @@ class AgilentFID(TraceFile):
     mgc = '0238'
     traces = ['fid']
 
+    def _trace(self, name, twin):
+        # this method allows self.trace('fid') to get something
+        return self.total_trace(twin)
+
     def total_trace(self, twin=None):
         f = open(self.filename, 'rb')
 
         f.seek(0x11A)
         start_time = struct.unpack('>f', f.read(4))[0] / 60000.
-        end_time = struct.unpack('>f', f.read(4))[0] / 60000.
+        #end_time = struct.unpack('>f', f.read(4))[0] / 60000.
         #end_time 0x11E '>i'
 
         #FIXME: why is there this del_ab code here?
@@ -57,6 +61,10 @@ class AgilentFID2(TraceFile):
     ext = 'CH'
     mgc = '0331'
     traces = ['fid']
+
+    def _trace(self, name, twin):
+        # this method allows self.trace('fid') to get something
+        return self.total_trace(twin)
 
     def total_trace(self, twin=None):
         f = open(self.filename, 'rb')

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import struct
 from xml.etree import ElementTree
 import numpy as np
@@ -9,18 +10,16 @@ class AgilentMHPump(TraceFile):
     fnm = 'CAPPUMP1.CD'
     traces = ['pres', 'flow', 'slvb']
 
-    def trace(self, name='', tol=0.5, twin=None):
-        #TODO: do something with twin
-        return read_mh_trace(self.filename, name)
+    def _trace(self, name, twin):
+        return read_mh_trace(self.filename, name).twin(twin)
 
 
 class AgilentMHTemp(TraceFile):
     fnm = 'TCC1.CD'
     traces = ['temp']
 
-    def trace(self, name='', tol=0.5, twin=None):
-        #TODO: do something with twin
-        return read_mh_trace(self.filename, name)
+    def _trace(self, name, twin):
+        return read_mh_trace(self.filename, name).twin(twin)
 
 
 class AgilentMHAcqMethod(TraceFile):

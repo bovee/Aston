@@ -2,8 +2,8 @@
 
 # Form implementation generated from reading ui file 'ui_mainwindow.ui'
 #
-# Created: Thu Jun  6 23:09:38 2013
-#      by: PyQt4 UI code generator 4.10
+# Created: Mon Jan 20 21:01:12 2014
+#      by: PyQt4 UI code generator 4.10.3
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -137,6 +137,18 @@ class Ui_MainWindow(object):
         self.verticalLayout_3.addWidget(self.compoundTreeView)
         self.compoundDockWidget.setWidget(self.dockWidgetContents_6)
         MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(8), self.compoundDockWidget)
+        self.paletteDockWidget = QtGui.QDockWidget(MainWindow)
+        self.paletteDockWidget.setFloating(False)
+        self.paletteDockWidget.setObjectName(_fromUtf8("paletteDockWidget"))
+        self.dockWidgetContents_4 = QtGui.QWidget()
+        self.dockWidgetContents_4.setObjectName(_fromUtf8("dockWidgetContents_4"))
+        self.verticalLayout_5 = QtGui.QVBoxLayout(self.dockWidgetContents_4)
+        self.verticalLayout_5.setObjectName(_fromUtf8("verticalLayout_5"))
+        self.paletteTreeView = QtGui.QTreeView(self.dockWidgetContents_4)
+        self.paletteTreeView.setObjectName(_fromUtf8("paletteTreeView"))
+        self.verticalLayout_5.addWidget(self.paletteTreeView)
+        self.paletteDockWidget.setWidget(self.dockWidgetContents_4)
+        MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(8), self.paletteDockWidget)
         self.actionOpen = QtGui.QAction(MainWindow)
         self.actionOpen.setObjectName(_fromUtf8("actionOpen"))
         self.actionExportChromatogram = QtGui.QAction(MainWindow)
@@ -433,6 +445,7 @@ class Ui_MainWindow(object):
         self.spectraDockWidget.setWindowTitle(_translate("MainWindow", "Spectra", None))
         self.methodDockWidget.setWindowTitle(_translate("MainWindow", "Methods", None))
         self.compoundDockWidget.setWindowTitle(_translate("MainWindow", "Compounds", None))
+        self.paletteDockWidget.setWindowTitle(_translate("MainWindow", "Palette", None))
         self.actionOpen.setText(_translate("MainWindow", "Open Folder", None))
         self.actionExportChromatogram.setText(_translate("MainWindow", "Visible Chromatogram", None))
         self.actionChromatogram_as_CSV.setText(_translate("MainWindow", "Chromatogram as CSV", None))

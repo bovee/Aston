@@ -1,4 +1,5 @@
 from PyQt4 import QtCore, QtGui
+from aston.resources import tr
 from aston.qtgui.ui_filterwindow import Ui_filterDialog
 from aston.qtgui.Fields import aston_field_opts
 
@@ -108,7 +109,7 @@ class FilterWindow(QtGui.QWidget):
         menu = QtGui.QMenu(self.ui.ionList)
 
         if len(self.ui.ionList.selectedItems()) > 0:
-            menu.addAction(self.tr('Delete'), self.deleteIon)
+            menu.addAction(tr('Delete'), self.deleteIon)
 
         if not menu.isEmpty():
             menu.exec_(self.ui.ionList.mapToGlobal(point))

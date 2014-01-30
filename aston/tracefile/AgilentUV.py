@@ -3,6 +3,7 @@ import re
 import struct
 from datetime import datetime
 import numpy as np
+from aston.resources import cache
 from aston.trace.Trace import AstonFrame
 from aston.tracefile.TraceFile import TraceFile
 
@@ -254,6 +255,7 @@ class AgilentCSDAD(TraceFile):
     traces = ['#uv']
 
     @property
+    @cache(maxsize=1)
     def data(self):
         #TODO: the chromatograms this generates are not exactly the
         #same as the ones in the *.CH files. Maybe they need to be 0'd?
@@ -335,6 +337,7 @@ class AgilentCSDAD2(TraceFile):
 
     #@profile
     @property
+    @cache(maxsize=1)
     def data(self):
         f = open(self.filename, 'rb')
 
@@ -356,25 +359,32 @@ class AgilentCSDAD2(TraceFile):
 
         ndata = np.empty((nscans, len(wvs)), dtype="<i4")
         npos = 0x1002
+
+        # try to speed up by preloading the function
+        unpack = struct.unpack
+        seek = f.seek
+        read = f.read
+        tell = f.tell
+
         for i in range(nscans):
-            f.seek(npos)
-            dlen = struct.unpack('<H', f.read(2))[0]
+            seek(npos)
+            dlen = unpack('<H', read(2))[0]
             npos += dlen
-            f.seek(f.tell() + 4)  # skip time
-            nm_srt, nm_end, nm_stp = struct.unpack('<HHH', f.read(6))
-            f.seek(f.tell() + 8)
+            seek(tell() + 4)  # skip time
+            nm_srt, nm_end, nm_stp = unpack('<HHH', read(6))
+            seek(tell() + 8)
 
             ## OLD CODE
             v = 0
             pos = f.tell()
             for wv in np.arange(nm_srt, nm_end, nm_stp) / 20.:
-                ov = struct.unpack('<h', f.read(2))[0]
+                ov = unpack('<h', read(2))[0]
                 if ov == -32768:
-                    v = struct.unpack('<i', f.read(4))[0]
+                    v = unpack('<i', read(4))[0]
                 else:
                     v += ov
                 ndata[i, wvs.index(wv)] = v
-            f.seek(pos)
+            seek(pos)
 
             ## WORKING ON A FASTER WAY TO READ ALL THIS DATA BELOW
             ## read in all the data

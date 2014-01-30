@@ -32,6 +32,10 @@ matplotlib.use('Qt4Agg')
 import numpy
 numpy.seterr(divide='raise', invalid='raise', over='raise')
 
+import warnings
+import sqlalchemy.exc
+warnings.simplefilter('ignore', sqlalchemy.exc.SAWarning)
+
 # for multiprocessing to work on Windows
 import multiprocessing
 multiprocessing.freeze_support()
@@ -45,13 +49,13 @@ qt = PyQt4.QtGui.QApplication(sys.argv)
 # translation stuff
 import locale
 import pkg_resources
-from aston.qtgui.resources import resfile
+from aston.resources import resfile
 try:
     locale.setlocale(locale.LC_ALL, '')
     if locale.getlocale()[0] is not None:
         lang = locale.getlocale()[0]
         tlate = PyQt4.QtCore.QTranslator(qt)
-        tlate.load('aston_' + lang + '.qm', resfile('aston', 'i18n'))
+        tlate.load('aston_' + lang + '.qm', resfile('aston/qtgui', 'i18n'))
         qt.installTranslator(tlate)
 except locale.Error:
     pass

@@ -6,8 +6,10 @@ import numpy as np
 #import scipy
 from datetime import datetime
 from xml.etree import ElementTree
+from aston.resources import cache
 from aston.trace.Trace import AstonSeries, AstonFrame
 from aston.tracefile.TraceFile import TraceFile
+from aston.spectra.Scan import Scan
 
 
 class AgilentMS(TraceFile):
@@ -43,6 +45,7 @@ class AgilentMS(TraceFile):
         return AstonSeries(tic, tme, name='TIC')
 
     @property
+    @cache(maxsize=1)
     def data(self):
         f = open(self.filename, 'rb')
 
@@ -260,7 +263,7 @@ class AgilentMSMSScan(TraceFile):
         return AstonSeries(np.array(ic), np.array(tme), \
                       name=str(str(parent) + '->' + str(daughter)))
 
-    def scan(self, time, to_time=None):
+    def scan(self, t, dt=None):
         #TODO: support time ranges
         #super hack-y way to disable checksum and length checking
         gzip.GzipFile._read_eof = lambda _: None
@@ -270,12 +273,11 @@ class AgilentMSMSScan(TraceFile):
         f = open(op.join(op.split(self.filename)[0], 'MSProfile.bin'), 'rb')
 
         time_dist = np.inf
-        time = self._sc_off(time)
         for t, off, bc, pc, minx, maxx in self._msscan_iter( \
           ['ScanTime', 'SpectrumOffset', 'ByteCount', \
           'PointCount', 'MinX', 'MaxX']):
-            if time_dist > np.abs(t - time):
-                time_dist = np.abs(t - time)
+            if time_dist > np.abs(t - t):
+                time_dist = np.abs(t - t)
                 s_p = (off, bc, pc, minx, maxx)
             else:
                 off, bc, pc, minx, maxx = s_p
@@ -285,4 +287,4 @@ class AgilentMSMSScan(TraceFile):
                 break
         f.close()
         ions = np.linspace(minx, maxx, len(pd))
-        return np.vstack([ions, pd])
+        return Scan(ions, pd)

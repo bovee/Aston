@@ -2,19 +2,21 @@ import codecs
 import os.path as op
 from PyQt4 import QtGui
 
-from aston.qtgui.resources import resfile
+from aston.resources import resfile, tr
 from aston.qtgui.ui_mainwindow import Ui_MainWindow
 from aston.qtgui.Settings import SettingsWidget
 from aston.qtgui.FilterWindow import FilterWindow
-from aston.qtgui.MainPlot import Plotter
-from aston.qtgui.SpecPlot import SpecPlotter
+from aston.qtgui.PlotMain import Plotter
+from aston.qtgui.PlotSpec import SpecPlotter
 
 from aston.database import quick_sqlite
+from aston.database.Create import read_directory
 #from aston.database.Compound import get_compound_db
 from aston.qtgui.TableFile import FileTreeModel
+from aston.qtgui.TablePalette import PaletteTreeModel
 import aston.qtgui.MenuOptions
-from aston.peaks.PeakFinding import find_peaks, find_peaks_iso
-from aston.peaks.Integrators import integrate_peaks
+#from aston.peaks.PeakFinding import find_peaks, find_peaks_iso
+#from aston.peaks.Integrators import integrate_peaks
 
 
 class AstonWindow(QtGui.QMainWindow):
@@ -32,13 +34,7 @@ class AstonWindow(QtGui.QMainWindow):
 
         #set up the list of files in the current directory
         fdir = self.getPref('Default.FILE_DIRECTORY')
-        if fdir is not None:
-            self.directory = op.expanduser(fdir)
-            file_db = quick_sqlite(op.join(self.directory, 'aston.sqlite'))
-        else:
-            #file_db = AstonDatabase(None)
-            pass
-        self.file_tab = FileTreeModel(file_db, self.ui.fileTreeView, self)
+        self.load_new_file_db(fdir)
 
         #connect the menu logic
         self.ui.actionOpen.triggered.connect(self.open_folder)
@@ -71,82 +67,81 @@ class AstonWindow(QtGui.QMainWindow):
         self.ui.compoundDockWidget.setVisible(False)
         self.ui.methodDockWidget.setVisible(False)
 
-        #FIXME
-        return
-        #hook up the search box
-        self.ui.lineEdit.textChanged.connect(self.updateSearch)
-
         #create the things that keep track of how the plots should look
         self.plotter = Plotter(self)
         self.specplotter = SpecPlotter(self)
 
-        #make integrator options
-        peak_find_menu = QtGui.QMenu(self.ui.menuChromatogram)
-        v = list(aston.ui.MenuOptions.peak_finders.keys())[0]
-        self._add_opts_to_menu(peak_find_menu, \
-          aston.ui.MenuOptions.peak_finders.keys(),
-          lambda: None, v)
-        self.ui.actionPeak_Finder.setMenu(peak_find_menu)
+        #FIXME
+        ##hook up the search box
+        #self.ui.lineEdit.textChanged.connect(self.updateSearch)
 
-        integrator_menu = QtGui.QMenu(self.ui.menuChromatogram)
-        v = list(aston.ui.MenuOptions.integrators.keys())[0]
-        self._add_opts_to_menu(integrator_menu, \
-          aston.ui.MenuOptions.integrators.keys(),
-          lambda: None, v)
-        self.ui.actionIntegrator.setMenu(integrator_menu)
+        ##make integrator options
+        #peak_find_menu = QtGui.QMenu(self.ui.menuChromatogram)
+        #v = list(aston.ui.MenuOptions.peak_finders.keys())[0]
+        #self._add_opts_to_menu(peak_find_menu, \
+        #  aston.ui.MenuOptions.peak_finders.keys(),
+        #  lambda: None, v)
+        #self.ui.actionPeak_Finder.setMenu(peak_find_menu)
 
-        menu_gp = QtGui.QActionGroup(self)
-        for ac in self.ui.menuIntegrand.actions():
-            menu_gp.addAction(ac)
+        #integrator_menu = QtGui.QMenu(self.ui.menuChromatogram)
+        #v = list(aston.ui.MenuOptions.integrators.keys())[0]
+        #self._add_opts_to_menu(integrator_menu, \
+        #  aston.ui.MenuOptions.integrators.keys(),
+        #  lambda: None, v)
+        #self.ui.actionIntegrator.setMenu(integrator_menu)
 
-        # hook up spectrum menu
-        for m in [self.ui.actionSpecLibDisp, self.ui.actionSpecLibLabel,\
-                  self.ui.actionSpecMainDisp, self.ui.actionSpecMainLabel, \
-                  self.ui.actionSpecPrevDisp, self.ui.actionSpecPrevLabel]:
-            m.triggered.connect(self.specplotter.plot)
-        self.ui.actionSpecMainSave.triggered.connect( \
-          self.specplotter.save_main_spec)
-        self.ui.actionSpecPrevSave.triggered.connect( \
-          self.specplotter.save_prev_spec)
+        #menu_gp = QtGui.QActionGroup(self)
+        #for ac in self.ui.menuIntegrand.actions():
+        #    menu_gp.addAction(ac)
 
-        #flesh out the settings menu
-        color_menu = QtGui.QMenu(self.ui.menuSettings)
-        v_cs = self.obj_tab.db.get_key('color_scheme', dflt='Spectral')
-        v = self.plotter._colors[v_cs]
-        self.plotter.setColorScheme(v)
-        self._add_opts_to_menu(color_menu, \
-          self.plotter.availColors(), self.set_color_scheme, v)
-        self.ui.actionColor_Scheme.setMenu(color_menu)
+        ## hook up spectrum menu
+        #for m in [self.ui.actionSpecLibDisp, self.ui.actionSpecLibLabel,\
+        #          self.ui.actionSpecMainDisp, self.ui.actionSpecMainLabel, \
+        #          self.ui.actionSpecPrevDisp, self.ui.actionSpecPrevLabel]:
+        #    m.triggered.connect(self.specplotter.plot)
+        #self.ui.actionSpecMainSave.triggered.connect( \
+        #  self.specplotter.save_main_spec)
+        #self.ui.actionSpecPrevSave.triggered.connect( \
+        #  self.specplotter.save_prev_spec)
 
-        self.ui.actionLegend.triggered.connect(self.set_legend)
-        self.ui.actionGraphGrid.triggered.connect(self.set_legend)
-        self.ui.actionGraphLogYAxis.triggered.connect(self.set_legend)
-        self.ui.actionGraphFxnCollection.triggered.connect(self.set_legend)
-        self.ui.actionGraphFIA.triggered.connect(self.set_legend)
-        self.ui.actionGraphIRMS.triggered.connect(self.set_legend)
-        self.ui.actionGraph_Peaks_Found.triggered.connect(self.set_legend)
+        ##flesh out the settings menu
+        #color_menu = QtGui.QMenu(self.ui.menuSettings)
+        #v_cs = self.obj_tab.db.get_key('color_scheme', dflt='Spectral')
+        #v = self.plotter._colors[v_cs]
+        #self.plotter.setColorScheme(v)
+        #self._add_opts_to_menu(color_menu, \
+        #  self.plotter.availColors(), self.set_color_scheme, v)
+        #self.ui.actionColor_Scheme.setMenu(color_menu)
 
-        style_menu = QtGui.QMenu(self.ui.menuSettings)
-        v_gs = self.obj_tab.db.get_key('graph_style', dflt='default')
-        v = self.plotter._styles[v_gs]
-        self.plotter.setStyle(v)
-        self._add_opts_to_menu(style_menu, \
-          self.plotter.availStyles(), self.set_graph_style, v)
-        self.ui.actionGraph_Style.setMenu(style_menu)
+        #self.ui.actionLegend.triggered.connect(self.set_legend)
+        #self.ui.actionGraphGrid.triggered.connect(self.set_legend)
+        #self.ui.actionGraphLogYAxis.triggered.connect(self.set_legend)
+        #self.ui.actionGraphFxnCollection.triggered.connect(self.set_legend)
+        #self.ui.actionGraphFIA.triggered.connect(self.set_legend)
+        #self.ui.actionGraphIRMS.triggered.connect(self.set_legend)
+        #self.ui.actionGraph_Peaks_Found.triggered.connect(self.set_legend)
 
-        # add settings widget in
-        self.settingsWidget = SettingsWidget(self, db=file_db)
-        self.ui.verticalLayout_settings.addWidget(self.settingsWidget)
+        #style_menu = QtGui.QMenu(self.ui.menuSettings)
+        #v_gs = self.obj_tab.db.get_key('graph_style', dflt='default')
+        #v = self.plotter._styles[v_gs]
+        #self.plotter.setStyle(v)
+        #self._add_opts_to_menu(style_menu, \
+        #  self.plotter.availStyles(), self.set_graph_style, v)
+        #self.ui.actionGraph_Style.setMenu(style_menu)
+
+        ## add settings widget in
+        #self.settingsWidget = SettingsWidget(self, db=file_db)
+        #self.ui.verticalLayout_settings.addWidget(self.settingsWidget)
 
         #plot data
         self.plotData()
 
-        #set up the compound database
-        cmpd_loc = self.obj_tab.db.get_key('db_compound', dflt='')
-        if cmpd_loc != '':
-            cmpd_db = get_compound_db(cmpd_loc)
-            self.cmpd_tab = FileTreeModel(cmpd_db, self.ui.compoundTreeView, \
-                                          self)
+        ##set up the compound database
+        #cmpd_loc = self.obj_tab.db.get_key('db_compound', dflt='')
+        #if cmpd_loc != '':
+        #    cmpd_db = get_compound_db(cmpd_loc)
+        #    self.cmpd_tab = FileTreeModel(cmpd_db, self.ui.compoundTreeView, \
+        #                                  self)
 
     def _add_opts_to_menu(self, menu, opts, fxn, dflt=None):
         menu_gp = QtGui.QActionGroup(self)
@@ -206,20 +201,18 @@ class AstonWindow(QtGui.QMainWindow):
 
     def open_folder(self):
         folder = str(QtGui.QFileDialog.getExistingDirectory(self, \
-          self.tr("Open Folder")))
+          tr("Open Folder")))
         if folder == '':
             return
-        self.directory = folder
 
-        #need to discard old connections
-        #self.ui.fileTreeView.clicked.disconnect()
-        self.ui.fileTreeView.selectionModel().currentChanged.disconnect()
-        self.ui.fileTreeView.customContextMenuRequested.disconnect()
-        self.ui.fileTreeView.header().customContextMenuRequested.disconnect()
-        self.ui.fileTreeView.header().sectionMoved.disconnect()
+        ##need to discard old connections
+        ##self.ui.fileTreeView.clicked.disconnect()
+        #self.ui.fileTreeView.selectionModel().currentChanged.disconnect()
+        #self.ui.fileTreeView.customContextMenuRequested.disconnect()
+        #self.ui.fileTreeView.header().customContextMenuRequested.disconnect()
+        #self.ui.fileTreeView.header().sectionMoved.disconnect()
 
-        file_loc = op.join(self.directory, 'aston.sqlite')
-        self.load_new_file_db(file_loc)
+        self.load_new_file_db(folder)
 
     def load_new_file_db(self, file_loc):
         #TODO: this should be called by init too so opening a new file_db
@@ -227,21 +220,28 @@ class AstonWindow(QtGui.QMainWindow):
         # init now
 
         #load everything
-        file_db = AstonFileDatabase(file_loc)
-        self.obj_tab = FileTreeModel(file_db, self.ui.fileTreeView, self)
-        self.settingsWidget.db = file_db
-        self.plotData()
+        if file_loc is None:
+            return
+        self.directory = op.expanduser(file_loc)
+        file_db = quick_sqlite(op.join(self.directory, 'aston.sqlite'))
+        read_directory(self.directory, file_db)
 
-        cmpd_loc = file_db.get_key('db_compound', dflt='')
-        if cmpd_loc != '':
-            cmpd_db = get_compound_db(cmpd_loc)
-            self.cmpd_tab = FileTreeModel(cmpd_db, self.ui.compoundTreeView, \
-                                          self)
+        self.pal_tab = PaletteTreeModel(file_db, self.ui.paletteTreeView, self)
+        self.file_tab = FileTreeModel(file_db, self.ui.fileTreeView, self)
+
+        #self.settingsWidget.db = file_db
+        #self.plotData()
+
+        #cmpd_loc = file_db.get_key('db_compound', dflt='')
+        #if cmpd_loc != '':
+        #    cmpd_db = get_compound_db(cmpd_loc)
+        #    self.cmpd_tab = FileTreeModel(cmpd_db, self.ui.compoundTreeView, \
+        #                                  self)
 
     def load_peaks(self):
         ftypes = 'AMDIS (*.*);;Isodat (*.*)'
         fname = QtGui.QFileDialog.getOpenFileName(self, \
-          self.tr("Open File"), '', ftypes)
+          tr("Open File"), '', ftypes)
         if str(fname) == '':
             return
         from aston.peaks.PeakReader import read_peaks
@@ -263,13 +263,13 @@ class AstonWindow(QtGui.QMainWindow):
         self.plotData()
 
     def exportChromatogram(self):
-        fopts = self.tr('PNG Image (*.png);;PGF Image (*.pgf);;' + \
+        fopts = tr('PNG Image (*.png);;PGF Image (*.pgf);;' + \
           'RAW Image (*.raw);;RGBA Image (*.rgba);;SVG Image (*.svg);;' + \
           'EMF Image (*.emf);;EPS Image (*.eps);;' + \
           'Portable Document Format (*.pdf);;Postscript Image (*.ps);;' + \
           'Compressed SVG File (*.svgz);;Comma-Delimited Text (*.csv)')
         fname = str(QtGui.QFileDialog.getSaveFileNameAndFilter(self, \
-          self.tr("Save As..."), filter=fopts)[0])
+          tr("Save As..."), filter=fopts)[0])
         if fname == '':
             return
         elif fname[-4:].lower() == '.csv':
@@ -282,7 +282,7 @@ class AstonWindow(QtGui.QMainWindow):
                     ts &= dt.trace(ion)
 
             with open(fname, 'w') as f:
-                f.write(self.tr('Time') + ',' + ','.join(ts.ions) + ',\n')
+                f.write(tr('Time') + ',' + ','.join(ts.ions) + ',\n')
                 for t, d in zip(ts.times, ts.data):
                     f.write(str(t) + ',' + ','.join(str(i) \
                       for i in d) + '\n')
@@ -291,13 +291,13 @@ class AstonWindow(QtGui.QMainWindow):
 
     def exportSpectrum(self):
         #TODO: this needs to be updated when SpecPlot becomes better
-        fopts = self.tr('PNG Image (*.png);;PGF Image (*.pgf);;' + \
+        fopts = tr('PNG Image (*.png);;PGF Image (*.pgf);;' + \
           'RAW Image (*.raw);;RGBA Image (*.rgba);;SVG Image (*.svg);;' + \
           'EMF Image (*.emf);;EPS Image (*.eps);;' + \
           'Portable Document Format (*.pdf);;Postscript Image (*.ps);;' + \
           'Compressed SVG File (*.svgz);;Comma-Delimited Text (*.csv)')
         fname = str(QtGui.QFileDialog.getSaveFileNameAndFilter(self, \
-          self.tr("Save As..."), filter=fopts)[0])
+          tr("Save As..."), filter=fopts)[0])
         if fname == '':
             return
         elif fname[-4:].lower() == '.csv':
@@ -305,7 +305,7 @@ class AstonWindow(QtGui.QMainWindow):
                 return
             with open(fname, 'w') as f:
                 scan = self.specplotter.scans['']
-                f.write(self.tr('mz') + ',' + self.tr('abun') + '\n')
+                f.write(tr('mz') + ',' + tr('abun') + '\n')
                 for mz, abun in scan.T:
                     f.write(str(mz) + ',' + str(abun) + '\n')
         else:
@@ -314,9 +314,9 @@ class AstonWindow(QtGui.QMainWindow):
     def exportItems(self):
         #TODO: options for exporting different delimiters (e.g. tab) or
         #exporting select items as pictures (e.g. selected spectra)
-        fopts = self.tr('Comma-Delimited Text (*.csv)')
+        fopts = tr('Comma-Delimited Text (*.csv)')
         fname = str(QtGui.QFileDialog.getSaveFileNameAndFilter(self, \
-          self.tr("Save As..."), filter=fopts)[0])
+          tr("Save As..."), filter=fopts)[0])
         if fname == '':
             return
         sel = self.obj_tab.returnSelFiles()
@@ -403,12 +403,14 @@ class AstonWindow(QtGui.QMainWindow):
         self.plotData()
 
     def plotData(self, **kwargs):
-        datafiles = self.obj_tab.returnChkFiles()
+        traces = []
+        for pr in self.pal_tab.children:
+            traces += [t for t in pr.traces if t.vis > 0]
 
         if 'updateBounds' in kwargs:
-            self.plotter.plotData(datafiles, kwargs['updateBounds'])
+            self.plotter.plotData(traces, kwargs['updateBounds'])
         else:
-            self.plotter.plotData(datafiles)
+            self.plotter.plotData(traces)
 
     def updateSearch(self, text):
         """

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-#    Copyright 2011-2013 Roderick Bovee
+#    Copyright 2011-2014 Roderick Bovee
 #
 #    This file is part of Aston.
 #
@@ -23,93 +23,84 @@ Model for handling display of open files.
 #pylint: disable=C0103
 
 from __future__ import unicode_literals
-import re
 import json
 from collections import OrderedDict
 from PyQt4 import QtGui, QtCore
-from aston.ui.QuantDialog import QuantDialog
-from aston.ui.resources import resfile
-from aston.ui.Fields import aston_fields, aston_groups, aston_field_opts
-from aston.ui.MenuOptions import peak_models
-from aston.databases.FileDatabase import AstonFileDatabase, LoadFilesThread
+from aston.resources import resfile
+from aston.qtgui.QuantDialog import QuantDialog
+from aston.qtgui.Fields import aston_fields, aston_groups
+#from aston.qtgui.MenuOptions import peak_models
+from aston.qtgui.TableModel import TableModel
+from aston.database.Peak import DBPeak
+from aston.database.Palette import Palette, PaletteRun, Trace
 
 
-class PaletteTree(QtCore.QAbstractItemModel):
+class PaletteTreeModel(TableModel):
     """
     Handles interfacing with QTreeView and other file-related duties.
     """
     def __init__(self, database=None, tree_view=None, master_window=None, \
                  *args):
-        QtCore.QAbstractItemModel.__init__(self, *args)
+        super(PaletteTreeModel, self).__init__(database, tree_view, \
+                                               master_window, *args)
 
-        self.db = database
-        self.db._table = self
-        self.master_window = master_window
-        if type(database) == AstonFileDatabase:
-            def_fields = '["name", "vis", "traces", "r-filename"]'
-        else:
-            def_fields = '["name"]'
-        self.fields = json.loads(self.db.get_key('main_cols', dflt=def_fields))
+        # need to load fields and database before calling __init__
+        #TODO: load custom fields from the database
+        self.fields = ['name', 'vis']
 
-        if tree_view is None:
-            return
-        else:
-            self.tree_view = tree_view
+        #TODO: make this better?
+        self.active_palette = self.db.query(Palette).first()
 
-        #set up proxy model
-        self.proxyMod = FilterModel()
-        self.proxyMod.setSourceModel(self)
-        self.proxyMod.setDynamicSortFilter(True)
-        self.proxyMod.setFilterKeyColumn(0)
-        self.proxyMod.setFilterCaseSensitivity(False)
-        tree_view.setModel(self.proxyMod)
-        tree_view.setSortingEnabled(True)
+        # create a list with all of the root items in it
+        q = self.db.query(PaletteRun)
+        self.children = q.filter_by(palette=self.active_palette).all()
 
-        #set up selections
-        tree_view.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
-        tree_view.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
-        #TODO: this works, but needs to be detached when opening a new folder
-        tree_view.selectionModel().currentChanged.connect(self.itemSelected)
-        #tree_view.clicked.connect(self.itemSelected)
+        ##set up selections
+        #tree_view.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
+        #tree_view.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
+        ##TODO: this works, but needs to be detached when opening a new folder
+        #tree_view.selectionModel().currentChanged.connect(self.itemSelected)
+        ##tree_view.clicked.connect(self.itemSelected)
 
-        #set up key shortcuts
-        delAc = QtGui.QAction("Delete", tree_view, \
-            shortcut=QtCore.Qt.Key_Backspace, triggered=self.delItemKey)
-        delAc = QtGui.QAction("Delete", tree_view, \
-            shortcut=QtCore.Qt.Key_Delete, triggered=self.delItemKey)
-        tree_view.addAction(delAc)
+        ##set up key shortcuts
+        #delAc = QtGui.QAction("Delete", tree_view, \
+        #    shortcut=QtCore.Qt.Key_Backspace, triggered=self.delItemKey)
+        #delAc = QtGui.QAction("Delete", tree_view, \
+        #    shortcut=QtCore.Qt.Key_Delete, triggered=self.delItemKey)
+        #tree_view.addAction(delAc)
 
-        #set up right-clicking
+        ##set up right-clicking
         tree_view.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         tree_view.customContextMenuRequested.connect(self.click_main)
-        tree_view.header().setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-        tree_view.header().customContextMenuRequested.connect( \
-            self.click_head)
-        tree_view.header().setStretchLastSection(False)
+        #tree_view.header().setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        #tree_view.header().customContextMenuRequested.connect( \
+        #    self.click_head)
+        #tree_view.header().setStretchLastSection(False)
 
-        #set up drag and drop
-        tree_view.setDragEnabled(True)
-        tree_view.setAcceptDrops(True)
-        tree_view.setDragDropMode(QtGui.QAbstractItemView.DragDrop)
-        tree_view.dragMoveEvent = self.dragMoveEvent
+        ##set up drag and drop
+        #tree_view.setDragEnabled(True)
+        #tree_view.setAcceptDrops(True)
+        #tree_view.setDragDropMode(QtGui.QAbstractItemView.DragDrop)
+        #tree_view.dragMoveEvent = self.dragMoveEvent
 
-        #keep us aware of column reordering
-        self.tree_view.header().sectionMoved.connect(self.colsChanged)
+        ##keep us aware of column reordering
+        #self.tree_view.header().sectionMoved.connect(self.colsChanged)
 
-        #deal with combo boxs in table
-        self.cDelegates = {}
-        self.enableComboCols()
+        ##deal with combo boxs in table
+        #self.cDelegates = {}
+        #self.enableComboCols()
 
-        #prettify
+        ##prettify
         tree_view.collapseAll()
         tree_view.setColumnWidth(0, 300)
         tree_view.setColumnWidth(1, 60)
 
-        update_db = self.db.get_key('db_reload_on_open', dflt=True)
-        if type(database) == AstonFileDatabase and update_db:
-            self.loadthread = LoadFilesThread(self.db)
-            self.loadthread.file_updated.connect(self.update_obj)
-            self.loadthread.start()
+        #update_db = self.db.get_key('db_reload_on_open', dflt=True)
+        #if type(database) == AstonFileDatabase and update_db:
+        #    self.loadthread = LoadFilesThread(self.db)
+        #    self.loadthread.file_updated.connect(self.update_obj)
+        #    self.loadthread.start()
+        self.reset()
 
     def dragMoveEvent(self, event):
         #TODO: files shouldn't be able to be under peaks
@@ -153,77 +144,41 @@ class PaletteTree(QtCore.QAbstractItemModel):
     def supportedDropActions(self):
         return QtCore.Qt.MoveAction
 
-    def enableComboCols(self):
-        for c in aston_field_opts.keys():
-            if c in self.fields and c not in self.cDelegates:
-                #new column, need to add combo support in
-                opts = aston_field_opts[c]
-                self.cDelegates[c] = (self.fields.index(c), \
-                                      ComboDelegate(opts))
-                self.tree_view.setItemDelegateForColumn(*self.cDelegates[c])
-            elif c not in self.fields and c in self.cDelegates:
-                #column has been deleted, remove from delegate list
-                self.tree_view.setItemDelegateForColumn( \
-                  self.cDelegates[c][0], self.tree_view.itemDelegate())
-                del self.cDelegates[c]
-
-    def index(self, row, column, parent):
-        if row < 0 or column < 0 or column > len(self.fields):
-            return QtCore.QModelIndex()
-        elif not parent.isValid() and row < len(self.db.children):
-            return self.createIndex(row, column, self.db.children[row])
-        elif parent.column() == 0:
-            sibs = parent.internalPointer().children
-            if row >= len(sibs):
-                return QtCore.QModelIndex()
-            return self.createIndex(row, column, sibs[row])
-        return QtCore.QModelIndex()
-
-    def parent(self, index):
-        if not index.isValid():
-            return QtCore.QModelIndex()
-        obj = index.internalPointer()
-        if obj.parent == self.db or obj is None:
-            return QtCore.QModelIndex()
-        else:
-            row = obj.parent.parent.children.index(obj.parent)
-            return self.createIndex(row, 0, obj.parent)
-
-    def rowCount(self, parent):
-        if not parent.isValid():
-            return len(self.db.children)
-        elif parent.column() == 0:
-            return len(parent.internalPointer().children)
-        else:
-            return 0
-
-    def columnCount(self, parent):
-        return len(self.fields)
-
     def data(self, index, role):
+        fld = self.fields[index.column()]
+        obj = index.internalPointer()
         rslt = None
-        fld = self.fields[index.column()].lower()
-        f = index.internalPointer()
-        if f is None:
-            rslt = None
-        elif fld == 'vis' and f.db_type == 'file':
-            if role == QtCore.Qt.CheckStateRole:
-                if f.info['vis'] == 'y':
+        if type(obj) is PaletteRun:
+            if role == QtCore.Qt.DisplayRole or role == QtCore.Qt.EditRole:
+                if fld == 'name':
+                    rslt = obj.run.name
+            elif role == QtCore.Qt.DecorationRole and index.column() == 0:
+                loc = resfile('aston/qtgui', 'icons/file.png')
+                rslt = QtGui.QIcon(loc)
+        elif type(obj) is Trace:
+            if fld == 'vis' and role == QtCore.Qt.CheckStateRole:
+                #TODO: allow vis to be a plot number instead?
+                if obj.vis > 0:
                     rslt = QtCore.Qt.Checked
                 else:
                     rslt = QtCore.Qt.Unchecked
-        elif role == QtCore.Qt.DisplayRole or role == QtCore.Qt.EditRole:
-            if fld == 'p-model' and f.db_type == 'peak':
-                rpeakmodels = {peak_models[k]: k for k in peak_models}
-                rslt = rpeakmodels.get(f.info[fld], 'None')
-            else:
-                rslt = f.info[fld]
-        elif role == QtCore.Qt.DecorationRole and index.column() == 0:
-            #TODO: icon for method, compound
-            fname = {'file': 'file.png', 'peak': 'peak.png', \
-                    'spectrum': 'spectrum.png'}
-            loc = resfile('aston/ui', 'icons/' + fname.get(f.db_type, ''))
-            rslt = QtGui.QIcon(loc)
+            elif role == QtCore.Qt.DisplayRole or role == QtCore.Qt.EditRole:
+                if fld == 'name':
+                    rslt = obj.name
+        elif type(obj) is DBPeak:
+            pass
+        #elif role == QtCore.Qt.DisplayRole or role == QtCore.Qt.EditRole:
+        #    if fld == 'p-model' and f.db_type == 'peak':
+        #        rpeakmodels = {peak_models[k]: k for k in peak_models}
+        #        rslt = rpeakmodels.get(f.info[fld], 'None')
+        #    else:
+        #        rslt = f.info[fld]
+        #elif role == QtCore.Qt.DecorationRole and index.column() == 0:
+        #    #TODO: icon for method, compound
+        #    fname = {'file': 'file.png', 'peak': 'peak.png', \
+        #            'spectrum': 'spectrum.png'}
+        #    loc = resfile('aston/ui', 'icons/' + fname.get(f.db_type, ''))
+        #    rslt = QtGui.QIcon(loc)
         return rslt
 
     def headerData(self, col, orientation, role):
@@ -237,45 +192,59 @@ class PaletteTree(QtCore.QAbstractItemModel):
             return None
 
     def setData(self, index, data, role):
+        #TODO: commit changes to db?
         data = str(data)
         col = self.fields[index.column()].lower()
         obj = index.internalPointer()
-        if col == 'vis':
-            obj.info['vis'] = ('y' if data == '2' else 'n')
-            #redraw the main plot
+        if type(obj) is Trace and col == 'vis':
+            obj.vis = (1 if data == '2' else 0)
             self.master_window.plotData()
-        elif col == 'traces' or col[:2] == 't-':
-            obj.info[col] = data
-            if obj.info['vis'] == 'y':
-                self.master_window.plotData()
-        elif col == 'p-model':
-            obj.update_model(peak_models[data])
-            self.master_window.plotData(updateBounds=False)
-        else:
-            obj.info[col] = data
-        obj.save_changes()
+        elif type(obj) is Trace and col == 'name':
+            obj.name = data.replace('+-', '±').replace('->', '→')
+            self.master_window.plotData()
+        #elif col == 'p-model':
+        #    obj.update_model(peak_models[data])
+        #    self.master_window.plotData(updateBounds=False)
+        #else:
+        #    obj.info[col] = data
+        #obj.save_changes()
         self.dataChanged.emit(index, index)
         return True
 
     def flags(self, index):
-        col = self.fields[index.column()].lower()
+        col = self.fields[index.column()]
         obj = index.internalPointer()
         dflags = QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable
         dflags |= QtCore.Qt.ItemIsDropEnabled
         if not index.isValid():
             return dflags
         dflags |= QtCore.Qt.ItemIsDragEnabled
-        if col == 'vis' and obj.db_type == 'file':
+        if col == 'vis' and type(obj) is Trace:
             dflags |= QtCore.Qt.ItemIsUserCheckable
-        elif col in ['r-filename'] or col[:2] == 's-' or col == 'vis':
-            pass
-        elif obj.db_type == 'file' and (col[:2] == 'p-' or col[:3] == 'sp-'):
-            pass
-        elif obj.db_type != 'file' and (col[:2] == 't-' or col[:2] == 'r-'):
-            pass
         else:
             dflags |= QtCore.Qt.ItemIsEditable
         return dflags
+
+    def has_run(self, run):
+        q = self.db.query(PaletteRun)
+        return q.filter_by(run=run, palette=self.active_palette).count() > 0
+
+    def add_run(self, run):
+        with self.add_rows(None, 1):
+            prun = PaletteRun(run=run, palette=self.active_palette)
+            self.db.add(prun)
+            self.children.append(prun)
+        self.db.commit()
+
+    def del_run(self, run):
+        #TODO: update fileTable; allows deleting from this table
+        q = self.db.query(PaletteRun)
+        pobj = q.filter_by(run=run, palette=self.active_palette).first()
+        with self.del_row(pobj):
+            self.children.remove(pobj)
+            self.db.delete(pobj)
+            #TODO: delete unassociated traces and peaks?
+        self.db.commit()
 
     def itemSelected(self):
         #TODO: update an info window?
@@ -284,7 +253,7 @@ class PaletteTree(QtCore.QAbstractItemModel):
 
         #remove all of the peak patches from the
         #main plot and add new ones in
-        sel = self.returnSelFile()
+        sel = self.returnSelObj()
         self.master_window.specplotter.libscans = []
         if sel is not None:
             if sel.db_type == 'file':
@@ -299,7 +268,7 @@ class PaletteTree(QtCore.QAbstractItemModel):
             elif sel.db_type == 'spectrum':
                 self.master_window.specplotter.libscans = [sel.data]
                 self.master_window.specplotter.plot()
-        objs_sel = len(self.returnSelFiles())
+        objs_sel = len(self.returnSelObjs())
         self.master_window.show_status(str(objs_sel) + ' items selected')
 
     def colsChanged(self, *_):  # don't care about the args
@@ -308,50 +277,70 @@ class PaletteTree(QtCore.QAbstractItemModel):
         self.db.set_key('main_cols', json.dumps(flds))
 
     def click_main(self, point):
-        #index = self.proxyMod.mapToSource(self.tree_view.indexAt(point))
+        index = self.proxyMod.mapToSource(self.tree_view.indexAt(point))
         menu = QtGui.QMenu(self.tree_view)
-        sel = self.returnSelFiles()
+        #sel = self.returnSelFiles()
 
-        #Things we can do with peaks
-        fts = [s for s in sel if s.db_type == 'peak']
-        if len(fts) > 0:
-            self._add_menu_opt(self.tr('Create Spec.'), \
-                               self.createSpec, fts, menu)
-            self._add_menu_opt(self.tr('Merge Peaks'), \
-                               self.merge_peaks, fts, menu)
-            self._add_menu_opt(self.tr('Quant'), \
-                               self.quant_peaks, fts, menu)
+        def add_menu_opt(name, func, objs, menu):
+            ac = menu.addAction(name, self.click_handler)
+            ac.setData((func, objs))
 
-        fts = [s for s in sel if s.db_type in ('spectrum', 'peak')]
-        if len(fts) > 0:
-            self._add_menu_opt(self.tr('Find in Lib'), \
-                               self.find_in_lib, fts, menu)
+        fts = [index.internalPointer()]
+        if type(fts[0]) is PaletteRun:
+            add_menu_opt(self.tr('Create Trace'),
+                         self.add_trace, fts, menu)
 
-        ##Things we can do with files
-        #fts = [s for s in sel if s.db_type == 'file']
+        ##Things we can do with peaks
+        #fts = [s for s in sel if s.db_type == 'peak']
         #if len(fts) > 0:
-        #    self._add_menu_opt(self.tr('Copy Method'), \
-        #                       self.makeMethod, fts, menu)
+        #    self._add_menu_opt(self.tr('Create Spec.'), \
+        #                       self.createSpec, fts, menu)
+        #    self._add_menu_opt(self.tr('Merge Peaks'), \
+        #                       self.merge_peaks, fts, menu)
+        #    self._add_menu_opt(self.tr('Quant'), \
+        #                       self.quant_peaks, fts, menu)
 
-        #Things we can do with everything
-        if len(sel) > 0:
-            self._add_menu_opt(self.tr('Delete Items'), \
-                               self.delete_objects, sel, menu)
-            #self._add_menu_opt(self.tr('Debug'), self.debug, sel)
+        #fts = [s for s in sel if s.db_type in ('spectrum', 'peak')]
+        #if len(fts) > 0:
+        #    self._add_menu_opt(self.tr('Find in Lib'), \
+        #                       self.find_in_lib, fts, menu)
+
+        ###Things we can do with files
+        ##fts = [s for s in sel if s.db_type == 'file']
+        ##if len(fts) > 0:
+        ##    self._add_menu_opt(self.tr('Copy Method'), \
+        ##                       self.makeMethod, fts, menu)
+
+        ##Things we can do with everything
+        #if len(sel) > 0:
+        #    self._add_menu_opt(self.tr('Delete Items'), \
+        #                       self.delete_objects, sel, menu)
+        #    #self._add_menu_opt(self.tr('Debug'), self.debug, sel)
 
         if not menu.isEmpty():
             menu.exec_(self.tree_view.mapToGlobal(point))
-
-    def _add_menu_opt(self, name, func, objs, menu):
-        ac = menu.addAction(name, self.click_handler)
-        ac.setData((func, objs))
 
     def click_handler(self):
         func, objs = self.sender().data()
         func(objs)
 
     def delItemKey(self):
-        self.delete_objects(self.returnSelFiles())
+        self.delete_objects(self.returnSelObjs())
+
+    def add_trace(self, objs):
+        for obj in objs:
+            with self.add_rows(obj, 1):
+                trace = Trace(paletterun=obj)
+                self.db.add(trace)
+        self.db.commit()
+
+        #    row = len(obj.traces)
+        #    pidx = self._obj_to_index(obj)
+        #    self.beginInsertRows(pidx, row, row)
+        #    self.db.add(pobj)
+        #    self.db.commit()
+        #    self.children.append(pobj)
+        #    self.endInsertRows()
 
     def debug(self, objs):
         pks = [o for o in objs if o.db_type == 'peak']
@@ -455,41 +444,27 @@ class PaletteTree(QtCore.QAbstractItemModel):
         else:
             obj.parent = self.db
 
-    def delete_objects(self, objs):
-        with self.db:
-            for obj in objs:
-                obj.delete()
-        self.master_window.plotData(updateBounds=False)
-
-    def _obj_to_index(self, obj):
-        if obj is None or obj == self.db:
-            return QtCore.QModelIndex()
-        elif obj in self.db.children:
-            row = self.db.children.index(obj)
-        else:
-            row = obj.parent.children.index(obj)
-        return self.createIndex(row, 0, obj)
-
-    def active_file(self):
+    def active_trace(self):
         """
-        Returns the file currently selected in the file list.
-        If that file is not visible, return the topmost visible file.
+        Returns the trace currently selected in the list.
+        If that trace is not visible, return the topmost visible trace.
         Used for determing which spectra to display on right click, etc.
         """
-        dt = self.returnSelFile()
-        if dt is not None:
-            if dt.db_type == 'file' and dt.info['vis'] == 'y':
-                return dt
+        trace = self.returnSelObj()
+        if trace is not None:
+            if type(trace) is Trace:
+                if trace.vis > 0:
+                    return trace
 
-        dts = self.returnChkFiles()
+        dts = self.returnChkObjs()
         if len(dts) == 0:
             return None
         else:
             return dts[0]
 
-    def returnChkFiles(self, node=None):
+    def returnChkObjs(self, node=None):
         """
-        Returns the files checked as visible in the file list.
+        Returns the lines checked as visible in the file list.
         """
         if node is None:
             node = QtCore.QModelIndex()
@@ -497,14 +472,15 @@ class PaletteTree(QtCore.QAbstractItemModel):
         chkFiles = []
         for i in range(self.proxyMod.rowCount(node)):
             prjNode = self.proxyMod.index(i, 0, node)
-            f = self.proxyMod.mapToSource(prjNode).internalPointer()
-            if f.info['vis'] == 'y':
-                chkFiles.append(f)
-            if len(f.children) > 0:
-                chkFiles += self.returnChkFiles(prjNode)
+            t = self.proxyMod.mapToSource(prjNode).internalPointer()
+            if type(t) is Trace:
+                if t.vis > 0:
+                    chkFiles.append(t)
+            if len(t.children) > 0:
+                chkFiles += self.returnChkObjs(prjNode)
         return chkFiles
 
-    def returnSelFile(self):
+    def returnSelObj(self):
         """
         Returns the file currently selected in the file list.
         Used for determing which spectra to display on right click, etc.
@@ -518,7 +494,7 @@ class PaletteTree(QtCore.QAbstractItemModel):
             return  # it doesn't exist
         return ind.internalPointer()
 
-    def returnSelFiles(self, cls=None):
+    def returnSelObjs(self, cls=None):
         """
         Returns the files currently selected in the file list.
         Used for displaying the peak list, etc.
@@ -527,7 +503,7 @@ class PaletteTree(QtCore.QAbstractItemModel):
         files = []
         for i in tab_sel.selectedRows():
             obj = i.model().mapToSource(i).internalPointer()
-            if cls is None or obj.db_type == cls:
+            if cls is None or type(obj) is cls:
                 files.append(obj)
         return files
 
@@ -551,44 +527,3 @@ class PaletteTree(QtCore.QAbstractItemModel):
             header = delim.join(flds) + '\n'
             table = '\n'.join(row_lst)
             return header + table
-
-
-class FilterModel(QtGui.QSortFilterProxyModel):
-    def __init__(self, parent=None):
-        super(FilterModel, self).__init__(parent)
-
-    def filterAcceptsRow(self, row, index):
-        #if index.internalPointer() is not None:
-        #    db_type = index.internalPointer().db_type
-        #    if db_type == 'file':
-        #        return super(FilterModel, self).filterAcceptsRow(row, index)
-        #    else:
-        #        return True
-        #else:
-        return super(FilterModel, self).filterAcceptsRow(row, index)
-
-    def lessThan(self, left, right):
-        tonum = lambda text: int(text) if text.isdigit() else text.lower()
-        breakup = lambda key: [tonum(c) for c in re.split('([0-9]+)', key)]
-        return breakup(str(left.data())) < breakup(str(right.data()))
-
-
-class ComboDelegate(QtGui.QItemDelegate):
-    def __init__(self, opts, *args):
-        self.opts = opts
-        super(ComboDelegate, self).__init__(*args)
-
-    def createEditor(self, parent, option, index):
-        cmb = QtGui.QComboBox(parent)
-        cmb.addItems(self.opts)
-        return cmb
-
-    def setEditorData(self, editor, index):
-        txt = index.data(QtCore.Qt.EditRole)
-        if txt in self.opts:
-            editor.setCurrentIndex(self.opts.index(txt))
-        else:
-            super(ComboDelegate, self).setEditorData(editor, index)
-
-    def setModelData(self, editor, model, index):
-        model.setData(index, editor.currentText(), QtCore.Qt.EditRole)
