@@ -83,21 +83,17 @@ class AstonNavBar(NavigationToolbar2QTAgg):
             # if the user clicks just off the plot,
             # the x/y will be None
             return
-        dt = self.parent.obj_tab.active_file()
-        if dt is None:
+        trace = self.parent.pal_tab.active_trace()
+        if trace is None:
             return
         dclicktime = QtGui.QApplication.doubleClickInterval()
         if time.time() - self.ev_time < (dclicktime / 1000.):
             self.ev_time = time.time()
             if abs(self._xypress[0] - event.xdata) > 0.01:
                 return
-            #TODO: better way to retrieve top ion?
-            ion = dt.active_traces(n=0)[0].ions[0]
-            #TODO: filter so peak has ion 'ion'
-            for pk in dt.children_of_type('peak'):
-                if pk.contains(event.xdata, event.ydata, ion=ion):
-                    pk.delete()
-                    self.parent.plotData(updateBounds=False)
+            for pk in trace.peaks:
+                if pk.contains(event.xdata, event.ydata):
+                    #delete peak and update table
                     break
         else:
             self.ev_time = time.time()
@@ -111,18 +107,18 @@ class AstonNavBar(NavigationToolbar2QTAgg):
 
             if event.key == 'shift':
                 # if the shift key is down, integrate all of the
-                # traces without any baseline offset
-                tss = dt.active_traces(twin=(t0, t1))
+                # ions in the trace
+                #TODO: need to be intelligent about baselines then
+                tss = trace.subtraces('all', twin=(t0, t1))
                 pks_found = len(tss) * [[(t0, t1, {'pf': 'manual'})]]
-            else:
-                tss = dt.active_traces(n=0, twin=(t0, t1))
-                pks_found = [[(t0, t1, {'y0': y0, 'y1': y1, 'pf': 'manual'})]]
-            pks = self.parent.integrate_peaks(tss, pks_found)
-            if event.key == 'shift':
+                for ts in tss:
+                    pks = self.parent.integrate_peaks(ts, pks_found)
                 pks = merge_ions(pks)
-            with dt.db:
-                dt.children += pks
-            dt.info.del_items('s-peaks')
+            else:
+                ts = trace.trace(twin=(t0, t1))
+                pks_found = [[(t0, t1, {'y0': y0, 'y1': y1, 'pf': 'manual'})]]
+                pks = self.parent.integrate_peaks(ts, pks_found)
+            #TODO: add peaks to database
             self.parent.plotData(updateBounds=False)
 
         self._xypress = []
@@ -225,8 +221,8 @@ class AstonNavBar(NavigationToolbar2QTAgg):
             scan = trace.scan(self._xypress[0])
             scan.name = str(self._xypress[0])
         else:
-            dt = event.xdata - self._xypress[0]
-            scan = trace.scan(self._xypress[0], dt=dt)
+            scan = trace.scan(self._xypress[0],
+                              dt=event.xdata - self._xypress[0])
             scan.name = str(self._xypress[0]) + '-' + str(event.xdata)
 
         self.parent.specplotter.set_main_spec(scan)
@@ -235,6 +231,7 @@ class AstonNavBar(NavigationToolbar2QTAgg):
         # draw a line on the main plot for the location
         self.parent.plotter.draw_highlight(self._xypress[0], \
           event.xdata, linestyle='-')
+        #TODO: save spectra when shift key held down
         #if event.key == 'shift':
         #    info = {'name': str(self._xypress[0])}
         #    spc = Spectrum(info, scan)

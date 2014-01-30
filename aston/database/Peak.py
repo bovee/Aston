@@ -12,6 +12,13 @@ class DBPeak(Base):
 
     @property
     def parent(self):
-        return trace
+        return self.trace
+
+    def plot(ax):
+        pass
+
+    def contains(x, y):
+        #TODO: use parent's scale and offset
+        pass
 
     children = []

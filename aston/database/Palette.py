@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from sqlalchemy import Column, Integer, UnicodeText, Unicode, \
-                       ForeignKey, SmallInteger
+                       ForeignKey, SmallInteger, Float
 from sqlalchemy.orm import relationship
 from aston.resources import cache
 from aston.database import Base, JSONDict
@@ -96,6 +96,10 @@ class Trace(Base):
     name = Column(UnicodeText, default=u'TIC')
     style = Column(Unicode(16))
     color = Column(Unicode(16))
+    x_offset = Column(Float, default=0)
+    x_scale = Column(Float, default=1)
+    y_offset = Column(Float, default=0)
+    y_scale = Column(Float, default=1)
 
     @property
     def parent(self):
@@ -105,7 +109,8 @@ class Trace(Base):
     def children(self):
         return self.peaks
 
-    def scan(self, t, dt=None):
+    @property
+    def source(self):
         for tk in tokens(self.name.lower()):
             _, source = self.paletterun.parse_source(tk, guess=False)
             if source is not None:
@@ -114,17 +119,41 @@ class Trace(Base):
             # we got nothing out of looping through all the traces;
             # give it something that doesn't exist and ask it to guess
             _, source = self.paletterun.parse_source('fake', guess=True)
+        return source
 
+    def scan(self, t, dt=None):
+        source = self.source
         if source is None:
             #FIXME: still nothing, return blank scan object
             return
         else:
+            # adjust the time appropriately
+            t = (t - self.x_offset) / self.x_scale
+            dt /= self.x_scale
+            # find the scan
             scan = self.paletterun.datafile(source).scan(t, dt)
             scan.source = source
             return scan
 
-    def plot(self, ax, twin=None):
-        #TODO: need to pass color and style info on?
+    def trace(self, twin=None):
+        #TODO: transform twin in native coordinates
+        # get a trace given my name
         tr_resolver = self.paletterun.trace
         trace = parse_ion_string(self.name.lower(), tr_resolver, twin)
+        # offset and scale trace
+        trace = trace.adjust_time(offset=self.x_offset, scale=self.x_scale)
+        trace = trace * self.y_offset + self.y_scale
+
+        return trace
+
+    def subtraces(self, method=None, twin=None):
+        #self.paletterun.datafile(source)
+        if method == 'coda':
+            pass
+        elif method == 'all':
+            pass
+
+    def plot(self, ax, twin=None):
+        #TODO: need to pass color and style info on?
+        trace = self.trace(twin)
         trace.plot(ax=ax)

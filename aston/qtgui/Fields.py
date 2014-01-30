@@ -17,6 +17,9 @@ aston_fields = OrderedDict()
 aston_fields['name'] = tr('Name')
 aston_fields['sel'] = tr('Sel?')
 aston_fields['vis'] = tr('Vis?')
+aston_fields['2d'] = tr('2D?')
+aston_fields['color'] = tr('Color')
+aston_fields['style'] = tr('Style')
 aston_fields['traces'] = tr('Traces')
 # method information
 aston_fields['m'] = tr('Method Name')  # e.g. RJBPROT. strip out *.M suffix
@@ -87,6 +90,9 @@ aston_fields['p-s-d13c'] = tr('δ13C Value (‰)')
 #e.g. {'S':5,0:30,9:80,9.01:100,11:100}
 
 aston_field_opts = {
+    'color': ['Auto', ''],
+    'style1d': ['Auto', 'Solid', 'Dash', 'Dot', 'Dash-Dot'],
+    'style2d': ['Auto', 'Heatmap', 'Colors'],
     'r-type': ['None', 'Sample', 'Standard'],
     'p-type': ['None', 'Sample', 'Standard', 'Isotope Standard'],
     'p-model': [k for k in peak_models],
