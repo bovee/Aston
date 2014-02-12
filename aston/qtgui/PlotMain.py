@@ -63,12 +63,6 @@ class Plotter(object):
             'Paired': tr('Paired'),
             'binary': tr('White-Black'),
             'gray': tr('Black-White')}
-        self._styles = {
-            'default': tr('Default'),
-            'scaled': tr('Scaled'),
-            'stacked': tr('Stacked'),
-            'scaled stacked': tr('Scaled Stacked'),
-            '2d': tr('2D')}
         self._linestyle = ['-', '--', ':', '-.']
         self.setColorScheme(scheme)
         self.setStyle(style)
@@ -87,7 +81,8 @@ class Plotter(object):
         return l
 
     def setStyle(self, style=None):
-        styles = dict((str(self._styles[k]), k) for k in self._styles)
+        #styles = dict((str(self._styles[k]), k) for k in self._styles)
+        styles = {}
         if style is None:
             self._style = 'default'
         else:
@@ -98,7 +93,7 @@ class Plotter(object):
         l_ord = ['default', 'scaled', 'stacked', 'scaled stacked', '2d']
         return [self._styles[s] for s in l_ord]
 
-    def plotData(self, traces, updateBounds=True):
+    def plotData(self, plots, updateBounds=True):
         if not updateBounds:
             bnds = self.plt.get_xlim(), self.plt.get_ylim()
 
@@ -119,13 +114,13 @@ class Plotter(object):
         #self.patches = {}
 
         #plot all of the datafiles
-        if len(traces) == 0:
+        if len(plots) == 0:
             self.canvas.draw()
             return
         #if '2d' in self._style:
         #    self._plot2D(datafiles[0])
         else:
-            self._plot(traces)
+            self._plot(plots)
 
         #update the view bounds in the navbar's history
         if updateBounds:
@@ -150,7 +145,7 @@ class Plotter(object):
         #    evts += datafiles[0].events('refgas')
         #if self.masterWindow.ui.actionGraph_Peaks_Found.isChecked():
         #    dt = self.masterWindow.obj_tab.active_file()
-        #    tss = dt.active_traces(n=0)
+        #    tss = dt.active_plots(n=0)
         #    pevts = self.masterWindow.find_peaks(tss, dt)
         #    for i, p in enumerate(pevts[0]):
         #        p[2]['name'] = 'P' + str(i + 1)
@@ -181,7 +176,7 @@ class Plotter(object):
         #update the canvas
         self.canvas.draw()
 
-    def _plot(self, traces):
+    def _plot(self, plots):
         """
         Plots times series on the graph.
         """
@@ -192,7 +187,7 @@ class Plotter(object):
             intensity = 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]
             return [intensity * k + i * (1 - k) for i in c]
 
-        ## make up a factor to separate traces by
+        ## make up a factor to separate plots by
         #if 'stacked' in self._style:
         #    fts = datafiles[0].trace(datafiles[0].info['traces'].split(',')[0])
         #    sc_factor = (max(fts.data[:, 0]) - min(fts.data[:, 0])) / 5.
@@ -204,8 +199,26 @@ class Plotter(object):
         #else:
         #    alpha = 0.15
 
-        for tnum, ts in enumerate(traces):
-            ts.plot(self.plt)
+        #TODO: determine the number of axes to use
+        ls = {'solid': '-', 'dash': '--', 'dot': ':', 'dash-dot': '-.'}
+
+        for pnum, plot in enumerate(plots):
+            #TODO: colors
+            if plot.style == 'auto':
+                #FIXME: style for auto needs to be drawn from somewhere
+                #FIXME: auto style could be "color strips"
+                plot.plot(style='-', color='k', ax=self.plt)
+            elif plot.style in ls:
+                plot.plot(style=ls[plot.style], color='k', ax=self.plt)
+                for pk in plot.peaks:
+                    pk.plot(ax=self.plt)
+            elif plot.style == 'heatmap':
+                plot.frame().plot(style='heatmap', ax=self.plt)
+            elif plot.style == 'colors':
+                plot.frame().plot(style='colors', ax=self.plt)
+
+            for pk in plot.peaks:
+                pk.plot(ax=self.plt)
         #        if 'scaled' in self._style:
         #            #TODO: fails at negative chromatograms
         #            trace -= min(trace)

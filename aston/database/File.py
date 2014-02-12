@@ -13,10 +13,10 @@ class Project(Base):
     name = Column(Unicode(255))
     directory = Column(UnicodeText)
 
-    parent = None
+    _parent = None
 
     @property
-    def children(self):
+    def _children(self):
         return self.runs
 
 
@@ -32,11 +32,11 @@ class Run(Base):
     other = Column(JSONDict)
 
     @property
-    def parent(self):
+    def _parent(self):
         return self.project
 
     @property
-    def children(self):
+    def _children(self):
         return self.analyses
 
 
@@ -53,10 +53,10 @@ class Analysis(Base):
         return op.split(self.path)[1]
 
     @property
-    def parent(self):
+    def _parent(self):
         return self.run
 
-    children = []
+    _children = []
 
     @property
     def datafile(self):

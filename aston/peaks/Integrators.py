@@ -8,22 +8,26 @@ from aston.peaks.PeakModels import peak_models
 from aston.peaks.PeakFitting import guess_initc, fit
 
 
-def simple_integrate(ts, peak_list):
+def simple_integrate(ts, peak_list, base_ts=None, intname='simple'):
     """
     Integrate each peak naively; without regard to overlap.
 
     This is used as the terminal step by most of the other integrators.
     """
     peaks = []
-    for t0, t1, hints in peak_list:
-        pk_ts = ts.trace('!', twin=(t0, t1))
-        info = {'name': '{:.2f}-{:.2f}'.format(t0, t1)}
-        info['p-create'] = hints.get('pf', '') + ',simple_integrate'
-        pk = Peak(info, pk_ts)
-        if 'y0' in hints and 'y1' in hints:
-            base = np.array([[t0, hints['y0']], [t1, hints['y1']]])
-            pk.set_baseline(ts.ions[0], base)
-        peaks.append(pk)
+    for hints in peak_list:
+        t0, t1 = hints['t0'], hints['t1']
+        hints['int'] = intname
+        pk_ts = ts.twin((t0, t1))
+        if base_ts is None:
+            # make a two point baseline
+            base = AstonSeries([hints.get('y0', pk_ts[0]), \
+                                hints.get('y1', pk_ts[-1])], \
+                               [t0, t1], name=ts.name)
+        else:
+            base = base_ts.twin((t0, t1))
+        peaks.append(Peak(hints, pk_ts, base, \
+                          name='{:.2f}-{:.2f}'.format(t0, t1)))
     return peaks
 
 
@@ -32,32 +36,27 @@ def _get_windows(peak_list):
     Given a list of peaks, bin them into windows.
     """
     win_list = []
-    for t0, t1, hints in peak_list:
-        p_w = (t0, t1)
+    for hints in peak_list:
+        p_w = hints['t0'], hints['t1']
         for w in win_list:
             if p_w[0] <= w[0][1] and p_w[1] >= w[0][0]:
                 w[0] = (min(p_w[0], w[0][0]), \
                         max(p_w[1], w[0][1]))
-                w[1].append((t0, t1, hints))
+                w[1].append([hints])
                 break
         else:
-            win_list.append([p_w, [(t0, t1, hints)]])
+            win_list.append([p_w, [hints]])
     return win_list
 
 
 def constant_bl_integrate(ts, peak_list):
-    #TODO: this doesn't work right yet?
-    # maybe need to eliminate overlapping peaks?
     temp_pks = []
-    for p in peak_list:
-        min_y = ts.trace('!', twin=p[0:2]).y.min()
-        prop = p[2].copy()
+    for hints in peak_list:
+        min_y = np.min(ts.twin((hints['t0'], hints['t1'])).values)
+        prop = hints.copy()
         prop['y0'], prop['y1'] = min_y, min_y
-        temp_pks.append((p[0], p[1], prop))
-    peaks = simple_integrate(ts, temp_pks)
-    for p in peaks:
-        p.info['p-create'] = p.info['p-create'].split(',')[0] + \
-                ',constant_bl_integrate'
+        temp_pks.append(prop)
+    peaks = simple_integrate(ts, temp_pks, intname='constant_bl')
     return peaks
 
 
@@ -68,17 +67,19 @@ def drop_integrate(ts, peak_list):
     peaks = []
     for _, pks in _get_windows(peak_list):
         temp_pks = []
-        pks = sorted(pks, key=lambda p: p[0])
-        if 'y0' in pks[0][2] and 'y1' in pks[-1][2]:
-            y0, y1 = pks[0][2]['y0'], pks[-1][2]['y1']
+        pks = sorted(pks, key=lambda p: p['t0'])
+        if 'y0' in pks[0] and 'y1' in pks[-1]:
+            y0, y1 = pks[0]['y0'], pks[-1]['y1']
         else:
-            y0 = ts.get_point('!', pks[0][0])
-            y1 = ts.get_point('!', pks[-1][1])
+            y0 = ts.get_point('!', pks[0]['t0'])
+            y1 = ts.get_point('!', pks[-1]['t1'])
         ys = np.array([y0, y1])
-        xs = np.array([pks[0][0], pks[-1][1]])
+        xs = np.array([pks[0]['t0'], pks[-1]['t1']])
 
         # go through list of peaks to make sure there's no overlap
-        for t0, t1, hints in pks:
+        for hints in pks:
+            t0, t1 = hints['t0'], hints['t1']
+
             # figure out the y values (using a linear baseline)
             hints['y0'] = np.interp(t0, xs, ys)
             hints['y1'] = np.interp(t1, xs, ys)
@@ -113,14 +114,12 @@ def drop_integrate(ts, peak_list):
 
         # none of our peaks should overlap, so we can just use
         # simple_integrate now
-        peaks += simple_integrate(ts, temp_pks)
-    for p in peaks:
-        p.info['p-create'] = p.info['p-create'].split(',')[0] + \
-                ',drop_integrate'
+        peaks += simple_integrate(ts, temp_pks, intname='drop')
     return peaks
 
 
 def leastsq_integrate(ts, peak_list, f='gaussian'):
+    #FIXME: transition from t0, t1, params to params (containing 't0'/'t1'
     # lookup the peak model function to use for fitting
     f = {f.__name__: f for f in peak_models}[f]
 
@@ -139,7 +138,7 @@ def leastsq_integrate(ts, peak_list, f='gaussian'):
             initc = guess_initc(tr, f, rts)
         params, _ = fit(tr, [f] * len(initc), initc)
         for p in params:
-            pk_ts = TimeSeries(f(tr.times, **p), tr.times)
+            pk_ts = AstonSeries(f(tr.times, **p), tr.times)
             info = {'name': '{:.2f}'.format(p['x'])}
             info['p-create'] = peak_list[0][2].get('pf', '') + \
                     ',' + 'leastsq_integrate'
@@ -149,10 +148,13 @@ def leastsq_integrate(ts, peak_list, f='gaussian'):
 
 
 def periodic_integrate(ts, peak_list, offset=0., period=1.):
+    #TODO: should be a peak finder, not an integrator?
     movwin = lambda a, l:  np.lib.stride_tricks.as_strided(a, \
                  (a.shape[0] - l + 1, l), a.itemsize * np.ones(2))
     new_peak_list = []
-    for t0, t1, hints in peak_list:
+    for hints in peak_list:
+        t0, t1 = hints['t0'], hints['t1']
+
         # time the first whole "period" starts
         tpi = offset + period * ((t0 - offset) // period + 1)
         if tpi > t1:
@@ -207,7 +209,7 @@ def _integrate_mpwrap(ts_and_pks, integrate, fopts):
     ts, tpks = ts_and_pks
     pks = integrate(ts, tpks, **fopts)
     for p in pks:
-        p.info['trace'] = str(ts.ions[0])
+        p.hints['mz'] = str(ts.name)
     return pks
 
 

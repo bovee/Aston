@@ -16,7 +16,7 @@ from aston.qtgui.TableFile import FileTreeModel
 from aston.qtgui.TablePalette import PaletteTreeModel
 import aston.qtgui.MenuOptions
 #from aston.peaks.PeakFinding import find_peaks, find_peaks_iso
-#from aston.peaks.Integrators import integrate_peaks
+from aston.peaks.Integrators import integrate_peaks
 
 
 class AstonWindow(QtGui.QMainWindow):
@@ -83,12 +83,12 @@ class AstonWindow(QtGui.QMainWindow):
         #  lambda: None, v)
         #self.ui.actionPeak_Finder.setMenu(peak_find_menu)
 
-        #integrator_menu = QtGui.QMenu(self.ui.menuChromatogram)
-        #v = list(aston.ui.MenuOptions.integrators.keys())[0]
-        #self._add_opts_to_menu(integrator_menu, \
-        #  aston.ui.MenuOptions.integrators.keys(),
-        #  lambda: None, v)
-        #self.ui.actionIntegrator.setMenu(integrator_menu)
+        integrator_menu = QtGui.QMenu(self.ui.menuChromatogram)
+        v = list(aston.qtgui.MenuOptions.integrators.keys())[0]
+        self._add_opts_to_menu(integrator_menu, \
+          aston.qtgui.MenuOptions.integrators.keys(),
+          lambda: None, v)
+        self.ui.actionIntegrator.setMenu(integrator_menu)
 
         #menu_gp = QtGui.QActionGroup(self)
         #for ac in self.ui.menuIntegrand.actions():
@@ -361,9 +361,9 @@ class AstonWindow(QtGui.QMainWindow):
     def integrate_peaks(self, tss, found_peaks, isomode=False):
         submnu = self.ui.actionIntegrator.menu().children()
         opt = [i for i in submnu if i.isChecked()][0].text()
-        int_f = aston.ui.MenuOptions.integrators[opt]
+        int_f = aston.qtgui.MenuOptions.integrators[opt]
         int_fopts = self.get_f_opts(int_f)
-        mp = self.obj_tab.db.get_key('multiprocessing', dflt=True)
+        mp = False #self.obj_tab.db.get_key('multiprocessing', dflt=True)
 
         return integrate_peaks(tss, found_peaks, int_f, int_fopts, isomode, mp)
 
@@ -403,14 +403,14 @@ class AstonWindow(QtGui.QMainWindow):
         self.plotData()
 
     def plotData(self, **kwargs):
-        traces = []
-        for pr in self.pal_tab.children:
-            traces += [t for t in pr.traces if t.vis > 0]
+        plots = []
+        for pr in self.pal_tab._children:
+            plots += [t for t in pr.plots if t.vis > 0]
 
         if 'updateBounds' in kwargs:
-            self.plotter.plotData(traces, kwargs['updateBounds'])
+            self.plotter.plotData(plots, kwargs['updateBounds'])
         else:
-            self.plotter.plotData(traces)
+            self.plotter.plotData(plots)
 
     def updateSearch(self, text):
         """

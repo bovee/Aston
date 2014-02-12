@@ -83,7 +83,7 @@ class AstonNavBar(NavigationToolbar2QTAgg):
             # if the user clicks just off the plot,
             # the x/y will be None
             return
-        trace = self.parent.pal_tab.active_trace()
+        trace = self.parent.pal_tab.active_plot()
         if trace is None:
             return
         dclicktime = QtGui.QApplication.doubleClickInterval()
@@ -110,15 +110,20 @@ class AstonNavBar(NavigationToolbar2QTAgg):
                 # ions in the trace
                 #TODO: need to be intelligent about baselines then
                 tss = trace.subtraces('all', twin=(t0, t1))
-                pks_found = len(tss) * [[(t0, t1, {'pf': 'manual'})]]
-                for ts in tss:
-                    pks = self.parent.integrate_peaks(ts, pks_found)
+                pks_found = len(tss) * [[{'t0': t0, 't1': t1, 'pf': 'manual'}]]
+                pks = self.parent.integrate_peaks(tss, pks_found)
                 pks = merge_ions(pks)
             else:
                 ts = trace.trace(twin=(t0, t1))
-                pks_found = [[(t0, t1, {'y0': y0, 'y1': y1, 'pf': 'manual'})]]
-                pks = self.parent.integrate_peaks(ts, pks_found)
-            #TODO: add peaks to database
+                pks_found = [[{'t0': t0, 't1': t1, 'y0': y0, 'y1': y1, \
+                              'pf': 'manual'}]]
+                pks = self.parent.integrate_peaks([ts], pks_found)
+
+            with self.parent.pal_tab.add_rows(trace, len(pks)):
+                for pk in pks:
+                    pk.dbplot = trace
+                self.parent.pal_tab.db.add_all(pks)
+                self.parent.pal_tab.db.commit()
             self.parent.plotData(updateBounds=False)
 
         self._xypress = []
@@ -214,7 +219,7 @@ class AstonNavBar(NavigationToolbar2QTAgg):
         if event.button != 1 or self.mode != 'spectrum':
             return
         #get the specral data of the current point
-        trace = self.parent.pal_tab.active_trace()
+        trace = self.parent.pal_tab.active_plot()
         if trace is None:
             return
         if event.xdata == self._xypress[0]:

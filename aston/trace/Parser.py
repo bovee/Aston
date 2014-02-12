@@ -1,3 +1,4 @@
+import math
 import re
 from aston.trace.Trace import AstonSeries
 functions = {}  # TODO
@@ -95,6 +96,13 @@ def parse_ion_string(istr, tr_resolver, twin=None):
         if istr in SHORTCUTS:
             # allow some shortcuts to pull out common ions
             return parse_ion_string(SHORTCUTS[istr], tr_resolver, twin)
+        elif istr[0] == '!' and all(i in '0123456789.' for i in istr[1:]):
+            #TODO: should this handle negative numbers?
+            return float(istr[1:])
+        elif istr == '!pi':
+            return math.pi
+        elif istr == '!e':
+            return math.e
         else:
             return tr_resolver(istr, twin)
 

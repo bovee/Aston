@@ -9,7 +9,8 @@ def read_directory(path, db):
     ftype_to_cls = {tf.__name__: tf for tf in tfclasses()}
 
     # create blank project
-    db.add(Project(name='', directory=op.abspath(path)))
+    if db.execute('SELECT 1 FROM projects WHERE name = ""').scalar() is None:
+        db.add(Project(name='', directory=op.abspath(path)))
 
     for fold, dirs, files in os.walk(path):
         curpath = op.relpath(fold, path).split(op.sep)
@@ -57,6 +58,7 @@ def read_directory(path, db):
 def add_analysis(db, projname, projpath, runname, tf):
     # find the project; if it doesn't exist, create it
     project = db.query(Project).filter_by(name=projname).first()
+    #print(db.query(Project._project_id).filter_by(name=projname).all())
     if project is None:
         project = Project(name=projname, directory=projpath)
         db.add(project)

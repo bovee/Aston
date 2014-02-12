@@ -138,6 +138,7 @@ class AgilentMSMSScan(TraceFile):
     traces = ['#ms']
 
     # TODO: __init__ method that adds mrm trace names to traces
+    #TODO: define a data property so that heatmap doesn't fail
     def _msscan_iter(self, keylist):
         f = open(self.filename, 'rb')
         r = ElementTree.parse(op.splitext(self.filename)[0] + '.xsd').getroot()
@@ -201,11 +202,12 @@ class AgilentMSMSScan(TraceFile):
         return AstonSeries(np.array(tic), np.array(tme), name='TIC')
         #TODO: set .twin(twin) bounds on this
 
-    #FIXME: need to define a trace_names with ions in it
     def trace(self, name='', tol=0.5, twin=None):
-        #TODO: should be able to call my parent classes too
-        if name in ['', 'X', 'TIC']:
+        if name in ['', 'x', 'tic']:
             return self.total_trace(twin)
+        else:
+            #TODO: check that name is numeric?
+            name = float(name)
         if twin is None:
             twin = (-np.inf, np.inf)
 

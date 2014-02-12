@@ -46,14 +46,15 @@ options = {
     ],
     'long_description': read('README.rst'),
     'packages': ['aston', 'aston.qtgui', 'aston.database', 'aston.peaks', \
-                 'aston.qtgui', 'aston.spectra', 'aston.trace', \
-                 'aston.tracefile', 'aston.tracevis', 'aston.test'],
+                 'aston.spectra', 'aston.trace', 'aston.tracefile', \
+                 'aston.tracevis', 'aston.test'],
     'scripts': ['astonx.py'],
     'data_files': matplotlib.get_py2exe_datafiles(),
     'package_data': {'aston': \
       ['qtgui/i18n/*.qm', 'qtgui/icons/*.png']},
     'include_package_data': True,
-    'install_requires': ['numpy', 'scipy', 'matplotlib'],
+    'install_requires': ['numpy', 'scipy', 'matplotlib', 'pandas',
+                         'sqlalchemy'],
     'test_suite': 'nose.collector'
 }
 
@@ -80,8 +81,10 @@ if len(sys.argv) >= 2 and sys.argv[1] == 'py2exe':
         'bundle_files': 2,
         'compressed': True,
         'optimize': '2',
-        'dll_excludes': ['MSVCP90.dll', 'tcl85.dll', 'tk85.dll', 'w9xpopen.exe'],
-        'includes': ['sip', 'scipy.sparse.csgraph._validation', 'scipy.io.matlab.streams'],
+        'dll_excludes': ['MSVCP90.dll', 'tcl85.dll', \
+                         'tk85.dll', 'w9xpopen.exe'],
+        'includes': ['sip', 'scipy.sparse.csgraph._validation', \
+                     'scipy.io.matlab.streams'],
         'excludes': ['_gtkagg', '_tkagg', 'tcl', 'Tkconstants', 'Tkinter']}
     }
 
@@ -130,14 +133,15 @@ if len(sys.argv) >= 2 and sys.argv[1] == 'py2exe':
     # and manifest into it
     #TODO: run the aston.nsi
 elif len(sys.argv) >= 2 and sys.argv[1] == 'py2app':
+    res_path = 'dist/Aston.app/Contents/Resources/'
     os.system('rm -rf build')
-    os.system('cp -rf platform/mac/qt_menu.nib dist/Aston.app/Contents/Resources/')
-    os.system('cp platform/mac/qt.conf dist/Aston.app/Contents/Resources/')
-    os.system('cp platform/mac/logo.icns dist/Aston.app/Contents/Resources/PythonApplet.icns')
-    os.system('rm -rf dist/Aston.app/Contents/Resources/mpl-data/sample_data')
-    os.system('rm -rf dist/Aston.app/Contents/Resources/lib/python2.7/matplotlib/tests')
-    os.system('rm -rf dist/Aston.app/Contents/Resources/lib/python2.7/scipy/weave')
-    os.system('rm -rf dist/Aston.app/Contents/Resources/lib/python2.7/matplotlib/mpl-data')
+    os.system('cp -rf platform/mac/qt_menu.nib ' + res_path)
+    os.system('cp platform/mac/qt.conf ' + res_path)
+    os.system('cp platform/mac/logo.icns ' + res_path + 'PythonApplet.icns')
+    os.system('rm -rf ' + res_path + 'mpl-data/sample_data')
+    os.system('rm -rf ' + res_path + 'lib/python2.7/matplotlib/tests')
+    os.system('rm -rf ' + res_path + '/lib/python2.7/scipy/weave')
+    os.system('rm -rf ' + res_path + '/lib/python2.7/matplotlib/mpl-data')
     # Delete the following directories
     #/Content/Resources/lib/python2.7/matplotlib/testing
     #/Content/Resources/lib/python2.7/scipy/spatial/tests

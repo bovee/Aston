@@ -1,3 +1,6 @@
+import struct
+import json
+import zlib
 import numpy as np
 import scipy.io.wavfile
 import scipy.signal
@@ -5,13 +8,32 @@ from pandas import Series, DataFrame
 from aston.spectra.Scan import Scan
 
 
-class AstonSeries(Series):
-    def __new__(cls, *args, **kwargs):
-        self = super(AstonSeries, cls).__new__(cls, *args, **kwargs)
-        self.__class__ = AstonSeries
-        return self
+class AstonSeries(object):
+    def __init__(self, data, index, name=''):
+        if type(data) is Series:
+            self.values = data.values
+            self.index = data.index.values
+            self.name = data.name
+        else:
+            self.values = np.array(data)
+            self.index = np.array(index)
+            self.name = name
 
-    def plot(self, color=None, scale=False, ax=None):
+    @property
+    def shape(self):
+        return self.values.shape
+
+    def copy(self):
+        return AstonSeries(self.values.copy(), self.index.copy(), self.name)
+
+    def __getitem__(self, index):
+        v, i = self.values[index], self.index[index]
+        if type(v) is np.ndarray:
+            return AstonSeries(v, i, self.name)
+        else:
+            return v
+
+    def plot(self, style='-', color='k', scale=False, ax=None):
         if ax is None:
             import matplotlib.pyplot as plt
             ax = plt.gca()
@@ -22,10 +44,11 @@ class AstonSeries(Series):
         else:
             y = self.values
 
-        ax.plot(self.index, y, label=self.name)
+        ax.plot(self.index, y, c=color, ls=style, label=self.name)
 
     def twin(self, twin):
-        return self[_slice_idxs(self, twin)]
+        st_idx, en_idx = _slice_idxs(self, twin)
+        return self[st_idx:en_idx]
 
     def as_text(self, width=80, height=20):
         raise NotImplementedError
@@ -35,6 +58,7 @@ class AstonSeries(Series):
     def adjust_time(self, offset=0.0, scale=1.0):
         adjs = self.copy()
         adjs.index = adjs.index * scale + offset
+        adjs.__class__ = AstonSeries
         return adjs
 
     def _retime(self, new_times, fill=0.0):
@@ -98,8 +122,30 @@ class AstonSeries(Series):
     def __abs__(self):
         return self._apply_data(lambda x, y: abs(x), None)
 
+    def compress(self):
+        d = self.values.tostring()
+        t = self.index.astype(float).tostring()
+        lt = struct.pack('<L', len(t))
+        i = json.dumps([self.name]).encode('utf-8')
+        lc = struct.pack('<L', len(i))
+        try:  # python 2
+            return buffer(zlib.compress(lc + lt + i + t + d))
+        except NameError:  # python 3
+            return zlib.compress(lc + lt + i + t + d)
+
 
 class AstonFrame(DataFrame):
+    #def __new__(cls, *args, **kwargs):
+    #    self = super(AstonFrame, cls).__new__(cls, *args, **kwargs)
+    #    self.__class__ = AstonFrame
+    #    return self
+
+    def __getitem__(self, *args):
+        ret = super(AstonFrame, self).__getitem__(self, *args)
+        if type(ret) is DataFrame:
+            ret.__class__ = AstonFrame
+        return ret
+
     def trace(self, name='tic', tol=0.5, twin=None):
         #TODO: aggfunc in here for tic and numeric
         st_idx, en_idx = _slice_idxs(self, twin)
@@ -235,6 +281,31 @@ class AstonFrame(DataFrame):
                 mz_abn = aggfunc(self.values[idx:en_idx + 1, :].copy())
         return Scan(self.columns, mz_abn)
 
+    def compress(self):
+        d = self.values.tostring()
+        t = self.index.values.astype(float).tostring()
+        lt = struct.pack('<L', len(t))
+        i = json.dumps(self.columns).encode('utf-8')
+        lc = struct.pack('<L', len(i))
+        try:  # python 2
+            return buffer(zlib.compress(lc + lt + i + t + d))
+        except NameError:  # python 3
+            return zlib.compress(lc + lt + i + t + d)
+
+
+def decompress(zdata):
+    data = zlib.decompress(zdata)
+    lc = struct.unpack('<L', data[0:4])[0]
+    lt = struct.unpack('<L', data[4:8])[0]
+    c = json.loads(data[8:8 + lc].decode('utf-8'))
+    t = np.fromstring(data[8 + lc:8 + lc + lt])
+    d = np.fromstring(data[8 + lc + lt:])
+
+    if len(c) == 1:
+        return AstonSeries(d, t, name=c[0])
+    else:
+        return AstonFrame(d.reshape(len(t), len(c)), t, c)
+
 
 def _slice_idxs(df, twin=None):
     """
@@ -245,7 +316,10 @@ def _slice_idxs(df, twin=None):
     if twin is None:
         return 0, df.shape[0]
 
-    tme = df.index.copy()
+    if type(df) is AstonFrame:
+        tme = df.index.values
+    else:
+        tme = df.index
 
     if twin[0] is None:
         st_idx = 0

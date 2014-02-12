@@ -29,10 +29,11 @@ from PyQt4 import QtGui, QtCore
 from aston.resources import resfile
 from aston.qtgui.QuantDialog import QuantDialog
 from aston.qtgui.Fields import aston_fields, aston_groups
+from aston.qtgui.Fields import aston_field_names, aston_field_opts
 #from aston.qtgui.MenuOptions import peak_models
-from aston.qtgui.TableModel import TableModel
-from aston.database.Peak import DBPeak
-from aston.database.Palette import Palette, PaletteRun, Trace
+from aston.qtgui.TableModel import TableModel, ComboDelegate
+from aston.database.Peak import Peak
+from aston.database.Palette import Palette, PaletteRun, Plot
 
 
 class PaletteTreeModel(TableModel):
@@ -46,14 +47,15 @@ class PaletteTreeModel(TableModel):
 
         # need to load fields and database before calling __init__
         #TODO: load custom fields from the database
-        self.fields = ['name', 'vis']
+        self.fields = ['name', 'vis', 'style', 'color']
 
         #TODO: make this better?
         self.active_palette = self.db.query(Palette).first()
 
         # create a list with all of the root items in it
         q = self.db.query(PaletteRun)
-        self.children = q.filter_by(palette=self.active_palette).all()
+        self._children = q.filter_by(palette=self.active_palette,
+                                    enabled=True).all()
 
         ##set up selections
         #tree_view.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
@@ -87,8 +89,8 @@ class PaletteTreeModel(TableModel):
         #self.tree_view.header().sectionMoved.connect(self.colsChanged)
 
         ##deal with combo boxs in table
-        #self.cDelegates = {}
-        #self.enableComboCols()
+        self.cDelegates = {}
+        self.enableComboCols()
 
         ##prettify
         tree_view.collapseAll()
@@ -138,7 +140,7 @@ class PaletteTreeModel(TableModel):
         for db_id in [int(i) for i in fids.split(',')]:
             obj = self.db.object_from_id(db_id)
             if obj is not None:
-                obj.parent = new_parent
+                obj._parent = new_parent
         return True
 
     def supportedDropActions(self):
@@ -155,7 +157,7 @@ class PaletteTreeModel(TableModel):
             elif role == QtCore.Qt.DecorationRole and index.column() == 0:
                 loc = resfile('aston/qtgui', 'icons/file.png')
                 rslt = QtGui.QIcon(loc)
-        elif type(obj) is Trace:
+        elif type(obj) is Plot:
             if fld == 'vis' and role == QtCore.Qt.CheckStateRole:
                 #TODO: allow vis to be a plot number instead?
                 if obj.vis > 0:
@@ -165,8 +167,25 @@ class PaletteTreeModel(TableModel):
             elif role == QtCore.Qt.DisplayRole or role == QtCore.Qt.EditRole:
                 if fld == 'name':
                     rslt = obj.name
-        elif type(obj) is DBPeak:
-            pass
+                elif fld in ['style', 'color']:
+                    if fld == 'style':
+                        v = obj.style
+                    elif fld == 'color':
+                        v = obj.color
+                    i = aston_field_opts[fld].index(v)
+                    rslt = aston_field_names[fld][i]
+        elif type(obj) is Peak:
+            if fld == 'vis' and role == QtCore.Qt.CheckStateRole:
+                if obj.vis:
+                    rslt = QtCore.Qt.Checked
+                else:
+                    rslt = QtCore.Qt.Unchecked
+            elif role == QtCore.Qt.DisplayRole or role == QtCore.Qt.EditRole:
+                if fld == 'name':
+                    rslt = obj.name
+                elif fld == 'color':
+                    i = aston_field_opts[fld].index(obj.color)
+                    rslt = aston_field_names[fld][i]
         #elif role == QtCore.Qt.DisplayRole or role == QtCore.Qt.EditRole:
         #    if fld == 'p-model' and f.db_type == 'peak':
         #        rpeakmodels = {peak_models[k]: k for k in peak_models}
@@ -196,12 +215,17 @@ class PaletteTreeModel(TableModel):
         data = str(data)
         col = self.fields[index.column()].lower()
         obj = index.internalPointer()
-        if type(obj) is Trace and col == 'vis':
-            obj.vis = (1 if data == '2' else 0)
+        if type(obj) is Plot:
+            if col == 'vis':
+                obj.vis = (1 if data == '2' else 0)
+            elif col == 'name':
+                obj.name = data.replace('+-', '±').replace('->', '→')
+            elif col in ['style', 'color']:
+                i = aston_field_names[col].index(data)
+                obj.style = aston_field_opts[col][i]
             self.master_window.plotData()
-        elif type(obj) is Trace and col == 'name':
-            obj.name = data.replace('+-', '±').replace('->', '→')
-            self.master_window.plotData()
+            self.db.merge(obj)
+            self.db.commit()
         #elif col == 'p-model':
         #    obj.update_model(peak_models[data])
         #    self.master_window.plotData(updateBounds=False)
@@ -219,31 +243,48 @@ class PaletteTreeModel(TableModel):
         if not index.isValid():
             return dflags
         dflags |= QtCore.Qt.ItemIsDragEnabled
-        if col == 'vis' and type(obj) is Trace:
+        if col == 'vis' and type(obj) is Plot:
             dflags |= QtCore.Qt.ItemIsUserCheckable
         else:
             dflags |= QtCore.Qt.ItemIsEditable
         return dflags
 
-    def has_run(self, run):
+    def has_run(self, run, enabled=False):
         q = self.db.query(PaletteRun)
-        return q.filter_by(run=run, palette=self.active_palette).count() > 0
+        q = q.filter_by(run=run, palette=self.active_palette)
+        if enabled:
+            q = q.filter_by(enabled=True)
+        return q.count() > 0
 
     def add_run(self, run):
         with self.add_rows(None, 1):
-            prun = PaletteRun(run=run, palette=self.active_palette)
-            self.db.add(prun)
-            self.children.append(prun)
+            if self.has_run(run):
+                prun = self.db.query(PaletteRun).filter_by(run=run, \
+                  palette=self.active_palette).one()
+            else:
+                prun = PaletteRun(run=run, palette=self.active_palette)
+                self.db.add(prun)
+            prun.enabled = True
+            self._children.append(prun)
+        self.db.commit()
+
+    def add_plot(self, objs):
+        #TODO: update plot here?
+        for obj in objs:
+            with self.add_rows(obj, 1):
+                plot = Plot(paletterun=obj)
+                self.db.add(plot)
         self.db.commit()
 
     def del_run(self, run):
-        #TODO: update fileTable; allows deleting from this table
+        #TODO: update fileTable checkbox; allows deleting from this table
         q = self.db.query(PaletteRun)
         pobj = q.filter_by(run=run, palette=self.active_palette).first()
         with self.del_row(pobj):
-            self.children.remove(pobj)
-            self.db.delete(pobj)
-            #TODO: delete unassociated traces and peaks?
+            self._children.remove(pobj)
+            pobj.enabled = False
+            #self.db.delete(pobj)
+            #TODO: delete unassociated plots and peaks?
         self.db.commit()
 
     def itemSelected(self):
@@ -287,8 +328,8 @@ class PaletteTreeModel(TableModel):
 
         fts = [index.internalPointer()]
         if type(fts[0]) is PaletteRun:
-            add_menu_opt(self.tr('Create Trace'),
-                         self.add_trace, fts, menu)
+            add_menu_opt(self.tr('Create Plot'),
+                         self.add_plot, fts, menu)
 
         ##Things we can do with peaks
         #fts = [s for s in sel if s.db_type == 'peak']
@@ -327,21 +368,6 @@ class PaletteTreeModel(TableModel):
     def delItemKey(self):
         self.delete_objects(self.returnSelObjs())
 
-    def add_trace(self, objs):
-        for obj in objs:
-            with self.add_rows(obj, 1):
-                trace = Trace(paletterun=obj)
-                self.db.add(trace)
-        self.db.commit()
-
-        #    row = len(obj.traces)
-        #    pidx = self._obj_to_index(obj)
-        #    self.beginInsertRows(pidx, row, row)
-        #    self.db.add(pobj)
-        #    self.db.commit()
-        #    self.children.append(pobj)
-        #    self.endInsertRows()
-
     def debug(self, objs):
         pks = [o for o in objs if o.db_type == 'peak']
         for pk in pks:
@@ -359,7 +385,7 @@ class PaletteTreeModel(TableModel):
     def createSpec(self, objs):
         with self.db:
             for obj in objs:
-                obj.children += [obj.as_spectrum()]
+                obj._children += [obj.as_spectrum()]
 
     def find_in_lib(self, objs):
         for obj in objs:
@@ -413,26 +439,40 @@ class PaletteTreeModel(TableModel):
         if fld in self.fields:
             indx = self.fields.index(fld)
             self.beginRemoveColumns(QtCore.QModelIndex(), indx, indx)
-            for i in range(len(self.db.children)):
+            for i in range(len(self.db._children)):
                 self.beginRemoveColumns( \
                   self.index(i, 0, QtCore.QModelIndex()), indx, indx)
             self.fields.remove(fld)
-            for i in range(len(self.db.children) + 1):
+            for i in range(len(self.db._children) + 1):
                 self.endRemoveColumns()
         else:
             cols = len(self.fields)
             self.beginInsertColumns(QtCore.QModelIndex(), cols, cols)
-            for i in range(len(self.db.children)):
+            for i in range(len(self.db._children)):
                 self.beginInsertColumns( \
                   self.index(i, 0, QtCore.QModelIndex()), cols, cols)
             self.tree_view.resizeColumnToContents(len(self.fields) - 1)
             self.fields.append(fld)
-            for i in range(len(self.db.children) + 1):
+            for i in range(len(self.db._children) + 1):
                 self.endInsertColumns()
         self.enableComboCols()
         self.colsChanged()
         #FIXME: selection needs to be updated to new col too?
         #self.tree_view.selectionModel().selectionChanged.emit()
+
+    def enableComboCols(self):
+        for c in aston_field_opts.keys():
+            if c in self.fields and c not in self.cDelegates:
+                #new column, need to add combo support in
+                opts = aston_field_names[c]
+                self.cDelegates[c] = (self.fields.index(c), \
+                                      ComboDelegate(opts))
+                self.tree_view.setItemDelegateForColumn(*self.cDelegates[c])
+            elif c not in self.fields and c in self.cDelegates:
+                #column has been deleted, remove from delegate list
+                self.tree_view.setItemDelegateForColumn( \
+                  self.cDelegates[c][0], self.tree_view.itemDelegate())
+                del self.cDelegates[c]
 
     def update_obj(self, dbid, obj):
         if obj is None and dbid is None:
@@ -442,19 +482,19 @@ class PaletteTreeModel(TableModel):
             #c.execute('DELETE FROM files WHERE id=?', (dbid,))
             pass
         else:
-            obj.parent = self.db
+            obj._parent = self.db
 
-    def active_trace(self):
+    def active_plot(self):
         """
-        Returns the trace currently selected in the list.
-        If that trace is not visible, return the topmost visible trace.
+        Returns the plot currently selected in the list.
+        If that plot is not visible, return the topmost visible plot.
         Used for determing which spectra to display on right click, etc.
         """
-        trace = self.returnSelObj()
-        if trace is not None:
-            if type(trace) is Trace:
-                if trace.vis > 0:
-                    return trace
+        plot = self.returnSelObj()
+        if plot is not None:
+            if type(plot) is Plot:
+                if plot.vis > 0:
+                    return plot
 
         dts = self.returnChkObjs()
         if len(dts) == 0:
@@ -473,10 +513,10 @@ class PaletteTreeModel(TableModel):
         for i in range(self.proxyMod.rowCount(node)):
             prjNode = self.proxyMod.index(i, 0, node)
             t = self.proxyMod.mapToSource(prjNode).internalPointer()
-            if type(t) is Trace:
+            if type(t) is Plot:
                 if t.vis > 0:
                     chkFiles.append(t)
-            if len(t.children) > 0:
+            if len(t._children) > 0:
                 chkFiles += self.returnChkObjs(prjNode)
         return chkFiles
 

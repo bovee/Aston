@@ -9,6 +9,39 @@ import scipy.ndimage
 from aston.trace.Trace import AstonSeries, AstonFrame
 
 
+def series_from_str(val, times, name=''):
+    #TODO: generate this without needing the times? just the time length
+    ##we can store time-series data as a list of timepoints
+    ##in certain info fields and query it here
+    def is_num(x):
+        #stupid function to determine if something is a number
+        try:
+            float(x)
+            return True
+        except:
+            return False
+
+    if ',' in val:
+        #turn the time list into a dictionary
+        tpts = dict([tpt.split(':') for tpt in val.split(',')])
+        #get the valid times out
+        valid_x = [v for v in tpts if is_num(v)]
+        #generate arrays from them
+        x = np.array([float(v) for v in valid_x])
+        y = np.array([float(tpts[v]) for v in valid_x])
+        srt_ind = np.argsort(x)
+        if 'S' in tpts:
+            #there's a "S"tart value defined
+            d = np.interp(times, x[srt_ind], y[srt_ind], float(tpts['S']))
+        else:
+            d = np.interp(times, x[srt_ind], y[srt_ind])
+    elif is_num(val):
+        d = np.ones(times.shape) * float(val)
+    else:
+        d = np.ones(times.shape) * np.nan
+    return AstonSeries(d, times, name=name)
+
+
 def fft(ts):
     """
     Perform a fast-fourier transform on a AstonSeries

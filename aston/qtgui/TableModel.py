@@ -18,9 +18,9 @@ class TableModel(QtCore.QAbstractItemModel):
         else:
             self.tree_view = tree_view
 
-        # inheritors need to set up self.field and self.children
+        # inheritors need to set up self.field and self._children
         self.fields = []
-        self.children = []
+        self._children = []
 
         #tree_view.setModel(self)
 
@@ -42,11 +42,11 @@ class TableModel(QtCore.QAbstractItemModel):
             # item is out of bounds; return blank QModelIndex
             return QtCore.QModelIndex()
 
-        if not parent.isValid() and row < len(self.children):
+        if not parent.isValid() and row < len(self._children):
             # at the root level
-            return self.createIndex(row, column, self.children[row])
+            return self.createIndex(row, column, self._children[row])
         elif parent.column() == 0:
-            children = parent.internalPointer().children
+            children = parent.internalPointer()._children
             if row >= len(children):
                 return QtCore.QModelIndex()
             return self.createIndex(row, column, children[row])
@@ -58,13 +58,13 @@ class TableModel(QtCore.QAbstractItemModel):
         if not index.isValid():
             return QtCore.QModelIndex()
         obj = index.internalPointer()
-        parent = obj.parent
+        parent = obj._parent
         if parent is None:
             return QtCore.QModelIndex()
-        elif parent in self.children:
-            row = self.children.index(parent)
-        elif parent.parent is not None:
-            row = parent.parent.index(parent)
+        elif parent in self._children:
+            row = self._children.index(parent)
+        elif parent._parent is not None:
+            row = parent._parent._children.index(parent)
         else:
             # fall through
             return QtCore.QModelIndex()
@@ -72,9 +72,9 @@ class TableModel(QtCore.QAbstractItemModel):
 
     def rowCount(self, parent):
         if not parent.isValid():
-            return len(self.children)
+            return len(self._children)
         elif parent.column() == 0:
-            return len(parent.internalPointer().children)
+            return len(parent.internalPointer()._children)
         return 0
 
     def columnCount(self, parent):
@@ -93,9 +93,9 @@ class TableModel(QtCore.QAbstractItemModel):
     @contextmanager
     def add_rows(self, parent, nrows):
         if parent is None:
-            row = len(self.children)
+            row = len(self._children)
         else:
-            row = len(parent.children)
+            row = len(parent._children)
         pidx = self._obj_to_index(parent)
         self.beginInsertRows(pidx, row, row + nrows - 1)
         yield
@@ -103,11 +103,11 @@ class TableModel(QtCore.QAbstractItemModel):
 
     @contextmanager
     def del_row(self, obj):
-        parent = obj.parent
+        parent = obj._parent
         if parent is None:
-            row = self.children.index(obj)
+            row = self._children.index(obj)
         else:
-            row = parent.children.index(obj)
+            row = parent._children.index(obj)
         pidx = self._obj_to_index(parent)
         self.beginRemoveRows(pidx, row, row)
         yield
@@ -116,11 +116,11 @@ class TableModel(QtCore.QAbstractItemModel):
     def _obj_to_index(self, obj):
         if obj is None:
             return QtCore.QModelIndex()
-        elif obj in self.children:
-            row = self.children.index(obj)
+        elif obj in self._children:
+            row = self._children.index(obj)
             return self.createIndex(row, 0, obj)
-        elif obj.parent is not None:
-            row = obj.parent.children.index(obj)
+        elif obj._parent is not None:
+            row = obj._parent._children.index(obj)
             return self.createIndex(row, 0, obj)
         else:
             return QtCore.QModelIndex()

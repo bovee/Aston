@@ -17,7 +17,6 @@ aston_fields = OrderedDict()
 aston_fields['name'] = tr('Name')
 aston_fields['sel'] = tr('Sel?')
 aston_fields['vis'] = tr('Vis?')
-aston_fields['2d'] = tr('2D?')
 aston_fields['color'] = tr('Color')
 aston_fields['style'] = tr('Style')
 aston_fields['traces'] = tr('Traces')
@@ -89,10 +88,10 @@ aston_fields['p-s-d13c'] = tr('δ13C Value (‰)')
 #blank = not regulated otherwise, it's a dict with at least one entry: S
 #e.g. {'S':5,0:30,9:80,9.01:100,11:100}
 
-aston_field_opts = {
+#TODO: wrap everything with tr
+aston_field_names = {
     'color': ['Auto', ''],
-    'style1d': ['Auto', 'Solid', 'Dash', 'Dot', 'Dash-Dot'],
-    'style2d': ['Auto', 'Heatmap', 'Colors'],
+    'style': ['Auto', 'Solid', 'Dash', 'Dot', 'Dash-Dot', 'Heatmap', 'Colors'],
     'r-type': ['None', 'Sample', 'Standard'],
     'p-type': ['None', 'Sample', 'Standard', 'Isotope Standard'],
     'p-model': [k for k in peak_models],
@@ -101,4 +100,10 @@ aston_field_opts = {
     't-remove-noise': ['None'],
     'm-type': ['None', 'HPLC', 'GC'],
     'm-detect': ['None', 'DAD-UV', 'MWD-UV', 'Quad-MS', 'TOF-MS', 'Q-TOF-MS'],
+}
+
+#TODO: add other options back in
+aston_field_opts = {
+    'color': ['auto', ''],
+    'style': ['auto', 'solid', 'dash', 'dot', 'dash-dot', 'heatmap', 'colors'],
 }

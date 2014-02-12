@@ -2,7 +2,7 @@
 from __future__ import unicode_literals
 from collections import OrderedDict
 from aston.resources import tr
-#import aston.peaks.Integrators as ami
+import aston.peaks.Integrators as ami
 #import aston.peaks.PeakFinding as ampf
 
 
@@ -14,9 +14,9 @@ peak_finders = OrderedDict()
 
 integrators = OrderedDict()
 #integrators[tr('Overlap')] = ami.simple_integrate
-#integrators[tr('Constant Background')] = ami.constant_bl_integrate
+integrators[tr('Constant Background')] = ami.constant_bl_integrate
 #integrators[tr('Periodic')] = ami.periodic_integrate
-#integrators[tr('Drop')] = ami.drop_integrate
+integrators[tr('Drop')] = ami.drop_integrate
 #integrators[tr('LeastSq')] = ami.leastsq_integrate
 
 peak_models = OrderedDict()

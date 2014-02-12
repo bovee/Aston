@@ -1,8 +1,9 @@
 import json
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import scoped_session, sessionmaker
-from sqlalchemy.types import TypeDecorator, UnicodeText
+from sqlalchemy.types import TypeDecorator, UnicodeText, LargeBinary
 from sqlalchemy.ext.mutable import MutableDict
+from aston.trace.Trace import decompress
 
 
 class JSONDict(TypeDecorator):
@@ -15,6 +16,19 @@ class JSONDict(TypeDecorator):
     def process_result_value(self, value, dialect):
         if value is not None:
             return json.loads(value)
+
+
+class AstonFrameBinary(TypeDecorator):
+    impl = LargeBinary
+
+    def process_bind_param(self, value, dialect):
+        if value is not None:
+            return value.compress()
+
+    def process_result_value(self, value, dialect):
+        if value is not None:
+            return decompress(value)
+
 
 MutableDict.associate_with(JSONDict)
 

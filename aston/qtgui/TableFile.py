@@ -47,13 +47,13 @@ class FileTreeModel(TableModel):
         self.fields = ['name', 'sel']
 
         # create a list with all of the root items in it
-        self.children = self.db.query(Project).filter(Project.name != '').all()
+        self._children = self.db.query(Project).filter(Project.name != '').all()
         prj = self.db.query(Project).filter_by(name='').first()
         if prj is None:
-            self.children = []
+            self._children = []
         else:
             q = self.db.query(Run)
-            self.children += q.filter_by(_project_id=prj._project_id).all()
+            self._children += q.filter_by(_project_id=prj._project_id).all()
         self.endResetModel()
 
         ##set up selections
@@ -138,7 +138,7 @@ class FileTreeModel(TableModel):
         for db_id in [int(i) for i in fids.split(',')]:
             obj = self.db.object_from_id(db_id)
             if obj is not None:
-                obj.parent = new_parent
+                obj._parent = new_parent
         return True
 
     def supportedDropActions(self):
@@ -157,7 +157,7 @@ class FileTreeModel(TableModel):
                 pass
         elif type(obj) is Run:
             if fld == 'sel' and role == QtCore.Qt.CheckStateRole:
-                if self.master_window.pal_tab.has_run(obj):
+                if self.master_window.pal_tab.has_run(obj, enabled=True):
                     rslt = QtCore.Qt.Checked
                 else:
                     rslt = QtCore.Qt.Unchecked
@@ -319,7 +319,7 @@ class FileTreeModel(TableModel):
     def createSpec(self, objs):
         with self.db:
             for obj in objs:
-                obj.children += [obj.as_spectrum()]
+                obj._children += [obj.as_spectrum()]
 
     def find_in_lib(self, objs):
         for obj in objs:
@@ -373,21 +373,21 @@ class FileTreeModel(TableModel):
         if fld in self.fields:
             indx = self.fields.index(fld)
             self.beginRemoveColumns(QtCore.QModelIndex(), indx, indx)
-            for i in range(len(self.db.children)):
+            for i in range(len(self.db._children)):
                 self.beginRemoveColumns( \
                   self.index(i, 0, QtCore.QModelIndex()), indx, indx)
             self.fields.remove(fld)
-            for i in range(len(self.db.children) + 1):
+            for i in range(len(self.db._children) + 1):
                 self.endRemoveColumns()
         else:
             cols = len(self.fields)
             self.beginInsertColumns(QtCore.QModelIndex(), cols, cols)
-            for i in range(len(self.db.children)):
+            for i in range(len(self.db._children)):
                 self.beginInsertColumns( \
                   self.index(i, 0, QtCore.QModelIndex()), cols, cols)
             self.tree_view.resizeColumnToContents(len(self.fields) - 1)
             self.fields.append(fld)
-            for i in range(len(self.db.children) + 1):
+            for i in range(len(self.db._children) + 1):
                 self.endInsertColumns()
         self.enableComboCols()
         self.colsChanged()
@@ -397,10 +397,10 @@ class FileTreeModel(TableModel):
     def _obj_to_index(self, obj):
         if obj is None or obj == self.db:
             return QtCore.QModelIndex()
-        elif obj in self.db.children:
-            row = self.db.children.index(obj)
+        elif obj in self.db._children:
+            row = self.db._children.index(obj)
         else:
-            row = obj.parent.children.index(obj)
+            row = obj._parent._children.index(obj)
         return self.createIndex(row, 0, obj)
 
     def active_file(self):
@@ -433,7 +433,7 @@ class FileTreeModel(TableModel):
             f = self.proxyMod.mapToSource(prjNode).internalPointer()
             if f.info['vis'] == 'y':
                 chkFiles.append(f)
-            if len(f.children) > 0:
+            if len(f._children) > 0:
                 chkFiles += self.returnChkFiles(prjNode)
         return chkFiles
 
