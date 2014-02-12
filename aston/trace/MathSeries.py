@@ -1,4 +1,3 @@
-
 """
 Functions which mathematically manipulate TimeSeries.
 """

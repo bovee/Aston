@@ -5,10 +5,10 @@ import numpy as np
 from aston.trace.Math import movingaverage
 
 
-def simple_peak_find(ts, init_slope=500, start_slope=500, end_slope=200, \
+def simple_peak_find(s, init_slope=500, start_slope=500, end_slope=200, \
                      min_peak_height=50, max_peak_width=1.5):
     """
-    Given a TimeSeries, return a list of tuples indicating when
+    Given a Series, return a list of tuples indicating when
     peaks start and stop and what their baseline is.
     [(t_start, t_end, hints) ...]
     """
@@ -25,8 +25,8 @@ def simple_peak_find(ts, init_slope=500, start_slope=500, end_slope=200, \
         yield buf
 
     #TODO: check these smoothing defaults
-    t = ts.times
-    smooth_y = movingaverage(ts, 9).y
+    y, t = s.values, s.index.values.astype(float)
+    smooth_y = movingaverage(y, 9)
     dxdt = np.gradient(smooth_y) / np.gradient(t)
     #dxdt = -savitzkygolay(ts, 5, 3, deriv=1).y / np.gradient(t)
 
@@ -69,7 +69,7 @@ def simple_peak_find(ts, init_slope=500, start_slope=500, end_slope=200, \
         dist_to_end = np.array(peak_ens) - pk
         pos_end = pk + dist_to_end[dist_to_end > 0]
         for pk2 in pos_end:
-            if (ts.y[pk2] - ts.y[pk]) / (t[pk2] - t[pk]) > start_slope:
+            if (y[pk2] - y[pk]) / (t[pk2] - t[pk]) > start_slope:
                 # if the baseline beneath the peak is too large, let's
                 # keep going to the next dip
                 peak_list.append((t[pk], t[pk2], {}))
@@ -84,26 +84,27 @@ def simple_peak_find(ts, init_slope=500, start_slope=500, end_slope=200, \
         else:
             # if no end point is found, the end point
             # is the end of the timeseries
-            pk2 = len(ts.y) - 1
+            pk2 = len(t) - 1
 
         if pk == pk2:
             continue
-        pk_hgt = max(ts.y[pk:pk2]) - min(ts.y[pk:pk2])
+        pk_hgt = max(y[pk:pk2]) - min(y[pk:pk2])
         if pk_hgt < min_peak_height:
             continue
         peak_list.append((t[pk], t[pk2], {}))
     return peak_list
 
 
-def wavelet_peak_find(ts, min_snr=1., assume_sig=4., min_length=8.0,
+def wavelet_peak_find(s, min_snr=1., assume_sig=4., min_length=8.0,
                       max_dist=4.0, gap_thresh=2.0):
     # this import is here to let scipy 0.9.0 at least
     # load this module
     import scipy.signal._peak_finding as spf
-    t = ts.time()
+
+    y, t = s.values, s.index
 
     widths = np.linspace(1, 100, 200)
-    cwtm = spf.cwt(ts.y, spf.ricker, widths)
+    cwtm = spf.cwt(y, spf.ricker, widths)
     ridges = spf._identify_ridge_lines(cwtm, widths / max_dist, gap_thresh)
     filt_ridges = spf._filter_ridge_lines(cwtm, ridges, \
       min_length=cwtm.shape[0] / min_length, min_snr=min_snr)
@@ -180,10 +181,10 @@ def stat_slope_peak_find(ts):
     return peak_list
 
 
-def event_peak_find(ts, events, adjust_times=False):
+def event_peak_find(s, events, adjust_times=False):
     if adjust_times:
         # for the following, we need to assume ts is constantly spaced
-        t = ts.times
+        y, t = s.values, s.index
 
         #convert list of events into impulses that will correlate
         #with spikes in the derivative (such as peak beginning & ends)
@@ -191,7 +192,7 @@ def event_peak_find(ts, events, adjust_times=False):
         for st_t, en_t, hints in events:
             pulse_y[np.argmin(np.abs(t - st_t))] = 1.
             pulse_y[np.argmin(np.abs(t - en_t))] = -1.
-        cor = np.correlate(pulse_y, np.gradient(ts.y), mode='same')
+        cor = np.correlate(pulse_y, np.gradient(y), mode='same')
 
         #apply weighting to cor to make "far" correlations less likely
         cor[:len(t) // 2] *= np.logspace(0., 1., len(t) // 2)
@@ -204,45 +205,45 @@ def event_peak_find(ts, events, adjust_times=False):
         return events
 
 
-def _peak_find_mpwrap(ts, peak_find, fopts, dt=None):
-    if peak_find == event_peak_find and dt is not None:
-        # event_peak_find also needs a list of events
-        evts = []
-        if dt is not None:
-            for n in ('fia', 'fxn', 'refgas'):
-                evts += dt.events(n)
-            tpks = peak_find(ts, evts, **fopts)
-        else:
-            tpks = []
-    else:
-        tpks = peak_find(ts, **fopts)
+def _peak_find_mpwrap(ts, peak_find, fopts):
+    tpks = peak_find(ts, **fopts)
     for pk in tpks:
         pk[2]['pf'] = peak_find.__name__
     return tpks
 
 
 def find_peaks(tss, pf_f, f_opts={}, dt=None, mp=False):
-    if mp and pf_f != event_peak_find:
-        # event_peak_find needs the datafile, which can't be pickled
-        # and hence can't be passed into any multiprocessing code
-        f = functools.partial(_peak_find_mpwrap, peak_find=pf_f, \
-                            fopts=f_opts)
+    if pf_f == event_peak_find:
+        evts = []
+        for n in ('fia', 'fxn', 'refgas'):
+            evts += dt.events(n)
+        f_opts['events'] = evts
+
+    f = functools.partial(_peak_find_mpwrap, peak_find=pf_f, \
+                          fopts=f_opts)
+    if mp:
         po = multiprocessing.Pool()
         peaks_found = po.map(f, tss)
         po.close()
         po.join()
     else:
-        f = functools.partial(_peak_find_mpwrap, peak_find=pf_f, \
-                            fopts=f_opts, dt=dt)
         peaks_found = list(map(f, tss))
     return peaks_found
 
 
 def find_peaks_iso(tss, pf_f, f_opts={}, dt=None, mp=False):
-    peaks_found = [_peak_find_mpwrap(tss[0], pf_f, f_opts, dt)]
+    if pf_f == event_peak_find:
+        evts = []
+        for n in ('fia', 'fxn', 'refgas'):
+            evts += dt.events(n)
+        f_opts['events'] = evts
+
+    peaks_found = [_peak_find_mpwrap(tss[0], pf_f, f_opts)]
     for ts in tss[1:]:
         tpks = []
         for p in peaks_found[0]:
+            #FIXME: needs to be updated to work with pandas
+
             # move peak times over to correspond to first integrated
             # signal: similar to, but different from Ricci et al '94
             old_pk_ts = tss[0].twin((p[0], p[1]))

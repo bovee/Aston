@@ -89,3 +89,25 @@ class Scan(object):
         if self.source != 'irms':
             return None
         pass
+
+        #dt = self.getParentOfType('file')
+        #if self.info['sp-type'] == 'Isotope Standard':
+        #    return dt.info['r-d13c-std']
+
+        ## if there's no reference number, we can't do this
+        #try:
+        #    float(dt.info['r-d13c-std'])
+        #except:
+        #    return ''
+
+        #r45std = dt.get_point('r45std', float(self.info['sp-time']))
+        #r46std = dt.get_point('r46std', float(self.info['sp-time']))
+
+        ## if no peak has been designated as a isotope std
+        #if r45std == 0.0:
+        #    return ''
+
+        #d = delta13C_Santrock(self.ion(44), self.ion(45), self.ion(46), \
+        #         float(dt.info['r-d13c-std']), r45std, r46std)
+
+        #return str(d)
