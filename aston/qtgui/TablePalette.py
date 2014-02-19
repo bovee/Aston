@@ -23,15 +23,12 @@ Model for handling display of open files.
 #pylint: disable=C0103
 
 from __future__ import unicode_literals
-import json
 from collections import OrderedDict
 from PyQt4 import QtGui, QtCore
 from aston.resources import resfile
-from aston.qtgui.QuantDialog import QuantDialog
-from aston.qtgui.Fields import aston_fields, aston_groups
-from aston.qtgui.Fields import aston_field_names, aston_field_opts
+from aston.qtgui.Fields import aston_fields, aston_groups, aston_field_opts
 #from aston.qtgui.MenuOptions import peak_models
-from aston.qtgui.TableModel import TableModel, ComboDelegate
+from aston.qtgui.TableModel import TableModel
 from aston.database.Peak import Peak
 from aston.database.Palette import Palette, PaletteRun, Plot
 
@@ -44,18 +41,14 @@ class PaletteTreeModel(TableModel):
                  *args):
         super(PaletteTreeModel, self).__init__(database, tree_view, \
                                                master_window, *args)
-
-        # need to load fields and database before calling __init__
-        #TODO: load custom fields from the database
-        self.fields = ['name', 'vis', 'style', 'color']
-
-        #TODO: make this better?
         self.active_palette = self.db.query(Palette).first()
+        self.fields = self.active_palette.columns.split(',')
 
         # create a list with all of the root items in it
         q = self.db.query(PaletteRun)
         self._children = q.filter_by(palette=self.active_palette,
-                                    enabled=True).all()
+                                     enabled=True).all()
+        self.reset()
 
         ##set up selections
         #tree_view.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
@@ -74,10 +67,10 @@ class PaletteTreeModel(TableModel):
         ##set up right-clicking
         tree_view.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         tree_view.customContextMenuRequested.connect(self.click_main)
-        #tree_view.header().setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-        #tree_view.header().customContextMenuRequested.connect( \
-        #    self.click_head)
-        #tree_view.header().setStretchLastSection(False)
+        tree_view.header().setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        tree_view.header().customContextMenuRequested.connect( \
+            self.click_head)
+        tree_view.header().setStretchLastSection(False)
 
         ##set up drag and drop
         #tree_view.setDragEnabled(True)
@@ -85,24 +78,22 @@ class PaletteTreeModel(TableModel):
         #tree_view.setDragDropMode(QtGui.QAbstractItemView.DragDrop)
         #tree_view.dragMoveEvent = self.dragMoveEvent
 
-        ##keep us aware of column reordering
-        #self.tree_view.header().sectionMoved.connect(self.colsChanged)
+        #keep us aware of column reordering
+        self.tree_view.header().sectionMoved.connect(self.cols_changed)
 
-        ##deal with combo boxs in table
-        self.cDelegates = {}
-        self.enableComboCols()
+        #deal with combo boxs in table
+        self.combo_delegates = {}
+        self.update_combo_cols()
+
+        #add special editing support for the name column
+        self.name_delegate = NameColDelegate()
+        self.tree_view.setItemDelegateForColumn(self.fields.index('name'), \
+                                                self.name_delegate)
 
         ##prettify
         tree_view.collapseAll()
         tree_view.setColumnWidth(0, 300)
         tree_view.setColumnWidth(1, 60)
-
-        #update_db = self.db.get_key('db_reload_on_open', dflt=True)
-        #if type(database) == AstonFileDatabase and update_db:
-        #    self.loadthread = LoadFilesThread(self.db)
-        #    self.loadthread.file_updated.connect(self.update_obj)
-        #    self.loadthread.start()
-        self.reset()
 
     def dragMoveEvent(self, event):
         #TODO: files shouldn't be able to be under peaks
@@ -154,7 +145,7 @@ class PaletteTreeModel(TableModel):
             if role == QtCore.Qt.DisplayRole or role == QtCore.Qt.EditRole:
                 if fld == 'name':
                     rslt = obj.run.name
-            elif role == QtCore.Qt.DecorationRole and index.column() == 0:
+            elif role == QtCore.Qt.DecorationRole and fld == 'name':
                 loc = resfile('aston/qtgui', 'icons/file.png')
                 rslt = QtGui.QIcon(loc)
         elif type(obj) is Plot:
@@ -169,11 +160,19 @@ class PaletteTreeModel(TableModel):
                     rslt = obj.name
                 elif fld in ['style', 'color']:
                     if fld == 'style':
-                        v = obj.style
+                        i = obj.style
                     elif fld == 'color':
-                        v = obj.color
-                    i = aston_field_opts[fld].index(v)
-                    rslt = aston_field_names[fld][i]
+                        i = obj.color
+                    rslt = aston_field_opts[fld][i]
+            elif role == QtCore.Qt.FontRole and fld == 'name':
+                # strike out invalid plot names
+                if not obj.is_valid:
+                    rslt = QtGui.QFont()
+                    rslt.setStrikeOut(True)
+            #elif role == QtCore.Qt.DecorationRole and index.column() == 0:
+            #    if not obj.is_valid:
+            #        loc = resfile('aston/qtgui', 'icons/x.png')
+            #        rslt = QtGui.QIcon(loc)
         elif type(obj) is Peak:
             if fld == 'vis' and role == QtCore.Qt.CheckStateRole:
                 if obj.vis:
@@ -184,8 +183,14 @@ class PaletteTreeModel(TableModel):
                 if fld == 'name':
                     rslt = obj.name
                 elif fld == 'color':
-                    i = aston_field_opts[fld].index(obj.color)
-                    rslt = aston_field_names[fld][i]
+                    rslt = aston_field_opts[fld][obj.color]
+                elif fld in {'p-type', 'p-model'}:
+                    rslt = aston_field_opts[fld][obj.info.get(fld, 'none')]
+                elif fld in {'p-model-fit'}:
+                    rslt = obj.info['p-model-fit']
+                elif fld in {'p-area', 'p-length', 'p-height', 'p-width', \
+                             'p-pwhm', 'p-time'}:
+                    rslt = str(getattr(obj, fld[2:])())
         #elif role == QtCore.Qt.DisplayRole or role == QtCore.Qt.EditRole:
         #    if fld == 'p-model' and f.db_type == 'peak':
         #        rpeakmodels = {peak_models[k]: k for k in peak_models}
@@ -211,27 +216,43 @@ class PaletteTreeModel(TableModel):
             return None
 
     def setData(self, index, data, role):
-        #TODO: commit changes to db?
-        data = str(data)
-        col = self.fields[index.column()].lower()
         obj = index.internalPointer()
-        if type(obj) is Plot:
-            if col == 'vis':
-                obj.vis = (1 if data == '2' else 0)
-            elif col == 'name':
-                obj.name = data.replace('+-', '±').replace('->', '→')
-            elif col in ['style', 'color']:
-                i = aston_field_names[col].index(data)
-                obj.style = aston_field_opts[col][i]
-            self.master_window.plotData()
-            self.db.merge(obj)
-            self.db.commit()
-        #elif col == 'p-model':
-        #    obj.update_model(peak_models[data])
-        #    self.master_window.plotData(updateBounds=False)
+        if isinstance(obj, PaletteRun):
+            # have to edit this in the TableFile
+            return False
+
+        try:  # python 2
+            data = bytes(data.toUtf8()).decode('utf8')
+        except:  # python 3
+            data = str(data)
+        col = self.fields[index.column()].lower()
+
+        if col == 'vis':
+            obj.vis = data == u'2'
+        elif col == 'name':
+            obj.name = data
+            #TODO: split apart commas to make mulitple plots
+        elif col in {'style', 'color'}:
+            rev_dict = {str(v): k for k, v \
+                        in aston_field_opts[col].items()}
+            setattr(obj, col, rev_dict[data])
+        elif col == 'p-model':
+            rev_dict = {str(v): k for k, v \
+                        in aston_field_opts[col].items()}
+            obj.refit(rev_dict[data])
         #else:
         #    obj.info[col] = data
-        #obj.save_changes()
+
+        if isinstance(obj, Plot):
+            obj.is_valid = True
+
+        if col == 'vis' and isinstance(obj, Plot):
+            self.master_window.plot_data(update_bounds=True)
+        else:
+            self.master_window.plot_data(update_bounds=False)
+
+        self.db.merge(obj)
+        self.db.commit()
         self.dataChanged.emit(index, index)
         return True
 
@@ -243,8 +264,11 @@ class PaletteTreeModel(TableModel):
         if not index.isValid():
             return dflags
         dflags |= QtCore.Qt.ItemIsDragEnabled
-        if col == 'vis' and type(obj) is Plot:
+        if col == 'vis' and isinstance(obj, (Plot, Peak)):
             dflags |= QtCore.Qt.ItemIsUserCheckable
+        elif col.startswith('p-') and not isinstance(obj, Peak):
+            if col in {'p-model', 'p-type'}:
+                dflags |= QtCore.Qt.ItemIsEditable
         else:
             dflags |= QtCore.Qt.ItemIsEditable
         return dflags
@@ -266,6 +290,10 @@ class PaletteTreeModel(TableModel):
                 self.db.add(prun)
             prun.enabled = True
             self._children.append(prun)
+        for p in prun.plots:
+            if p.vis:
+                self.master_window.plot_data()
+                break
         self.db.commit()
 
     def add_plot(self, objs):
@@ -279,12 +307,17 @@ class PaletteTreeModel(TableModel):
     def del_run(self, run):
         #TODO: update fileTable checkbox; allows deleting from this table
         q = self.db.query(PaletteRun)
-        pobj = q.filter_by(run=run, palette=self.active_palette).first()
-        with self.del_row(pobj):
-            self._children.remove(pobj)
-            pobj.enabled = False
+        prun = q.filter_by(run=run, palette=self.active_palette).first()
+        with self.del_row(prun):
+            self._children.remove(prun)
+            prun.enabled = False
             #self.db.delete(pobj)
             #TODO: delete unassociated plots and peaks?
+
+        for p in prun.plots:
+            if p.vis:
+                self.master_window.plot_data()
+                break
         self.db.commit()
 
     def itemSelected(self):
@@ -312,10 +345,12 @@ class PaletteTreeModel(TableModel):
         objs_sel = len(self.returnSelObjs())
         self.master_window.show_status(str(objs_sel) + ' items selected')
 
-    def colsChanged(self, *_):  # don't care about the args
+    def cols_changed(self, *_):  # don't care about the args
         flds = [self.fields[self.tree_view.header().logicalIndex(fld)] \
                     for fld in range(len(self.fields))]
-        self.db.set_key('main_cols', json.dumps(flds))
+        self.active_palette.columns = ','.join(flds)
+        self.db.merge(self.active_palette)
+        self.db.commit()
 
     def click_main(self, point):
         index = self.proxyMod.mapToSource(self.tree_view.indexAt(point))
@@ -338,8 +373,6 @@ class PaletteTreeModel(TableModel):
         #                       self.createSpec, fts, menu)
         #    self._add_menu_opt(self.tr('Merge Peaks'), \
         #                       self.merge_peaks, fts, menu)
-        #    self._add_menu_opt(self.tr('Quant'), \
-        #                       self.quant_peaks, fts, menu)
 
         #fts = [s for s in sel if s.db_type in ('spectrum', 'peak')]
         #if len(fts) > 0:
@@ -398,10 +431,6 @@ class PaletteTreeModel(TableModel):
                 obj.info['name'] = lib_spc.info['name']
                 obj.save_changes()
 
-    def quant_peaks(self, objs):
-        self.dlg = QuantDialog(self.master_window, objs)
-        self.dlg.show()
-
     #def makeMethod(self, objs):
     #    self.master_window.cmpd_tab.addObjects(None, objs)
 
@@ -439,40 +468,26 @@ class PaletteTreeModel(TableModel):
         if fld in self.fields:
             indx = self.fields.index(fld)
             self.beginRemoveColumns(QtCore.QModelIndex(), indx, indx)
-            for i in range(len(self.db._children)):
+            for i in range(len(self._children)):
                 self.beginRemoveColumns( \
                   self.index(i, 0, QtCore.QModelIndex()), indx, indx)
             self.fields.remove(fld)
-            for i in range(len(self.db._children) + 1):
+            for i in range(len(self._children) + 1):
                 self.endRemoveColumns()
         else:
             cols = len(self.fields)
             self.beginInsertColumns(QtCore.QModelIndex(), cols, cols)
-            for i in range(len(self.db._children)):
+            for i in range(len(self._children)):
                 self.beginInsertColumns( \
                   self.index(i, 0, QtCore.QModelIndex()), cols, cols)
             self.tree_view.resizeColumnToContents(len(self.fields) - 1)
             self.fields.append(fld)
-            for i in range(len(self.db._children) + 1):
+            for i in range(len(self._children) + 1):
                 self.endInsertColumns()
-        self.enableComboCols()
-        self.colsChanged()
+        self.update_combo_cols()
+        self.cols_changed()
         #FIXME: selection needs to be updated to new col too?
         #self.tree_view.selectionModel().selectionChanged.emit()
-
-    def enableComboCols(self):
-        for c in aston_field_opts.keys():
-            if c in self.fields and c not in self.cDelegates:
-                #new column, need to add combo support in
-                opts = aston_field_names[c]
-                self.cDelegates[c] = (self.fields.index(c), \
-                                      ComboDelegate(opts))
-                self.tree_view.setItemDelegateForColumn(*self.cDelegates[c])
-            elif c not in self.fields and c in self.cDelegates:
-                #column has been deleted, remove from delegate list
-                self.tree_view.setItemDelegateForColumn( \
-                  self.cDelegates[c][0], self.tree_view.itemDelegate())
-                del self.cDelegates[c]
 
     def update_obj(self, dbid, obj):
         if obj is None and dbid is None:
@@ -493,7 +508,7 @@ class PaletteTreeModel(TableModel):
         plot = self.returnSelObj()
         if plot is not None:
             if type(plot) is Plot:
-                if plot.vis > 0:
+                if plot.vis > 0 and plot.is_valid:
                     return plot
 
         dts = self.returnChkObjs()
@@ -514,7 +529,7 @@ class PaletteTreeModel(TableModel):
             prjNode = self.proxyMod.index(i, 0, node)
             t = self.proxyMod.mapToSource(prjNode).internalPointer()
             if type(t) is Plot:
-                if t.vis > 0:
+                if t.vis > 0 and t.is_valid:
                     chkFiles.append(t)
             if len(t._children) > 0:
                 chkFiles += self.returnChkObjs(prjNode)
@@ -567,3 +582,47 @@ class PaletteTreeModel(TableModel):
             header = delim.join(flds) + '\n'
             table = '\n'.join(row_lst)
             return header + table
+
+
+class NameColDelegate(QtGui.QItemDelegate):
+    #def __init__(self, opts, *args):
+    #    self.opts = opts
+    #    super(ComboDelegate, self).__init__(*args)
+
+    def get_opts(self, obj):
+        #TODO: weed out events
+        opts = [i.lstrip('#') for a in obj.paletterun.run.analyses \
+                        for i in a.trace.split(',')]
+        opts += ['tic']
+        return opts
+
+    def createEditor(self, parent, option, index):
+        obj = index.model().mapToSource(index).internalPointer()
+        if isinstance(obj, Plot):
+            cmb = QtGui.QComboBox(parent)
+            cmb.setEditable(True)
+            cmb.addItems(self.get_opts(obj))
+        else:
+            cmb = QtGui.QLineEdit(parent)
+        return cmb
+
+    def setEditorData(self, editor, index):
+        obj = index.model().mapToSource(index).internalPointer()
+        if isinstance(obj, Plot):
+            #txt = index.data(QtCore.Qt.EditRole)
+            txt = obj.name
+            opts = self.get_opts(obj)
+            if txt in opts:
+                editor.setCurrentIndex(opts.index(txt))
+            else:
+                editor.setEditText(txt)
+        super(NameColDelegate, self).setEditorData(editor, index)
+
+    def setModelData(self, editor, model, index):
+        obj = index.model().mapToSource(index).internalPointer()
+        if isinstance(obj, Plot):
+            data = str(editor.currentText())
+        elif isinstance(obj, Peak):
+            data = str(editor.text())
+        data = data.replace('+-', '±').replace('->', '→')
+        model.setData(index, data, QtCore.Qt.EditRole)

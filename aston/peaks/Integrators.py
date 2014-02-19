@@ -85,15 +85,15 @@ def drop_integrate(ts, peak_list):
             hints['y1'] = np.interp(t1, xs, ys)
 
             # if this peak totally overlaps with an existing one, don't add
-            if sum(1 for p in temp_pks if t1 <= p[1]) > 0:
+            if sum(1 for p in temp_pks if t1 <= p['t1']) > 0:
                 continue
-            overlap_pks = [p for p in temp_pks if t0 <= p[1]]
+            overlap_pks = [p for p in temp_pks if t0 <= p['t1']]
             if len(overlap_pks) > 0:
                 # find the last of the overlapping peaks
-                overlap_pk = max(overlap_pks, key=lambda p: p[0])
+                overlap_pk = max(overlap_pks, key=lambda p: p['t0'])
                 # get the section of trace and find the lowest point
-                over_ts = ts.trace('!', twin=(t0, overlap_pk[1]))
-                min_t = over_ts.times[over_ts.y.argmin()]
+                over_ts = ts.twin((t0, overlap_pk['t1']))
+                min_t = over_ts.index[over_ts.values.argmin()]
 
                 # delete the existing overlaping peak
                 for i, p in enumerate(temp_pks):
@@ -107,10 +107,13 @@ def drop_integrate(ts, peak_list):
                 hints['y0'] = y_val
 
                 # add the old and new peak in
-                temp_pks.append((overlap_pk[0], min_t, overlap_pk[2]))
-                temp_pks.append((min_t, t1, hints))
+                overlap_pk['t1'] = min_t
+                temp_pks.append(overlap_pk)
+                hints['t0'], hints['t1'] = min_t, t1
+                temp_pks.append(hints)
             else:
-                temp_pks.append((t0, t1, hints))
+                hints['t0'], hints['t1'] = t0, t1
+                temp_pks.append(hints)
 
         # none of our peaks should overlap, so we can just use
         # simple_integrate now
@@ -209,7 +212,7 @@ def _integrate_mpwrap(ts_and_pks, integrate, fopts):
     ts, tpks = ts_and_pks
     pks = integrate(ts, tpks, **fopts)
     for p in pks:
-        p.hints['mz'] = str(ts.name)
+        p.info['mz'] = str(ts.name)
     return pks
 
 

@@ -3,25 +3,25 @@ from scipy import convolve
 from aston.spectra.Scan import Scan
 from aston.trace.Trace import AstonSeries
 #from aston.spectra.Isotopes import delta13C_Santrock, delta13C_Craig
-#from aston.peaks.PeakFitting import fit, guess_initc
+from aston.peaks.PeakFitting import fit, guess_initc
 from aston.peaks.PeakModels import peak_models
 
 peak_models = dict([(pm.__name__, pm) for pm in peak_models])
 
 
 class Peak(object):
-    def __init__(self, hints, trace=None, baseline=None, \
+    def __init__(self, info, trace=None, baseline=None, \
                  name='', primary_mz=None):
-        self.trace = trace
+        self._trace = trace
         self.baseline = baseline
         if primary_mz is not None:
             self.primary_mz = primary_mz
         elif type(trace) is AstonSeries:
             self.primary_mz = None
         else:
-            self.primary_mz = self.trace.columns[0]
+            self.primary_mz = trace.columns[0]
         self.name = name
-        self.hints = hints
+        self.info = info
 
     # next two properties are only for dealing with SQLAlchemy
     @property
@@ -30,18 +30,54 @@ class Peak(object):
 
     _children = []
 
-    def plot(self, mz=None, ax=None):
+    # this allows transparent switching to/from analytical peaks
+    @property
+    def trace(self):
+        if self.info.get('p-model', None) not in peak_models:
+            return self._trace
+        else:
+            model = peak_models[self.info.get('p-model')]
+            t = self._trace.index
+            d = model(t=t, **{k: self.info.get(k) \
+                              for k in model._peakargs \
+                              if self.info.get(k) is not None})
+            d += self.baseline._retime(t)
+            return AstonSeries(d, t, name='')
+
+    def refit(self, peak_model=None):
+        #TODO: needs to work with peaks containing DataFrames
+        self.info['p-model'] = peak_model
+        if peak_model is None:
+            #TODO: remove parameters from self.info?
+            #del self.info['p-model-fit']
+            return
+        model = peak_models[peak_model]
+
+        # remove the baseline and create a new series
+        t = self._trace.index
+        d = self._trace.values - self.baseline._retime(t)
+        ts = AstonSeries(d, t)
+
+        # fit the peak
+        initc = guess_initc(ts, model, [t[d.argmax()]])
+        params, res = fit(ts, [model], initc)
+        self.info.update(params[0])
+        self.info['p-model-fit'] = res['r^2']
+
+    def plot(self, mz=None, color='k', alpha=0.5, ax=None):
         #TODO: include scale and offset as parameters
-        #TODO: needs color options
         #TODO: allow plotting to a 2D plot?
+        # confine matplotlib imports to here, so this module works
+        # even if matplotlib is not installed (e.g. on a server)
         from matplotlib.path import Path
         from matplotlib.patches import PathPatch
-        ply = Path(self.as_poly(mz).T)
+        path = self.as_poly(mz)
+        ply = PathPatch(Path(path), facecolor=color, alpha=alpha, lw=0)
         if ax is None:
             import matplotlib.pyplot as plt
-            plt.add_patch(PathPatch(ply))
+            plt.add_patch(ply)
         else:
-            ax.add_patch(PathPatch(ply))
+            ax.add_patch(ply)
 
     def as_poly(self, mz=None, sub_base=False):
         if type(self.trace) is AstonSeries:
@@ -71,34 +107,12 @@ class Peak(object):
         else:
             t = np.hstack([trace.index, b_trace.index[::-1]])
             z = np.hstack([trace.values, b_trace.values[::-1]])
-        return np.vstack([t, z])
+        return np.vstack([t, z]).T
 
-    # factor these out?
+    #TODO: factor these out?
     def contains(self, x, y, mz=None):
-        #from: http://www.ariel.com.au/a/python-point-int-poly.html
-
-        # if it's not in the right time bounds, return right away
-        if not (self.trace.index.min() < x < \
-                self.trace.index.max()):
-            return False
-
-        data = self.as_poly(mz)
-        n = len(self.trace)
-        inside = False
-
-        p1x, p1y = data[0]
-        for i in range(1, n + 1):
-            p2x, p2y = data[i % n]
-            if y > min(p1y, p2y):
-                if y <= max(p1y, p2y):
-                    if x <= max(p1x, p2x):
-                        if p1y != p2y:
-                            xinters = (y - p1y) * (p2x - p1x) \
-                                      / (p2y - p1y) + p1x
-                        if p1x == p2x or x <= xinters:
-                            inside = not inside
-            p1x, p1y = p2x, p2y
-        return inside
+        from matplotlib.path import Path
+        return Path(self.as_poly(mz)).contains_point((x, y))
 
     def time(self):
         data = self.as_poly()
@@ -136,6 +150,7 @@ class Peak(object):
         return hi_x - lw_x
 
     def height(self):
+        #TODO: should subtract base
         data = self.as_poly()
         return data[:, 1].max() - data[:, 1].min()
 

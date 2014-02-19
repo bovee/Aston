@@ -9,15 +9,18 @@ from aston.spectra.Scan import Scan
 
 
 class AstonSeries(object):
-    def __init__(self, data, index, name=''):
-        if type(data) is Series:
+    def __init__(self, data, index=None, name=''):
+        if isinstance(data, Series):
             self.values = data.values
             self.index = data.index.values
             self.name = data.name
-        else:
+        elif index is not None:
             self.values = np.array(data)
             self.index = np.array(index)
             self.name = name
+        else:
+            #need either one pandas.Series or two np.arrays
+            raise TypeError('AstonSeries initialized improperly.')
 
     @property
     def shape(self):
@@ -26,6 +29,9 @@ class AstonSeries(object):
     def copy(self):
         return AstonSeries(self.values.copy(), self.index.copy(), self.name)
 
+    def __len__(self):
+        return self.index.shape[0]
+
     def __getitem__(self, index):
         v, i = self.values[index], self.index[index]
         if type(v) is np.ndarray:
@@ -33,7 +39,7 @@ class AstonSeries(object):
         else:
             return v
 
-    def plot(self, style='-', color='k', scale=False, ax=None):
+    def plot(self, style='-', color='k', scale=False, label=None, ax=None):
         if ax is None:
             import matplotlib.pyplot as plt
             ax = plt.gca()
@@ -44,7 +50,10 @@ class AstonSeries(object):
         else:
             y = self.values
 
-        ax.plot(self.index, y, c=color, ls=style, label=self.name)
+        if label is None:
+            label = self.name
+
+        ax.plot(self.index, y, c=color, ls=style, label=label)
 
     def twin(self, twin):
         st_idx, en_idx = _slice_idxs(self, twin)
@@ -62,6 +71,7 @@ class AstonSeries(object):
         return adjs
 
     def _retime(self, new_times, fill=0.0):
+        # this is not exposed because it returns a raw numpy array
         from scipy.interpolate import interp1d
         if new_times.shape == self.shape[0]:
             if np.all(np.equal(new_times, self.index)):
@@ -74,6 +84,7 @@ class AstonSeries(object):
         """
         Convenience function for all of the math stuff.
         """
+        #TODO: needs to catch np numeric types?
         if isinstance(ts, (int, float)):
             d = ts * np.ones(self.shape[0])
         elif ts is None:
@@ -134,17 +145,58 @@ class AstonSeries(object):
             return zlib.compress(lc + lt + i + t + d)
 
 
-class AstonFrame(DataFrame):
-    #def __new__(cls, *args, **kwargs):
-    #    self = super(AstonFrame, cls).__new__(cls, *args, **kwargs)
-    #    self.__class__ = AstonFrame
-    #    return self
+class AstonFrame(object):
+    def __init__(self, data=None, index=None, columns=None):
+        if data is None:
+            self.values = np.array([])
+            self.index = np.array([])
+            self.columns = ['']
+        elif isinstance(data, DataFrame):
+            self.values = data.values
+            self.index = data.index.values
+            self.columns = data.columns.values
+        elif index is not None:
+            #TODO: handle sparse arrays
+            self.values = np.array(data)
+            self.index = np.array(index)
+            self.columns = columns
+        else:
+            #need either one pandas.Series or two np.arrays
+            raise TypeError('AstonFrame initialized improperly.')
 
-    def __getitem__(self, *args):
-        ret = super(AstonFrame, self).__getitem__(self, *args)
-        if type(ret) is DataFrame:
-            ret.__class__ = AstonFrame
-        return ret
+    @property
+    def shape(self):
+        return self.values.shape
+
+    def copy(self):
+        return AstonFrame(self.values.copy(), self.index.copy(), \
+                          self.columns.copy())
+
+    def __len__(self):
+        return self.index.shape[0]
+
+    def __getitem__(self, key):
+        if isinstance(key, tuple):
+            # indexing on multiple dimensions
+            #TODO: check that dimensions are in right order
+            v = self.values[key]
+            i = self.index[key[0]]
+            c = self.columns[key[1]]
+        else:
+            if isinstance(key, np.ndarray):
+                if len(key.shape) > 1:
+                    # indexing with a boolean mask
+                    raise NotImplementedError
+            v, i = self.values[key], self.index[key]
+            c = self.columns
+
+        if len(c) == 1:
+            if len(i) == 1:
+                return v[0, 0]
+            else:
+                return AstonSeries(v, i, name=c[0])
+        else:
+            return AstonFrame(v, i, c)
 
     def trace(self, name='tic', tol=0.5, twin=None):
         #TODO: aggfunc in here for tic and numeric
@@ -157,10 +209,10 @@ class AstonFrame(DataFrame):
             data = self.values.sum(axis=1)
             name = 'tic'
         elif name == '!':
-            data = self[self.columns[0]].values
+            data = self[:, 0]
             name = self.columns[0]
         elif set(name).issubset('1234567890.'):
-            cols = np.abs(self.columns.values - float(name)) < tol
+            cols = np.abs(self.columns - float(name)) < tol
             data = self.values[:, cols].sum(axis=1)
         else:
             data = np.zeros(self.shape[0]) * np.nan
@@ -188,7 +240,7 @@ class AstonFrame(DataFrame):
             from matplotlib.colors import ListedColormap
             gaussian = lambda wvs, x, w: np.exp(-0.5 * ((wvs - x) / w) ** 2)
 
-            wvs = self.columns.values.astype(float)
+            wvs = self.columns.astype(float)
 
             #http://www.ppsloan.org/publications/XYZJCGT.pdf
             vis_filt = np.zeros((3, len(wvs)))
@@ -266,14 +318,14 @@ class AstonFrame(DataFrame):
         """
         Returns the spectrum from a specific time.
         """
-        idx = (np.abs(self.index.values - t)).argmin()
+        idx = (np.abs(self.index - t)).argmin()
 
         if dt is None:
             # only take the spectra at the nearest time
             mz_abn = self.values[idx, :].copy()
         else:
             # sum up all the spectra over a range
-            en_idx = (np.abs(self.index.values - t - dt)).argmin()
+            en_idx = (np.abs(self.index - t - dt)).argmin()
             idx, en_idx = min(idx, en_idx), max(idx, en_idx)
             if aggfunc is None:
                 mz_abn = self.values[idx:en_idx + 1, :].copy().sum(axis=0)
@@ -283,7 +335,7 @@ class AstonFrame(DataFrame):
 
     def compress(self):
         d = self.values.tostring()
-        t = self.index.values.astype(float).tostring()
+        t = self.index.astype(float).tostring()
         lt = struct.pack('<L', len(t))
         i = json.dumps(self.columns).encode('utf-8')
         lc = struct.pack('<L', len(i))
@@ -316,10 +368,7 @@ def _slice_idxs(df, twin=None):
     if twin is None:
         return 0, df.shape[0]
 
-    if type(df) is AstonFrame:
-        tme = df.index.values
-    else:
-        tme = df.index
+    tme = df.index
 
     if twin[0] is None:
         st_idx = 0

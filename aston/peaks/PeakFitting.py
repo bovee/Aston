@@ -45,6 +45,11 @@ def _to_unbnd_p(params, bounds):
 
 
 def guess_initc(ts, f, rts=[]):
+    """
+    ts - An AstonSeries that's being fitted with peaks
+    f - The functional form of the peaks (e.g. gaussian)
+    rts - peak maxima to fit; each number corresponds to one peak
+    """
     def find_side(y, loc=None):
         if loc is None:
             loc = y.argmax()
@@ -62,18 +67,18 @@ def guess_initc(ts, f, rts=[]):
 
     #weight_mom = lambda m, a, w: \
     #  np.sum(w * (a - np.sum(w * a) / np.sum(w)) ** m) / np.sum(w)
-    #sig = np.sqrt(weight_mom(2, ts.times, ts.y))  # sigma
-    #peak_params['s'] = weight_mom(3, ts.times, ts.y) / sig ** 3
-    #peak_params['e'] = weight_mom(4, ts.times, ts.y) / sig ** 4 - 3
+    #sig = np.sqrt(weight_mom(2, ts.index, ts.values))  # sigma
+    #peak_params['s'] = weight_mom(3, ts.index, ts.values) / sig ** 3
+    #peak_params['e'] = weight_mom(4, ts.index, ts.values) / sig ** 4 - 3
     #TODO: better method of calculation of these?
     all_params = []
     for rt in rts:
-        peak_params = {'x': rt}  # ts.times[ts.y.argmax()]
-        top_idx = np.abs(ts.times - rt).argmin()
-        side_idx = find_side(ts.y, top_idx)
-        peak_params['h'] = ts.y[top_idx]
+        peak_params = {'x': rt}  # ts.index[ts.values.argmax()]
+        top_idx = np.abs(ts.index - rt).argmin()
+        side_idx = find_side(ts.values, top_idx)
+        peak_params['h'] = ts.values[top_idx]
                 # - min(ts.y[side_idx[0]], ts.y[side_idx[1]])
-        peak_params['w'] = ts.times[side_idx[1]] - ts.times[side_idx[0]]
+        peak_params['w'] = ts.index[side_idx[1]] - ts.index[side_idx[0]]
         peak_params['s'] = 1.1
         peak_params['e'] = 1.
         peak_params['a'] = 1.
@@ -84,12 +89,12 @@ def guess_initc(ts, f, rts=[]):
 def fit(ts, fs=[], all_params=[], fit_vars=None, \
         alg='leastsq', make_bounded=True):
     """
-    Use a minimization algorithm to fit a TimeSeries with
+    Use a minimization algorithm to fit a AstonSeries with
     analytical functions.
     """
     if fit_vars is None:
         fit_vars = [f._peakargs for f in fs]
-    initc = [min(ts.y)]
+    initc = [min(ts.values)]
     for f, peak_params, to_fit in zip(fs, all_params, fit_vars):
         if 'v' in to_fit:
             to_fit.remove('v')
@@ -120,19 +125,21 @@ def fit(ts, fs=[], all_params=[], fit_vars=None, \
         return np.sum(errfunc_lsq(p, t, y, all_params) ** 2)
 
     if alg == 'simplex':
-        fit_p, _ = fmin(errfunc, initc, args=(ts.times, ts.y, peak_params))
+        fit_p, _ = fmin(errfunc, initc, args=(ts.index, ts.values, \
+                                              peak_params))
     elif alg == 'anneal':
-        fit_p, _ = anneal(errfunc, initc, args=(ts.times, ts.y, peak_params))
+        fit_p, _ = anneal(errfunc, initc, args=(ts.index, ts.values, \
+                                                peak_params))
     elif alg == 'lbfgsb':
         #TODO: use bounds param
-        fitp, _ = fmin_l_bfgs_b(errfunc, fit_p, args=(ts.times, ts.y, \
+        fitp, _ = fmin_l_bfgs_b(errfunc, fit_p, args=(ts.index, ts.values, \
                                 peak_params), approx_grad=True)
     elif alg == 'leastsq':
         fit_p, _ = leastsq(errfunc_lsq, initc, \
-                           args=(ts.times, ts.y, all_params))
+                           args=(ts.index, ts.values, all_params))
     #else:
     #    r = minimize(errfunc, initc, \
-    #                 args=(ts.times, ts.y, all_params), \
+    #                 args=(ts.index, ts.values, all_params), \
     #                 jac=False, gtol=1e-2)
     #    #if not r['success']:
     #    #    print('Fail:' + str(f))
@@ -154,8 +161,8 @@ def fit(ts, fs=[], all_params=[], fit_vars=None, \
             fitted_params.append(fit_p_dict)
 
     # calculate r^2 of the fit
-    ss_err = errfunc(fit_p, ts.times, ts.y, fitted_params)
-    ss_tot = np.sum((ts.y - np.mean(ts.y)) ** 2)
+    ss_err = errfunc(fit_p, ts.index, ts.values, fitted_params)
+    ss_tot = np.sum((ts.values - np.mean(ts.values)) ** 2)
     r2 = 1 - ss_err / ss_tot
     res = {'r^2': r2}
 

@@ -5,6 +5,7 @@ from aston.qtgui.ui_settings import Ui_Form
 from aston.qtgui.TableFile import FileTreeModel
 from aston.qtgui.MenuOptions import peak_models
 from aston.spectra.Isotopes import delta13C_constants
+from aston.database.User import User
 
 
 class SettingsWidget(QtGui.QWidget):
@@ -23,40 +24,40 @@ class SettingsWidget(QtGui.QWidget):
 
         # set up the isotope combo boxes
         m = ['santrock', 'craig']
-        idx = m.index(self.db.get_key('d13c_method', 'santrock'))
+        idx = m.index(self.get_key('d13c_method', 'santrock'))
         self.ui.comboIsotopeMethod.setCurrentIndex(idx)
         self.ui.comboIsotopeMethod.activated.connect(self.set_isotope)
 
         ks = [k for k in delta13C_constants()]
-        idx = ks.index(self.db.get_key('d13c_const', 'Santrock'))
+        idx = ks.index(self.get_key('d13c_const', 'Santrock'))
         self.ui.comboIsotopeKs.setCurrentIndex(idx)
         self.ui.comboIsotopeKs.activated.connect(self.set_isotope)
 
         # fill out the leastsq integration peak model combobox
         self.ui.comboLeastSqPeakModel.addItems( \
             [m for m in peak_models if peak_models[m] is not None])
-        pkmod = self.db.get_key('integrate_leastsq_f', dflt='gaussian')
+        pkmod = self.get_key('integrate_leastsq_f', dflt='gaussian')
         ci = [peak_models[m] for m in peak_models].index(pkmod) - 1
         self.ui.comboLeastSqPeakModel.setCurrentIndex(ci)
         self.ui.comboLeastSqPeakModel.activated.connect(self.set_lsqmod)
 
         self.ui.btnOpenCompoundDB.clicked.connect(self.load_cmpd_db)
-        self.ui.lineCompoundDB.setText(self.db.get_key('db_compound', dflt=''))
+        self.ui.lineCompoundDB.setText(self.get_key('db_compound', dflt=''))
         self.ui.btnOpenMethodDB.clicked.connect(self.load_meth_db)
-        self.ui.lineMethodDB.setText(self.db.get_key('db_method', dflt=''))
+        self.ui.lineMethodDB.setText(self.get_key('db_method', dflt=''))
 
     def set_lsqmod(self):
         ci = self.ui.comboLeastSqPeakModel.currentIndex()
         pkmod = [peak_models[m] for m in peak_models][ci + 1]
-        self.db.set_key('integrate_leastsq_f', pkmod)
+        self.set_key('integrate_leastsq_f', pkmod)
 
     def set_isotope(self):
         m = ['santrock', 'craig'][self.ui.comboIsotopeMethod.currentIndex()]
-        self.db.set_key('d13c_method', m)
+        self.set_key('d13c_method', m)
 
         d13c_k_opts = [ks for ks in delta13C_constants()]
         ks = d13c_k_opts[self.ui.comboIsotopeKs.currentIndex()]
-        self.db.set_key('d13c_const', ks)
+        self.set_key('d13c_const', ks)
 
     def numeric_opts(self):
         k_to_b = {'peakfind_simple_startslope': self.ui.doubleSimpleStartSlope,
@@ -80,7 +81,7 @@ class SettingsWidget(QtGui.QWidget):
     def load_opts(self):
         k_to_b = self.numeric_opts()
         for k in k_to_b:
-            v = self.db.get_key(k, dflt=None)
+            v = self.get_key(k, dflt=None)
             if type(k_to_b[k]) == QtGui.QDoubleSpinBox:
                 if v is not None:
                     k_to_b[k].setValue(float(v))
@@ -88,19 +89,19 @@ class SettingsWidget(QtGui.QWidget):
                 k_to_b[k].editingFinished.connect(self.save_opts(k))
             elif type(k_to_b[k]) == QtGui.QCheckBox:
                 if v is not None:
-                    k_to_b[k].setChecked(v == 'T')
+                    k_to_b[k].setChecked(v)
                 k_to_b[k].stateChanged.connect(self.save_opts(k))
 
     def save_opts(self, k):
         def wrapped_f():
             k_to_b = self.numeric_opts()
             if type(k_to_b[k]) == QtGui.QDoubleSpinBox:
-                self.db.set_key(k, str(k_to_b[k].value()))
+                self.set_key(k, str(k_to_b[k].value()))
             elif type(k_to_b[k]) == QtGui.QCheckBox:
                 if k_to_b[k].isChecked():
-                    self.db.set_key(k, 'T')
+                    self.set_key(k, True)
                 else:
-                    self.db.set_key(k, 'F')
+                    self.set_key(k, False)
             if k.startswith('peakfind_'):
                 if self.parent.ui.actionGraph_Peaks_Found.isChecked():
                     self.parent.plotData(updateBounds=False)
@@ -112,9 +113,9 @@ class SettingsWidget(QtGui.QWidget):
           self.tr('Open DB'), '', self.tr('AstonDB (aston.sqlite)')))
         if path == '':
             return
-        other_db_vals = AstonDatabase(path).all_keys()
-        for k in other_db_vals:
-            self.db.set_key(k, other_db_vals[k])
+        #other_db_vals = AstonDatabase(path).all_keys()
+        #for k in other_db_vals:
+        #    self.set_key(k, other_db_vals[k])
 
     def load_cmpd_db(self):
         #TODO: relative to DB path if possible?
@@ -124,12 +125,12 @@ class SettingsWidget(QtGui.QWidget):
         if path == '':
             return
 
-        self.db.set_key('db_compound', path)
+        self.set_key('db_compound', path)
         self.ui.lineCompoundDB.setText(path)
 
-        cmpd_db = get_compound_db(path)
-        self.parent.cmpd_tab = FileTreeModel(cmpd_db, \
-                                      self.parent.ui.compoundTreeView, self)
+        #cmpd_db = get_compound_db(path)
+        #self.parent.cmpd_tab = FileTreeModel(cmpd_db, \
+        #                              self.parent.ui.compoundTreeView, self)
 
     def load_meth_db(self):
         #TODO: relative to DB path if possible?
@@ -139,5 +140,13 @@ class SettingsWidget(QtGui.QWidget):
         if path == '':
             return
 
-        self.db.set_key('db_method', path)
+        self.set_key('db_method', path)
         self.ui.lineMethodDB.setText(path)
+
+    def get_key(self, key, dflt=None):
+        return self.db.query(User).first().prefs.get(key, dflt)
+
+    def set_key(self, key, val):
+        def_user = self.db.query(User).first()
+        def_user.prefs[key] = val
+        self.db.commit()

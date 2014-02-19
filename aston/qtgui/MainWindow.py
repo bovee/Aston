@@ -10,12 +10,12 @@ from aston.qtgui.PlotMain import Plotter
 from aston.qtgui.PlotSpec import SpecPlotter
 
 from aston.database import quick_sqlite
-from aston.database.Create import read_directory
+from aston.database.Create import read_directory, simple_auth
 #from aston.database.Compound import get_compound_db
 from aston.qtgui.TableFile import FileTreeModel
 from aston.qtgui.TablePalette import PaletteTreeModel
 import aston.qtgui.MenuOptions
-#from aston.peaks.PeakFinding import find_peaks, find_peaks_iso
+from aston.peaks.PeakFinding import find_peaks, find_peaks_iso
 from aston.peaks.Integrators import integrate_peaks
 
 
@@ -76,12 +76,12 @@ class AstonWindow(QtGui.QMainWindow):
         #self.ui.lineEdit.textChanged.connect(self.updateSearch)
 
         ##make integrator options
-        #peak_find_menu = QtGui.QMenu(self.ui.menuChromatogram)
-        #v = list(aston.ui.MenuOptions.peak_finders.keys())[0]
-        #self._add_opts_to_menu(peak_find_menu, \
-        #  aston.ui.MenuOptions.peak_finders.keys(),
-        #  lambda: None, v)
-        #self.ui.actionPeak_Finder.setMenu(peak_find_menu)
+        peak_find_menu = QtGui.QMenu(self.ui.menuChromatogram)
+        v = list(aston.qtgui.MenuOptions.peak_finders.keys())[0]
+        self._add_opts_to_menu(peak_find_menu, \
+          aston.qtgui.MenuOptions.peak_finders.keys(),
+          lambda: None, v)
+        self.ui.actionPeak_Finder.setMenu(peak_find_menu)
 
         integrator_menu = QtGui.QMenu(self.ui.menuChromatogram)
         v = list(aston.qtgui.MenuOptions.integrators.keys())[0]
@@ -106,38 +106,34 @@ class AstonWindow(QtGui.QMainWindow):
 
         ##flesh out the settings menu
         #color_menu = QtGui.QMenu(self.ui.menuSettings)
-        #v_cs = self.obj_tab.db.get_key('color_scheme', dflt='Spectral')
+        #v_cs = self.settings.get_key('color_scheme', dflt='Spectral')
         #v = self.plotter._colors[v_cs]
         #self.plotter.setColorScheme(v)
         #self._add_opts_to_menu(color_menu, \
         #  self.plotter.availColors(), self.set_color_scheme, v)
         #self.ui.actionColor_Scheme.setMenu(color_menu)
 
-        #self.ui.actionLegend.triggered.connect(self.set_legend)
-        #self.ui.actionGraphGrid.triggered.connect(self.set_legend)
-        #self.ui.actionGraphLogYAxis.triggered.connect(self.set_legend)
+        self.ui.actionLegend.triggered.connect(self.set_legend)
+        self.ui.actionGraphGrid.triggered.connect(self.set_legend)
+        self.ui.actionGraphLogYAxis.triggered.connect(self.set_legend)
         #self.ui.actionGraphFxnCollection.triggered.connect(self.set_legend)
         #self.ui.actionGraphFIA.triggered.connect(self.set_legend)
         #self.ui.actionGraphIRMS.triggered.connect(self.set_legend)
         #self.ui.actionGraph_Peaks_Found.triggered.connect(self.set_legend)
 
         #style_menu = QtGui.QMenu(self.ui.menuSettings)
-        #v_gs = self.obj_tab.db.get_key('graph_style', dflt='default')
+        #v_gs = self.settings.get_key('graph_style', dflt='default')
         #v = self.plotter._styles[v_gs]
         #self.plotter.setStyle(v)
         #self._add_opts_to_menu(style_menu, \
         #  self.plotter.availStyles(), self.set_graph_style, v)
         #self.ui.actionGraph_Style.setMenu(style_menu)
 
-        ## add settings widget in
-        #self.settingsWidget = SettingsWidget(self, db=file_db)
-        #self.ui.verticalLayout_settings.addWidget(self.settingsWidget)
-
         #plot data
-        self.plotData()
+        self.plot_data()
 
         ##set up the compound database
-        #cmpd_loc = self.obj_tab.db.get_key('db_compound', dflt='')
+        #cmpd_loc = self.settings.get_key('db_compound', dflt='')
         #if cmpd_loc != '':
         #    cmpd_db = get_compound_db(cmpd_loc)
         #    self.cmpd_tab = FileTreeModel(cmpd_db, self.ui.compoundTreeView, \
@@ -224,13 +220,17 @@ class AstonWindow(QtGui.QMainWindow):
             return
         self.directory = op.expanduser(file_loc)
         file_db = quick_sqlite(op.join(self.directory, 'aston.sqlite'))
-        read_directory(self.directory, file_db)
+        def_group = simple_auth(file_db)
+        read_directory(self.directory, file_db, group=def_group)
 
         self.pal_tab = PaletteTreeModel(file_db, self.ui.paletteTreeView, self)
         self.file_tab = FileTreeModel(file_db, self.ui.fileTreeView, self)
 
-        #self.settingsWidget.db = file_db
-        #self.plotData()
+        ## add settings widget in
+        self.settings = SettingsWidget(self, db=file_db)
+        self.ui.verticalLayout_settings.addWidget(self.settings)
+
+        #self.plot_data()
 
         #cmpd_loc = file_db.get_key('db_compound', dflt='')
         #if cmpd_loc != '':
@@ -246,21 +246,21 @@ class AstonWindow(QtGui.QMainWindow):
             return
         from aston.peaks.PeakReader import read_peaks
         read_peaks(self.obj_tab.db, str(fname))
-        self.plotData(updateBounds=False)
+        self.plot_data(updateBounds=False)
 
     def set_color_scheme(self):
         v = self.plotter.setColorScheme(self.sender().data())
         self.obj_tab.db.set_key('color_scheme', v)
-        self.plotData(updateBounds=False)
+        self.plot_data(updateBounds=False)
 
     def set_legend(self):
         self.plotter.legend = self.ui.actionLegend.isChecked()
-        self.plotData(updateBounds=False)
+        self.plot_data(updateBounds=False)
 
     def set_graph_style(self):
         v = self.plotter.setStyle(self.sender().data())
         self.obj_tab.db.set_key('graph_style', v)
-        self.plotData()
+        self.plot_data()
 
     def exportChromatogram(self):
         fopts = tr('PNG Image (*.png);;PGF Image (*.pgf);;' + \
@@ -324,8 +324,8 @@ class AstonWindow(QtGui.QMainWindow):
             f.write(self.obj_tab.items_as_csv(sel))
 
     def get_f_opts(self, f):
-        gf = lambda k, df: float(self.obj_tab.db.get_key(k, dflt=str(df)))
-        gv = lambda k, df: str(self.obj_tab.db.get_key(k, dflt=str(df)))
+        gf = lambda k, df: float(self.settings.get_key(k, dflt=str(df)))
+        gv = lambda k, df: str(self.settings.get_key(k, dflt=str(df)))
         p = {}
         fname = f.__name__
         if fname == 'simple_peak_find':
@@ -338,7 +338,7 @@ class AstonWindow(QtGui.QMainWindow):
             p['min_snr'] = gf('peakfind_wavelet_minsnr', 1)
             p['assume_sig'] = gf('peakfind_wavelet_asssig', 4)
         elif fname == 'event_peak_find':
-            p['adjust_times'] = gv('peakfind_event_adjust', 'F') == 'T'
+            p['adjust_times'] = gv('peakfind_event_adjust', False)
         elif fname == 'leastsq_integrate':
             p['f'] = gv('integrate_leastsq_f', 'gaussian')
         elif fname == 'periodic_integrate':
@@ -349,9 +349,14 @@ class AstonWindow(QtGui.QMainWindow):
     def find_peaks(self, tss, dt, isomode=False):
         submnu = self.ui.actionPeak_Finder.menu().children()
         opt = [i for i in submnu if i.isChecked()][0].text()
-        pf_f = aston.ui.MenuOptions.peak_finders[opt]
+        pf_f = aston.qtgui.MenuOptions.peak_finders[opt]
         pf_fopts = self.get_f_opts(pf_f)
-        mp = self.obj_tab.db.get_key('multiprocessing', dflt=True)
+        if pf_f.__name__ == 'event_peak_find':
+            evts = []
+            for n in ('fia', 'fxn', 'refgas'):
+                evts += dt.events(n)
+            pf_fopts['events'] = evts
+        mp = self.settings.get_key('multiprocessing', dflt=True)
 
         if isomode:
             return find_peaks_iso(tss, pf_f, pf_fopts, dt, mp)
@@ -363,20 +368,23 @@ class AstonWindow(QtGui.QMainWindow):
         opt = [i for i in submnu if i.isChecked()][0].text()
         int_f = aston.qtgui.MenuOptions.integrators[opt]
         int_fopts = self.get_f_opts(int_f)
-        mp = False #self.obj_tab.db.get_key('multiprocessing', dflt=True)
+        mp = self.settings.get_key('multiprocessing', dflt=True)
 
         return integrate_peaks(tss, found_peaks, int_f, int_fopts, isomode, mp)
 
     def integrate(self):
-        dt = self.obj_tab.active_file()
+        plot = self.pal_tab.active_plot()
 
         isomode = self.ui.actionTop_File_All_Isotopic.isChecked()
         if self.ui.actionTop_Trace.isChecked():
-            tss = dt.active_traces(n=0)
-        elif self.ui.actionTop_File_Vis_Traces.isChecked():
-            tss = dt.active_traces()
-        elif self.ui.actionTop_File_All_Traces.isChecked() or isomode:
-            tss = dt.active_traces(all_tr=True)
+            tss = plot.trace()
+        else:
+            tss = []
+        #TODO: all traces in palette
+        #elif self.ui.actionTop_File_Vis_Traces.isChecked():
+        #    tss = dt.active_traces()
+        #elif self.ui.actionTop_File_All_Traces.isChecked() or isomode:
+        #    tss = dt.active_traces(all_tr=True)
 
         if isomode:
             found_peaks = self.find_peaks_iso(tss, dt)
@@ -384,10 +392,10 @@ class AstonWindow(QtGui.QMainWindow):
             found_peaks = self.find_peaks(tss, dt)
         mrg_pks = self.integrate_peaks(tss, found_peaks, isomode)
 
-        with dt.db:
-            dt.children += mrg_pks
-        dt.info.del_items('s-peaks')
-        self.plotData(updateBounds=False)
+        #with dt.db:
+        #    dt.children += mrg_pks
+        #dt.info.del_items('s-peaks')
+        self.plot_data(updateBounds=False)
 
     def showFilterWindow(self):
         if self.obj_tab.active_file() is not None:
@@ -400,17 +408,17 @@ class AstonWindow(QtGui.QMainWindow):
         """
         for dt in self.obj_tab.returnSelFiles('file'):
             dt.info.del_items('t-')
-        self.plotData()
+        self.plot_data()
 
-    def plotData(self, **kwargs):
+    def plot_data(self, **kwargs):
         plots = []
         for pr in self.pal_tab._children:
-            plots += [t for t in pr.plots if t.vis > 0]
+            plots += [t for t in pr.plots if t.vis > 0 and t.is_valid]
 
         if 'updateBounds' in kwargs:
-            self.plotter.plotData(plots, kwargs['updateBounds'])
+            self.plotter.plot_data(plots, kwargs['updateBounds'])
         else:
-            self.plotter.plotData(plots)
+            self.plotter.plot_data(plots)
 
     def updateSearch(self, text):
         """

@@ -7,6 +7,7 @@ from aston.resources import cache
 from aston.database import Base, JSONDict
 from aston.database.File import Run
 from aston.database.Peak import DBPeak
+from aston.database.User import Group
 from aston.trace.Trace import AstonSeries
 from aston.trace.Parser import parse_ion_string, tokens
 from aston.trace.MathFrames import molmz, mzminus, basemz
@@ -15,11 +16,12 @@ from aston.trace.MathFrames import molmz, mzminus, basemz
 class Palette(Base):
     __tablename__ = 'palettes'
     _palette_id = Column(Integer, primary_key=True)
-    _group_id = Column(Integer)
+    _group_id = Column(Integer, ForeignKey('groups._group_id'))
+    group = relationship(Group)
     name = Column(Unicode(64))
     runs = relationship('PaletteRun', backref='palette')
     style = Column(JSONDict)  # TODO: include bounds in style?
-    columns = Column(UnicodeText)
+    columns = Column(UnicodeText, default=u'name,vis,style,color')
 
 
 class PaletteRun(Base):
@@ -58,7 +60,7 @@ class PaletteRun(Base):
         elif istr in child_plots or istr in traces_2d:
             source = istr
             istr = 'tic'
-        elif istr in ['tic', 'x', ''] and 'fid' in child_plots:
+        elif istr in {'tic', 'x', ''} and 'fid' in child_plots:
             source = 'fid'
         elif guess:
             # still don't have a source; assume it's from the 2d traces
@@ -125,7 +127,8 @@ class PaletteRun(Base):
             #p0 = [y[0], 0]
             #errfunc = lambda p, x, y: p[0] + p[1] * x - y
             #try:
-            #    p, succ = leastsq(errfunc, p0, args=(np.array(x), np.array(y)))
+            #    p, succ = leastsq(errfunc, p0, args=(np.array(x), \
+            #                                         np.array(y)))
             #except:
             #    p = p0
             #sim_y = np.array(errfunc(p, t, np.zeros(len(t))))
@@ -143,7 +146,10 @@ class PaletteRun(Base):
             else:
                 tol = 0.5
 
-            return df.trace(istr, tol, twin=twin)
+            try:
+                return df.trace(istr, tol, twin=twin)
+            except ValueError:
+                return None
 
 
 class Plot(Base):
@@ -159,6 +165,7 @@ class Plot(Base):
     x_scale = Column(Float, default=1)
     y_offset = Column(Float, default=0)
     y_scale = Column(Float, default=1)
+    is_valid = True
 
     @property
     def _parent(self):
@@ -199,10 +206,16 @@ class Plot(Base):
         return self.paletterun.datafile(self.source).data
 
     def trace(self, twin=None):
-        #TODO: transform twin in native coordinates
         # get a trace given my name
         tr_resolver = self.paletterun.trace
         trace = parse_ion_string(self.name.lower(), tr_resolver, twin)
+
+        if trace is None:
+            self.is_valid = False
+            return None
+        else:
+            self.is_valid = True
+
         # offset and scale trace
         trace = trace * self.y_scale + self.y_offset
         if type(trace) is AstonSeries:
@@ -220,5 +233,8 @@ class Plot(Base):
             pass
 
     def plot(self, ax, style, color, twin=None):
-        #TODO: need to pass color info on?
-        self.trace(twin).plot(ax=ax, style=style, color=color)
+        trace = self.trace(twin)
+        if trace is None:
+            return
+        label = self.paletterun.run.name + ' ' + self.name
+        self.trace(twin).plot(ax=ax, style=style, color=color, label=label)

@@ -2,9 +2,11 @@ import os
 import os.path as op
 from aston.tracefile.Common import file_type, tfclasses
 from aston.database.File import Project, Run, Analysis
+from aston.database.Palette import Palette
+from aston.database.User import User, Group
 
 
-def read_directory(path, db):
+def read_directory(path, db, group=None):
     #TODO: update with group also for permissions support
     ftype_to_cls = {tf.__name__: tf for tf in tfclasses()}
 
@@ -93,14 +95,20 @@ def add_analysis(db, projname, projpath, runname, tf):
         if 'name' in info:
             run.name = info['name']
             del info['name']
-        if run.other is not None:
-            run.other.update(info)
+        if run.info is not None:
+            run.info.update(info)
         else:
-            run.other = info
+            run.info = info
 
 
-def setup_db(db):
-    from aston.database.Palette import Palette
-    db.add(Palette(name='Default', columns='["name"]'))
-    db.commit()
-    db.flush()
+def simple_auth(db):
+    s = 'SELECT 1 FROM groups WHERE groupname = ""'
+    if db.execute(s).scalar() is None:
+        def_group = Group(groupname='')
+        db.add(def_group)
+        db.add(User(username='', groups=[def_group], prefs={}))
+        db.add(Palette(name='', group=def_group))
+        db.commit()
+    else:
+        def_group = db.query(Group).filter_by(groupname='').first()
+    return def_group

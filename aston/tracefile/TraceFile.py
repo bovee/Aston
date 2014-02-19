@@ -48,23 +48,24 @@ class TraceFile(object):
     def total_trace(self, twin=None):
         return self.data.trace(twin=twin)
 
-    def plot(self, name='', ax=None):
-        if ax is None:
-            import matplotlib.pyplot as plt
-            ax = plt.gca()
+    #TODO: should this code be kept? (needs to be improved, if so)
+    #def plot(self, name='', ax=None):
+    #    if ax is None:
+    #        import matplotlib.pyplot as plt
+    #        ax = plt.gca()
 
-        for t in self.traces:
-            if t.startswith('#'):
-                #self.trace(t[1:]).plot(ax=ax)
-                self.trace('').plot(ax=ax)
-            elif t.startswith('*'):
-                #TODO: plot events
-                pass
-            else:
-                self.trace(t).plot(ax=ax)
+    #    for t in self.traces:
+    #        if t.startswith('#'):
+    #            #self.trace(t[1:]).plot(ax=ax)
+    #            self.trace('').plot(ax=ax)
+    #        elif t.startswith('*'):
+    #            #TODO: plot events
+    #            pass
+    #        else:
+    #            self.trace(t).plot(ax=ax)
 
-        #TODO: colors?
-        #TODO: plot 2d/colors
+    #    #TODO: colors?
+    #    #TODO: plot 2d/colors
 
     def trace(self, name='', tol=0.5, twin=None):
         if isinstance(name, (int, float, np.float32, np.float64)):

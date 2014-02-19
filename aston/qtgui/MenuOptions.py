@@ -3,22 +3,22 @@ from __future__ import unicode_literals
 from collections import OrderedDict
 from aston.resources import tr
 import aston.peaks.Integrators as ami
-#import aston.peaks.PeakFinding as ampf
+import aston.peaks.PeakFinding as ampf
 
 
 peak_finders = OrderedDict()
-#peak_finders[tr('Simple')] = ampf.simple_peak_find
-#peak_finders[tr('StatSlope')] = ampf.stat_slope_peak_find
-#peak_finders[tr('Wavelet')] = ampf.wavelet_peak_find
-#peak_finders[tr('Event')] = ampf.event_peak_find
+peak_finders[tr('Simple')] = ampf.simple_peak_find
+peak_finders[tr('StatSlope')] = ampf.stat_slope_peak_find
+peak_finders[tr('Wavelet')] = ampf.wavelet_peak_find
+peak_finders[tr('Event')] = ampf.event_peak_find
+#peak_finders[tr('Periodic')] = ampf.periodic_peak_find
 
 integrators = OrderedDict()
-#integrators[tr('Overlap')] = ami.simple_integrate
-integrators[tr('Constant Background')] = ami.constant_bl_integrate
-#integrators[tr('Periodic')] = ami.periodic_integrate
 integrators[tr('Drop')] = ami.drop_integrate
-#integrators[tr('LeastSq')] = ami.leastsq_integrate
+integrators[tr('Constant Background')] = ami.constant_bl_integrate
+#integrators[tr('Least Squares')] = ami.leastsq_integrate
 
+#TODO: keys and values should be flipped here so we don't need to in Fields.py
 peak_models = OrderedDict()
 peak_models[tr('None')] = None
 peak_models[tr('Bigaussian')] = 'bigaussian'

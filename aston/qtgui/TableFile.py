@@ -27,7 +27,6 @@ import json
 from collections import OrderedDict
 from PyQt4 import QtGui, QtCore
 from aston.resources import resfile
-from aston.qtgui.QuantDialog import QuantDialog
 from aston.qtgui.Fields import aston_fields, aston_groups
 from aston.database.File import Project, Run, Analysis
 from aston.qtgui.TableModel import TableModel
@@ -42,7 +41,6 @@ class FileTreeModel(TableModel):
         super(FileTreeModel, self).__init__(database, tree_view, \
                                             master_window, *args)
 
-        self.beginResetModel()
         #TODO: load custom fields from the database
         self.fields = ['name', 'sel']
 
@@ -54,7 +52,7 @@ class FileTreeModel(TableModel):
         else:
             q = self.db.query(Run)
             self._children += q.filter_by(_project_id=prj._project_id).all()
-        self.endResetModel()
+        self.reset()
 
         ##set up selections
         #tree_view.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
@@ -165,7 +163,7 @@ class FileTreeModel(TableModel):
                 if fld == 'name':
                     rslt = obj.name
                 else:
-                    rslt = obj.other.get(fld, '')
+                    rslt = obj.info.get(fld, '')
             elif role == QtCore.Qt.DecorationRole and index.column() == 0:
                 loc = resfile('aston/qtgui', 'icons/file.png')
                 rslt = QtGui.QIcon(loc)
@@ -204,7 +202,7 @@ class FileTreeModel(TableModel):
             self.db.merge(obj)
             self.db.commit()
         elif type(obj) is Run and col != 'sel':
-            obj.other[col] = data
+            obj.info[col] = data
             self.db.merge(obj)
             self.db.commit()
         self.dataChanged.emit(index, index)
@@ -272,8 +270,6 @@ class FileTreeModel(TableModel):
                                self.createSpec, fts, menu)
             self._add_menu_opt(self.tr('Merge Peaks'), \
                                self.merge_peaks, fts, menu)
-            self._add_menu_opt(self.tr('Quant'), \
-                               self.quant_peaks, fts, menu)
 
         fts = [s for s in sel if s.db_type in ('spectrum', 'peak')]
         if len(fts) > 0:
@@ -332,9 +328,6 @@ class FileTreeModel(TableModel):
                 obj.info['name'] = lib_spc.info['name']
                 obj.save_changes()
 
-    def quant_peaks(self, objs):
-        self.dlg = QuantDialog(self.master_window, objs)
-        self.dlg.show()
 
     #def makeMethod(self, objs):
     #    self.master_window.cmpd_tab.addObjects(None, objs)

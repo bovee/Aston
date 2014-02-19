@@ -11,9 +11,9 @@ peaks = Table('peaks', Base.metadata,
               Column('name', UnicodeText),
               Column('vis', Boolean, default=True),
               Column('color', Unicode(16), default=u'auto'),
-              Column('hints', JSONDict),
+              Column('info', JSONDict),
               Column('primary_mz', UnicodeText),
-              Column('trace', AstonFrameBinary),
+              Column('_trace', AstonFrameBinary),
               Column('baseline', AstonFrameBinary)
               )
 
@@ -21,7 +21,7 @@ peaks = Table('peaks', Base.metadata,
 #TODO: move them here somehow?
 
 DBPeak = mapper(Peak, peaks, properties={
-    'trace': deferred(peaks.c.trace),
+    '_trace': deferred(peaks.c._trace),
     'baseline': deferred(peaks.c.baseline),
 })
 

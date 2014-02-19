@@ -1,8 +1,8 @@
 import multiprocessing
 import functools
 import numpy as np
-#from aston.Math.Chromatograms import savitzkygolay
-from aston.trace.Math import movingaverage
+#from aston.trace.MathSeries import savitzkygolay
+from aston.trace.MathSeries import movingaverage
 
 
 def simple_peak_find(s, init_slope=500, start_slope=500, end_slope=200, \
@@ -72,7 +72,7 @@ def simple_peak_find(s, init_slope=500, start_slope=500, end_slope=200, \
             if (y[pk2] - y[pk]) / (t[pk2] - t[pk]) > start_slope:
                 # if the baseline beneath the peak is too large, let's
                 # keep going to the next dip
-                peak_list.append((t[pk], t[pk2], {}))
+                peak_list.append({'t0': t[pk], 't1': t[pk2]})
                 pk = pk2
             elif t[pk2] - t[pk] > max_peak_width:
                 # make sure that peak is short enough
@@ -91,7 +91,7 @@ def simple_peak_find(s, init_slope=500, start_slope=500, end_slope=200, \
         pk_hgt = max(y[pk:pk2]) - min(y[pk:pk2])
         if pk_hgt < min_peak_height:
             continue
-        peak_list.append((t[pk], t[pk2], {}))
+        peak_list.append({'t0': t[pk], 't1': t[pk2]})
     return peak_list
 
 
@@ -131,8 +131,8 @@ def wavelet_peak_find(s, min_snr=1., assume_sig=4., min_length=8.0,
         peak_amp = cwtm[l[0][pl], l[1][pl]] / (widths[l[0]][pl] ** 0.5)
         peak_t = t[l[1][pl]]
         t0, t1 = peak_t - assume_sig * peak_w, peak_t + assume_sig * peak_w
-        peak_list.append((t0, t1, {'x': peak_t, 'h': peak_amp, \
-                                   'w': peak_w}))
+        peak_list.append({'t0': t0, 't1': t1, 'x': peak_t, \
+                          'h': peak_amp, 'w': peak_w})
     return peak_list
 
 
@@ -176,7 +176,7 @@ def stat_slope_peak_find(ts):
                 break
 
         if pt0 is not None and pt1 is not None:
-            peak_list += [(pt0, pt1, {})]
+            peak_list += [{'t0': pt0, 't1': pt1}]
 
     return peak_list
 
@@ -189,7 +189,8 @@ def event_peak_find(s, events, adjust_times=False):
         #convert list of events into impulses that will correlate
         #with spikes in the derivative (such as peak beginning & ends)
         pulse_y = np.zeros(len(t))
-        for st_t, en_t, hints in events:
+        for hints in events:
+            st_t, en_t = hints['t0'], hints['t1']
             pulse_y[np.argmin(np.abs(t - st_t))] = 1.
             pulse_y[np.argmin(np.abs(t - en_t))] = -1.
         cor = np.correlate(pulse_y, np.gradient(y), mode='same')
@@ -199,7 +200,11 @@ def event_peak_find(s, events, adjust_times=False):
         cor[len(t) // 2:] *= np.logspace(1., 0., len(t) - len(t) // 2)
 
         shift = (len(t) // 2 - cor.argmax()) * (t[1] - t[0])
-        new_evts = [(t0 + shift, t1 + shift, {}) for t0, t1, _ in events]
+        new_evts = []
+        for hints in events:
+            new_hint = hints.copy()
+            new_hint['t0'], new_hint['t1'] = hint['t0'] + shift, hint['t1'] + shift
+            new_evts.append(new_hints)
         return new_evts
     else:
         return events
@@ -208,17 +213,11 @@ def event_peak_find(s, events, adjust_times=False):
 def _peak_find_mpwrap(ts, peak_find, fopts):
     tpks = peak_find(ts, **fopts)
     for pk in tpks:
-        pk[2]['pf'] = peak_find.__name__
+        pk['pf'] = peak_find.__name__
     return tpks
 
 
 def find_peaks(tss, pf_f, f_opts={}, dt=None, mp=False):
-    if pf_f == event_peak_find:
-        evts = []
-        for n in ('fia', 'fxn', 'refgas'):
-            evts += dt.events(n)
-        f_opts['events'] = evts
-
     f = functools.partial(_peak_find_mpwrap, peak_find=pf_f, \
                           fopts=f_opts)
     if mp:
@@ -232,12 +231,6 @@ def find_peaks(tss, pf_f, f_opts={}, dt=None, mp=False):
 
 
 def find_peaks_iso(tss, pf_f, f_opts={}, dt=None, mp=False):
-    if pf_f == event_peak_find:
-        evts = []
-        for n in ('fia', 'fxn', 'refgas'):
-            evts += dt.events(n)
-        f_opts['events'] = evts
-
     peaks_found = [_peak_find_mpwrap(tss[0], pf_f, f_opts)]
     for ts in tss[1:]:
         tpks = []

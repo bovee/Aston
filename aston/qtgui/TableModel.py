@@ -125,19 +125,20 @@ class TableModel(QtCore.QAbstractItemModel):
         else:
             return QtCore.QModelIndex()
 
-    def enable_combo_cols(self):
-        for c in aston_field_opts.keys():
-            if c in self.fields and c not in self.cDelegates:
+    def update_combo_cols(self):
+        set_delegate = self.tree_view.setItemDelegateForColumn
+        for c in aston_field_opts:
+            if c in self.fields and c not in self.combo_delegates:
                 #new column, need to add combo support in
-                opts = aston_field_opts[c]
-                self.cDelegates[c] = (self.fields.index(c), \
-                                      ComboDelegate(opts))
-                self.tree_view.setItemDelegateForColumn(*self.cDelegates[c])
-            elif c not in self.fields and c in self.cDelegates:
+                opts = aston_field_opts[c].values()
+                self.combo_delegates[c] = (self.fields.index(c), \
+                                           ComboDelegate(opts))
+                set_delegate(*self.combo_delegates[c])
+            elif c not in self.fields and c in self.combo_delegates:
                 #column has been deleted, remove from delegate list
-                self.tree_view.setItemDelegateForColumn( \
-                  self.cDelegates[c][0], self.tree_view.itemDelegate())
-                del self.cDelegates[c]
+                set_delegate(self.combo_delegates[c][0], \
+                             self.tree_view.itemDelegate())
+                del self.combo_delegates[c]
 
 
 class FilterModel(QtGui.QSortFilterProxyModel):

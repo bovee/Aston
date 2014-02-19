@@ -2,9 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg
-from matplotlib.path import Path
 from matplotlib.transforms import offset_copy
-from matplotlib.patches import PathPatch, Polygon
+from matplotlib.patches import Polygon
 from PyQt4.QtCore import Qt, QCoreApplication
 from aston.qtgui.PlotNavbar import AstonNavBar
 
@@ -29,6 +28,7 @@ class Plotter(object):
         self.plt = tfig.add_axes((0.05, 0.1, 0.9, 0.85), frame_on=False)
         self.plt.xaxis.set_ticks_position('none')
         self.plt.yaxis.set_ticks_position('none')
+        self.patches = []
         self.cb = None
 
         #TODO: find a way to make the axes fill the figure properly
@@ -93,7 +93,7 @@ class Plotter(object):
         l_ord = ['default', 'scaled', 'stacked', 'scaled stacked', '2d']
         return [self._styles[s] for s in l_ord]
 
-    def plotData(self, plots, updateBounds=True):
+    def plot_data(self, plots, updateBounds=True):
         if not updateBounds:
             bnds = self.plt.get_xlim(), self.plt.get_ylim()
 
@@ -111,16 +111,85 @@ class Plotter(object):
         #    self.plt.yaxis.set_ticks_position('none')
         #    self.cb = None
         #self.plt.figure.subplots_adjust(left=0.05, right=0.95)
-        #self.patches = {}
+        self.patches = []
 
         #plot all of the datafiles
         if len(plots) == 0:
             self.canvas.draw()
             return
-        #if '2d' in self._style:
-        #    self._plot2D(datafiles[0])
-        else:
-            self._plot(plots)
+
+        def desaturate(c, k=0):
+            """
+            Utility function to desaturate a color c by an amount k.
+            """
+            intensity = 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]
+            return [intensity * k + i * (1 - k) for i in c]
+
+        ## make up a factor to separate plots by
+        #if 'stacked' in self._style:
+        #    fts = datafiles[0].trace(datafiles[0].info['traces'].split(',')[0])
+        #    sc_factor = (max(fts.data[:, 0]) - min(fts.data[:, 0])) / 5.
+
+        ## count the number of traces that will be displayed
+        #trs = sum(1 for x in datafiles for _ in x.info['traces'].split(','))
+        #if trs < 6:
+        #    alpha = 0.75 - trs * 0.1
+        #else:
+        #    alpha = 0.15
+
+        #TODO: determine the number of axes to use
+        ls = {'solid': '-', 'dash': '--', 'dot': ':', 'dash-dot': '-.'}
+
+        #TODO: should be filtering out invalid plots before here
+        for pnum, plot in enumerate(plots):
+            #TODO: colors
+            if plot.style == 'auto':
+                #FIXME: style for auto needs to be drawn from somewhere
+                #FIXME: auto style could be "color strips"
+                plot.plot(style='-', color='k', ax=self.plt)
+            elif plot.style in ls:
+                plot.plot(style=ls[plot.style], color='k', ax=self.plt)
+                for pk in plot.peaks:
+                    pk.plot(ax=self.plt)
+            elif plot.style == 'heatmap':
+                plot.frame().plot(style='heatmap', ax=self.plt)
+            elif plot.style == 'colors':
+                plot.frame().plot(style='colors', ax=self.plt)
+
+            for pk in plot.peaks:
+                #TODO: send along facecolor and alpha
+                #facecolor=desaturate(c, 0.2), alpha=alpha, lw=0
+                if pk.vis:
+                    self.patches.append(pk.plot(ax=self.plt))
+
+        #        if 'scaled' in self._style:
+        #            #TODO: fails at negative chromatograms
+        #            trace -= min(trace)
+        #            trace /= max(trace)
+        #            trace *= 100
+        #        if 'stacked' in self._style:
+        #            trace += tnum * sc_factor
+        #        # stretch out the color spectrum if there are under 7
+        #        if trs > 7:
+        #            c = self._color(int(tnum % 7) / 6.0, 1)
+        #        elif trs == 1:
+        #            c = self._color(0, 1)
+        #        else:
+        #            c = self._color(int(tnum % trs) / float(trs - 1), 1)
+        #        ls = self._linestyle[int(np.floor((tnum % 28) / 7))]
+        #        nm = dt.info['name'].strip('_') + ' ' + ts.ions[0]
+        #        self.plt.plot(ts.times, trace, color=c, \
+        #          ls=ls, lw=1.2, label=nm)
+        #        tnum += 1
+
+        #add a legend and make it pretty
+        if self.legend:
+            leg = self.plt.legend(frameon=False)
+            clrs = [i.get_color() for i in leg.get_lines()]
+            for i, j in enumerate(clrs):
+                leg.get_texts()[i].set_color(j)
+            for i in leg.get_lines():
+                i.set_linestyle('')
 
         #update the view bounds in the navbar's history
         if updateBounds:
@@ -175,94 +244,6 @@ class Plotter(object):
 
         #update the canvas
         self.canvas.draw()
-
-    def _plot(self, plots):
-        """
-        Plots times series on the graph.
-        """
-        def desaturate(c, k=0):
-            """
-            Utility function to desaturate a color c by an amount k.
-            """
-            intensity = 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]
-            return [intensity * k + i * (1 - k) for i in c]
-
-        ## make up a factor to separate plots by
-        #if 'stacked' in self._style:
-        #    fts = datafiles[0].trace(datafiles[0].info['traces'].split(',')[0])
-        #    sc_factor = (max(fts.data[:, 0]) - min(fts.data[:, 0])) / 5.
-
-        ## count the number of traces that will be displayed
-        #trs = sum(1 for x in datafiles for _ in x.info['traces'].split(','))
-        #if trs < 6:
-        #    alpha = 0.75 - trs * 0.1
-        #else:
-        #    alpha = 0.15
-
-        #TODO: determine the number of axes to use
-        ls = {'solid': '-', 'dash': '--', 'dot': ':', 'dash-dot': '-.'}
-
-        for pnum, plot in enumerate(plots):
-            #TODO: colors
-            if plot.style == 'auto':
-                #FIXME: style for auto needs to be drawn from somewhere
-                #FIXME: auto style could be "color strips"
-                plot.plot(style='-', color='k', ax=self.plt)
-            elif plot.style in ls:
-                plot.plot(style=ls[plot.style], color='k', ax=self.plt)
-                for pk in plot.peaks:
-                    pk.plot(ax=self.plt)
-            elif plot.style == 'heatmap':
-                plot.frame().plot(style='heatmap', ax=self.plt)
-            elif plot.style == 'colors':
-                plot.frame().plot(style='colors', ax=self.plt)
-
-            for pk in plot.peaks:
-                pk.plot(ax=self.plt)
-        #        if 'scaled' in self._style:
-        #            #TODO: fails at negative chromatograms
-        #            trace -= min(trace)
-        #            trace /= max(trace)
-        #            trace *= 100
-        #        if 'stacked' in self._style:
-        #            trace += tnum * sc_factor
-        #        # stretch out the color spectrum if there are under 7
-        #        if trs > 7:
-        #            c = self._color(int(tnum % 7) / 6.0, 1)
-        #        elif trs == 1:
-        #            c = self._color(0, 1)
-        #        else:
-        #            c = self._color(int(tnum % trs) / float(trs - 1), 1)
-        #        ls = self._linestyle[int(np.floor((tnum % 28) / 7))]
-        #        nm = dt.info['name'].strip('_') + ' ' + ts.ions[0]
-        #        self.plt.plot(ts.times, trace, color=c, \
-        #          ls=ls, lw=1.2, label=nm)
-        #        tnum += 1
-
-        #        # plot peaks
-        #        for pk in dt.children_of_type('peak'):
-        #            #TODO: there has to be a better way to handle if
-        #            # the ion is a string or a float
-        #            #TODO: allow user to auto subtract out baseline
-        #            #if enabled, need to change Peak.contains too.
-        #            if ts.ions[0] in pk.data.ions or \
-        #              ts.ions[0] in [str(i) for i in pk.data.ions]:
-        #                try:
-        #                    ply = Path(pk.as_poly(float(ts.ions[0])))
-        #                except:
-        #                    ply = Path(pk.as_poly(ts.ions[0]))
-        #                self.patches[pk.db_id] = PathPatch(ply, \
-        #                  facecolor=desaturate(c, 0.2), alpha=alpha, lw=0)
-        #                self.plt.add_patch(self.patches[pk.db_id])
-
-        #add a legend and make it pretty
-        if self.legend:
-            leg = self.plt.legend(frameon=False)
-            clrs = [i.get_color() for i in leg.get_lines()]
-            for i, j in enumerate(clrs):
-                leg.get_texts()[i].set_color(j)
-            for i in leg.get_lines():
-                i.set_linestyle('')
 
     def _plot2D(self, dt):
         if dt.data is None:

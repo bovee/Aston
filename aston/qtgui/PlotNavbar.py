@@ -94,6 +94,11 @@ class AstonNavBar(NavigationToolbar2QTAgg):
             for pk in trace.peaks:
                 if pk.contains(event.xdata, event.ydata):
                     #delete peak and update table
+                    with self.parent.pal_tab.del_row(pk):
+                        pk.dbplot.peaks.remove(pk)
+                        self.parent.pal_tab.db.delete(pk)
+                        self.parent.pal_tab.db.commit()
+                    self.parent.plot_data(updateBounds=False)
                     break
         else:
             self.ev_time = time.time()
@@ -124,7 +129,7 @@ class AstonNavBar(NavigationToolbar2QTAgg):
                     pk.dbplot = trace
                 self.parent.pal_tab.db.add_all(pks)
                 self.parent.pal_tab.db.commit()
-            self.parent.plotData(updateBounds=False)
+            self.parent.plot_data(updateBounds=False)
 
         self._xypress = []
         self.release(event)
@@ -184,7 +189,7 @@ class AstonNavBar(NavigationToolbar2QTAgg):
         elif event.button == 3:
             dt.info['t-scale'] = str(self._xypress[0] * event.xdata)
             dt.info['t-yscale'] = str(self._xypress[1] * event.ydata)
-        self.parent.plotData(updateBounds=False)
+        self.parent.plot_data(updateBounds=False)
 
     def release_align(self, event):
         if self._xypress == []:
