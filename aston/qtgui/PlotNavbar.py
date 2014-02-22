@@ -2,7 +2,7 @@ import time
 from PyQt4 import QtGui
 from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg
 from aston.resources import resfile
-from aston.peaks.Integrators import merge_ions
+from aston.peaks.Integrators import merge_peaks_by_order
 
 
 class AstonNavBar(NavigationToolbar2QTAgg):
@@ -98,7 +98,7 @@ class AstonNavBar(NavigationToolbar2QTAgg):
                         pk.dbplot.peaks.remove(pk)
                         self.parent.pal_tab.db.delete(pk)
                         self.parent.pal_tab.db.commit()
-                    self.parent.plot_data(updateBounds=False)
+                    self.parent.plot_data(update_bounds=False)
                     break
         else:
             self.ev_time = time.time()
@@ -117,7 +117,7 @@ class AstonNavBar(NavigationToolbar2QTAgg):
                 tss = trace.subtraces('all', twin=(t0, t1))
                 pks_found = len(tss) * [[{'t0': t0, 't1': t1, 'pf': 'manual'}]]
                 pks = self.parent.integrate_peaks(tss, pks_found)
-                pks = merge_ions(pks)
+                pks = merge_peaks_by_order(pks)
             else:
                 ts = trace.trace(twin=(t0, t1))
                 pks_found = [[{'t0': t0, 't1': t1, 'y0': y0, 'y1': y1, \
@@ -129,7 +129,7 @@ class AstonNavBar(NavigationToolbar2QTAgg):
                     pk.dbplot = trace
                 self.parent.pal_tab.db.add_all(pks)
                 self.parent.pal_tab.db.commit()
-            self.parent.plot_data(updateBounds=False)
+            self.parent.plot_data(update_bounds=False)
 
         self._xypress = []
         self.release(event)
@@ -189,7 +189,7 @@ class AstonNavBar(NavigationToolbar2QTAgg):
         elif event.button == 3:
             dt.info['t-scale'] = str(self._xypress[0] * event.xdata)
             dt.info['t-yscale'] = str(self._xypress[1] * event.ydata)
-        self.parent.plot_data(updateBounds=False)
+        self.parent.plot_data(update_bounds=False)
 
     def release_align(self, event):
         if self._xypress == []:

@@ -25,13 +25,14 @@ class TableModel(QtCore.QAbstractItemModel):
         #tree_view.setModel(self)
 
         #set up proxy model
-        self.proxyMod = FilterModel()
-        self.proxyMod.setSourceModel(self)
-        self.proxyMod.setDynamicSortFilter(True)
-        self.proxyMod.setFilterKeyColumn(0)
-        self.proxyMod.setFilterCaseSensitivity(False)
-        tree_view.setModel(self.proxyMod)
+        self.proxy_mod = FilterModel()
+        self.proxy_mod.setSourceModel(self)
+        self.proxy_mod.setDynamicSortFilter(True)
+        self.proxy_mod.setFilterKeyColumn(0)
+        self.proxy_mod.setFilterCaseSensitivity(False)
+        tree_view.setModel(self.proxy_mod)
         tree_view.setSortingEnabled(True)
+        self.proxy_mod.sort(0, QtCore.Qt.AscendingOrder)
 
         ##deal with combo boxs in table
         #self.cDelegates = {}
@@ -130,7 +131,7 @@ class TableModel(QtCore.QAbstractItemModel):
         for c in aston_field_opts:
             if c in self.fields and c not in self.combo_delegates:
                 #new column, need to add combo support in
-                opts = aston_field_opts[c].values()
+                opts = list(aston_field_opts[c].values())
                 self.combo_delegates[c] = (self.fields.index(c), \
                                            ComboDelegate(opts))
                 set_delegate(*self.combo_delegates[c])

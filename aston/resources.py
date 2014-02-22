@@ -21,3 +21,22 @@ except ImportError:  # Python 2
 # translation function
 from PyQt4.QtCore import QObject
 tr = lambda s: QObject().trUtf8(s)
+
+
+def get_pref(key):
+    try:
+        import configparser
+    except ImportError:
+        import ConfigParser as configparser
+    cp = configparser.SafeConfigParser()
+    for cfg in (op.expanduser('~/.aston.ini'), './aston.ini'):
+        if op.exists(cfg):
+            cp.readfp(open(cfg))
+            break
+    else:
+        pass
+        #TODO: write out this file?
+    try:
+        return cp.get(key.split('.')[0], key.split('.')[1])
+    except:
+        return None

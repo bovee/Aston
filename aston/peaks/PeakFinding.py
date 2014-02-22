@@ -25,7 +25,7 @@ def simple_peak_find(s, init_slope=500, start_slope=500, end_slope=200, \
         yield buf
 
     #TODO: check these smoothing defaults
-    y, t = s.values, s.index.values.astype(float)
+    y, t = s.values, s.index.astype(float)
     smooth_y = movingaverage(y, 9)
     dxdt = np.gradient(smooth_y) / np.gradient(t)
     #dxdt = -savitzkygolay(ts, 5, 3, deriv=1).y / np.gradient(t)
@@ -201,10 +201,11 @@ def event_peak_find(s, events, adjust_times=False):
 
         shift = (len(t) // 2 - cor.argmax()) * (t[1] - t[0])
         new_evts = []
-        for hints in events:
+        for hint in events:
             new_hint = hints.copy()
-            new_hint['t0'], new_hint['t1'] = hint['t0'] + shift, hint['t1'] + shift
-            new_evts.append(new_hints)
+            new_hint['t0'] += shift
+            new_hint['t1'] += shift
+            new_evts.append(new_hint)
         return new_evts
     else:
         return events
@@ -217,7 +218,7 @@ def _peak_find_mpwrap(ts, peak_find, fopts):
     return tpks
 
 
-def find_peaks(tss, pf_f, f_opts={}, dt=None, mp=False):
+def find_peaks(tss, pf_f, f_opts={}, mp=False):
     f = functools.partial(_peak_find_mpwrap, peak_find=pf_f, \
                           fopts=f_opts)
     if mp:
@@ -230,7 +231,7 @@ def find_peaks(tss, pf_f, f_opts={}, dt=None, mp=False):
     return peaks_found
 
 
-def find_peaks_iso(tss, pf_f, f_opts={}, dt=None, mp=False):
+def find_peaks_as_first(tss, pf_f, f_opts={}, mp=False):
     peaks_found = [_peak_find_mpwrap(tss[0], pf_f, f_opts)]
     for ts in tss[1:]:
         tpks = []
@@ -239,11 +240,13 @@ def find_peaks_iso(tss, pf_f, f_opts={}, dt=None, mp=False):
 
             # move peak times over to correspond to first integrated
             # signal: similar to, but different from Ricci et al '94
-            old_pk_ts = tss[0].twin((p[0], p[1]))
-            old_t = old_pk_ts.times[old_pk_ts.y.argmax()]
-            new_pk_ts = ts.twin((p[0], p[1]))
-            off = new_pk_ts.times[new_pk_ts.y.argmax()] - old_t
-            new_p = (p[0] + off, p[1] + off, p[2])
+            old_pk_ts = tss[0].twin((p['t0'], p['t1']))
+            old_t = old_pk_ts.index[old_pk_ts.values.argmax()]
+            new_pk_ts = ts.twin((p['t0'], p['t1']))
+            off = new_pk_ts.index[new_pk_ts.values.argmax()] - old_t
+            new_p = p.copy()
+            new_p['t0'] = p['t0'] + off
+            new_p['t1'] = p['t1'] + off
             tpks.append(new_p)
         peaks_found.append(tpks)
     return peaks_found

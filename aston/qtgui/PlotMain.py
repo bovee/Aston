@@ -93,8 +93,8 @@ class Plotter(object):
         l_ord = ['default', 'scaled', 'stacked', 'scaled stacked', '2d']
         return [self._styles[s] for s in l_ord]
 
-    def plot_data(self, plots, updateBounds=True):
-        if not updateBounds:
+    def plot_data(self, plots, update_bounds=True):
+        if not update_bounds:
             bnds = self.plt.get_xlim(), self.plt.get_ylim()
 
         # clean up anything on the graph already
@@ -192,7 +192,7 @@ class Plotter(object):
                 i.set_linestyle('')
 
         #update the view bounds in the navbar's history
-        if updateBounds:
+        if update_bounds:
             self.navbar._views.clear()
             self.navbar._positions.clear()
             self.navbar.push_current()

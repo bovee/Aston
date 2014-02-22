@@ -20,7 +20,6 @@ aston_fields['sel'] = tr('Sel?')
 aston_fields['vis'] = tr('Vis?')
 aston_fields['color'] = tr('Color')
 aston_fields['style'] = tr('Style')
-aston_fields['traces'] = tr('Traces')
 
 # method information
 aston_fields['m-name'] = tr('Method Name')  # e.g. BPROT. strip out *.M suffix
@@ -44,7 +43,6 @@ aston_fields['m-slv-D-per'] = tr('% Solvent D')  # type = time-dict
 
 # detector information
 aston_fields['d-name'] = tr('Detector Type')
-aston_fields['d-uv'] = tr('UV Wavelengths')
 aston_fields['d-ms-int-mode'] = tr('MS Interface Mode')
 aston_fields['d-y-units'] = tr('Units')
 
@@ -61,12 +59,13 @@ aston_fields['r-inst'] = tr('Instrument')
 aston_fields['r-d18o-std'] = tr('Reference δ¹⁸O Value (‰)')
 aston_fields['r-d13c-std'] = tr('Reference δ¹³C Value (‰)')
 aston_fields['r-file-type'] = tr('File Type')
-aston_fields['r-scans'] = tr('# of Scans')
-aston_fields['r-mzs'] = tr("# of m/z's or Wavelengths")
 aston_fields['r-st-time'] = tr('Start Time (min)')
 aston_fields['r-en-time'] = tr('End Time (min)')
 
 # information generated in the program ("statistics")
+aston_fields['s-scans'] = tr('# of Scans')
+aston_fields['s-mzs'] = tr("# of MZ's/Wavelengths")
+aston_fields['s-mz-names'] = tr("MZ/Wavelength Names")
 aston_fields['s-peaks'] = tr('# of Peaks')
 aston_fields['s-spectra'] = tr('# of Spectra')
 aston_fields['s-peaks-st'] = tr('First Peak RT (min)')
@@ -110,7 +109,7 @@ aston_field_opts['style']['heatmap'] = tr('Heatmap')
 aston_field_opts['style']['colors'] = tr('Colors')
 
 aston_field_opts['r-type'] = OrderedDict()
-aston_field_opts['r-type']['none'] = tr('None')
+aston_field_opts['r-type'][''] = tr('None')
 aston_field_opts['r-type']['sample'] = tr('Sample')
 aston_field_opts['r-type']['std'] = tr('Standard')
 aston_field_opts['r-type']['calib'] = tr('Calibration Curve')
@@ -118,17 +117,17 @@ aston_field_opts['r-type']['negctrl'] = tr('Negative Control')
 aston_field_opts['r-type']['posctrl'] = tr('Positive Control')
 
 aston_field_opts['s-smooth'] = OrderedDict()
-aston_field_opts['s-smooth']['none'] = tr('None')
+aston_field_opts['s-smooth'][''] = tr('None')
 aston_field_opts['s-smooth']['moving'] = tr('Moving Average')
 aston_field_opts['s-smooth']['savitzky'] = tr('Savitzky-Golay')
 
 aston_field_opts['m-type'] = OrderedDict()
-aston_field_opts['m-type']['none'] = tr('None')
+aston_field_opts['m-type'][''] = tr('None')
 aston_field_opts['m-type']['hplc'] = tr('HPLC')
 aston_field_opts['m-type']['gc'] = tr('GC')
 
 aston_field_opts['d-name'] = OrderedDict()
-aston_field_opts['d-name']['none'] = tr('None')
+aston_field_opts['d-name'][''] = tr('None')
 aston_field_opts['d-name']['uv-dad'] = tr('DAD')
 aston_field_opts['d-name']['uv-mwd'] = tr('MWD')
 aston_field_opts['d-name']['ms-quad'] = tr('Quadrupole')
@@ -141,7 +140,7 @@ for k in peak_models:
     aston_field_opts['p-model'][peak_models[k]] = k
 
 aston_field_opts['p-type'] = OrderedDict()
-aston_field_opts['p-type']['none'] = tr('None')
+aston_field_opts['p-type'][''] = tr('None')
 aston_field_opts['p-type']['sample'] = tr('Sample')
 aston_field_opts['p-type']['std'] = tr('Standard')
 aston_field_opts['p-type']['isostd'] = tr('Isotope Standard')

@@ -1,49 +1,35 @@
 #from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy import Table, Column, Integer, ForeignKey, UnicodeText, \
                        Boolean, Unicode
-from sqlalchemy.orm import mapper, deferred
+from sqlalchemy.orm import mapper, deferred, relationship
 from aston.database import Base, JSONDict, AstonFrameBinary
-from aston.peaks.Peak import Peak
+from aston.peaks.Peak import Peak, PeakComponent
+
+#parent and children properties declared in aston.peak.Peak
+#TODO: move them here somehow?
+
+pkcomponents = Table('peakcomponents', Base.metadata,
+                     Column('_peakcomponent_id', Integer, primary_key=True),
+                     Column('_peak_id', Integer, ForeignKey('peaks._peak_id')),
+                     Column('info', JSONDict),
+                     Column('_trace', AstonFrameBinary),
+                     Column('baseline', AstonFrameBinary)
+                     )
+
+DBPeakComponent = mapper(PeakComponent, pkcomponents, properties={
+    '_trace': deferred(pkcomponents.c._trace),
+    'baseline': deferred(pkcomponents.c.baseline),
+})
 
 peaks = Table('peaks', Base.metadata,
               Column('_peak_id', Integer, primary_key=True),
               Column('_plot_id', Integer, ForeignKey('plots._plot_id')),
               Column('name', UnicodeText),
+              Column('info', JSONDict),
               Column('vis', Boolean, default=True),
               Column('color', Unicode(16), default=u'auto'),
-              Column('info', JSONDict),
-              Column('primary_mz', UnicodeText),
-              Column('_trace', AstonFrameBinary),
-              Column('baseline', AstonFrameBinary)
               )
 
-#parent and children properties declared in aston.peak.Peak
-#TODO: move them here somehow?
-
 DBPeak = mapper(Peak, peaks, properties={
-    '_trace': deferred(peaks.c._trace),
-    'baseline': deferred(peaks.c.baseline),
+    'components': relationship(DBPeakComponent),
 })
-
-#mapper(Peak, peaks, properties={
-#})
-
-#@property
-#def parent(self):
-#    return self.plot
-
-#children = []
-
-#def set_peak(self, trace, baseline=None):
-#    """
-#    Store data in a newly created DBPeak.
-#    """
-#    self.trace = trace.reset_index().values
-#    self.mz = ','.join(str(i) for i in trace.columns)
-#    if baseline is not None:
-#        self.baseline = baseline.reset_index().values
-
-#def contains(self, x, y):
-#    x = (x - self.plot.x_offset) / self.plot.x_scale
-#    y = (y - self.plot.y_offset) / self.plot.y_scale
-#    return super(DBPeak, self).contains(x, y)

@@ -31,6 +31,7 @@ from aston.qtgui.Fields import aston_fields, aston_groups, aston_field_opts
 from aston.qtgui.TableModel import TableModel
 from aston.database.Peak import Peak
 from aston.database.Palette import Palette, PaletteRun, Plot
+from aston.calibrations.Isotopes import calc_carbon_isotopes
 
 
 class PaletteTreeModel(TableModel):
@@ -50,19 +51,20 @@ class PaletteTreeModel(TableModel):
                                      enabled=True).all()
         self.reset()
 
-        ##set up selections
-        #tree_view.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
-        #tree_view.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
+        #set up selections
+        tree_view.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
+        tree_view.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
         ##TODO: this works, but needs to be detached when opening a new folder
-        #tree_view.selectionModel().currentChanged.connect(self.itemSelected)
-        ##tree_view.clicked.connect(self.itemSelected)
+        tree_view.selectionModel().currentChanged.connect(self.item_selected)
+        #tree_view.clicked.connect(self.item_selected)
 
-        ##set up key shortcuts
-        #delAc = QtGui.QAction("Delete", tree_view, \
-        #    shortcut=QtCore.Qt.Key_Backspace, triggered=self.delItemKey)
-        #delAc = QtGui.QAction("Delete", tree_view, \
-        #    shortcut=QtCore.Qt.Key_Delete, triggered=self.delItemKey)
-        #tree_view.addAction(delAc)
+        #set up key shortcuts
+        del_ac = QtGui.QAction('Delete', tree_view, \
+            shortcut=QtCore.Qt.Key_Backspace, triggered=self.del_item)
+        tree_view.addAction(del_ac)
+        del_ac = QtGui.QAction('Delete', tree_view, \
+            shortcut=QtCore.Qt.Key_Delete, triggered=self.del_item)
+        tree_view.addAction(del_ac)
 
         ##set up right-clicking
         tree_view.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
@@ -97,7 +99,8 @@ class PaletteTreeModel(TableModel):
 
     def dragMoveEvent(self, event):
         #TODO: files shouldn't be able to be under peaks
-        #index = self.proxyMod.mapToSource(self.tree_view.indexAt(event.pos()))
+        #prox_idx = self.tree_view.indexAt(event.pos())
+        #index = self.proxy_mod.mapToSource(prox_idx)
         if event.mimeData().hasFormat('application/x-aston-file'):
             QtGui.QTreeView.dragMoveEvent(self.tree_view, event)
         else:
@@ -184,10 +187,26 @@ class PaletteTreeModel(TableModel):
                     rslt = obj.name
                 elif fld == 'color':
                     rslt = aston_field_opts[fld][obj.color]
-                elif fld in {'p-type', 'p-model'}:
-                    rslt = aston_field_opts[fld][obj.info.get(fld, 'none')]
+                elif fld in {'p-model'}:
+                    v = obj.components[0].info.get(fld, None)
+                    if v is not None:
+                        rslt = aston_field_opts[fld][v]
+                elif fld in {'p-type'}:
+                    rslt = aston_field_opts[fld][obj.info.get(fld, '')]
+                    pks = obj.dbplot.peaks
+                    d13c = obj.dbplot.paletterun.run.info.get('d13c_std')
+                    d18o = obj.dbplot.paletterun.run.info.get('d18o_std')
+                    if d13c is not None:
+                        calc_carbon_isotopes(pks, d13cstd=d13c, d18ostd=d18o)
+                    for pk in pks:
+                        self.db.merge(pk)
                 elif fld in {'p-model-fit'}:
-                    rslt = obj.info['p-model-fit']
+                    fmt = lambda x: '{:.3f}'.format(x)
+                    rslt = ','.join(fmt(c.info.get('p-model-fit', '')) \
+                                    for c in obj.components \
+                                    if c.info.get('p-model') is not None)
+                elif fld in {'s-mz-names'}:
+                    rslt = ','.join(str(c._trace.name) for c in obj.components)
                 elif fld in {'p-area', 'p-length', 'p-height', 'p-width', \
                              'p-pwhm', 'p-time'}:
                     rslt = str(getattr(obj, fld[2:])())
@@ -226,6 +245,9 @@ class PaletteTreeModel(TableModel):
         except:  # python 3
             data = str(data)
         col = self.fields[index.column()].lower()
+        if col in aston_field_opts:
+            rev_dict = {str(v): k for k, v \
+                        in aston_field_opts[col].items()}
 
         if col == 'vis':
             obj.vis = data == u'2'
@@ -233,13 +255,14 @@ class PaletteTreeModel(TableModel):
             obj.name = data
             #TODO: split apart commas to make mulitple plots
         elif col in {'style', 'color'}:
-            rev_dict = {str(v): k for k, v \
-                        in aston_field_opts[col].items()}
             setattr(obj, col, rev_dict[data])
-        elif col == 'p-model':
-            rev_dict = {str(v): k for k, v \
-                        in aston_field_opts[col].items()}
-            obj.refit(rev_dict[data])
+        elif col in {'p-type'}:
+            obj.info[col] = rev_dict[data]
+
+        elif col in {'p-model'}:
+            for c in obj.components:
+                c.refit(rev_dict[data])
+                self.db.merge(c)
         #else:
         #    obj.info[col] = data
 
@@ -267,8 +290,9 @@ class PaletteTreeModel(TableModel):
         if col == 'vis' and isinstance(obj, (Plot, Peak)):
             dflags |= QtCore.Qt.ItemIsUserCheckable
         elif col.startswith('p-') and not isinstance(obj, Peak):
-            if col in {'p-model', 'p-type'}:
-                dflags |= QtCore.Qt.ItemIsEditable
+            pass
+            #if col in {'p-model', 'p-type'}:
+            #    dflags |= QtCore.Qt.ItemIsEditable
         else:
             dflags |= QtCore.Qt.ItemIsEditable
         return dflags
@@ -295,6 +319,7 @@ class PaletteTreeModel(TableModel):
                 self.master_window.plot_data()
                 break
         self.db.commit()
+        self.update_combo_cols()
 
     def add_plot(self, objs):
         #TODO: update plot here?
@@ -320,30 +345,32 @@ class PaletteTreeModel(TableModel):
                 break
         self.db.commit()
 
-    def itemSelected(self):
+    def item_selected(self):
+        pass
         #TODO: update an info window?
+        #TODO: highlight peaks on main plot
         #remove the current spectrum
-        self.master_window.plotter.clear_highlight()
+        #self.master_window.plotter.clear_highlight()
 
-        #remove all of the peak patches from the
-        #main plot and add new ones in
-        sel = self.returnSelObj()
-        self.master_window.specplotter.libscans = []
-        if sel is not None:
-            if sel.db_type == 'file':
-            #    self.master_window.plotter.clear_peaks()
-            #    if sel.getInfo('vis') == 'y':
-            #        self.master_window.plotter.add_peaks( \
-            #            sel.getAllChildren('peak'))
-                pass
-            elif sel.db_type == 'peak':
-                if sel.parent_of_type('file').info['vis'] == 'y':
-                    self.master_window.plotter.draw_highlight_peak(sel)
-            elif sel.db_type == 'spectrum':
-                self.master_window.specplotter.libscans = [sel.data]
-                self.master_window.specplotter.plot()
-        objs_sel = len(self.returnSelObjs())
-        self.master_window.show_status(str(objs_sel) + ' items selected')
+        ##remove all of the peak patches from the
+        ##main plot and add new ones in
+        #sel = self.return_sel_obj()
+        #self.master_window.specplotter.libscans = []
+        #if sel is not None:
+        #    if sel.db_type == 'file':
+        #    #    self.master_window.plotter.clear_peaks()
+        #    #    if sel.getInfo('vis') == 'y':
+        #    #        self.master_window.plotter.add_peaks( \
+        #    #            sel.getAllChildren('peak'))
+        #        pass
+        #    elif sel.db_type == 'peak':
+        #        if sel.parent_of_type('file').info['vis'] == 'y':
+        #            self.master_window.plotter.draw_highlight_peak(sel)
+        #    elif sel.db_type == 'spectrum':
+        #        self.master_window.specplotter.libscans = [sel.data]
+        #        self.master_window.specplotter.plot()
+        #objs_sel = len(self.return_sel_objs())
+        #self.master_window.show_status(str(objs_sel) + ' items selected')
 
     def cols_changed(self, *_):  # don't care about the args
         flds = [self.fields[self.tree_view.header().logicalIndex(fld)] \
@@ -353,16 +380,16 @@ class PaletteTreeModel(TableModel):
         self.db.commit()
 
     def click_main(self, point):
-        index = self.proxyMod.mapToSource(self.tree_view.indexAt(point))
+        #index = self.proxy_mod.mapToSource(self.tree_view.indexAt(point))
         menu = QtGui.QMenu(self.tree_view)
-        #sel = self.returnSelFiles()
+        sel = self.return_sel_objs()
 
         def add_menu_opt(name, func, objs, menu):
             ac = menu.addAction(name, self.click_handler)
             ac.setData((func, objs))
 
-        fts = [index.internalPointer()]
-        if type(fts[0]) is PaletteRun:
+        fts = [s for s in sel if isinstance(s, PaletteRun)]
+        if len(fts) > 0:
             add_menu_opt(self.tr('Create Plot'),
                          self.add_plot, fts, menu)
 
@@ -385,11 +412,10 @@ class PaletteTreeModel(TableModel):
         ##    self._add_menu_opt(self.tr('Copy Method'), \
         ##                       self.makeMethod, fts, menu)
 
-        ##Things we can do with everything
-        #if len(sel) > 0:
-        #    self._add_menu_opt(self.tr('Delete Items'), \
-        #                       self.delete_objects, sel, menu)
-        #    #self._add_menu_opt(self.tr('Debug'), self.debug, sel)
+        #Things we can do with everything
+        if len(sel) > 0:
+            menu.addAction(self.tr('Delete Items'), self.del_item)
+            #self._add_menu_opt(self.tr('Debug'), self.debug, sel)
 
         if not menu.isEmpty():
             menu.exec_(self.tree_view.mapToGlobal(point))
@@ -398,8 +424,20 @@ class PaletteTreeModel(TableModel):
         func, objs = self.sender().data()
         func(objs)
 
-    def delItemKey(self):
-        self.delete_objects(self.returnSelObjs())
+    def del_item(self):
+        for obj in self.return_sel_objs():
+            if isinstance(obj, PaletteRun):
+                self.del_run(obj)
+            else:
+                with self.del_row(obj):
+                    obj._parent._children.remove(obj)
+                    #TODO: better way to delete all children?
+                    if len(obj._children) > 0:
+                        for chd in obj._children:
+                            self.db.delete(obj)
+                    self.db.delete(obj)
+        self.master_window.plot_data(update_bounds=False)
+        self.db.commit()
 
     def debug(self, objs):
         pks = [o for o in objs if o.db_type == 'peak']
@@ -505,7 +543,7 @@ class PaletteTreeModel(TableModel):
         If that plot is not visible, return the topmost visible plot.
         Used for determing which spectra to display on right click, etc.
         """
-        plot = self.returnSelObj()
+        plot = self.return_sel_obj()
         if plot is not None:
             if type(plot) is Plot:
                 if plot.vis > 0 and plot.is_valid:
@@ -525,9 +563,9 @@ class PaletteTreeModel(TableModel):
             node = QtCore.QModelIndex()
 
         chkFiles = []
-        for i in range(self.proxyMod.rowCount(node)):
-            prjNode = self.proxyMod.index(i, 0, node)
-            t = self.proxyMod.mapToSource(prjNode).internalPointer()
+        for i in range(self.proxy_mod.rowCount(node)):
+            prjNode = self.proxy_mod.index(i, 0, node)
+            t = self.proxy_mod.mapToSource(prjNode).internalPointer()
             if type(t) is Plot:
                 if t.vis > 0 and t.is_valid:
                     chkFiles.append(t)
@@ -535,7 +573,7 @@ class PaletteTreeModel(TableModel):
                 chkFiles += self.returnChkObjs(prjNode)
         return chkFiles
 
-    def returnSelObj(self):
+    def return_sel_obj(self):
         """
         Returns the file currently selected in the file list.
         Used for determing which spectra to display on right click, etc.
@@ -544,12 +582,12 @@ class PaletteTreeModel(TableModel):
         if not tab_sel.currentIndex().isValid:
             return
 
-        ind = self.proxyMod.mapToSource(tab_sel.currentIndex())
+        ind = self.proxy_mod.mapToSource(tab_sel.currentIndex())
         if ind.internalPointer() is None:
             return  # it doesn't exist
         return ind.internalPointer()
 
-    def returnSelObjs(self, cls=None):
+    def return_sel_objs(self, cls=None):
         """
         Returns the files currently selected in the file list.
         Used for displaying the peak list, etc.
@@ -558,7 +596,7 @@ class PaletteTreeModel(TableModel):
         files = []
         for i in tab_sel.selectedRows():
             obj = i.model().mapToSource(i).internalPointer()
-            if cls is None or type(obj) is cls:
+            if cls is None or isinstance(obj, cls):
                 files.append(obj)
         return files
 

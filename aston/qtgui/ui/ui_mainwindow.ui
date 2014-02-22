@@ -61,16 +61,15 @@
      <property name="title">
       <string>Integrand</string>
      </property>
-     <addaction name="actionTop_Trace"/>
-     <addaction name="actionTop_File_Vis_Traces"/>
-     <addaction name="actionTop_File_All_Isotopic"/>
-     <addaction name="actionTop_File_All_Traces"/>
+     <addaction name="actionIntegrandActiveTrace"/>
+     <addaction name="actionIntegrandAsFirst"/>
+     <addaction name="actionIntegrandIndependent"/>
     </widget>
     <addaction name="actionIntegrate"/>
-    <addaction name="actionPeak_Finder"/>
-    <addaction name="actionTwo_Pass_Peak_Find"/>
-    <addaction name="actionIntegrator"/>
+    <addaction name="separator"/>
     <addaction name="menuIntegrand"/>
+    <addaction name="actionPeak_Finder"/>
+    <addaction name="actionIntegrator"/>
     <addaction name="separator"/>
     <addaction name="actionAutoAlignChromatogram"/>
     <addaction name="actionEditFilters"/>
@@ -124,10 +123,11 @@
      <string>Windows</string>
     </property>
     <addaction name="actionFiles"/>
-    <addaction name="actionSettings"/>
+    <addaction name="actionPalette"/>
     <addaction name="actionSpectra"/>
     <addaction name="actionMethods"/>
     <addaction name="actionCompounds"/>
+    <addaction name="actionSettings"/>
    </widget>
    <widget class="QMenu" name="menuSettings">
     <property name="title">
@@ -611,7 +611,7 @@
     <string>Load Settings from DB</string>
    </property>
   </action>
-  <action name="actionTop_Trace">
+  <action name="actionIntegrandActiveTrace">
    <property name="checkable">
     <bool>true</bool>
    </property>
@@ -619,7 +619,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Top Trace</string>
+    <string>Active Trace</string>
    </property>
   </action>
   <action name="actionTop_File_Vis_Traces">
@@ -630,20 +630,20 @@
     <string>Top File - Vis. Traces</string>
    </property>
   </action>
-  <action name="actionTop_File_All_Traces">
+  <action name="actionIntegrandIndependent">
    <property name="checkable">
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Top File - All Traces</string>
+    <string>Active Run - All Independent</string>
    </property>
   </action>
-  <action name="actionTop_File_All_Isotopic">
+  <action name="actionIntegrandAsFirst">
    <property name="checkable">
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Top File - All (Isotopic)</string>
+    <string>Active Run - All as First</string>
    </property>
   </action>
   <action name="actionSimple">
@@ -687,17 +687,6 @@
    </property>
    <property name="text">
     <string>Flow Injection</string>
-   </property>
-  </action>
-  <action name="actionTwo_Pass_Peak_Find">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="enabled">
-    <bool>false</bool>
-   </property>
-   <property name="text">
-    <string>Two Pass Peak Find</string>
    </property>
   </action>
   <action name="actionIntegrate">
@@ -832,6 +821,14 @@
   <action name="loadIsodatPeaks">
    <property name="text">
     <string>Isodat Results</string>
+   </property>
+  </action>
+  <action name="actionPalette">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Palette</string>
    </property>
   </action>
  </widget>

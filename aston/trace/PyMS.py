@@ -24,10 +24,10 @@ class GCMS_data(object):
 
     def get_index_at_time(self, time):
         time *= 60.0
-        return np.argmin(np.abs(self.data.index.values - time))
+        return np.argmin(np.abs(self.data.index - time))
 
     def get_time_list(self):
-        return (self.data.index.values * 60.0).tolist()
+        return (self.data.index * 60.0).tolist()
 
     @property
     def _scan_list(self):
@@ -65,7 +65,7 @@ class GCMS_data(object):
     def info(self, print_scan_n=False):
         print(" Data retention time range: %.3f min -- %.3f min" % \
               min(self.data.index), max(self.data.index))
-        tdiffs = np.diff(self.data.index.values)
+        tdiffs = np.diff(self.data.index)
         print(" Time step: %.3f s (std=%.3f s)" % \
               np.mean(tdiffs), np.std(tdiffs))
         print(" Number of scans: %d" % len(self))

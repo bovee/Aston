@@ -32,7 +32,10 @@ class PaletteRun(Base):
     run = relationship(Run)
     plots = relationship('Plot', backref='paletterun')
     enabled = Column(Boolean, default=False)
-    #order?
+    #fake = Column(Binary????, default=None)
+    #TODO: need some way to add in Aston-generated chromatograms
+    # e.g. predictions, etc
+    # save here? or save generating function here?
 
     _parent = None
 

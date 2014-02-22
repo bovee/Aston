@@ -86,6 +86,8 @@ def add_analysis(db, projname, projpath, runname, tf):
         info = tf.info.copy()
         analysis = Analysis(path=analpath, filetype=info['filetype'],
                             run=run)
+        if run.name == '':
+            run.name = op.split(info['filename'])[1]
         del info['filename'], info['filetype']
         analysis.trace = ','.join(tf.traces)
         #TODO: add trace info in

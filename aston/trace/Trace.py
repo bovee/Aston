@@ -4,6 +4,7 @@ import zlib
 import numpy as np
 import scipy.io.wavfile
 import scipy.signal
+from scipy.interpolate import interp1d
 from pandas import Series, DataFrame
 from aston.spectra.Scan import Scan
 
@@ -64,6 +65,12 @@ class AstonSeries(object):
         #break s.index into width chunks
         #find max and min of each chunk along with start and stop?
 
+    def get_point(self, time, interp_method=None):
+        #TODO: add more interpolation methods
+        f = interp1d(self.index, self.values, \
+                     bounds_error=False, fill_value=0.0)
+        return f(time)
+
     def adjust_time(self, offset=0.0, scale=1.0):
         adjs = self.copy()
         adjs.index = adjs.index * scale + offset
@@ -80,7 +87,7 @@ class AstonSeries(object):
             bounds_error=False, fill_value=fill)(new_times)
         return np.apply_along_axis(f, 0, self.values)
 
-    def _apply_data(self, f, ts):
+    def _apply_data(self, f, ts, reverse=False):
         """
         Convenience function for all of the math stuff.
         """
@@ -94,7 +101,10 @@ class AstonSeries(object):
         else:
             d = ts._retime(self.index)
 
-        new_data = np.apply_along_axis(f, 0, self.values, d)
+        if not reverse:
+            new_data = np.apply_along_axis(f, 0, self.values, d)
+        else:
+            new_data = np.apply_along_axis(f, 0, d, self.values)
         return AstonSeries(new_data, self.index, name=self.name)
 
     def __add__(self, ts):
@@ -115,6 +125,7 @@ class AstonSeries(object):
     def __reversed(self):
         raise NotImplementedError
 
+    #TODO: this should happen in place?
     def __iadd__(self, ts):
         return self._apply_data(lambda x, y: x + y, ts)
 
@@ -126,6 +137,18 @@ class AstonSeries(object):
 
     def __idiv__(self, ts):
         return self._apply_data(lambda x, y: x / y, ts)
+
+    def __radd__(self, ts):
+        return self._apply_data(lambda x, y: x + y, ts, reverse=True)
+
+    def __rsub__(self, ts):
+        return self._apply_data(lambda x, y: x - y, ts, reverse=True)
+
+    def __rmul__(self, ts):
+        return self._apply_data(lambda x, y: x * y, ts, reverse=True)
+
+    def __rdiv__(self, ts):
+        return self._apply_data(lambda x, y: x / y, ts, reverse=True)
 
     def __neg__(self):
         return self._apply_data(lambda x, y: -x, None)
@@ -198,6 +221,13 @@ class AstonFrame(object):
         else:
             return AstonFrame(v, i, c)
 
+    @property
+    def traces(self):
+        traces = []
+        for v, c in zip(self.values.T, self.columns):
+            traces.append(AstonSeries(v, self.index, name=c))
+        return traces
+
     def trace(self, name='tic', tol=0.5, twin=None):
         #TODO: aggfunc in here for tic and numeric
         st_idx, en_idx = _slice_idxs(self, twin)
@@ -212,7 +242,8 @@ class AstonFrame(object):
             data = self[:, 0]
             name = self.columns[0]
         elif set(name).issubset('1234567890.'):
-            cols = np.abs(self.columns - float(name)) < tol
+            cols = np.genfromtxt(np.array(self.columns).astype(bytes))
+            cols = np.abs(cols - float(name)) < tol
             data = self.values[:, cols].sum(axis=1)
         else:
             data = np.zeros(self.shape[0]) * np.nan
@@ -240,7 +271,8 @@ class AstonFrame(object):
             from matplotlib.colors import ListedColormap
             gaussian = lambda wvs, x, w: np.exp(-0.5 * ((wvs - x) / w) ** 2)
 
-            wvs = self.columns.astype(float)
+            wvs = np.genfromtxt(np.array(self.columns).astype(bytes))
+            #wvs = self.columns.astype(float)
 
             #http://www.ppsloan.org/publications/XYZJCGT.pdf
             vis_filt = np.zeros((3, len(wvs)))

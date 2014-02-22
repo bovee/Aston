@@ -2,7 +2,7 @@ import codecs
 import os.path as op
 from PyQt4 import QtGui
 
-from aston.resources import resfile, tr
+from aston.resources import resfile, tr, get_pref
 from aston.qtgui.ui_mainwindow import Ui_MainWindow
 from aston.qtgui.Settings import SettingsWidget
 from aston.qtgui.FilterWindow import FilterWindow
@@ -15,7 +15,7 @@ from aston.database.Create import read_directory, simple_auth
 from aston.qtgui.TableFile import FileTreeModel
 from aston.qtgui.TablePalette import PaletteTreeModel
 import aston.qtgui.MenuOptions
-from aston.peaks.PeakFinding import find_peaks, find_peaks_iso
+from aston.peaks.PeakFinding import find_peaks, find_peaks_as_first
 from aston.peaks.Integrators import integrate_peaks
 
 
@@ -33,7 +33,7 @@ class AstonWindow(QtGui.QMainWindow):
         self.ui.actionSettings.setMenuRole(QtGui.QAction.NoRole)
 
         #set up the list of files in the current directory
-        fdir = self.getPref('Default.FILE_DIRECTORY')
+        fdir = get_pref('Default.FILE_DIRECTORY')
         self.load_new_file_db(fdir)
 
         #connect the menu logic
@@ -51,14 +51,14 @@ class AstonWindow(QtGui.QMainWindow):
         #hook up the windows to the menu
         for ac in [self.ui.actionFiles, self.ui.actionSettings, \
           self.ui.actionSpectra, self.ui.actionMethods, \
-          self.ui.actionCompounds]:
+          self.ui.actionCompounds, self.ui.actionPalette]:
             ac.triggered.connect(self.updateWindows)
 
         #set up the grouping for the dock widgets and
         #hook the menus up to the windows
-        for ac in [self.ui.filesDockWidget, self.ui.spectraDockWidget, \
-          self.ui.settingsDockWidget, self.ui.methodDockWidget,
-          self.ui.compoundDockWidget]:
+        for ac in [self.ui.filesDockWidget, self.ui.paletteDockWidget, \
+                   self.ui.spectraDockWidget, self.ui.settingsDockWidget, \
+                   self.ui.methodDockWidget, self.ui.compoundDockWidget]:
             if ac is not self.ui.filesDockWidget:
                 self.tabifyDockWidget(self.ui.filesDockWidget, ac)
             ac.visibilityChanged.connect(self.updateWindowsMenu)
@@ -90,9 +90,9 @@ class AstonWindow(QtGui.QMainWindow):
           lambda: None, v)
         self.ui.actionIntegrator.setMenu(integrator_menu)
 
-        #menu_gp = QtGui.QActionGroup(self)
-        #for ac in self.ui.menuIntegrand.actions():
-        #    menu_gp.addAction(ac)
+        menu_gp = QtGui.QActionGroup(self)
+        for ac in self.ui.menuIntegrand.actions():
+            menu_gp.addAction(ac)
 
         ## hook up spectrum menu
         #for m in [self.ui.actionSpecLibDisp, self.ui.actionSpecLibLabel,\
@@ -161,6 +161,7 @@ class AstonWindow(QtGui.QMainWindow):
         self.ui.methodDockWidget.setVisible(self.ui.actionMethods.isChecked())
         self.ui.compoundDockWidget.setVisible( \
           self.ui.actionCompounds.isChecked())
+        self.ui.paletteDockWidget.setVisible(self.ui.actionPalette.isChecked())
 
     def updateWindowsMenu(self):
         """
@@ -173,27 +174,10 @@ class AstonWindow(QtGui.QMainWindow):
         self.ui.actionMethods.setChecked(self.ui.methodDockWidget.isVisible())
         self.ui.actionCompounds.setChecked( \
           self.ui.compoundDockWidget.isVisible())
+        self.ui.actionPalette.setChecked(self.ui.paletteDockWidget.isVisible())
 
     def show_status(self, msg):
         self.statusBar().showMessage(msg, 2000)
-
-    def getPref(self, key):
-        try:
-            import configparser
-        except ImportError:
-            import ConfigParser as configparser
-        cp = configparser.SafeConfigParser()
-        for cfg in (op.expanduser('~/.aston.ini'), './aston.ini'):
-            if op.exists(cfg):
-                cp.readfp(open(cfg))
-                break
-        else:
-            pass
-            #TODO: write out this file?
-        try:
-            return cp.get(key.split('.')[0], key.split('.')[1])
-        except:
-            return None
 
     def open_folder(self):
         folder = str(QtGui.QFileDialog.getExistingDirectory(self, \
@@ -201,12 +185,12 @@ class AstonWindow(QtGui.QMainWindow):
         if folder == '':
             return
 
-        ##need to discard old connections
-        ##self.ui.fileTreeView.clicked.disconnect()
-        #self.ui.fileTreeView.selectionModel().currentChanged.disconnect()
-        #self.ui.fileTreeView.customContextMenuRequested.disconnect()
-        #self.ui.fileTreeView.header().customContextMenuRequested.disconnect()
-        #self.ui.fileTreeView.header().sectionMoved.disconnect()
+        #need to discard old connections
+        #self.ui.fileTreeView.clicked.disconnect()
+        self.ui.fileTreeView.selectionModel().currentChanged.disconnect()
+        self.ui.fileTreeView.customContextMenuRequested.disconnect()
+        self.ui.fileTreeView.header().customContextMenuRequested.disconnect()
+        self.ui.fileTreeView.header().sectionMoved.disconnect()
 
         self.load_new_file_db(folder)
 
@@ -346,7 +330,7 @@ class AstonWindow(QtGui.QMainWindow):
             p['period'] = gf('integrate_periodic_period', 1.)
         return p
 
-    def find_peaks(self, tss, dt, isomode=False):
+    def find_peaks(self, tss, plot, isomode=False, mp=False):
         submnu = self.ui.actionPeak_Finder.menu().children()
         opt = [i for i in submnu if i.isChecked()][0].text()
         pf_f = aston.qtgui.MenuOptions.peak_finders[opt]
@@ -354,48 +338,50 @@ class AstonWindow(QtGui.QMainWindow):
         if pf_f.__name__ == 'event_peak_find':
             evts = []
             for n in ('fia', 'fxn', 'refgas'):
-                evts += dt.events(n)
+                evts += plot.events(n)
             pf_fopts['events'] = evts
-        mp = self.settings.get_key('multiprocessing', dflt=True)
 
         if isomode:
-            return find_peaks_iso(tss, pf_f, pf_fopts, dt, mp)
+            return find_peaks_as_first(tss, pf_f, pf_fopts, mp)
         else:
-            return find_peaks(tss, pf_f, pf_fopts, dt, mp)
+            return find_peaks(tss, pf_f, pf_fopts, mp)
 
-    def integrate_peaks(self, tss, found_peaks, isomode=False):
+    def integrate_peaks(self, tss, found_peaks, isomode=False, mp=False):
         submnu = self.ui.actionIntegrator.menu().children()
         opt = [i for i in submnu if i.isChecked()][0].text()
         int_f = aston.qtgui.MenuOptions.integrators[opt]
         int_fopts = self.get_f_opts(int_f)
-        mp = self.settings.get_key('multiprocessing', dflt=True)
 
         return integrate_peaks(tss, found_peaks, int_f, int_fopts, isomode, mp)
 
     def integrate(self):
         plot = self.pal_tab.active_plot()
 
-        isomode = self.ui.actionTop_File_All_Isotopic.isChecked()
-        if self.ui.actionTop_Trace.isChecked():
-            tss = plot.trace()
+        mp = self.settings.get_key('multiprocessing', dflt=True)
+        mp = False
+        isomode = False
+        if self.ui.actionIntegrandActiveTrace.isChecked():
+            tss = [plot.trace()]
+        elif self.ui.actionIntegrandAsFirst.isChecked():
+            #plot.frame
+            tss = plot.frame().traces
+            isomode = True
+        elif self.ui.actionIntegrandIndependent.isChecked():
+            #plot.frame
+            tss = plot.frame().traces
         else:
             tss = []
-        #TODO: all traces in palette
-        #elif self.ui.actionTop_File_Vis_Traces.isChecked():
-        #    tss = dt.active_traces()
-        #elif self.ui.actionTop_File_All_Traces.isChecked() or isomode:
-        #    tss = dt.active_traces(all_tr=True)
+        #TODO: all traces in palette?
 
-        if isomode:
-            found_peaks = self.find_peaks_iso(tss, dt)
-        else:
-            found_peaks = self.find_peaks(tss, dt)
-        mrg_pks = self.integrate_peaks(tss, found_peaks, isomode)
+        found_peaks = self.find_peaks(tss, plot, isomode, mp)
+        mrg_pks = self.integrate_peaks(tss, found_peaks, isomode, mp)
 
-        #with dt.db:
-        #    dt.children += mrg_pks
-        #dt.info.del_items('s-peaks')
-        self.plot_data(updateBounds=False)
+        with self.pal_tab.add_rows(plot, len(mrg_pks)):
+            for pk in mrg_pks:
+                pk.dbplot = plot
+            self.pal_tab.db.add_all(mrg_pks)
+            self.pal_tab.db.commit()
+        self.plot_data(update_bounds=False)
 
     def showFilterWindow(self):
         if self.obj_tab.active_file() is not None:
@@ -415,8 +401,8 @@ class AstonWindow(QtGui.QMainWindow):
         for pr in self.pal_tab._children:
             plots += [t for t in pr.plots if t.vis > 0 and t.is_valid]
 
-        if 'updateBounds' in kwargs:
-            self.plotter.plot_data(plots, kwargs['updateBounds'])
+        if 'update_bounds' in kwargs:
+            self.plotter.plot_data(plots, kwargs['update_bounds'])
         else:
             self.plotter.plot_data(plots)
 

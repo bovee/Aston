@@ -55,7 +55,6 @@ options = {
     'include_package_data': True,
     'install_requires': ['numpy', 'scipy', 'matplotlib', 'pandas',
                          'sqlalchemy'],
-    'test_suite': 'nose.collector'
 }
 
 if len(sys.argv) >= 2 and sys.argv[1] == 'py2exe':

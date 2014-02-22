@@ -10,18 +10,18 @@ peak_models = dict([(pm.__name__, pm) for pm in peak_models])
 
 
 class Peak(object):
-    def __init__(self, info, trace=None, baseline=None, \
-                 name='', primary_mz=None):
-        self._trace = trace
-        self.baseline = baseline
-        if primary_mz is not None:
-            self.primary_mz = primary_mz
-        elif type(trace) is AstonSeries:
-            self.primary_mz = None
-        else:
-            self.primary_mz = trace.columns[0]
+    def __init__(self, name='', info=None, components=None):
         self.name = name
-        self.info = info
+        if info is None:
+            self.info = {}
+        else:
+            self.info = info
+        if isinstance(components, (list, tuple)):
+            self.components = list(components)
+        elif isinstance(components, PeakComponent):
+            self.components = [components]
+        else:
+            self.components = []
 
     # next two properties are only for dealing with SQLAlchemy
     @property
@@ -29,43 +29,72 @@ class Peak(object):
         return self.dbplot
 
     _children = []
+    #@property
+    #def _children(self):
+    #    return self.components
 
-    # this allows transparent switching to/from analytical peaks
-    @property
-    def trace(self):
-        if self.info.get('p-model', None) not in peak_models:
-            return self._trace
+    def as_poly(self, mz=None, sub_base=False):
+        #TODO: should allow AstonFrames in PeakComponents some day?
+        #if type(self.trace) is AstonSeries:
+        #    if mz is not None:
+        #        assert mz == self.trace.name
+        #    trace = self.trace
+        #else:
+        #    if mz is None:
+        #        mz = self.primary_mz
+        #    elif mz not in self.trace.columns:
+        #        return AstonSeries()
+        #    trace = self.trace[mz]
+
+        #if self.baseline is None:
+        #    b_trace = None
+        #elif type(self.baseline) is AstonSeries:
+        #    b_trace = self.baseline
+        #else:
+        #    b_trace = self.baseline[mz]
+
+        if mz in {'', 'x', 'tic', None}:
+            # sum up all the components
+            trace = self.components[0].trace
+            b_trace = self.components[0].baseline
+            for c in self.components[1:]:
+                trace += c.trace
+                if c.baseline is not None:
+                    #TODO: this fails if the first components baseline is None
+                    b_trace += c.baseline
         else:
-            model = peak_models[self.info.get('p-model')]
-            t = self._trace.index
-            d = model(t=t, **{k: self.info.get(k) \
-                              for k in model._peakargs \
-                              if self.info.get(k) is not None})
-            d += self.baseline._retime(t)
-            return AstonSeries(d, t, name='')
+            TOL = 0.5
 
-    def refit(self, peak_model=None):
-        #TODO: needs to work with peaks containing DataFrames
-        self.info['p-model'] = peak_model
-        if peak_model is None:
-            #TODO: remove parameters from self.info?
-            #del self.info['p-model-fit']
-            return
-        model = peak_models[peak_model]
+            def check(name):
+                try:
+                    return np.abs(mz - float(name)) < TOL
+                except:
+                    return False
+            cs = [c for c in self.components if check(c._trace.name)]
+            trace = sum(c.trace for c in cs)
+            b_trace = sum(c.baseline for c in cs)
 
-        # remove the baseline and create a new series
-        t = self._trace.index
-        d = self._trace.values - self.baseline._retime(t)
-        ts = AstonSeries(d, t)
+        # merge the trace and baseline
+        if sub_base and b_trace is not None:
+            trace -= np.interp(trace.index, b_trace.index, \
+                               b_trace.values)
+            t, z = trace.index, trace.values
+        elif b_trace is None:
+            t, z = trace.index, trace.values
+        else:
+            t = np.hstack([trace.index, b_trace.index[::-1]])
+            z = np.hstack([trace.values, b_trace.values[::-1]])
 
-        # fit the peak
-        initc = guess_initc(ts, model, [t[d.argmax()]])
-        params, res = fit(ts, [model], initc)
-        self.info.update(params[0])
-        self.info['p-model-fit'] = res['r^2']
+        if hasattr(self, 'dbplot'):
+            #scale and offset according to parent
+            t *= self.dbplot.x_scale
+            t += self.dbplot.x_offset
+            z *= self.dbplot.y_scale
+            z += self.dbplot.y_offset
+
+        return np.vstack([t, z]).T
 
     def plot(self, mz=None, color='k', alpha=0.5, ax=None):
-        #TODO: include scale and offset as parameters
         #TODO: allow plotting to a 2D plot?
         # confine matplotlib imports to here, so this module works
         # even if matplotlib is not installed (e.g. on a server)
@@ -79,50 +108,20 @@ class Peak(object):
         else:
             ax.add_patch(ply)
 
-    def as_poly(self, mz=None, sub_base=False):
-        if type(self.trace) is AstonSeries:
-            if mz is not None:
-                assert mz == self.trace.name
-            trace = self.trace
-        else:
-            if mz is None:
-                mz = self.primary_mz
-            elif mz not in self.trace.columns:
-                return AstonSeries()
-            trace = self.trace[mz]
-
-        if self.baseline is None:
-            b_trace = None
-        elif type(self.baseline) is AstonSeries:
-            b_trace = self.baseline
-        else:
-            b_trace = self.baseline[mz]
-
-        if sub_base and b_trace is not None:
-            trace -= np.interp(trace.index, b_trace.index, \
-                               b_trace.values)
-            t, z = trace.index, trace.values
-        elif b_trace is None:
-            t, z = trace.index, trace.values
-        else:
-            t = np.hstack([trace.index, b_trace.index[::-1]])
-            z = np.hstack([trace.values, b_trace.values[::-1]])
-        return np.vstack([t, z]).T
-
-    #TODO: factor these out?
     def contains(self, x, y, mz=None):
         from matplotlib.path import Path
         return Path(self.as_poly(mz)).contains_point((x, y))
 
-    def time(self):
-        data = self.as_poly()
+    def time(self, mz=None):
+        #TODO: determine inversion by comparing baseline to trace?
+        data = self.as_poly(mz)
         if data[1, 0] < data[:, 0].max():
             return data[data[:, 1].argmax(), 0]
         else:  # inverted peak
             return data[data[:, 1].argmin(), 0]
 
-    def pwhm(self):
-        data = self.as_poly()
+    def pwhm(self, mz=None):
+        data = self.as_poly(mz)
         pt1, pt2 = data[0], data[-1]
 
         m = (pt2[1] - pt1[1]) / (pt2[0] - pt1[0])
@@ -149,17 +148,17 @@ class Peak(object):
                       max((half_y - b) / m, hi_x)
         return hi_x - lw_x
 
-    def height(self):
+    def height(self, mz=None):
         #TODO: should subtract base
-        data = self.as_poly()
+        data = self.as_poly(mz)
         return data[:, 1].max() - data[:, 1].min()
 
-    def width(self):
-        data = self.as_poly()
+    def width(self, mz=None):
+        data = self.as_poly(mz)
         return data[:, 0].max() - data[:, 0].min()
 
-    def area(self, method='shoelace'):
-        data = self.as_poly()
+    def area(self, method='shoelace', mz=None):
+        data = self.as_poly(mz)
 
         # filter out any points that have a nan
         fdata = data[~np.isnan(data).any(1)]
@@ -194,15 +193,51 @@ class Peak(object):
         return Scan()
 
 
-class ModelPeak(Peak):
-    def __init__(self, *args, **kwargs):
-        self.params = {}
-        pass
+class PeakComponent(object):
+    def __init__(self, info, trace=None, baseline=None):
+        self._trace = trace
+        self.baseline = baseline
+        self.info = info
 
+    # this allows transparent switching to/from analytical peaks
     @property
     def trace(self):
-        return AstonSeries()
+        if self.info.get('p-model') not in peak_models:
+            return self._trace
+        else:
+            model = peak_models[self.info.get('p-model')]
+            t = self._trace.index
+            d = model(t=t, **{k: self.info.get(k) \
+                              for k in model._peakargs \
+                              if self.info.get(k) is not None})
+            d += self.baseline._retime(t)
+            return AstonSeries(d, t, name='')
 
+    def refit(self, peak_model=None):
+        #TODO: needs to work with PeakComponents containing DataFrames?
+        self.info['p-model'] = peak_model
+        if peak_model is None:
+            #TODO: remove parameters from self.info?
+            #del self.info['p-model-fit']
+            return
+        model = peak_models[peak_model]
+
+        # remove the baseline and create a new series
+        t = self._trace.index
+        d = self._trace.values - self.baseline._retime(t)
+        ts = AstonSeries(d, t)
+
+        # fit the peak
+        initc = guess_initc(ts, model, [t[d.argmax()]])
+        params, res = fit(ts, [model], initc)
+        self.info.update(params[0])
+        self.info['p-model-fit'] = res['r^2']
+
+    def time(self):
+        if np.average(self.trace.values) > np.average(self.baseline.values):
+            return self.trace.index[self.trace.values.argmax()]
+        else:
+            return self.trace.index[self.trace.values.argmin()]
 
 #class OldPeak(object):
 #    def __init__(self, *args, **kwargs):

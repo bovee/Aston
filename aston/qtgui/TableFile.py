@@ -102,7 +102,7 @@ class FileTreeModel(TableModel):
 
     def dragMoveEvent(self, event):
         #TODO: files shouldn't be able to be under peaks
-        #index = self.proxyMod.mapToSource(self.tree_view.indexAt(event.pos()))
+        #index = self.proxy_mod.mapToSource(self.tree_view.indexAt(event.pos()))
         if event.mimeData().hasFormat('application/x-aston-file'):
             QtGui.QTreeView.dragMoveEvent(self.tree_view, event)
         else:
@@ -255,7 +255,7 @@ class FileTreeModel(TableModel):
         self.db.set_key('main_cols', json.dumps(flds))
 
     def click_main(self, point):
-        #index = self.proxyMod.mapToSource(self.tree_view.indexAt(point))
+        #index = self.proxy_mod.mapToSource(self.tree_view.indexAt(point))
         menu = QtGui.QMenu(self.tree_view)
         sel = self.returnSelFiles()
 
@@ -421,9 +421,9 @@ class FileTreeModel(TableModel):
             node = QtCore.QModelIndex()
 
         chkFiles = []
-        for i in range(self.proxyMod.rowCount(node)):
-            prjNode = self.proxyMod.index(i, 0, node)
-            f = self.proxyMod.mapToSource(prjNode).internalPointer()
+        for i in range(self.proxy_mod.rowCount(node)):
+            prjNode = self.proxy_mod.index(i, 0, node)
+            f = self.proxy_mod.mapToSource(prjNode).internalPointer()
             if f.info['vis'] == 'y':
                 chkFiles.append(f)
             if len(f._children) > 0:
@@ -439,7 +439,7 @@ class FileTreeModel(TableModel):
         if not tab_sel.currentIndex().isValid:
             return
 
-        ind = self.proxyMod.mapToSource(tab_sel.currentIndex())
+        ind = self.proxy_mod.mapToSource(tab_sel.currentIndex())
         if ind.internalPointer() is None:
             return  # it doesn't exist
         return ind.internalPointer()
