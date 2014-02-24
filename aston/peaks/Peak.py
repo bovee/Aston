@@ -64,7 +64,6 @@ class Peak(object):
                     b_trace += c.baseline
         else:
             TOL = 0.5
-
             def check(name):
                 try:
                     return np.abs(mz - float(name)) < TOL
@@ -157,7 +156,7 @@ class Peak(object):
         data = self.as_poly(mz)
         return data[:, 0].max() - data[:, 0].min()
 
-    def area(self, method='shoelace', mz=None):
+    def area(self, mz=None, method='shoelace'):
         data = self.as_poly(mz)
 
         # filter out any points that have a nan
@@ -385,7 +384,6 @@ class PeakComponent(object):
 #            pk = self.as_poly(ion)  # , sub_base=True)
 #        #if peakmath.area(pk, method='shoelace') / \
 #        #   peakmath.area(pk, method='trapezoid') != 1:
-#        #    print(pk)
 #        return peakmath.area(pk)
 #
 #    def d13C(self):

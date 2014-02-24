@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-#    Copyright 2011-2013 Roderick Bovee
+#    Copyright 2011-2014 Roderick Bovee
 #
 #    This file is part of Aston.
 #
@@ -45,9 +45,9 @@ options = {
         'Topic :: Scientific/Engineering :: Chemistry'
     ],
     'long_description': read('README.rst'),
-    'packages': ['aston', 'aston.qtgui', 'aston.database', 'aston.peaks', \
-                 'aston.spectra', 'aston.trace', 'aston.tracefile', \
-                 'aston.tracevis', 'aston.test'],
+    'packages': ['aston', 'aston.calibrations', 'aston.database', \
+                 'aston.peaks', 'aston.qtgui', 'aston.spectra', \
+                 'aston.test', 'aston.trace', 'aston.tracefile'],
     'scripts': ['astonx.py'],
     'data_files': matplotlib.get_py2exe_datafiles(),
     'package_data': {'aston': \
@@ -55,6 +55,7 @@ options = {
     'include_package_data': True,
     'install_requires': ['numpy', 'scipy', 'matplotlib', 'pandas',
                          'sqlalchemy'],
+    'test_suite': 'nose.collector',
 }
 
 if len(sys.argv) >= 2 and sys.argv[1] == 'py2exe':

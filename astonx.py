@@ -34,6 +34,7 @@ numpy.seterr(divide='raise', invalid='raise', over='raise')
 
 import warnings
 import sqlalchemy.exc
+warnings.simplefilter('error', RuntimeWarning)
 warnings.simplefilter('ignore', sqlalchemy.exc.SAWarning)
 
 # for multiprocessing to work on Windows

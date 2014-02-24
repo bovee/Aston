@@ -5,17 +5,17 @@ import numpy as np
 import scipy.io.wavfile
 import scipy.signal
 from scipy.interpolate import interp1d
-from pandas import Series, DataFrame
 from aston.spectra.Scan import Scan
 
 
 class AstonSeries(object):
     def __init__(self, data, index=None, name=''):
-        if isinstance(data, Series):
-            self.values = data.values
-            self.index = data.index.values
-            self.name = data.name
-        elif index is not None:
+        #TODO: reenable this without having to import from pandas
+        #if isinstance(data, Series):
+        #    self.values = data.values
+        #    self.index = data.index.values
+        #    self.name = data.name
+        if index is not None:
             self.values = np.array(data)
             self.index = np.array(index)
             self.name = name
@@ -67,6 +67,8 @@ class AstonSeries(object):
 
     def get_point(self, time, interp_method=None):
         #TODO: add more interpolation methods
+        if len(self.index) < 2:
+            return np.nan
         f = interp1d(self.index, self.values, \
                      bounds_error=False, fill_value=0.0)
         return f(time)
@@ -157,15 +159,15 @@ class AstonSeries(object):
         return self._apply_data(lambda x, y: abs(x), None)
 
     def compress(self):
-        d = self.values.tostring()
-        t = self.index.astype(float).tostring()
-        lt = struct.pack('<L', len(t))
-        i = json.dumps([self.name]).encode('utf-8')
-        lc = struct.pack('<L', len(i))
+        i = self.index.astype(np.float32).tostring()
+        li = struct.pack('<L', len(i))
+        c = json.dumps([self.name]).encode('utf-8')
+        lc = struct.pack('<L', len(c))
+        v = self.values.astype(np.float64).tostring()
         try:  # python 2
-            return buffer(zlib.compress(lc + lt + i + t + d))
+            return buffer(zlib.compress(lc + li + c + i + v))
         except NameError:  # python 3
-            return zlib.compress(lc + lt + i + t + d)
+            return zlib.compress(lc + li + c + i + v)
 
 
 class AstonFrame(object):
@@ -174,10 +176,11 @@ class AstonFrame(object):
             self.values = np.array([])
             self.index = np.array([])
             self.columns = ['']
-        elif isinstance(data, DataFrame):
-            self.values = data.values
-            self.index = data.index.values
-            self.columns = data.columns.values
+        #TODO: reenable this without having to import from pandas
+        #elif isinstance(data, DataFrame):
+        #    self.values = data.values
+        #    self.index = data.index.values
+        #    self.columns = data.columns.values
         elif index is not None:
             #TODO: handle sparse arrays
             self.values = np.array(data)
@@ -366,29 +369,29 @@ class AstonFrame(object):
         return Scan(self.columns, mz_abn)
 
     def compress(self):
-        d = self.values.tostring()
-        t = self.index.astype(float).tostring()
-        lt = struct.pack('<L', len(t))
-        i = json.dumps(self.columns).encode('utf-8')
-        lc = struct.pack('<L', len(i))
+        i = self.index.astype(np.float32).tostring()
+        li = struct.pack('<L', len(i))
+        c = json.dumps(self.columns).encode('utf-8')
+        lc = struct.pack('<L', len(c))
+        v = self.values.astype(np.float64).tostring()
         try:  # python 2
-            return buffer(zlib.compress(lc + lt + i + t + d))
+            return buffer(zlib.compress(lc + li + c + i + v))
         except NameError:  # python 3
-            return zlib.compress(lc + lt + i + t + d)
+            return zlib.compress(lc + li + c + i + v)
 
 
 def decompress(zdata):
     data = zlib.decompress(zdata)
     lc = struct.unpack('<L', data[0:4])[0]
-    lt = struct.unpack('<L', data[4:8])[0]
+    li = struct.unpack('<L', data[4:8])[0]
     c = json.loads(data[8:8 + lc].decode('utf-8'))
-    t = np.fromstring(data[8 + lc:8 + lc + lt])
-    d = np.fromstring(data[8 + lc + lt:])
+    i = np.fromstring(data[8 + lc:8 + lc + li], dtype=np.float32)
+    v = np.fromstring(data[8 + lc + li:], dtype=np.float64)
 
     if len(c) == 1:
-        return AstonSeries(d, t, name=c[0])
+        return AstonSeries(v, i, name=c[0])
     else:
-        return AstonFrame(d.reshape(len(t), len(c)), t, c)
+        return AstonFrame(v.reshape(len(i), len(c)), i, c)
 
 
 def _slice_idxs(df, twin=None):

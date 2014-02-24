@@ -191,20 +191,15 @@ class PaletteTreeModel(TableModel):
                     v = obj.components[0].info.get(fld, None)
                     if v is not None:
                         rslt = aston_field_opts[fld][v]
-                elif fld in {'p-type'}:
-                    rslt = aston_field_opts[fld][obj.info.get(fld, '')]
-                    pks = obj.dbplot.peaks
-                    d13c = obj.dbplot.paletterun.run.info.get('d13c_std')
-                    d18o = obj.dbplot.paletterun.run.info.get('d18o_std')
-                    if d13c is not None:
-                        calc_carbon_isotopes(pks, d13cstd=d13c, d18ostd=d18o)
-                    for pk in pks:
-                        self.db.merge(pk)
                 elif fld in {'p-model-fit'}:
                     fmt = lambda x: '{:.3f}'.format(x)
                     rslt = ','.join(fmt(c.info.get('p-model-fit', '')) \
                                     for c in obj.components \
                                     if c.info.get('p-model') is not None)
+                elif fld in {'p-type'}:
+                    rslt = aston_field_opts[fld][obj.info.get(fld, '')]
+                elif fld in {'p-d13c'}:
+                    rslt = obj.info.get(fld, '')
                 elif fld in {'s-mz-names'}:
                     rslt = ','.join(str(c._trace.name) for c in obj.components)
                 elif fld in {'p-area', 'p-length', 'p-height', 'p-width', \
@@ -258,7 +253,7 @@ class PaletteTreeModel(TableModel):
             setattr(obj, col, rev_dict[data])
         elif col in {'p-type'}:
             obj.info[col] = rev_dict[data]
-
+            self.recalculate_peaks(obj.dbplot)
         elif col in {'p-model'}:
             for c in obj.components:
                 c.refit(rev_dict[data])
@@ -278,6 +273,20 @@ class PaletteTreeModel(TableModel):
         self.db.commit()
         self.dataChanged.emit(index, index)
         return True
+
+    def recalculate_peaks(self, dbplot, isotopic=True):
+        pks = dbplot.peaks
+        if isotopic:
+            d13c = dbplot.paletterun.run.info.get('d13c_std')
+            d18o = dbplot.paletterun.run.info.get('d18o_std')
+            if d13c is not None:
+                calc_carbon_isotopes(pks, d13cstd=float(d13c), \
+                                     d18ostd=float(d18o))
+        print(self.fields, 'p-d13c' in self.fields)
+        for pk in pks:
+            if 'p-d13c' in self.fields:
+                self._obj_to_index(pk, col=self.fields.index('p-d13c'))
+            self.db.merge(pk)
 
     def flags(self, index):
         col = self.fields[index.column()]

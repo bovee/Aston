@@ -1,5 +1,5 @@
 import numpy as np
-from pandas import read_csv
+#from pandas import read_csv
 from aston.trace.Trace import AstonFrame
 from aston.tracefile.TraceFile import TraceFile
 

@@ -9,7 +9,8 @@ from aston.database.File import Run
 from aston.database.Peak import DBPeak
 from aston.database.User import Group
 from aston.trace.Trace import AstonSeries
-from aston.trace.Parser import parse_ion_string, tokens
+from aston.trace.Parser import parse_ion_string
+from aston.trace.Parser import istr_type, istr_best_2d_source, token_source
 from aston.trace.MathFrames import molmz, mzminus, basemz
 
 
@@ -47,34 +48,15 @@ class PaletteRun(Base):
     def datafile(self, source):
         # find the data source
         for a in self.run.analyses:
-            if source in [i.lstrip('#') for i in a.trace.split(',')]:
+            if source in [i.lstrip('#*') for i in a.trace.split(',')]:
                 return a.datafile
 
-    def parse_source(self, istr, guess=True):
-        traces_2d = ['ms', 'uv', 'irms']
-        child_plots = [i.lstrip('#') for a in self.run.analyses \
-                        for i in a.trace.split(',')]
-
-        source = None
-        # identify a data source, if present
-        if '#' in istr:
-            source = '#'.join(istr.split('#')[1:])
-            istr = istr.split('#')[0]
-        elif istr in child_plots or istr in traces_2d:
-            source = istr
-            istr = 'tic'
-        elif istr in {'tic', 'x', ''} and 'fid' in child_plots:
-            source = 'fid'
-        elif guess:
-            # still don't have a source; assume it's from the 2d traces
-            for i in traces_2d:
-                if i in child_plots:
-                    source = i
-                    break
-        return istr, source
+    def avail_sources(self):
+        return [i.lstrip('#*') for a in self.run.analyses \
+                for i in a.trace.split(',')]
 
     def trace(self, istr, twin=None):
-        istr, source = self.parse_source(istr)
+        istr, source = token_source(istr, self.avail_sources())
         if source is None:
             return AstonSeries()
 
@@ -178,20 +160,12 @@ class Plot(Base):
     def _children(self):
         return self.peaks
 
-    @property
-    def source(self):
-        for tk in tokens(self.name.lower()):
-            _, source = self.paletterun.parse_source(tk, guess=False)
-            if source is not None:
-                break
-        else:
-            # we got nothing out of looping through all the plots;
-            # give it something that doesn't exist and ask it to guess
-            _, source = self.paletterun.parse_source('fake', guess=True)
-        return source
+    def name_type(self):
+        return istr_type(self.name.lower())
 
     def scan(self, t, dt=None):
-        source = self.source
+        source = istr_best_2d_source(self.name.lower(), \
+                                     self.paletterun.avail_sources())
         if source is None:
             #FIXME: still nothing, return blank scan object
             return
@@ -205,10 +179,12 @@ class Plot(Base):
             scan.source = source
             return scan
 
-    def frame(self):
-        return self.paletterun.datafile(self.source).data
-
     def trace(self, twin=None):
+        #TODO: should we just handle events in parse_ion_string?
+        name_type = istr_type(self.name.lower())
+        if name_type == 'events':
+            return AstonSeries()
+
         # get a trace given my name
         tr_resolver = self.paletterun.trace
         trace = parse_ion_string(self.name.lower(), tr_resolver, twin)
@@ -236,8 +212,16 @@ class Plot(Base):
             pass
 
     def plot(self, ax, style, color, twin=None):
-        trace = self.trace(twin)
-        if trace is None:
-            return
+        name_type = istr_type(self.name.lower())
         label = self.paletterun.run.name + ' ' + self.name
-        self.trace(twin).plot(ax=ax, style=style, color=color, label=label)
+        if name_type == 'events':
+            #TODO: plot in here
+            pass
+        elif name_type == '1d':
+            trace = self.trace(twin)
+            if trace is None:
+                return
+            trace.plot(ax=ax, style=style, color=color, label=label)
+        elif name_type == '2d':
+            #TODO: plot in here
+            pass

@@ -114,15 +114,15 @@ class TableModel(QtCore.QAbstractItemModel):
         yield
         self.endRemoveRows()
 
-    def _obj_to_index(self, obj):
+    def _obj_to_index(self, obj, col=0):
         if obj is None:
             return QtCore.QModelIndex()
         elif obj in self._children:
             row = self._children.index(obj)
-            return self.createIndex(row, 0, obj)
+            return self.createIndex(row, col, obj)
         elif obj._parent is not None:
             row = obj._parent._children.index(obj)
-            return self.createIndex(row, 0, obj)
+            return self.createIndex(row, col, obj)
         else:
             return QtCore.QModelIndex()
 

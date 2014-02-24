@@ -1,4 +1,4 @@
-from aston.Math.Other import delta13C_Santrock
+from aston.spectra.Isotopes import delta13C_Santrock
 
 
 def test_delta13c():

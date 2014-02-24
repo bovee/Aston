@@ -1,7 +1,11 @@
 import math
 import re
 from aston.trace.Trace import AstonSeries
+
 functions = {}  # TODO
+istr_type_2d = ['ms', 'uv', 'irms']
+istr_type_evts = ['refgas', 'fia', 'fxn', 'deadvol']
+
 SHORTCUTS = {'alkanes': '57#ms+71#ms+85#ms',
              'alkenes': '55#ms+69#ms+83#ms',
              'alkadienes': '67#ms+81#ms',
@@ -21,7 +25,66 @@ def tokens(istr):
     Same as tokenize, but returns only tokens
     (and at all parantheses levels).
     """
-    return re.findall(r'[^\*\\\+\-\^\(\)]+', istr)
+
+    # make a list of all alphanumeric tokens
+    toks = re.findall(r'[^\*\\\+\-\^\(\)]+\(?', istr)
+
+    #remove the functions
+    return [t for t in toks if not t.endswith('(')]
+
+
+def istr_type(istr):
+    """
+    Given an "ion" specification, determine its "type", e.g. 1D, Events, etc.
+    """
+    data = set(tokens(istr))
+    has_events = not data.isdisjoint(istr_type_evts)
+    has_2d = not data.isdisjoint(istr_type_2d)
+    has_1d = data.difference(istr_type_evts).difference(istr_type_2d) != set()
+
+    if has_events and not (has_1d or has_2d):
+        return 'events'
+    elif has_1d and not has_events:
+        return '1d'
+    elif has_2d and not (has_events or has_1d):
+        return '2d'
+    else:
+        return None
+
+
+def istr_best_2d_source(istr, avail_sources=None):
+    if avail_sources is None:
+        avail_sources = []
+    for token in tokens(istr):
+        s = token.split('#')[-1]
+        if s in istr_type_2d and s in avail_sources:
+            return s
+    else:
+        for s in istr_type_2d:
+            if s in avail_sources:
+                return s
+    return None
+
+
+def token_source(token, avail_sources=None):
+    prim_2d = None
+    if avail_sources is None:
+        avail_sources = []
+    else:
+        # find the "best" 2d trace available
+        for s in istr_type_2d:
+            if s in avail_sources:
+                prim_2d = s
+                break
+
+    if token in avail_sources:
+        return '', token
+    elif '#' in token:
+        return token.rsplit('#', 1)
+    elif token in {'tic', 'x', ''} and 'fid' in avail_sources:
+        return token, 'fid'
+    else:
+        return token, prim_2d
 
 
 def tokenize(istr, token):
