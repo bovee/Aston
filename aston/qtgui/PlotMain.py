@@ -138,29 +138,23 @@ class Plotter(object):
         #    alpha = 0.15
 
         #TODO: determine the number of axes to use
-        ls = {'solid': '-', 'dash': '--', 'dot': ':', 'dash-dot': '-.'}
-
         #TODO: should be filtering out invalid plots before here
         for pnum, plot in enumerate(plots):
             #TODO: colors
             if plot.style == 'auto':
-                #FIXME: style for auto needs to be drawn from somewhere
-                #FIXME: auto style could be "color strips"
-                plot.plot(style='-', color='k', ax=self.plt)
-            elif plot.style in ls:
-                plot.plot(style=ls[plot.style], color='k', ax=self.plt)
-                for pk in plot.peaks:
-                    pk.plot(ax=self.plt)
-            elif plot.style == 'heatmap':
-                plot.frame().plot(style='heatmap', ax=self.plt)
-            elif plot.style == 'colors':
-                plot.frame().plot(style='colors', ax=self.plt)
+                style = 'solid'
+            else:
+                style = plot.style
 
+            #FIXME: style for auto needs to be drawn from somewhere
+            #FIXME: auto style could be "color strips"
+            plot.plot(style=style, color='k', ax=self.plt)
             for pk in plot.peaks:
                 #TODO: send along facecolor and alpha
                 #facecolor=desaturate(c, 0.2), alpha=alpha, lw=0
                 if pk.vis:
                     self.patches.append(pk.plot(ax=self.plt))
+
 
         #        if 'scaled' in self._style:
         #            #TODO: fails at negative chromatograms

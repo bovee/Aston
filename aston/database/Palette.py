@@ -204,6 +204,12 @@ class Plot(Base):
 
         return trace
 
+    def frame(self, twin=None):
+        #TODO: use twin
+        source = istr_best_2d_source(self.name.lower(), \
+                                     self.paletterun.avail_sources())
+        return self.paletterun.datafile(source).data
+
     def subtraces(self, method=None, twin=None):
         #self.paletterun.datafile(source)
         if method == 'coda':
@@ -217,11 +223,13 @@ class Plot(Base):
         if name_type == 'events':
             #TODO: plot in here
             pass
-        elif name_type == '1d':
+        elif name_type == '1d' and style not in {'heatmap', 'colors'}:
             trace = self.trace(twin)
             if trace is None:
                 return
-            trace.plot(ax=ax, style=style, color=color, label=label)
+            ls = {'solid': '-', 'dash': '--', 'dot': ':', \
+                  'dash-dot': '-.'}
+            trace.plot(ax=ax, style=ls[style], color=color, label=label)
         elif name_type == '2d':
-            #TODO: plot in here
-            pass
+            #TODO: use colors
+            self.frame(twin).plot(style=style, ax=ax)
