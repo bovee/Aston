@@ -131,10 +131,11 @@ class PaletteRun(Base):
             else:
                 tol = 0.5
 
-            try:
-                return df.trace(istr, tol, twin=twin)
-            except ValueError:
-                return None
+            return df.trace(istr, tol, twin=twin)
+            #try:
+            #    return df.trace(istr, tol, twin=twin)
+            #except ValueError:
+            #    return None
 
 
 class Plot(Base):
@@ -223,13 +224,16 @@ class Plot(Base):
         if name_type == 'events':
             #TODO: plot in here
             pass
-        elif name_type == '1d' and style not in {'heatmap', 'colors'}:
+        elif style in {'heatmap', 'colors'}:
+            #TODO: should only be on name_type == '2d' ?
+            # need other ui changes first though
+            #TODO: use colors
+            self.frame(twin).plot(style=style, color=color, ax=ax)
+        else:
+            #TODO: should technically only be allowed on 1d plots
             trace = self.trace(twin)
             if trace is None:
                 return
             ls = {'solid': '-', 'dash': '--', 'dot': ':', \
                   'dash-dot': '-.'}
             trace.plot(ax=ax, style=ls[style], color=color, label=label)
-        elif name_type == '2d':
-            #TODO: use colors
-            self.frame(twin).plot(style=style, ax=ax)

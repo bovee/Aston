@@ -91,6 +91,9 @@ class PaletteTreeModel(TableModel):
         self.name_delegate = NameColDelegate()
         self.tree_view.setItemDelegateForColumn(self.fields.index('name'), \
                                                 self.name_delegate)
+        self.color_delegate = ColorDelegate()
+        self.tree_view.setItemDelegateForColumn(self.fields.index('color'), \
+                                                self.color_delegate)
 
         ##prettify
         tree_view.collapseAll()
@@ -161,12 +164,13 @@ class PaletteTreeModel(TableModel):
             elif role == QtCore.Qt.DisplayRole or role == QtCore.Qt.EditRole:
                 if fld == 'name':
                     rslt = obj.name
-                elif fld in ['style', 'color']:
-                    if fld == 'style':
-                        i = obj.style
-                    elif fld == 'color':
-                        i = obj.color
-                    rslt = aston_field_opts[fld][i]
+                elif fld == 'style':
+                    rslt = aston_field_opts[fld][obj.style]
+                elif fld == 'color':
+                    if obj.style in {'heatmap', 'colors'}:
+                        rslt = aston_field_opts['color-2d'][obj.color]
+                    else:
+                        rslt = aston_field_opts['color-1d'][obj.color]
             elif role == QtCore.Qt.FontRole and fld == 'name':
                 # strike out invalid plot names
                 if not obj.is_valid:
@@ -186,7 +190,7 @@ class PaletteTreeModel(TableModel):
                 if fld == 'name':
                     rslt = obj.name
                 elif fld == 'color':
-                    rslt = aston_field_opts[fld][obj.color]
+                    rslt = aston_field_opts['color-1d'][obj.color]
                 elif fld in {'p-model'}:
                     v = obj.components[0].info.get(fld, None)
                     if v is not None:
@@ -199,7 +203,7 @@ class PaletteTreeModel(TableModel):
                 elif fld in {'p-type'}:
                     rslt = aston_field_opts[fld][obj.info.get(fld, '')]
                 elif fld in {'p-d13c'}:
-                    rslt = obj.info.get(fld, '')
+                    rslt = str(obj.info.get(fld, ''))
                 elif fld in {'s-mz-names'}:
                     rslt = ','.join(str(c._trace.name) for c in obj.components)
                 elif fld in {'p-area', 'p-length', 'p-height', 'p-width', \
@@ -240,7 +244,12 @@ class PaletteTreeModel(TableModel):
         except:  # python 3
             data = str(data)
         col = self.fields[index.column()].lower()
-        if col in aston_field_opts:
+        if col == 'color':
+            rev_dict = {str(v): k for k, v \
+                        in aston_field_opts['color-1d'].items()}
+            rev_dict.update({str(v): k for k, v \
+                             in aston_field_opts['color-2d'].items()})
+        elif col in aston_field_opts:
             rev_dict = {str(v): k for k, v \
                         in aston_field_opts[col].items()}
 
@@ -250,6 +259,8 @@ class PaletteTreeModel(TableModel):
             obj.name = data
             #TODO: split apart commas to make mulitple plots
         elif col in {'style', 'color'}:
+            if col == 'style':
+                obj.color = 'auto'
             setattr(obj, col, rev_dict[data])
         elif col in {'p-type'}:
             obj.info[col] = rev_dict[data]
@@ -264,14 +275,14 @@ class PaletteTreeModel(TableModel):
         if isinstance(obj, Plot):
             obj.is_valid = True
 
-        if col == 'vis' and isinstance(obj, Plot):
+        if col in {'vis', 'style'} and isinstance(obj, Plot):
             self.master_window.plot_data(update_bounds=True)
         else:
             self.master_window.plot_data(update_bounds=False)
 
         self.db.merge(obj)
         self.db.commit()
-        self.dataChanged.emit(index, index)
+        #self.dataChanged.emit(index, index)
         return True
 
     def recalculate_peaks(self, dbplot, isotopic=True):
@@ -282,10 +293,11 @@ class PaletteTreeModel(TableModel):
             if d13c is not None:
                 calc_carbon_isotopes(pks, d13cstd=float(d13c), \
                                      d18ostd=float(d18o))
-        print(self.fields, 'p-d13c' in self.fields)
         for pk in pks:
             if 'p-d13c' in self.fields:
-                self._obj_to_index(pk, col=self.fields.index('p-d13c'))
+                pass
+                #idx = self._obj_to_index(pk, col=self.fields.index('p-d13c'))
+                #self.dataChanged.emit(idx, idx)
             self.db.merge(pk)
 
     def flags(self, index):
@@ -632,13 +644,9 @@ class PaletteTreeModel(TableModel):
 
 
 class NameColDelegate(QtGui.QItemDelegate):
-    #def __init__(self, opts, *args):
-    #    self.opts = opts
-    #    super(ComboDelegate, self).__init__(*args)
-
     def get_opts(self, obj):
         #TODO: weed out events
-        opts = [i.lstrip('#') for a in obj.paletterun.run.analyses \
+        opts = [i.lstrip('#*') for a in obj.paletterun.run.analyses \
                         for i in a.trace.split(',')]
         opts += ['tic']
         return opts
@@ -673,3 +681,29 @@ class NameColDelegate(QtGui.QItemDelegate):
             data = str(editor.text())
         data = data.replace('+-', '±').replace('->', '→')
         model.setData(index, data, QtCore.Qt.EditRole)
+
+
+class ColorDelegate(QtGui.QItemDelegate):
+    def get_opts(self, obj):
+        if isinstance(obj, Plot) and obj.style in {'heatmap', 'colors'}:
+            return aston_field_opts['color-2d']
+        else:
+            return aston_field_opts['color-1d']
+
+    def createEditor(self, parent, option, index):
+        obj = index.model().mapToSource(index).internalPointer()
+        cmb = QtGui.QComboBox(parent)
+        cmb.addItems(list(self.get_opts(obj).values()))
+        return cmb
+
+    def setEditorData(self, editor, index):
+        obj = index.model().mapToSource(index).internalPointer()
+        opts = self.get_opts(obj)
+        txt = index.data(QtCore.Qt.EditRole)
+        if txt in opts:
+            editor.setCurrentIndex(opts.index(txt))
+        else:
+            super(ColorDelegate, self).setEditorData(editor, index)
+
+    def setModelData(self, editor, model, index):
+        model.setData(index, editor.currentText(), QtCore.Qt.EditRole)

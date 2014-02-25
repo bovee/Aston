@@ -57,7 +57,7 @@ class AgilentMHSampleInfo(TraceFile):
         except:
             u = lambda s: s
 
-        d = super(AgilentMHAcqMethod, self).info
+        d = super(AgilentMHSampleInfo, self).info
         r = ElementTree.parse(self.filename).getroot()
         info = {i.find('Name').text: i.find('Value').text \
                 for i in r.findall('Field')}

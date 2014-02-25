@@ -32,11 +32,11 @@ class AstonFrameBinary(TypeDecorator):
 
 MutableDict.associate_with(JSONDict)
 
-DBSession = scoped_session(sessionmaker(expire_on_commit=False))
 Base = declarative_base()
 
 
 def initialize_sql(engine):
+    DBSession = scoped_session(sessionmaker(expire_on_commit=False))
     DBSession.configure(bind=engine)
     Base.metadata.bind = engine
     Base.metadata.create_all(engine)
@@ -44,9 +44,9 @@ def initialize_sql(engine):
 
 
 def quick_sqlite(filename):
-    #TODO: close old session if still open?
     from sqlalchemy import create_engine
-    DBSession.close_all()
+
+    #TODO: close old session if still open?
     engine = create_engine('sqlite:///' + filename)
     session = initialize_sql(engine)
     return session

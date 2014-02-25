@@ -5,6 +5,7 @@ from aston.trace.Trace import AstonSeries
 #from aston.spectra.Isotopes import delta13C_Santrock, delta13C_Craig
 from aston.peaks.PeakFitting import fit, guess_initc
 from aston.peaks.PeakModels import peak_models
+from aston.trace.Events import desaturate
 
 peak_models = dict([(pm.__name__, pm) for pm in peak_models])
 
@@ -64,11 +65,13 @@ class Peak(object):
                     b_trace += c.baseline
         else:
             TOL = 0.5
+
             def check(name):
                 try:
                     return np.abs(mz - float(name)) < TOL
                 except:
                     return False
+
             cs = [c for c in self.components if check(c._trace.name)]
             trace = sum(c.trace for c in cs)
             b_trace = sum(c.baseline for c in cs)
@@ -94,13 +97,15 @@ class Peak(object):
         return np.vstack([t, z]).T
 
     def plot(self, mz=None, color='k', alpha=0.5, ax=None):
+        from matplotlib.path import Path
+        from matplotlib.patches import PathPatch
+
         #TODO: allow plotting to a 2D plot?
         # confine matplotlib imports to here, so this module works
         # even if matplotlib is not installed (e.g. on a server)
-        from matplotlib.path import Path
-        from matplotlib.patches import PathPatch
         path = self.as_poly(mz)
-        ply = PathPatch(Path(path), facecolor=color, alpha=alpha, lw=0)
+        ply = PathPatch(Path(path), facecolor=desaturate(color, 0.5), \
+                        alpha=alpha, lw=0)
         if ax is None:
             import matplotlib.pyplot as plt
             plt.add_patch(ply)

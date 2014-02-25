@@ -17,6 +17,7 @@ from aston.qtgui.TablePalette import PaletteTreeModel
 import aston.qtgui.MenuOptions
 from aston.peaks.PeakFinding import find_peaks, find_peaks_as_first
 from aston.peaks.Integrators import integrate_peaks
+from aston.qtgui.Fields import aston_field_opts
 
 
 class AstonWindow(QtGui.QMainWindow):
@@ -104,14 +105,13 @@ class AstonWindow(QtGui.QMainWindow):
         #self.ui.actionSpecPrevSave.triggered.connect( \
         #  self.specplotter.save_prev_spec)
 
-        ##flesh out the settings menu
-        #color_menu = QtGui.QMenu(self.ui.menuSettings)
-        #v_cs = self.settings.get_key('color_scheme', dflt='Spectral')
-        #v = self.plotter._colors[v_cs]
-        #self.plotter.setColorScheme(v)
-        #self._add_opts_to_menu(color_menu, \
-        #  self.plotter.availColors(), self.set_color_scheme, v)
-        #self.ui.actionColor_Scheme.setMenu(color_menu)
+        #flesh out the settings menu
+        color_menu = QtGui.QMenu(self.ui.menuSettings)
+        v_cs = self.settings.get_key('color_scheme', dflt='Spectral')
+        v = aston_field_opts['color-2d'][v_cs]
+        c_opts = list(aston_field_opts['color-2d'].values())
+        self._add_opts_to_menu(color_menu, c_opts, self.set_color_scheme, v)
+        self.ui.actionColor_Scheme.setMenu(color_menu)
 
         self.ui.actionLegend.triggered.connect(self.set_legend)
         self.ui.actionGraphGrid.triggered.connect(self.set_legend)
@@ -187,10 +187,16 @@ class AstonWindow(QtGui.QMainWindow):
 
         #need to discard old connections
         #self.ui.fileTreeView.clicked.disconnect()
-        self.ui.fileTreeView.selectionModel().currentChanged.disconnect()
-        self.ui.fileTreeView.customContextMenuRequested.disconnect()
-        self.ui.fileTreeView.header().customContextMenuRequested.disconnect()
-        self.ui.fileTreeView.header().sectionMoved.disconnect()
+        #self.ui.fileTreeView.selectionModel().currentChanged.disconnect()
+        #self.ui.fileTreeView.customContextMenuRequested.disconnect()
+        #self.ui.fileTreeView.header().customContextMenuRequested.disconnect()
+        #self.ui.fileTreeView.header().sectionMoved.disconnect()
+
+        #self.ui.paletteTreeView.clicked.disconnect()
+        self.ui.paletteTreeView.selectionModel().currentChanged.disconnect()
+        #self.ui.paletteTreeView.customContextMenuRequested.disconnect()
+        #self.ui.paletteTreeView.header().customContextMenuRequested.disconnect()
+        #self.ui.paletteTreeView.header().sectionMoved.disconnect()
 
         self.load_new_file_db(folder)
 
@@ -211,6 +217,7 @@ class AstonWindow(QtGui.QMainWindow):
         self.file_tab = FileTreeModel(file_db, self.ui.fileTreeView, self)
 
         ## add settings widget in
+        #TODO: this will happen multiple times
         self.settings = SettingsWidget(self, db=file_db)
         self.ui.verticalLayout_settings.addWidget(self.settings)
 

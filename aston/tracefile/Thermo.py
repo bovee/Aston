@@ -56,36 +56,42 @@ class ThermoDXF(TraceFile):
     def data(self):
         f = open(self.filename, 'rb')
 
-        f.seek(11)
-        while True:
-            f.seek(f.tell() - 11)
-            if f.read(11) == b'CEvalGCData':
-                break
-            if f.read(1) == b'':
-                f.close()
-                return
+        #TODO: use find_offset to find this?
+        #f.seek(11)
+        #while True:
+        #    f.seek(f.tell() - 11)
+        #    if f.read(11) == b'CEvalGCData':
+        #        break
+        #    if f.read(1) == b'':
+        #        f.close()
+        #        return
+        f.seek(find_offset(f, b'CRawData') + 9)
+        strlen = 2 * struct.unpack('<B', f.read(1))[0]
+        tname = f.read(strlen).decode('utf_16_le')
+        if tname == 'CO2':
+            ions = [44, 45, 46]
+        elif tname == 'CO':
+            ions = [28, 29, 30]
+        elif tname == 'SO2,SO-SO2 Ext,SO':
+            #TODO: check this is in the right order
+            ions = [48, 49, 50, 64, 65, 66]
+        else:
+            #TODO: should save the tname somewhere for future reference
+            ions = [1, 2, 3]
 
-        f.read(4)  # not sure what this value means?
-
-        #TODO: this shouldn't be hardcoded
-        # these values can be found under
-        #CChannelGasConfPart?
-        #45.0 0x1420ef
-        #46.0 0x14211c
-        #
-        ions = [44, 45, 46]
-        ni = len(ions)
+        f.seek(find_offset(f, b'CEvalGCData') + 4)
 
         #bytes until the end converted to # of records
         nscans = int(struct.unpack('<I', f.read(4))[0] / \
-                (4.0 + ni * 8.0))
+                (4.0 + len(ions) * 8.0))
 
-        data = np.array([struct.unpack('<f' + ni * 'd', \
-          f.read(4 + ni * 8)) for _ in range(nscans)])
+        dtype = np.dtype([('index', '<f4'), ('values', '<f8', len(ions))])
+        data = np.fromfile(f, dtype=dtype, count=nscans)
+        # convert time to minutes
+        data['index'] /= 60.
 
-        data[:, 0] /= 60.  # convert time to minutes
         f.close()
-        return AstonFrame(data[:, 1:], data[:, 0], ions)
+        return AstonFrame(data['values'], data['index'], ions)
 
     @property
     def info(self):

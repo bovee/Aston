@@ -17,8 +17,7 @@ def t_to_min(x):
                 for i in range(3))
 
 
-#class mzXML(TraceFile):
-class mzXML(object):
+class mzXML(TraceFile):
     ext = 'MZXML'
     traces = ['#ms']
 

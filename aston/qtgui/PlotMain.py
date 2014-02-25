@@ -1,10 +1,7 @@
-import numpy as np
-import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
+from matplotlib.pyplot import get_cmap
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg
-from matplotlib.transforms import offset_copy
-from matplotlib.patches import Polygon
-from PyQt4.QtCore import Qt, QCoreApplication
+from PyQt4.QtCore import Qt
 from aston.qtgui.PlotNavbar import AstonNavBar
 
 
@@ -42,53 +39,6 @@ class Plotter(object):
 
         self.highlight = None
 
-        tr = lambda s: QCoreApplication.translate('', s)
-        self._colors = {
-            'hsv': tr('Rainbow'),
-            'Accent': tr('Pastels'),
-            'BrBG': tr('Brown-Bluegreen'),
-            'RdBu': tr('Red-Blue'),
-            'RdYlBu': tr('Red-Yellow-Blue'),
-            'RdYlGn': tr('Red-Yellow-Green'),
-            'RdBu': tr('Red-Blue'),
-            'PiYG': tr('Pink-Yellow-Green'),
-            'Spectral': tr('Spectral'),
-            'spring': tr('Spring'),
-            'summer': tr('Summer'),
-            'autumn': tr('Autumn'),
-            'winter': tr('Winter'),
-            'cool': tr('Cool'),
-            'copper': tr('Copper'),
-            'jet': tr('Jet'),
-            'Paired': tr('Paired'),
-            'binary': tr('White-Black'),
-            'gray': tr('Black-White')}
-        self._linestyle = ['-', '--', ':', '-.']
-        self.setColorScheme(scheme)
-        self.setStyle(style)
-
-    def setColorScheme(self, scheme=None):
-        colors = dict((str(self._colors[k]), k) for k in self._colors)
-        if scheme is None:
-            scheme = self._colors['Spectral']
-        self._color = plt.get_cmap(colors[str(scheme)])
-        self._peakcolor = self._color(0, 1)
-        return colors[str(scheme)]
-
-    def availColors(self):
-        l = [self._colors['Spectral']]
-        l += [self._colors[c] for c in self._colors if c != 'Spectral']
-        return l
-
-    def setStyle(self, style=None):
-        #styles = dict((str(self._styles[k]), k) for k in self._styles)
-        styles = {}
-        if style is None:
-            self._style = 'default'
-        else:
-            self._style = styles[str(style)]
-        return self._style
-
     def availStyles(self):
         l_ord = ['default', 'scaled', 'stacked', 'scaled stacked', '2d']
         return [self._styles[s] for s in l_ord]
@@ -99,18 +49,21 @@ class Plotter(object):
 
         # clean up anything on the graph already
         self.plt.cla()
-        #if self.cb is not None:
-        #    #TODO: make this not horrific!
-        #    #the next two lines used to work?
-        #    #self.plt.figure.delaxes(self.cb.ax)
-        #    #self.cb = None
-        #    tfig = self.plt.figure
-        #    tfig.clf()
-        #    self.plt = tfig.add_subplot(111, frameon=False)
-        #    self.plt.xaxis.set_ticks_position('none')
-        #    self.plt.yaxis.set_ticks_position('none')
-        #    self.cb = None
-        #self.plt.figure.subplots_adjust(left=0.05, right=0.95)
+        if self.cb is not None:
+            #TODO: this should work? need way to update size of mappable axes
+            #self.plt.figure.delaxes(self.cb.ax)
+            #self.cb.mappable.axes.autoscale()
+            #self.cb = None
+            #the next two lines used to work?
+            self.plt.figure.delaxes(self.cb.ax)
+            self.cb = None
+            tfig = self.plt.figure
+            tfig.clf()
+            self.plt = tfig.add_subplot(111, frameon=False)
+            self.plt.xaxis.set_ticks_position('none')
+            self.plt.yaxis.set_ticks_position('none')
+            self.cb = None
+        self.plt.figure.subplots_adjust(left=0.05, right=0.95)
         self.patches = []
 
         #plot all of the datafiles
@@ -118,43 +71,70 @@ class Plotter(object):
             self.canvas.draw()
             return
 
-        def desaturate(c, k=0):
-            """
-            Utility function to desaturate a color c by an amount k.
-            """
-            intensity = 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]
-            return [intensity * k + i * (1 - k) for i in c]
-
         ## make up a factor to separate plots by
         #if 'stacked' in self._style:
-        #    fts = datafiles[0].trace(datafiles[0].info['traces'].split(',')[0])
+        #    fts = datafils[0].trace(datafiles[0].info['traces'].split(',')[0])
         #    sc_factor = (max(fts.data[:, 0]) - min(fts.data[:, 0])) / 5.
 
         ## count the number of traces that will be displayed
         #trs = sum(1 for x in datafiles for _ in x.info['traces'].split(','))
-        #if trs < 6:
-        #    alpha = 0.75 - trs * 0.1
-        #else:
-        #    alpha = 0.15
+        nplots = len(plots)
+        if nplots < 6:
+            alpha = 0.75 - nplots * 0.1
+        else:
+            alpha = 0.15
+        #FIXME: read this from the menu
+        colors = get_cmap('Spectral')
 
         #TODO: determine the number of axes to use
         #TODO: should be filtering out invalid plots before here
         for pnum, plot in enumerate(plots):
-            #TODO: colors
             if plot.style == 'auto':
+                #FIXME: style for auto needs to be drawn from somewhere
                 style = 'solid'
             else:
                 style = plot.style
+            if plot.color == 'auto':
+                if style in {'heatmap', 'colors'}:
+                    c = colors
+                elif nplots > 7:
+                    c = colors(int(pnum % 7) / 6.0, 1)
+                elif nplots == 1:
+                    c = colors(0, 1)
+                else:
+                    c = colors(int(pnum % nplots) / float(nplots - 1), 1)
+            else:
+                c = plot.color
 
-            #FIXME: style for auto needs to be drawn from somewhere
             #FIXME: auto style could be "color strips"
-            plot.plot(style=style, color='k', ax=self.plt)
-            for pk in plot.peaks:
-                #TODO: send along facecolor and alpha
-                #facecolor=desaturate(c, 0.2), alpha=alpha, lw=0
-                if pk.vis:
-                    self.patches.append(pk.plot(ax=self.plt))
+            if style == 'heatmap':
+                plot.plot(style=style, color=c, ax=self.plt)
+                if self.legend:
+                    self.cb = self.plt.figure.colorbar(self.plt.images[0])
+            elif style == 'colors':
+                plot.plot(style=style, color=c, ax=self.plt)
+            else:
+                plot.plot(style=style, color=c, ax=self.plt)
 
+                # plot the peaks
+                for pk in plot.peaks:
+                    if pk.color == 'auto':
+                        pc = c
+                    else:
+                        pc = pk.color
+
+                    if pk.vis:
+                        pk_pa = pk.plot(ax=self.plt, color=pc, alpha=alpha)
+                        self.patches.append(pk_pa)
+
+                #add a legend and make it pretty
+                if self.legend:
+                    leg = self.plt.legend(frameon=False)
+                    clrs = [i.get_color() for i in leg.get_lines()]
+                    for i, j in enumerate(clrs):
+                        leg.get_texts()[i].set_color(j)
+                    for i in leg.get_lines():
+                        i.set_linestyle('')
 
         #        if 'scaled' in self._style:
         #            #TODO: fails at negative chromatograms
@@ -176,14 +156,9 @@ class Plotter(object):
         #          ls=ls, lw=1.2, label=nm)
         #        tnum += 1
 
-        #add a legend and make it pretty
-        if self.legend:
-            leg = self.plt.legend(frameon=False)
-            clrs = [i.get_color() for i in leg.get_lines()]
-            for i, j in enumerate(clrs):
-                leg.get_texts()[i].set_color(j)
-            for i in leg.get_lines():
-                i.set_linestyle('')
+            ## for heatmap plots
+            #if self.legend:
+            #    self.cb = self.plt.figure.colorbar(img)
 
         #update the view bounds in the navbar's history
         if update_bounds:
@@ -238,18 +213,6 @@ class Plotter(object):
 
         #update the canvas
         self.canvas.draw()
-
-    def _plot2D(self, dt):
-        if dt.data is None:
-            dt._cache_data()
-
-        ext, grid = dt.as_2D()
-
-        print(type(ext), type(grid), ext)
-        img = self.plt.imshow(grid, origin='lower', aspect='auto', \
-          extent=ext, cmap=self._color)
-        if self.legend:
-            self.cb = self.plt.figure.colorbar(img)
 
     def redraw(self):
         self.canvas.draw()
