@@ -333,6 +333,7 @@ class PaletteTreeModel(TableModel):
             else:
                 prun = PaletteRun(run=run, palette=self.active_palette)
                 self.db.add(prun)
+                self.add_plot([prun])
             prun.enabled = True
             self._children.append(prun)
         for p in prun.plots:

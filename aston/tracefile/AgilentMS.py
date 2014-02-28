@@ -101,7 +101,7 @@ class AgilentMS(TraceFile):
             data[scn][ilocs] = abn
         f.close()
 
-        ions = ions / 20
+        ions /= 20.
         return AstonFrame(data, times, ions)
 
     @property

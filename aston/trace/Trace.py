@@ -4,6 +4,7 @@ import zlib
 import numpy as np
 import scipy.io.wavfile
 import scipy.signal
+import scipy.sparse
 from scipy.interpolate import interp1d
 from aston.spectra.Scan import Scan
 
@@ -183,7 +184,10 @@ class AstonFrame(object):
         #    self.columns = data.columns.values
         elif index is not None:
             #TODO: handle sparse arrays
-            self.values = np.array(data)
+            if isinstance(data, list):
+                self.values = np.array(data)
+            else:
+                self.values = data
             self.index = np.array(index)
             self.columns = columns
         else:

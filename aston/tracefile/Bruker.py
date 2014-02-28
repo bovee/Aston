@@ -87,9 +87,38 @@ class BrukerMSMS(TraceFile):
         #self.ions = [1]
 
 
-#class BrukerBAF(TraceFile):
-#    ext = 'BAF'
-#    mgc = '2400'
-#
-#    pass
-#    #TODO: implement this
+class BrukerBAF(TraceFile):
+    ext = 'BAF'
+    mgc = '2400'
+
+    pass
+    #TODO: implement this
+    #0x000c - q - 230 or 242
+
+    ###############################################
+    #file 1 - 230 ("Carolina")
+    #0xFFFFFFFFFFFF at 0x678D, 0x6825, 0xC459, 0x491AD,
+    # 0x500E7, 0x57C39, and 25+ others
+
+    # text section starts 0x018E, ends 0x6708
+
+    #0x409BF - (d- -1.000) then a ton of doubles
+
+    # 3000 scans?, 2371 ions
+
+    ###############################################
+    #file 2 - 230 ("Short")
+
+
+    ###############################################
+    #file 3 - 242
+    #0xFFFFFFFFFFFF at 0x6BEF, 0x6CB7, 0x4044A
+
+    # text section starts 0x0186, ends 0x6B3B
+
+    # some CHP records at 0xAE9B til 0xBF5d (?)
+
+    #0x42a1e - (d- -1.000) then a ton of doubles
+    # til 0x23DFFF56
+
+    #0x23FA916A - 0xFFFFFFFF before last data chunk?

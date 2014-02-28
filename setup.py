@@ -29,7 +29,7 @@ def read(fname):
 
 options = {
     'name': 'Aston',
-    'version': '0.6.4a',
+    'version': '0.7.0',
     'description': 'Mass/UV Spectral Analysis Program',
     'author': 'Roderick Bovee',
     'author_email': 'bovee@fas.harvard.edu',
@@ -53,8 +53,7 @@ options = {
     'package_data': {'aston': \
       ['qtgui/i18n/*.qm', 'qtgui/icons/*.png']},
     'include_package_data': True,
-    'install_requires': ['numpy', 'scipy', 'matplotlib', 'pandas',
-                         'sqlalchemy'],
+    'install_requires': ['numpy', 'scipy', 'matplotlib', 'sqlalchemy'],
     'test_suite': 'nose.collector',
 }
 

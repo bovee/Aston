@@ -1,18 +1,21 @@
 0.7 Checklist
 *************
 
-* full update to use sqlalchemy
-* isotope runs should expose their individual ions as traces
+* mzML & mzXML file support
+* save AIA/CDF, mzML & mzXML
+* RAW file support
+  - look at linking to unfinnigan? (https://code.google.com/p/unfinnigan/)
+* Bruker file formats
+* Waters file formats
+* Chemstation B+ REG files
+* MSMS support
+  - Agilent MSMS Peak file format
+  - Bruker MSMS spectra
 
 
 0.8 Checklist
 *************
 
-* mzML & mzXML file support
-* save AIA/CDF, mzML & mzXML
-* RAW file support
-  - look at linking to unfinnigan? (https://code.google.com/p/unfinnigan/)
-* Chemstation B+ REG files
 * Agilent .REG scraping
   - method parameters
 * autoalign chromatograms
@@ -24,7 +27,6 @@
     coelution spots to be found
 * spectra from Agilent MS SIM method (e.g. CM1292) have a "0" mz
   that may be erroneous and should be removed?
-* make aston not freak out if datafile is not found?
 * fix color scaling as more chromatograms added: hard to keep track
 * put retention time on extracted spectra
 * buttons for spectral navigation?
@@ -35,9 +37,7 @@
 
 * MSMS support
   - tune MSMS file format performance (rewrites in C?)
-  - Agilent MSMS Peak file format
   - spectral range display (as average) for Agilent MSMS
-  - Bruker MSMS spectra
   - MSMS points on graph / MSMS data display
 * Method Database
   - allow calibration curves to be saved for compounds

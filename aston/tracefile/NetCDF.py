@@ -77,7 +77,7 @@ def write_netcdf(filename, df, info=None):
     v = f.createVariable('scan_acquisition_time', '>d', ('scan_number',))
     v[:] = df.index.astype('d')
     v = f.createVariable('total_intensity', '>d', ('scan_number',))
-    v[:] = df.sum(axis=1).astype('d')
+    v[:] = df.values.sum(axis=1).astype('d')
     v = f.createVariable('point_count', '>i', ('scan_number',))
     v[:] = np.sum(df.values != 0, axis=1).astype('i')
     f.flush()
