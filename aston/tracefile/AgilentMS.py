@@ -2,10 +2,10 @@ import os.path as op
 import gzip
 import io
 import struct
-import numpy as np
-#import scipy
 from datetime import datetime
 from xml.etree import ElementTree
+import numpy as np
+import scipy.sparse
 from aston.resources import cache
 from aston.trace.Trace import AstonSeries, AstonFrame
 from aston.tracefile.TraceFile import TraceFile
@@ -59,6 +59,90 @@ class AgilentMS(TraceFile):
             f.seek(0x118)
         nscans = struct.unpack('>H', f.read(2))[0]
 
+        f.seek(0x10A)
+        f.seek(2 * struct.unpack('>H', f.read(2))[0] - 2)
+        dstart = f.tell()
+
+        # determine total number of measurements in file
+        tot_pts = 0
+        rowst = np.empty(nscans + 1, dtype=int)
+        rowst[0] = 0
+
+        for scn in range(nscans):
+            # get the position of the next scan
+            npos = f.tell() + 2 * struct.unpack('>H', f.read(2))[0]
+
+            # keep a running total of how many measurements
+            tot_pts += (npos - f.tell() - 26) / 4
+            rowst[scn + 1] = tot_pts
+
+            # move forward
+            f.seek(npos)
+
+        # go back to the beginning
+        f.seek(dstart)
+
+        ions = []
+        i_lkup = {}
+        cols = np.empty(tot_pts, dtype=int)
+        vals = np.empty(tot_pts, dtype=np.int16)
+        times = np.empty(nscans)
+
+        for scn in range(nscans):
+            npos = f.tell() + 2 * struct.unpack('>H', f.read(2))[0]
+
+            # the sampling rate is evidentally 60 kHz on all Agilent's MS's
+            times[scn] = struct.unpack('>I', f.read(4))[0] / 60000.
+
+            f.seek(f.tell() + 12)
+            npts = rowst[scn + 1] - rowst[scn]
+            mzs = struct.unpack('>' + npts * 'HH', f.read(npts * 4))
+
+            # there's some bug in the numpy implementation that makes this fail
+            # after the first time
+            #mzs = np.fromfile(f, dtype='>H', count=npts * 2)
+
+            #nions = set([mz for mz in mzs[0::2] if mz not in i_lkup])
+            nions = set(mzs[0::2]).difference(i_lkup)
+            i_lkup.update({ion: i + len(ions) for i, ion in enumerate(nions)})
+            #i_lkup.update(dict((ion, i + len(ions)) \
+            #  for i, ion in enumerate(nions)))
+            ions += nions
+
+            #if scn < 3:
+            #    print(npts)
+            #    print(len(mzs))
+            #    print(mzs)
+            #    print(hex(npos))
+
+            cols[rowst[scn]:rowst[scn + 1]] = \
+              [i_lkup[i] for i in mzs[0::2]]
+            vals[rowst[scn]:rowst[scn + 1]] = mzs[1::2]
+            f.seek(npos)
+        f.close()
+
+        #vals = (vals & 16383) * 8 ** (vals >> 14)
+        data = scipy.sparse.csr_matrix((vals, cols, rowst), \
+          shape=(nscans, len(ions)), dtype=float)
+        ions = np.array(ions) / 20.
+        #ions = [i / 20. for i in ions]
+        return AstonFrame(data, times, ions)
+
+    @property
+    @cache(maxsize=1)
+    def old_data(self):
+        f = open(self.filename, 'rb')
+
+        # get number of scans to read in
+        # note that GC and LC chemstation store this in slightly different
+        # places
+        f.seek(0x5)
+        if f.read(4) == 'GC':
+            f.seek(0x142)
+        else:
+            f.seek(0x118)
+        nscans = struct.unpack('>H', f.read(2))[0]
+
         # find the starting location of the data
         f.seek(0x10A)
         f.seek(2 * struct.unpack('>H', f.read(2))[0] - 2)
@@ -83,7 +167,11 @@ class AgilentMS(TraceFile):
             scan_pts[scn] = npts
 
             #TODO: use numpy.fromfile?
-            nions = struct.unpack('>' + npts * 'HH', f.read(npts * 4))[0::2]
+            nions = np.fromfile(f, dtype='>H', count=npts * 2)[0::2]
+            if scn < 2:
+                print(npts)
+                print(nions)
+            #nions = struct.unpack('>' + npts * 'HH', f.read(npts * 4))[0::2]
             ions.update(nions)
             f.seek(npos)
 
@@ -91,9 +179,9 @@ class AgilentMS(TraceFile):
         data = np.empty((len(times), len(ions)), dtype=float)
         for scn in range(nscans):
             f.seek(scan_locs[scn])
-            npts = scan_pts[scn]
             #TODO: use numpy.fromfile?
-            mzs = np.array(struct.unpack('>' + npts * 'HH', f.read(npts * 4)))
+            mzs = np.fromfile(f, dtype='>H', count=scan_pts[scn] * 2)
+            #mzs = np.array(struct.unpack('>' + npts * 'HH', f.read(npts * 4)))
             if len(mzs) == 0:
                 continue
             ilocs = np.searchsorted(ions, mzs[0::2])

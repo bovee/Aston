@@ -251,7 +251,12 @@ class AstonFrame(object):
         elif set(name).issubset('1234567890.'):
             cols = np.genfromtxt(np.array(self.columns).astype(bytes))
             cols = np.abs(cols - float(name)) < tol
-            data = self.values[:, cols].sum(axis=1)
+            if not np.any(cols):
+                data = np.zeros(self.shape[0]) * np.nan
+            elif isinstance(self.values, scipy.sparse.spmatrix):
+                data = self.values[:, cols].toarray().sum(axis=1)
+            else:
+                data = self.values[:, cols].sum(axis=1)
         else:
             data = np.zeros(self.shape[0]) * np.nan
             name = ''
@@ -370,6 +375,8 @@ class AstonFrame(object):
                 mz_abn = self.values[idx:en_idx + 1, :].copy().sum(axis=0)
             else:
                 mz_abn = aggfunc(self.values[idx:en_idx + 1, :].copy())
+        if isinstance(mz_abn, scipy.sparse.spmatrix):
+            mz_abn = mz_abn.toarray()[0]
         return Scan(self.columns, mz_abn)
 
     def compress(self):
