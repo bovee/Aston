@@ -109,7 +109,7 @@ def read_peaks(db, filename, ftype='isodat'):
             else:
                 ts = TimeSeries(np.array([np.nan]), np.array([np.nan]), [''])
             mapping[dt] += [Peak(info, ts)]
-    # do linearity correction
+    # do drift correction
     if ftype == 'isodat':
         for dt in mapping:
             ref_pks = []

@@ -1,6 +1,6 @@
 import numpy as np
-from aston.TimeSeries import TimeSeries
-from aston.Math.PeakModels import gaussian
+from aston.trace.Trace import AstonSeries
+from aston.peaks.PeakModels import gaussian
 
 
 def generate_chromatogram(n=5, twin=None):

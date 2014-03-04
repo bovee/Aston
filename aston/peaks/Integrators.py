@@ -1,29 +1,31 @@
 import multiprocessing
 import functools
 import numpy as np
-from aston.peaks.Peak import Peak
-from aston.timeseries.TimeSeries import TimeSeries
-from aston.peaks.Math import time
+from aston.peaks.Peak import Peak, PeakComponent
+from aston.trace.Trace import AstonSeries
 from aston.peaks.PeakModels import peak_models
 from aston.peaks.PeakFitting import guess_initc, fit
 
 
-def simple_integrate(ts, peak_list):
+def simple_integrate(ts, peak_list, base_ts=None, intname='simple'):
     """
     Integrate each peak naively; without regard to overlap.
 
     This is used as the terminal step by most of the other integrators.
     """
     peaks = []
-    for t0, t1, hints in peak_list:
-        pk_ts = ts.trace('!', twin=(t0, t1))
-        info = {'name': '{:.2f}-{:.2f}'.format(t0, t1)}
-        info['p-create'] = hints.get('pf', '') + ',simple_integrate'
-        pk = Peak(info, pk_ts)
-        if 'y0' in hints and 'y1' in hints:
-            base = np.array([[t0, hints['y0']], [t1, hints['y1']]])
-            pk.set_baseline(ts.ions[0], base)
-        peaks.append(pk)
+    for hints in peak_list:
+        t0, t1 = hints['t0'], hints['t1']
+        hints['int'] = intname
+        pk_ts = ts.twin((t0, t1))
+        if base_ts is None:
+            # make a two point baseline
+            base = AstonSeries([hints.get('y0', pk_ts[0]), \
+                                hints.get('y1', pk_ts[-1])], \
+                               [t0, t1], name=ts.name)
+        else:
+            base = base_ts.twin((t0, t1))
+        peaks.append(PeakComponent(hints, pk_ts, base))
     return peaks
 
 
@@ -32,32 +34,27 @@ def _get_windows(peak_list):
     Given a list of peaks, bin them into windows.
     """
     win_list = []
-    for t0, t1, hints in peak_list:
-        p_w = (t0, t1)
+    for hints in peak_list:
+        p_w = hints['t0'], hints['t1']
         for w in win_list:
             if p_w[0] <= w[0][1] and p_w[1] >= w[0][0]:
                 w[0] = (min(p_w[0], w[0][0]), \
                         max(p_w[1], w[0][1]))
-                w[1].append((t0, t1, hints))
+                w[1].append(hints)
                 break
         else:
-            win_list.append([p_w, [(t0, t1, hints)]])
+            win_list.append([p_w, [hints]])
     return win_list
 
 
 def constant_bl_integrate(ts, peak_list):
-    #TODO: this doesn't work right yet?
-    # maybe need to eliminate overlapping peaks?
     temp_pks = []
-    for p in peak_list:
-        min_y = ts.trace('!', twin=p[0:2]).y.min()
-        prop = p[2].copy()
+    for hints in peak_list:
+        min_y = np.min(ts.twin((hints['t0'], hints['t1'])).values)
+        prop = hints.copy()
         prop['y0'], prop['y1'] = min_y, min_y
-        temp_pks.append((p[0], p[1], prop))
-    peaks = simple_integrate(ts, temp_pks)
-    for p in peaks:
-        p.info['p-create'] = p.info['p-create'].split(',')[0] + \
-                ',constant_bl_integrate'
+        temp_pks.append(prop)
+    peaks = simple_integrate(ts, temp_pks, intname='constant_bl')
     return peaks
 
 
@@ -68,31 +65,33 @@ def drop_integrate(ts, peak_list):
     peaks = []
     for _, pks in _get_windows(peak_list):
         temp_pks = []
-        pks = sorted(pks, key=lambda p: p[0])
-        if 'y0' in pks[0][2] and 'y1' in pks[-1][2]:
-            y0, y1 = pks[0][2]['y0'], pks[-1][2]['y1']
+        pks = sorted(pks, key=lambda p: p['t0'])
+        if 'y0' in pks[0] and 'y1' in pks[-1]:
+            y0, y1 = pks[0]['y0'], pks[-1]['y1']
         else:
-            y0 = ts.get_point('!', pks[0][0])
-            y1 = ts.get_point('!', pks[-1][1])
+            y0 = ts.get_point(pks[0]['t0'])
+            y1 = ts.get_point(pks[-1]['t1'])
         ys = np.array([y0, y1])
-        xs = np.array([pks[0][0], pks[-1][1]])
+        xs = np.array([pks[0]['t0'], pks[-1]['t1']])
 
         # go through list of peaks to make sure there's no overlap
-        for t0, t1, hints in pks:
+        for hints in pks:
+            t0, t1 = hints['t0'], hints['t1']
+
             # figure out the y values (using a linear baseline)
             hints['y0'] = np.interp(t0, xs, ys)
             hints['y1'] = np.interp(t1, xs, ys)
 
             # if this peak totally overlaps with an existing one, don't add
-            if sum(1 for p in temp_pks if t1 <= p[1]) > 0:
+            if sum(1 for p in temp_pks if t1 <= p['t1']) > 0:
                 continue
-            overlap_pks = [p for p in temp_pks if t0 <= p[1]]
+            overlap_pks = [p for p in temp_pks if t0 <= p['t1']]
             if len(overlap_pks) > 0:
                 # find the last of the overlapping peaks
-                overlap_pk = max(overlap_pks, key=lambda p: p[0])
+                overlap_pk = max(overlap_pks, key=lambda p: p['t0'])
                 # get the section of trace and find the lowest point
-                over_ts = ts.trace('!', twin=(t0, overlap_pk[1]))
-                min_t = over_ts.times[over_ts.y.argmin()]
+                over_ts = ts.twin((t0, overlap_pk['t1']))
+                min_t = over_ts.index[over_ts.values.argmin()]
 
                 # delete the existing overlaping peak
                 for i, p in enumerate(temp_pks):
@@ -102,25 +101,26 @@ def drop_integrate(ts, peak_list):
 
                 # interpolate a new y value
                 y_val = np.interp(min_t, xs, ys)
-                overlap_pk[2]['y1'] = y_val
+                overlap_pk['y1'] = y_val
                 hints['y0'] = y_val
 
                 # add the old and new peak in
-                temp_pks.append((overlap_pk[0], min_t, overlap_pk[2]))
-                temp_pks.append((min_t, t1, hints))
+                overlap_pk['t1'] = min_t
+                temp_pks.append(overlap_pk)
+                hints['t0'], hints['t1'] = min_t, t1
+                temp_pks.append(hints)
             else:
-                temp_pks.append((t0, t1, hints))
+                hints['t0'], hints['t1'] = t0, t1
+                temp_pks.append(hints)
 
         # none of our peaks should overlap, so we can just use
         # simple_integrate now
-        peaks += simple_integrate(ts, temp_pks)
-    for p in peaks:
-        p.info['p-create'] = p.info['p-create'].split(',')[0] + \
-                ',drop_integrate'
+        peaks += simple_integrate(ts, temp_pks, intname='drop')
     return peaks
 
 
 def leastsq_integrate(ts, peak_list, f='gaussian'):
+    #FIXME: transition from t0, t1, params to params (containing 't0'/'t1'
     # lookup the peak model function to use for fitting
     f = {f.__name__: f for f in peak_models}[f]
 
@@ -139,20 +139,23 @@ def leastsq_integrate(ts, peak_list, f='gaussian'):
             initc = guess_initc(tr, f, rts)
         params, _ = fit(tr, [f] * len(initc), initc)
         for p in params:
-            pk_ts = TimeSeries(f(tr.times, **p), tr.times)
+            pk_ts = AstonSeries(f(tr.times, **p), tr.times)
             info = {'name': '{:.2f}'.format(p['x'])}
             info['p-create'] = peak_list[0][2].get('pf', '') + \
                     ',' + 'leastsq_integrate'
-            pk = Peak(info, pk_ts)
+            pk = PeakComponent(info, pk_ts)
             peaks.append(pk)
     return peaks
 
 
 def periodic_integrate(ts, peak_list, offset=0., period=1.):
+    #TODO: should be a peak finder, not an integrator?
     movwin = lambda a, l:  np.lib.stride_tricks.as_strided(a, \
                  (a.shape[0] - l + 1, l), a.itemsize * np.ones(2))
     new_peak_list = []
-    for t0, t1, hints in peak_list:
+    for hints in peak_list:
+        t0, t1 = hints['t0'], hints['t1']
+
         # time the first whole "period" starts
         tpi = offset + period * ((t0 - offset) // period + 1)
         if tpi > t1:
@@ -179,57 +182,69 @@ def periodic_integrate(ts, peak_list, offset=0., period=1.):
     return peaks
 
 
-def merge_ions(pks):
-    cleaned_pks = []
-    sort_pks = sorted(pks, key=lambda pk: time(pk.as_poly()))
-    cur_t = np.nan
-    for pk in sort_pks:
-        if np.abs(cur_t - time(pk.as_poly())) < 0.01:
-            c_pk = cleaned_pks[-1]
-            if not c_pk.data.has_ion(pk.data.ions[0]):
-                c_pk.set_baseline(pk.data.ions[0], pk.baseline())
-                c_pk.rawdata = c_pk.rawdata & pk.rawdata
-                if 's-mzs' in c_pk.info:
-                    del c_pk.info['s-mzs']
-            else:
-                cleaned_pks.append(pk)
+def _peakcomp_to_name(pkc):
+    return '{:.3f}-{:.3f}'.format(pkc.info['t0'], pkc.info['t1'])
+
+
+def merge_peaks_by_time(pks_list, time_diff=0.01):
+    sort_pks = sorted([pk for pks in pks_list for pk in pks], \
+                      key=lambda pk: pk.time())
+
+    # add the first component in as a peak
+    pkc = sort_pks[0]
+    pk = Peak(name=_peakcomp_to_name(pkc), components=[pkc])
+    mrg_pks = [pk]
+
+    for pkc in sort_pks[1:]:
+        c_pk = mrg_pks[-1]
+        if np.abs(c_pk.components[0].time() - pkc.time()) < time_diff and \
+           pkc._trace.name not in {c._trace.name for c in c_pk.components}:
+            c_pk.components.append(pkc)
         else:
-            cleaned_pks.append(pk)
-        cur_t = time(pk.as_poly())
-    return cleaned_pks
+            pk = Peak(name=_peakcomp_to_name(pkc), components=[pkc])
+            mrg_pks.append(pk)
+    return mrg_pks
 
 
-def integrate_mpwrap(ts_and_pks, integrate, fopts):
+def merge_peaks_by_order(pks_list):
+    """
+
+    All lists of peaks need to be the same length.
+    """
+    mrg_pks = []
+    for sub_pks in zip(*pks_list):
+        pk = Peak(name=_peakcomp_to_name(sub_pks[0]), components=sub_pks)
+        mrg_pks.append(pk)
+    return mrg_pks
+
+
+def _integrate_mpwrap(ts_and_pks, integrate, fopts):
     """
     Take a zipped timeseries and peaks found in it
-    and integrate it to return peaks.
+    and integrate it to return peaks. Used to allow
+    multiprocessing support.
     """
     ts, tpks = ts_and_pks
     pks = integrate(ts, tpks, **fopts)
-    for p in pks:
-        p.info['trace'] = str(ts.ions[0])
+    #for p in pks:
+    #    p.info['mz'] = str(ts.name)
     return pks
 
 
 def integrate_peaks(tss, peaks_found, int_f, f_opts={}, \
-                    isomode=False, mp=False):
-    f = functools.partial(integrate_mpwrap, integrate=int_f, fopts=f_opts)
+                    as_first=False, mp=False):
+    f = functools.partial(_integrate_mpwrap, integrate=int_f, fopts=f_opts)
     if mp:
         po = multiprocessing.Pool()
         all_pks = po.map(f, zip(tss, peaks_found))
+        po.close()
+        po.join()
     else:
         all_pks = list(map(f, zip(tss, peaks_found)))
 
     # merge peaks from all_pks together
-    if isomode:
-        mrg_pks = []
-        for sub_pks in zip(*all_pks):
-            c_pk = sub_pks[0]
-            for pk in sub_pks[1:]:
-                ion = pk.data.ions[0]
-                c_pk.set_baseline(ion, pk.baseline(ion))
-                c_pk.rawdata = c_pk.rawdata & pk.rawdata
-            mrg_pks.append(c_pk)
+    if as_first:
+        mrg_pks = merge_peaks_by_order(all_pks)
     else:
-        mrg_pks = merge_ions([pk for pks in all_pks for pk in pks])
+        mrg_pks = merge_peaks_by_time(all_pks)
     return mrg_pks

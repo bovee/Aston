@@ -1,9 +1,9 @@
-include aston/ui/icons/*.svg
-include aston/ui/icons/*.png
-include aston/ui/*.ui
-include aston/i18n/*.qm
-include aston/i18n/*.ts
-include aston/i18n/aston.pro
+include aston/qtgui/icons/*.svg
+include aston/qtgui/icons/*.png
+include aston/qtgui/*.ui
+include aston/qtgui/i18n/*.qm
+include aston/qtgui/i18n/*.ts
+include aston/qtgui/i18n/aston.pro
 include *.rst
 include COPYING.txt
 include aston.ini 

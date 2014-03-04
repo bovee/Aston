@@ -5,7 +5,17 @@
 * save AIA/CDF, mzML & mzXML
 * RAW file support
   - look at linking to unfinnigan? (https://code.google.com/p/unfinnigan/)
+* Bruker file formats
+* Waters file formats
 * Chemstation B+ REG files
+* MSMS support
+  - Agilent MSMS Peak file format
+  - Bruker MSMS spectra
+
+
+0.8 Checklist
+*************
+
 * Agilent .REG scraping
   - method parameters
 * autoalign chromatograms
@@ -17,17 +27,17 @@
     coelution spots to be found
 * spectra from Agilent MS SIM method (e.g. CM1292) have a "0" mz
   that may be erroneous and should be removed?
-* make aston not freak out if datafile is not found?
+* fix color scaling as more chromatograms added: hard to keep track
+* put retention time on extracted spectra
+* buttons for spectral navigation?
 
 
-0.8 Checklist
+0.9 Checklist
 *************
 
 * MSMS support
   - tune MSMS file format performance (rewrites in C?)
-  - Agilent MSMS Peak file format
   - spectral range display (as average) for Agilent MSMS
-  - Bruker MSMS spectra
   - MSMS points on graph / MSMS data display
 * Method Database
   - allow calibration curves to be saved for compounds
@@ -54,3 +64,4 @@ Indefinite
   - but how to handle duplicate files?
 * refactor code to remove references to "ions"; should be mz or wavelength?
 * 2D display of multiple chromatograms at once (i.e. "color bars" of TICs of multiple files vertically stacked)
+* make TimeSeries either have a string descriptor for ions *or* an array of numbers
