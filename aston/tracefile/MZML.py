@@ -5,6 +5,7 @@ from xml.etree import ElementTree as ET
 import numpy as np
 from aston.trace.Trace import AstonSeries, AstonFrame
 from aston.tracefile.TraceFile import TraceFile
+from aston.spectra.Scan import Scan
 
 
 def t_to_min(x):
@@ -57,16 +58,26 @@ class mzML(TraceFile):
 
     ns = {'m': 'http://psi.hupo.org/ms/mzml'}
 
-    @property
-    def data(self):
+    def trace(self):
+        pass
+
+    def scan(self):
+        pass
+
+    def scans(self, twin=None):
+        if twin is None:
+            twin = (-np.inf, np.inf)
         r = ET.parse(self.filename).getroot()
+        pg = None
+        #FIXME: read paramgroup
+
         spectra = r.findall('*//m:spectrum/', namespaces=self.ns)
         for s in spectra:
             for i in ['MS:1000514', 'MS:1000617', 'MS:1000786']:
                 q = './/m:cvParam[@accession="' + i + '"]/..'
                 abun_elem = s.find(q, namespaces=self.ns)
                 if abun_elem is not None:
-                    x = self.read_binary(abun_elem)
+                    x = self.read_binary(abun_elem, pg)
             else:
                 continue
 
@@ -78,9 +89,11 @@ class mzML(TraceFile):
             if time_elem.get('unitName', 'minutes') == 'seconds':
                 y /= 60.
 
-            #TODO: combine x and y into Scan?
-            x, y
-        return AstonFrame()
+            #FIXME: read time, not its element
+            q = './/m:cvParam[@accession="MS:1000016"]/'
+            time = s.find(q, namespaces=self.ns).get('value')
+
+            yield Scan(x, y, name=time)
 
     def read_binary(self, ba, param_groups=None):
         """
@@ -142,7 +155,8 @@ class mzML(TraceFile):
         #    # TIC
         #    s.find('m:cvParam[@accession="MS:1000285"]', namespaces=self.ns)
         #    # time
-        #    s.find('.//m:cvParam[@accession="MS:1000016"]', namespaces=self.ns)
+        #    s.find('.//m:cvParam[@accession="MS:1000016"]', \
+        #           namespaces=self.ns)
 
         #TODO: call parent function if no TIC found
 

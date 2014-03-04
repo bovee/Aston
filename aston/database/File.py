@@ -36,9 +36,7 @@ class Run(Base):
     def _parent(self):
         return self.project
 
-    @property
-    def _children(self):
-        return self.analyses
+    _children = []
 
 
 class Analysis(Base):
@@ -52,12 +50,6 @@ class Analysis(Base):
     @property
     def name(self):
         return op.split(self.path)[1]
-
-    @property
-    def _parent(self):
-        return self.run
-
-    _children = []
 
     @property
     def datafile(self):

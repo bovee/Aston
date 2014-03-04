@@ -183,6 +183,7 @@ class Plot(Base):
     def trace(self, twin=None):
         #TODO: should we just handle events in parse_ion_string?
         name_type = istr_type(self.name.lower())
+        #FIXME!!!!!
         if name_type == 'events':
             return AstonSeries()
 

@@ -230,6 +230,13 @@ class AstonFrame(object):
 
     @property
     def traces(self):
+        """
+        Decomposes the AstonFrame into a collection of AstonSeries.
+
+        Returns
+        -------
+        list
+        """
         traces = []
         for v, c in zip(self.values.T, self.columns):
             traces.append(AstonSeries(v, self.index, name=c))
@@ -265,7 +272,18 @@ class AstonFrame(object):
         #TODO: use twin
         return AstonSeries(data, index=self.index, name=name)
 
-    def plot(self, style='heatmap', legend=False, color=None, ax=None):
+    def plot(self, style='heatmap', legend=False, cmap=None, ax=None):
+        """
+        Presents the AstonFrame using matplotlib.
+
+        Parameters
+        ----------
+        style : {'heatmap', 'colors', ''}
+        legend : bool, optional
+        cmap: matplotlib.colors.Colormap, optional
+        ax : matplotlib.axes.Axes, optional
+
+        """
         #styles: 2d, colors, otherwise interpret as trace?
         if ax is None:
             import matplotlib.pyplot as plt
@@ -275,8 +293,10 @@ class AstonFrame(object):
             ions = self.columns
             ext = (self.index[0], self.index[-1], min(ions), max(ions))
             grid = self.values[:, np.argsort(self.columns)].transpose()
+            if isinstance(self.values, scipy.sparse.spmatrix):
+                grid = grid.toarray()
             img = ax.imshow(grid, origin='lower', aspect='auto', \
-                            extent=ext, cmap=color)
+                            extent=ext, cmap=cmap)
             if legend:
                 ax.figure.colorbar(img)
         elif style == 'colors':
@@ -292,7 +312,10 @@ class AstonFrame(object):
                         + 0.366 * gaussian(wvs, 446.8, 19.44)
             vis_filt[1] = 1.014 * gaussian(np.log(wvs), np.log(556.3), 0.075)
             vis_filt[2] = 1.839 * gaussian(np.log(wvs), np.log(449.8), 0.051)
-            xyz = np.dot(self.values.copy(), vis_filt.T)
+            if isinstance(self.values, scipy.sparse.spmatrix):
+                xyz = np.dot(self.values.toarray(), vis_filt.T)
+            else:
+                xyz = np.dot(self.values.copy(), vis_filt.T)
 
             #http://www.brucelindbloom.com/index.html?Eqn_RGB_XYZ_Matrix.html
             xyz_rgb = [[3.2404542, -1.5371385, -0.4985314],
@@ -312,11 +335,25 @@ class AstonFrame(object):
                       extent=(self.index[0], self.index[-1], 0, 1))
             ax.yaxis.set_ticks([])
         else:
+            if cmap is not None:
+                color = cmap(0, 1)
+            else:
+                color = 'k'
             self.trace().plot(color=color, ax=ax)
 
     def as_sound(self, filename, speed=60, cutoff=50):
         """
-        Convert into a WAV file.
+        Convert AstonFrame into a WAV file.
+
+        Parameters
+        ----------
+        filename : str
+            Name of wavfile to create.
+        speed : float, optional
+            How much to speed up for sound recording, e.g. a value of 60
+            will turn an hour-long AstonFrame into a minute-long sound clip.
+        cutoff : float, optional
+            m/z's under this value will be clipped out.
         """
         # make a 1d array for the sound
         to_t = lambda t: (t - self.index[0]) / speed
@@ -361,6 +398,11 @@ class AstonFrame(object):
     def scan(self, t, dt=None, aggfunc=None):
         """
         Returns the spectrum from a specific time.
+
+        Parameters
+        ----------
+        t : float
+        dt : float
         """
         idx = (np.abs(self.index - t)).argmin()
 
@@ -380,6 +422,13 @@ class AstonFrame(object):
         return Scan(self.columns, mz_abn)
 
     def compress(self):
+        """
+        Serializes the AstonFrame.
+
+        Returns
+        -------
+        bytes
+        """
         i = self.index.astype(np.float32).tostring()
         li = struct.pack('<L', len(i))
         c = json.dumps(self.columns).encode('utf-8')
@@ -392,6 +441,18 @@ class AstonFrame(object):
 
 
 def decompress(zdata):
+    """
+    Unserializes an AstonFrame.
+
+    Parameters
+    ----------
+    zdata : bytes
+
+    Returns
+    -------
+    AstonSeries or AstonFrame
+
+    """
     data = zlib.decompress(zdata)
     lc = struct.unpack('<L', data[0:4])[0]
     li = struct.unpack('<L', data[4:8])[0]

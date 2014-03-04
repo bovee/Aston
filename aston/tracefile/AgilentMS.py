@@ -79,13 +79,13 @@ class AgilentMS(TraceFile):
             # move forward
             f.seek(npos)
 
-        # go back to the beginning
+        # go back to the beginning and load all the other data
         f.seek(dstart)
 
         ions = []
         i_lkup = {}
         cols = np.empty(tot_pts, dtype=int)
-        vals = np.empty(tot_pts, dtype=np.int16)
+        vals = np.empty(tot_pts, dtype=np.int32)
         times = np.empty(nscans)
 
         for scn in range(nscans):
@@ -102,18 +102,9 @@ class AgilentMS(TraceFile):
             # after the first time
             #mzs = np.fromfile(f, dtype='>H', count=npts * 2)
 
-            #nions = set([mz for mz in mzs[0::2] if mz not in i_lkup])
             nions = set(mzs[0::2]).difference(i_lkup)
             i_lkup.update({ion: i + len(ions) for i, ion in enumerate(nions)})
-            #i_lkup.update(dict((ion, i + len(ions)) \
-            #  for i, ion in enumerate(nions)))
             ions += nions
-
-            #if scn < 3:
-            #    print(npts)
-            #    print(len(mzs))
-            #    print(mzs)
-            #    print(hex(npos))
 
             cols[rowst[scn]:rowst[scn + 1]] = \
               [i_lkup[i] for i in mzs[0::2]]
@@ -121,11 +112,10 @@ class AgilentMS(TraceFile):
             f.seek(npos)
         f.close()
 
-        #vals = (vals & 16383) * 8 ** (vals >> 14)
+        vals = ((vals & 16383) * 8 ** (vals >> 14)).astype(float)
         data = scipy.sparse.csr_matrix((vals, cols, rowst), \
           shape=(nscans, len(ions)), dtype=float)
         ions = np.array(ions) / 20.
-        #ions = [i / 20. for i in ions]
         return AstonFrame(data, times, ions)
 
     @property
@@ -227,7 +217,7 @@ class AgilentMSMSScan(TraceFile):
 
     # TODO: __init__ method that adds mrm trace names to traces
     #TODO: define a data property so that heatmap doesn't fail
-    def _msscan_iter(self, keylist):
+    def _scan_iter(self, keylist):
         f = open(self.filename, 'rb')
         r = ElementTree.parse(op.splitext(self.filename)[0] + '.xsd').getroot()
 
@@ -280,7 +270,7 @@ class AgilentMSMSScan(TraceFile):
             twin = (-np.inf, np.inf)
         tme = []
         tic = []
-        for t, z in self._msscan_iter(['ScanTime', 'TIC']):
+        for t, z in self._scan_iter(['ScanTime', 'TIC']):
             if t < twin[0]:
                 continue
             elif t > twin[1]:
@@ -308,7 +298,7 @@ class AgilentMSMSScan(TraceFile):
 
         tme, ic = [], []
         sminx, smaxx = np.inf, np.inf
-        for t, off, bc, pc, minx, maxx in self._msscan_iter( \
+        for t, off, bc, pc, minx, maxx in self._scan_iter( \
           ['ScanTime', 'SpectrumOffset', 'ByteCount', \
           'PointCount', 'MinX', 'MaxX']):
             if t < twin[0]:
@@ -334,7 +324,7 @@ class AgilentMSMSScan(TraceFile):
             twin = (-np.inf, np.inf)
 
         tme, ic = [], []
-        for t, off, bc, pc, minx, maxx, d_mz, p_mz, z in self._msscan_iter( \
+        for t, off, bc, pc, minx, maxx, d_mz, p_mz, z in self._scan_iter( \
           ['ScanTime', 'SpectrumOffset', 'ByteCount', 'PointCount', \
            'MinX', 'MaxX', 'BasePeakMZ', 'MzOfInterest', 'TIC']):
             if t < twin[0]:
@@ -363,7 +353,7 @@ class AgilentMSMSScan(TraceFile):
         f = open(op.join(op.split(self.filename)[0], 'MSProfile.bin'), 'rb')
 
         time_dist = np.inf
-        for t, off, bc, pc, minx, maxx in self._msscan_iter( \
+        for t, off, bc, pc, minx, maxx in self._scan_iter( \
           ['ScanTime', 'SpectrumOffset', 'ByteCount', \
           'PointCount', 'MinX', 'MaxX']):
             if time_dist > np.abs(t - t):

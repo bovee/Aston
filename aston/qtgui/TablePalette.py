@@ -312,8 +312,8 @@ class PaletteTreeModel(TableModel):
             dflags |= QtCore.Qt.ItemIsUserCheckable
         elif col.startswith('p-') and not isinstance(obj, Peak):
             pass
-            #if col in {'p-model', 'p-type'}:
-            #    dflags |= QtCore.Qt.ItemIsEditable
+        elif isinstance(obj, PaletteRun):
+            pass
         else:
             dflags |= QtCore.Qt.ItemIsEditable
         return dflags

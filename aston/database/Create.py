@@ -19,7 +19,8 @@ def read_directory(path, db, group=None):
 
         # extract a run name
         try:
-            runname = [i for i in curpath if i.endswith(('.d', '.D'))][-1]
+            runname = [i for i in curpath if \
+                       i.endswith(('.d', '.D', '.raw', '.RAW'))][-1]
         except IndexError:
             runname = ''
 
