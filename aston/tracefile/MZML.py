@@ -68,30 +68,64 @@ class mzML(TraceFile):
         if twin is None:
             twin = (-np.inf, np.inf)
         r = ET.parse(self.filename).getroot()
-        pg = None
-        #FIXME: read paramgroup
+        pgr = r.find('.//m:referenceableParamGroupList', namespaces=self.ns)
 
-        spectra = r.findall('*//m:spectrum/', namespaces=self.ns)
+        spectra = r.findall('*//m:spectrum', namespaces=self.ns)
         for s in spectra:
-            for i in ['MS:1000514', 'MS:1000617', 'MS:1000786']:
-                q = './/m:cvParam[@accession="' + i + '"]/..'
-                abun_elem = s.find(q, namespaces=self.ns)
-                if abun_elem is not None:
-                    x = self.read_binary(abun_elem, pg)
-            else:
-                continue
-
-            q = './/m:cvParam[@accession="MS:1000515"]/..'
+            q = './/m:cvParam[@accession="MS:1000016"]'
             time_elem = s.find(q, namespaces=self.ns)
             if time_elem is None:
                 continue
-            y = self.read_binary(time_elem)
-            if time_elem.get('unitName', 'minutes') == 'seconds':
-                y /= 60.
+            time = time_elem.get('value')
 
-            #FIXME: read time, not its element
-            q = './/m:cvParam[@accession="MS:1000016"]/'
-            time = s.find(q, namespaces=self.ns).get('value')
+            #FIXME: won't find these properties if a paramGroupRef exists
+            for i in ['MS:1000514', 'MS:1000617', 'MS:1000786']:
+                q = './/m:cvParam[@accession="' + i + '"]/..'
+                x_elem = s.find(q, namespaces=self.ns)
+                if x_elem is not None:
+                    x = self.read_binary(x_elem, pgr)
+                    break
+            else:
+                #check paramGroupRef
+                q0 = './/m:referenceableParamGroupRef'
+                bin_arrs = s.findall(q0 + '/..', namespaces=self.ns)
+                for ba in bin_arrs:
+                    ref = ba.find(q0, namespaces=self.ns).get('ref')
+                    q = 'm:referenceableParamGroup[@id="' + ref + '"]'
+                    pg = pgr.find(q, namespaces=self.ns)
+                    q = './/m:cvParam[@accession="MS:1000514"]/..'
+                    if pg.find(q, namespaces=self.ns) is not None:
+                        x = self.read_binary(ba, pgr)
+                        break
+                    q = './/m:cvParam[@accession="MS:1000617"]/..'
+                    if pg.find(q, namespaces=self.ns) is not None:
+                        x = self.read_binary(ba, pgr)
+                        break
+                    q = './/m:cvParam[@accession="MS:1000786"]/..'
+                    if pg.find(q, namespaces=self.ns) is not None:
+                        x = self.read_binary(ba, pgr)
+                        break
+                else:
+                    continue
+
+            q = './/m:cvParam[@accession="MS:1000515"]/..'
+            y_elem = s.find(q, namespaces=self.ns)
+            if y_elem is not None:
+                y = self.read_binary(y_elem, pgr)
+            else:
+                #check paramGroupRef
+                q0 = './/m:referenceableParamGroupRef'
+                bin_arrs = s.findall(q0 + '/..', namespaces=self.ns)
+                for ba in bin_arrs:
+                    ref = ba.find(q0, namespaces=self.ns).get('ref')
+                    q = 'm:referenceableParamGroup[@id="' + ref + '"]'
+                    pg = pgr.find(q, namespaces=self.ns)
+                    q = './/m:cvParam[@accession="MS:1000515"]/..'
+                    if pg.find(q, namespaces=self.ns) is not None:
+                        y = self.read_binary(ba, pgr)
+                        break
+                else:
+                    continue
 
             yield Scan(x, y, name=time)
 
@@ -102,9 +136,9 @@ class mzML(TraceFile):
         if ba is None:
             return []
 
-        pg = ba.find('m:referenceableParamGroupRef', namespaces=self.ns)
-        if pg is not None and param_groups is not None:
-            q = 'm:referenceableParamGroup[@id=' + pg.get('ref') + ']'
+        pgr = ba.find('m:referenceableParamGroupRef', namespaces=self.ns)
+        if pgr is not None and param_groups is not None:
+            q = 'm:referenceableParamGroup[@id="' + pgr.get('ref') + '"]'
             pg = param_groups.find(q, namespaces=self.ns)
         else:
             pg = ba

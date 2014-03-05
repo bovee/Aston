@@ -45,6 +45,10 @@ class TraceFile(object):
         else:
             return AstonFrame()
 
+    def scans(self):
+        #TODO: decompose self.data into scans
+        pass
+
     def total_trace(self, twin=None):
         return self.data.trace(twin=twin)
 
@@ -114,3 +118,43 @@ class TraceFile(object):
         #TODO: calculate md5hash of this file
         # to be used for determining if files in db are unique
         raise NotImplementedError
+
+
+class ScanListFile(TraceFile):
+    def scans(self):
+        return []
+
+    #TODO: is there a point in creating a data property here?
+
+    def trace(self, name='', tol=0.5, twin=None):
+        #TODO: use twin
+        t, y = [], []
+        for s in self.scans():
+            t.append(float(s.name))
+            if name in {'tic', 'x', ''}:
+                y.append(sum(s.abn))
+            else:
+                y.append(sum(j for i, j in zip(s.x, s.abn) \
+                             if np.abs(i - name) < tol))
+        return AstonSeries(y, t, name=name)
+
+    def scan(self, t, dt=None, aggfunc=None):
+        #TODO: use aggfunc
+        prev_s = None
+        bin_scans = []
+        for s in self.scans():
+            if float(s.name) > t:
+                if float(prev_s.name) - t < float(s.name) - t:
+                    if dt is None:
+                        return prev_s
+                    else:
+                        bin_scans.append(prev_s)
+                elif dt is None:
+                    return s
+                bin_scans.append(s)
+                if float(s.name) > t + dt:
+                    break
+            prev_s = s
+        # merge bin_scans and return
+        #FIXME
+        pass
