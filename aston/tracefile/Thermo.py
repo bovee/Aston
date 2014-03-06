@@ -171,7 +171,7 @@ class ThermoDXF(TraceFile):
                     p_st = t
                 elif not gas_on and p_st is not None:
                     i += 1
-                    evts.append([p_st, t, {'name': 'R' + str(i)}])
+                    evts.append({'t0': p_st, 't1': t, 'name': 'R' + str(i)})
         return evts
 
 
