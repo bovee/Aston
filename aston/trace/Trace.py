@@ -395,6 +395,10 @@ class AstonFrame(object):
         scaled = np.int16(scaled * 32767)
         scipy.io.wavfile.write(filename, 44100, scaled)
 
+    def scans(self):
+        for t in self.index:
+            yield self.scan(t)
+
     def scan(self, t, dt=None, aggfunc=None):
         """
         Returns the spectrum from a specific time.
