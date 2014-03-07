@@ -34,14 +34,15 @@ def tfclasses():
     # directory as me
     classes = []
     mydir = op.dirname(op.abspath(inspect.getfile(file_type)))
-    tfcls = "<class 'aston.tracefile.TraceFile.TraceFile'>"
+    tfcls = ("<class 'aston.tracefile.TraceFile.TraceFile'>",
+             "<class 'aston.tracefile.TraceFile.ScanListFile'>")
     for filename in glob(op.join(mydir, '*.py')):
         name = op.splitext(op.basename(filename))[0]
         module = import_module('aston.tracefile.' + name)
         for clsname in dir(module):
             cls = getattr(module, clsname)
             if hasattr(cls, '__base__'):
-                if str(cls.__base__) == tfcls:
+                if str(cls.__base__) in tfcls:
                     classes.append(cls)
     return classes
 

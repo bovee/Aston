@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import struct
 import numpy as np
+from aston.resources import cache
 from aston.trace.Trace import AstonSeries
 from aston.tracefile.TraceFile import TraceFile
 
@@ -8,9 +9,8 @@ from aston.tracefile.TraceFile import TraceFile
 class AgilentCSPump(TraceFile):
     fnm = 'LPMP1.REG'
     mgc = '0233'
-    traces = ['mslva', 'mslvb', 'mslvc', 'mslvd', 'mflow']
-
-    #TODO: _trace function that returns method traces
+    traces = []
+    #traces = ['mslva', 'mslvb', 'mslvc', 'mslvd', 'mflow']
 
     @property
     def info(self):
@@ -32,6 +32,10 @@ class AgilentCSPump(TraceFile):
             if fd.get('FLOW', False):
                 pass
         return d
+
+    def _trace(self, name, twin):
+        #TODO: return method traces
+        pass
 
 
 class AgilentCSFraction(TraceFile):
@@ -104,18 +108,27 @@ class AgilentCSLC(TraceFile):
     fnm = 'LCDIAG.REG'
     mgc = '0233'
 
+    _tr_names = {'pres': 'PMP1, Pressure', 'flow': 'PMP1, Flow',
+                 'slva': 'PMP1, Solvent A', 'slvb': 'PMP1, Solvent B',
+                 'slvc': 'PMP1, Solvent C', 'slvd': 'PMP1, Solvent D'}
+
     @property
+    @cache(maxsize=1)
     def traces(self):
-        #TODO: check that these all actually exist
-        return ['pres', 'flow', 'slva', 'slvb', 'slvc', \
-                'slvd', 'temp']
+        traces = []
+        for abrv, full in self._tr_names.items():
+            df = read_multireg_file(open(self.filename, 'rb'), \
+                                    title=full)
+            if 'AstonSeries' in df:
+                traces.append(abrv)
+        return traces
 
     def _trace(self, name, twin):
         #TODO: read info from new style REG files
-        t = {'pres': 'PMP1, Pressure', 'flow': 'PMP1, Flow',
-                'slva': 'PMP1, Solvent A', 'slvb': 'PMP1, Solvent B',
-                'slvc': 'PMP1, Solvent C', 'slvd': 'PMP1, Solvent D'}
-        df = read_multireg_file(open(self.filename, 'rb'), title=t[name])
+        df = read_multireg_file(open(self.filename, 'rb'), \
+                                title=self._tr_names[name])
+        if 'AstonSeries' not in df:
+            return AstonSeries([], [])
         ts = df['AstonSeries']
         ts.name = name
         return ts.twin(twin)

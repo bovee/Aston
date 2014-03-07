@@ -3,8 +3,8 @@ import zlib
 import base64
 from xml.etree import ElementTree as ET
 import numpy as np
-from aston.trace.Trace import AstonSeries, AstonFrame
-from aston.tracefile.TraceFile import TraceFile
+from aston.trace.Trace import AstonSeries
+from aston.tracefile.TraceFile import ScanListFile
 from aston.spectra.Scan import Scan
 
 
@@ -52,17 +52,11 @@ class mzXML(object):
         return AstonSeries(d, t, name='TIC')
 
 
-class mzML(TraceFile):
+class mzML(ScanListFile):
     ext = 'MZML'
     traces = ['#ms']
 
     ns = {'m': 'http://psi.hupo.org/ms/mzml'}
-
-    def trace(self):
-        pass
-
-    def scan(self):
-        pass
 
     def scans(self, twin=None):
         if twin is None:

@@ -78,7 +78,10 @@ def token_source(token, avail_sources=None):
                 break
 
     if token in avail_sources:
-        return '', token
+        if token in istr_type_2d:
+            return 'tic', token
+        else:
+            return token, token
     elif '#' in token:
         return token.rsplit('#', 1)
     elif token in {'tic', 'x', ''} and 'fid' in avail_sources:

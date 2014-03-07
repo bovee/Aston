@@ -275,7 +275,7 @@ class PaletteTreeModel(TableModel):
         if isinstance(obj, Plot):
             obj.is_valid = True
 
-        if col in {'vis', 'style'} and isinstance(obj, Plot):
+        if col in {'name', 'vis', 'style'} and isinstance(obj, Plot):
             self.master_window.plot_data(update_bounds=True)
         else:
             self.master_window.plot_data(update_bounds=False)
@@ -333,9 +333,10 @@ class PaletteTreeModel(TableModel):
             else:
                 prun = PaletteRun(run=run, palette=self.active_palette)
                 self.db.add(prun)
-                self.add_plot([prun])
             prun.enabled = True
             self._children.append(prun)
+        if len(prun.plots) == 0:
+            self.add_plot([prun])
         for p in prun.plots:
             if p.vis:
                 self.master_window.plot_data()

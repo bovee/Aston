@@ -7,10 +7,12 @@
   - look at linking to unfinnigan? (https://code.google.com/p/unfinnigan/)
 * Bruker file formats
 * Waters file formats
-* Chemstation B+ REG files
+* Chemstation A fraction collection
+* Chemstation B+ FIA
 * MSMS support
   - Agilent MSMS Peak file format
   - Bruker MSMS spectra
+* convert all "_trace" methods to "trace"
 
 
 0.8 Checklist
