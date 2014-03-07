@@ -9,6 +9,7 @@ from aston.database.File import Run
 from aston.database.Peak import DBPeak
 from aston.database.User import Group
 from aston.trace.Trace import AstonSeries
+from aston.trace.Events import plot_events
 from aston.trace.Parser import parse_ion_string
 from aston.trace.Parser import istr_type, istr_best_2d_source, token_source
 from aston.trace.MathFrames import molmz, mzminus, basemz
@@ -223,8 +224,9 @@ class Plot(Base):
         name_type = istr_type(self.name.lower())
         label = self.paletterun.run.name + ' ' + self.name
         if name_type == 'events':
-            #TODO: plot in here
-            pass
+            df = self.paletterun.datafile(self.name.lower())
+            evts = df.events(self.name.lower().lstrip('*'))
+            plot_events(evts, color=color, ax=ax)
         elif style in {'heatmap', 'colors'}:
             #TODO: should only be on name_type == '2d' ?
             # need other ui changes first though

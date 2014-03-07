@@ -37,45 +37,11 @@ class AgilentCSPump(TraceFile):
 class AgilentCSFraction(TraceFile):
     fnm = 'LAFC1FD.REG'
     mgc = '0233'
-    traces = ['*fia']
-
-    def events(self, name='fia', twin=None):
-        #TODO: use twin
-        evts = super(AgilentCSFraction, self).events(name, twin)
-        if name != 'fia':
-            return evts
-
-        acq_file = open(self.filename, 'rb')
-        acq_file.seek(0x19)
-        vers = acq_file.read(7)
-
-        if vers.startswith(b'A'):
-            d = read_reg_file(acq_file)
-            if not d.get('FIARun', False):
-                return []
-            prev_f = d['FIASeriesInfo'][1][1]
-            for f in d['FIASeriesInfo'][1][2:]:
-                evts.append([prev_f[0], f[0], {'name': prev_f[2]}])
-                prev_f = f
-            else:
-                if len(evts) > 0:
-                    off_t = evts[-1][1] - evts[-1][0]
-                    evts.append([prev_f[0], prev_f[0] + off_t, \
-                                    {'name': prev_f[2]}])
-        elif vers == b'notused':
-            #TODO: get fia from new-style *.REG files.
-            pass
-        return evts
-
-
-class AgilentCSFlowInject(TraceFile):
-    fnm = 'ACQRES.REG'
-    mgc = '0233'
     traces = ['*fxn']
 
     def events(self, name='fxn', twin=None):
         #TODO: use twin
-        evts = super(AgilentCSFlowInject, self).events(name, twin)
+        evts = super(AgilentCSFraction, self).events(name, twin)
         if name != 'fxn':
             return evts
 
@@ -92,12 +58,46 @@ class AgilentCSFlowInject(TraceFile):
             acq_file.seek(0x33F)
             for _ in range(nfxns):
                 d = struct.unpack('<Q9fI4f7I', acq_file.read(92))
-                evts.append([d[13] / 60000., d[14] / 60000., {}])
+                evts.append({'t0': d[13] / 60000., 't1': d[14] / 60000.})
 
             acq_file.seek(acq_file.tell() + 264)
             for i in range(nfxns):
                 slen = struct.unpack('<H', acq_file.read(2))[0] - 1
-                evts[i][2]['name'] = acq_file.read(2 * slen).decode('utf-16')
+                evts[i]['name'] = acq_file.read(2 * slen).decode('utf-16')
+        return evts
+
+
+class AgilentCSFlowInject(TraceFile):
+    fnm = 'ACQRES.REG'
+    mgc = '0233'
+    traces = ['*fia']
+
+    def events(self, name='fia', twin=None):
+        #TODO: use twin
+        evts = super(AgilentCSFlowInject, self).events(name, twin)
+        if name != 'fia':
+            return evts
+
+        acq_file = open(self.filename, 'rb')
+        acq_file.seek(0x19)
+        vers = acq_file.read(7)
+
+        if vers.startswith(b'A'):
+            d = read_reg_file(acq_file)
+            if not d.get(u'FIARun', False):
+                return []
+            prev_f = d['FIASeriesInfo'][1][1]
+            for f in d['FIASeriesInfo'][1][2:]:
+                evts.append({'t0': prev_f[0], 't1': f[0], 'name': prev_f[2]})
+                prev_f = f
+            else:
+                if len(evts) > 0:
+                    off_t = evts[-1]['t1'] - evts[-1]['t0']
+                    evts.append({'t0': prev_f[0], 't1': prev_f[0] + off_t, \
+                                 'name': prev_f[2]})
+        elif vers == b'notused':
+            #TODO: get fia from new-style *.REG files.
+            pass
         return evts
 
 

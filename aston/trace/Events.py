@@ -12,20 +12,16 @@ def desaturate(c, k=0):
     return [intensity * k + i * (1 - k) for i in c]
 
 
-class Events(object):
-    events = []
+def plot_events(events, color='k', ax=None):
+    if ax is None:
+        import matplotlib.pyplot as plt
+        ax = plt.gca()
 
-    def plot(self, color='k', ax=None):
-        if ax is None:
-            pass
-
-        trans = ax.get_xaxis_transform()
-        trans_text = offset_copy(trans, fig=ax.figure, \
-                                 x=3, units='points')
-        for ev in self.events:
-            t0, t1, ta = ev['t0'], ev['t1'], (ev['t0'] + ev['t1']) / 2.
-            self.plt.vlines(t1, 0, 0.1, color=desaturate(color, 0.6), \
-                            transform=trans)
-            self.plt.vlines(t0, 0, 0.1, color=color, transform=trans)
-            self.plt.text(ta, 0, ev['name'], ha='center', \
-                          transform=trans_text)
+    trans = ax.get_xaxis_transform()
+    trans_text = offset_copy(trans, fig=ax.figure, \
+                             x=3, units='points')
+    for ev in events:
+        t0, t1, ta = ev['t0'], ev['t1'], (ev['t0'] + ev['t1']) / 2.
+        ax.vlines(t1, 0, 0.1, color=desaturate(color, 0.6), transform=trans)
+        ax.vlines(t0, 0, 0.1, color=color, transform=trans)
+        ax.text(ta, 0, ev['name'], ha='center', transform=trans_text)

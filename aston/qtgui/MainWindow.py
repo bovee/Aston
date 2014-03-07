@@ -342,6 +342,8 @@ class AstonWindow(QtGui.QMainWindow):
         opt = [i for i in submnu if i.isChecked()][0].text()
         pf_f = aston.qtgui.MenuOptions.peak_finders[opt]
         pf_fopts = self.get_f_opts(pf_f)
+
+        #TODO: this should be smarter?
         if pf_f.__name__ == 'event_peak_find':
             evts = []
             for n in ('fia', 'fxn', 'refgas'):
