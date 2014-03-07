@@ -82,19 +82,21 @@ class AgilentCSFlowInject(TraceFile):
         vers = acq_file.read(7)
 
         if vers.startswith(b'A'):
-            pass
+            d = read_reg_file(acq_file)
+            if not d.get(u'FIARun', False):
+                return []
+            prev_f = d['FIASeriesInfo'][1][1]
+            for f in d['FIASeriesInfo'][1][2:]:
+                evts.append({'t0': prev_f[0], 't1': f[0], 'name': prev_f[2]})
+                prev_f = f
+            else:
+                if len(evts) > 0:
+                    off_t = evts[-1]['t1'] - evts[-1]['t0']
+                    evts.append({'t0': prev_f[0], 't1': prev_f[0] + off_t, \
+                                 'name': prev_f[2]})
         elif vers == b'notused':
-            acq_file.seek(0xED)
-            nfxns = struct.unpack('<I', acq_file.read(4))[0]
-            acq_file.seek(0x33F)
-            for _ in range(nfxns):
-                d = struct.unpack('<Q9fI4f7I', acq_file.read(92))
-                evts.append({'t0': d[13] / 60000., 't1': d[14] / 60000.})
-
-            acq_file.seek(acq_file.tell() + 264)
-            for i in range(nfxns):
-                slen = struct.unpack('<H', acq_file.read(2))[0] - 1
-                evts[i]['name'] = acq_file.read(2 * slen).decode('utf-16')
+            #TODO: get fia from new-style *.REG files.
+            pass
         return evts
 
 

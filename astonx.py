@@ -61,6 +61,11 @@ if startx:
     import numpy
     numpy.seterr(divide='raise', invalid='raise', over='raise')
 
+    import warnings
+    import sqlalchemy.exc
+    warnings.simplefilter('error', RuntimeWarning)
+    warnings.simplefilter('ignore', sqlalchemy.exc.SAWarning)
+
     # for multiprocessing to work on Windows
     import multiprocessing
     multiprocessing.freeze_support()
@@ -68,19 +73,19 @@ if startx:
     #all the other imports
     import sys
     import PyQt4
-    from aston.ui.MainWindow import AstonWindow
+    from aston.qtgui.MainWindow import AstonWindow
     qt = PyQt4.QtGui.QApplication(sys.argv)
 
     # translation stuff
     import locale
     import pkg_resources
-    from aston.ui.resources import resfile
+    from aston.resources import resfile
     try:
         locale.setlocale(locale.LC_ALL, '')
         if locale.getlocale()[0] is not None:
             lang = locale.getlocale()[0]
             tlate = PyQt4.QtCore.QTranslator(qt)
-            tlate.load('aston_' + lang + '.qm', resfile('aston', 'i18n'))
+            tlate.load('aston_' + lang + '.qm', resfile('aston/qtgui', 'i18n'))
             qt.installTranslator(tlate)
     except locale.Error:
         pass
