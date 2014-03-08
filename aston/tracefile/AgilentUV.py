@@ -15,6 +15,7 @@ class AgilentMWD(TraceFile):
 
     @property
     def data(self):
+        print(self.filename)
         #Because the spectra are stored in several files in the same
         #directory, we need to loop through them and return them together.
         ions = []
@@ -25,6 +26,9 @@ class AgilentMWD(TraceFile):
           in os.listdir(foldname)]:
             if i[-3:].upper() == '.CH':
                 wv, dtrace = self._read_ind_file(i)
+
+                if wv is None:
+                    continue
 
                 #generate the time points if this is the first trace
                 if len(ions) == 0:
@@ -44,6 +48,10 @@ class AgilentMWD(TraceFile):
 
     def _read_ind_file(self, fname):
         f = open(fname, 'rb')
+
+        f.read(2)
+        if f.read(2) != b'\x02\x33':
+            return None, None
 
         f.seek(0x254)
         sig_name = str(f.read(struct.unpack('>B', f.read(1))[0]))
@@ -251,7 +259,7 @@ class AgilentCSDAD(TraceFile):
     Interpreter for *.UV files from Agilent Chemstation
     """
     ext = 'UV'
-    mgc = '0331'
+    mgc = '0233'
     traces = ['#uv']
 
     @property

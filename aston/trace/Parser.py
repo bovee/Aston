@@ -37,7 +37,7 @@ def istr_type(istr):
     """
     Given an "ion" specification, determine its "type", e.g. 1D, Events, etc.
     """
-    data = set(tokens(istr))
+    data = set(i.rstrip('0123456789') for i in tokens(istr))
     has_events = not data.isdisjoint(istr_type_evts)
     has_2d = not data.isdisjoint(istr_type_2d)
     has_1d = data.difference(istr_type_evts).difference(istr_type_2d) != set()
@@ -57,7 +57,7 @@ def istr_best_2d_source(istr, avail_sources=None):
         avail_sources = []
     for token in tokens(istr):
         s = token.split('#')[-1]
-        if s in istr_type_2d and s in avail_sources:
+        if s.rstrip('0123456789') in istr_type_2d and s in avail_sources:
             return s
     else:
         for s in istr_type_2d:
@@ -78,7 +78,7 @@ def token_source(token, avail_sources=None):
                 break
 
     if token in avail_sources:
-        if token in istr_type_2d:
+        if token.rstrip('0123456789') in istr_type_2d:
             return 'tic', token
         else:
             return token, token

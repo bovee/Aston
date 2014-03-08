@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import os.path as op
 import gzip
 import io
@@ -280,7 +282,10 @@ class AgilentMSMSScan(ScanListFile):
         return AstonSeries(np.array(tic), np.array(tme), name='TIC')
         #TODO: set .twin(twin) bounds on this
 
-    def scans(self):
+    def scans(self, twin=None):
+        if twin is None:
+            twin = (-np.inf, np.inf)
+
         #super hack-y way to disable checksum and length checking
         gzip.GzipFile._read_eof = lambda _: None
         # standard prefix for every zip chunk
@@ -291,66 +296,30 @@ class AgilentMSMSScan(ScanListFile):
 
         f = open(op.join(op.split(self.filename)[0], 'MSProfile.bin'), 'rb')
 
-        flds = ['ScanTime', 'SpectrumOffset', 'ByteCount', \
-                'PointCount', 'MinX', 'MaxX', \
-                'SpectrumFormatID', 'MSLevel', 'ScanType']
-        # QQQ - 2, 1, 1
-        # QQQ - 2, 2, 512
-        # QTOF - 1, 1, 1  -- also has UncompressedByteCount
+        flds = ['ScanTime', 'SpectrumFormatID', 'SpectrumOffset', \
+                'ByteCount', 'PointCount', 'MinX', 'MaxX']
 
-        for t, off, bc, pc, minx, maxx, *o in self._scan_iter(flds):
-            print(t, off, bc, pc, minx, maxx, o)
+        for t, fmt, off, bc, pc, minx, maxx in self._scan_iter(flds):
+            if t < twin[0]:
+                continue
+            if t > twin[1]:
+                break
 
             f.seek(off)
-            profdata = uncompress(gzprefix + f.read(bc))
-            pd = np.array(struct.unpack('dd' + pc * 'i', profdata)[2:])
+            if fmt == 1:
+                # this record is compressed with gz
+                profdata = uncompress(f.read(bc))
+                pd = np.array(struct.unpack('dd' + pc * 'i', profdata)[2:])
+            elif fmt == 2:
+                profdata = f.read(bc)
+                pd = np.array(struct.unpack('dd' + pc * 'f', profdata)[2:])
+            else:
+                raise NotImplementedError('Unknown Agilent MH Scan format')
             #TODO: probably not a good approximation?
             ions = np.linspace(minx, maxx, len(pd))
-            yield Scan(pd, ions, name=t)
+            yield Scan(ions, pd, name=t)
 
         f.close()
-
-    #def trace(self, name='', tol=0.5, twin=None):
-    #    if name in ['', 'x', 'tic']:
-    #        return self.total_trace(twin)
-    #    else:
-    #        #TODO: check that name is numeric?
-    #        name = float(name)
-    #    if twin is None:
-    #        twin = (-np.inf, np.inf)
-
-    #    #super hack-y way to disable checksum and length checking
-    #    gzip.GzipFile._read_eof = lambda _: None
-    #    # standard prefix for every zip chunk
-    #    gzprefix = b'\x1f\x8b\x08\x00\x00\x00\x00\x00\x04\x00'
-
-    #    def uncompress(d):
-    #        return gzip.GzipFile(fileobj=io.BytesIO(d)).read()
-
-    #    f = open(op.join(op.split(self.filename)[0], 'MSProfile.bin'), 'rb')
-
-    #    tme, ic = [], []
-    #    sminx, smaxx = np.inf, np.inf
-    #    for t, off, bc, pc, minx, maxx in self._scan_iter( \
-    #      ['ScanTime', 'SpectrumOffset', 'ByteCount', \
-    #      'PointCount', 'MinX', 'MaxX']):
-    #        if t < twin[0]:
-    #            continue
-    #        elif t > twin[1]:
-    #            break
-    #        tme.append(t)
-    #        f.seek(off)
-    #        profdata = uncompress(gzprefix + f.read(bc))
-    #        pd = np.array(struct.unpack('dd' + pc * 'i', profdata)[2:])
-    #        if sminx != minx or smaxx != maxx:
-    #            ions = np.linspace(minx, maxx, len(pd))
-    #            ion_loc = np.logical_and(ions > name - tol, \
-    #              ions < name + tol)
-    #            sminx, smaxx = minx, maxx
-    #        ic.append(sum(pd[ion_loc]))
-
-    #    f.close()
-    #    return AstonSeries(np.array(ic), np.array(tme), name=str(name))
 
     def mrm_trace(self, parent=None, daughter=None, tol=0.5, twin=None):
         if twin is None:
@@ -374,36 +343,4 @@ class AgilentMSMSScan(ScanListFile):
             ic.append(z)
 
         return AstonSeries(np.array(ic), np.array(tme), \
-                      name=str(str(parent) + '->' + str(daughter)))
-
-    #def scan(self, t, dt=None):
-    #    #TODO: support time ranges
-    #    #super hack-y way to disable checksum and length checking
-    #    gzip.GzipFile._read_eof = lambda _: None
-    #    # standard prefix for every zip chunk
-    #    gzprefix = b'\x1f\x8b\x08\x00\x00\x00\x00\x00\x04\x00'
-
-    #    def uncompress(d):
-    #        from binascii import hexlify
-    #        print(hexlify(d))
-    #        return gzip.GzipFile(fileobj=io.BytesIO(d)).read()
-
-    #    f = open(op.join(op.split(self.filename)[0], 'MSProfile.bin'), 'rb')
-
-    #    time_dist = np.inf
-    #    for t, off, bc, pc, minx, maxx in self._scan_iter( \
-    #      ['ScanTime', 'SpectrumOffset', 'ByteCount', \
-    #      'PointCount', 'MinX', 'MaxX']):
-    #        print(t, off, bc, pc, minx, maxx)
-    #        if time_dist > np.abs(t - t):
-    #            time_dist = np.abs(t - t)
-    #            s_p = (off, bc, pc, minx, maxx)
-    #        else:
-    #            off, bc, pc, minx, maxx = s_p
-    #            f.seek(off)
-    #            profdata = uncompress(gzprefix + f.read(bc))
-    #            pd = struct.unpack('dd' + pc * 'i', profdata)[2:]
-    #            break
-    #    f.close()
-    #    ions = np.linspace(minx, maxx, len(pd))
-    #    return Scan(ions, pd)
+                           name=str(str(parent) + '→' + str(daughter)))

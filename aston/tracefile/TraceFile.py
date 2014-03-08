@@ -121,19 +121,21 @@ class TraceFile(object):
 
 
 class ScanListFile(TraceFile):
-    def scans(self):
+    def scans(self, twin=None):
         return []
 
     #TODO: is there a point in creating a data property here?
 
     def trace(self, name='', tol=0.5, twin=None):
         #TODO: use twin
+        #TODO: try to use total_trace, if it exists?
         t, y = [], []
-        for s in self.scans():
+        for s in self.scans(twin):
             t.append(float(s.name))
             if name in {'tic', 'x', ''}:
                 y.append(sum(s.abn))
             else:
+                #TODO: this can be vectorized with numpy?
                 y.append(sum(j for i, j in zip(s.x, s.abn) \
                              if np.abs(i - name) < tol))
         return AstonSeries(y, t, name=name)

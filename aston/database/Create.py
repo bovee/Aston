@@ -1,5 +1,6 @@
 import os
 import os.path as op
+from collections import Counter
 from aston.tracefile.Common import file_type, tfclasses
 from aston.database.File import Project, Run, Analysis
 from aston.database.Palette import Palette
@@ -90,7 +91,15 @@ def add_analysis(db, projname, projpath, runname, tf):
         if run.name == '':
             run.name = op.split(info['filename'])[1]
         del info['filename'], info['filetype']
-        analysis.trace = ','.join(tf.traces)
+
+        # add in list of traces
+        other_traces = ','.join(a.trace for a in run.analyses \
+                                if a.trace is not None)
+        other_traces = Counter(other_traces.split(','))
+        analysis.trace = ','.join(i if i not in other_traces \
+                                  else i + str(other_traces[i] + 1) \
+                                  for i in tf.traces)
+
         #TODO: add trace info in
         db.add(analysis)
 
