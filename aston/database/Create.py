@@ -16,6 +16,11 @@ def read_directory(path, db, group=None):
         db.add(Project(name='', directory=op.abspath(path)))
 
     for fold, dirs, files in os.walk(path):
+        # for some reason, the scanning code at the end of this loop
+        # doesn't always work?
+        if '/_' in fold or '/.' in fold:
+            continue
+
         curpath = op.relpath(fold, path).split(op.sep)
 
         # extract a run name
@@ -50,10 +55,6 @@ def read_directory(path, db, group=None):
             tf.info['filename'] = op.relpath(op.join(fold, filename), path)
             add_analysis(db, projname, projpath, runname, tf)
 
-        # make sure we're not scanning folders starting with . or _
-        for d in dirs:
-            if d.startswith(('.', '_')):
-                dirs.remove(d)
     db.commit()
     db.flush()
     #TODO: maybe give names to runs without them here?
