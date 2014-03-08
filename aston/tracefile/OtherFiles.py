@@ -28,5 +28,13 @@ class CSVFile(TraceFile):
             return AstonFrame()
 
 
-def write_csv(filename, df, info=None):
-    pass
+def write_csv(filename, df, info=None, delimiter=','):
+    with open(filename, 'w') as f:
+        # write out columns
+        f.write('Time' + delimiter)
+        f.write(delimiter.join(str(i) for i in df.data.columns.tolist()))
+
+        # write out the rest, scan by scan
+        for scan in df.scans():
+            f.write('\n ' + str(df.name) + delimiter)
+            f.write(delimiter.join(str(i) for i in scan.abn.tolist()))
