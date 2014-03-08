@@ -54,7 +54,7 @@ class AgilentCSFraction(TraceFile):
         vers = acq_file.read(7)
 
         if vers.startswith(b'A'):
-            pass
+            print('FXN', self.filename)
         elif vers == b'notused':
             acq_file.seek(0xED)
             nfxns = struct.unpack('<I', acq_file.read(4))[0]
@@ -100,6 +100,7 @@ class AgilentCSFlowInject(TraceFile):
                                  'name': prev_f[2]})
         elif vers == b'notused':
             #TODO: get fia from new-style *.REG files.
+            print('FIA', self.filename)
             pass
         return evts
 

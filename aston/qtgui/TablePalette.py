@@ -647,7 +647,7 @@ class PaletteTreeModel(TableModel):
 
 class NameColDelegate(QtGui.QItemDelegate):
     def get_opts(self, obj):
-        #TODO: weed out events
+        #TODO: make each name unique (e.g. UV3, MS2)
         opts = [i.lstrip('#*') for a in obj.paletterun.run.analyses \
                         for i in a.trace.split(',')]
         opts += ['tic']
