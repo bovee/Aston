@@ -124,21 +124,40 @@ class ScanListFile(TraceFile):
     def scans(self, twin=None):
         return []
 
-    #TODO: is there a point in creating a data property here?
+    #TODO: is there a point in creating a data property here? (for heatmaps?)
+    #TODO: need better binning code then...
+
+    def total_trace(self, twin=None):
+        if twin is None:
+            twin = (-np.inf, np.inf)
+        times, y = [], []
+        for s in self.scans(twin):
+            t = float(s.name)
+            if t < twin[0]:
+                continue
+            if t > twin[1]:
+                break
+            times.append(t)
+            y.append(sum(s.abn))
+        return AstonSeries(y, times, name='tic')
 
     def trace(self, name='', tol=0.5, twin=None):
-        #TODO: use twin
-        #TODO: try to use total_trace, if it exists?
-        t, y = [], []
+        if twin is None:
+            twin = (-np.inf, np.inf)
+        if name in {'tic', 'x', ''}:
+            return self.total_trace(twin)
+        times, y = [], []
         for s in self.scans(twin):
-            t.append(float(s.name))
-            if name in {'tic', 'x', ''}:
-                y.append(sum(s.abn))
-            else:
-                #TODO: this can be vectorized with numpy?
-                y.append(sum(j for i, j in zip(s.x, s.abn) \
-                             if np.abs(i - name) < tol))
-        return AstonSeries(y, t, name=name)
+            t = float(s.name)
+            if t < twin[0]:
+                continue
+            if t > twin[1]:
+                break
+            times.append(t)
+            #TODO: this can be vectorized with numpy?
+            y.append(sum(j for i, j in zip(s.x, s.abn) \
+                            if np.abs(i - name) < tol))
+        return AstonSeries(y, times, name=name)
 
     def scan(self, t, dt=None, aggfunc=None):
         #TODO: use aggfunc

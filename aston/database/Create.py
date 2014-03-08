@@ -62,7 +62,6 @@ def read_directory(path, db, group=None):
 def add_analysis(db, projname, projpath, runname, tf):
     # find the project; if it doesn't exist, create it
     project = db.query(Project).filter_by(name=projname).first()
-    #print(db.query(Project._project_id).filter_by(name=projname).all())
     if project is None:
         project = Project(name=projname, directory=projpath)
         db.add(project)
@@ -95,7 +94,8 @@ def add_analysis(db, projname, projpath, runname, tf):
         # add in list of traces
         other_traces = ','.join(a.trace for a in run.analyses \
                                 if a.trace is not None)
-        other_traces = Counter(other_traces.split(','))
+        other_traces = Counter(i.rstrip('0123456789') for \
+                               i in other_traces.split(','))
         analysis.trace = ','.join(i if i not in other_traces \
                                   else i + str(other_traces[i] + 1) \
                                   for i in tf.traces)

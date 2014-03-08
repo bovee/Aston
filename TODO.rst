@@ -1,7 +1,7 @@
 0.7 Checklist
 *************
 
-* mzML & mzXML file support
+* mzXML file support
 * save AIA/CDF, mzML & mzXML
 * RAW file support
   - look at linking to unfinnigan? (https://code.google.com/p/unfinnigan/)
@@ -12,7 +12,9 @@
 * MSMS support
   - Agilent MSMS Peak file format
   - Bruker MSMS spectra
-* convert all "_trace" methods to "trace"
+* work on spectral display
+* compound libraries
+* inner product/neutral loss chromatograms
 
 
 0.8 Checklist

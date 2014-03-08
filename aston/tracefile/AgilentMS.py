@@ -218,7 +218,6 @@ class AgilentMSMSScan(ScanListFile):
     traces = ['#ms']
 
     # TODO: __init__ method that adds mrm trace names to traces
-    #TODO: define a data property so that heatmap doesn't fail
     def _scan_iter(self, keylist):
         f = open(self.filename, 'rb')
         r = ElementTree.parse(op.splitext(self.filename)[0] + '.xsd').getroot()
