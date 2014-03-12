@@ -45,9 +45,10 @@ options = {
         'Topic :: Scientific/Engineering :: Chemistry'
     ],
     'long_description': read('README.rst'),
-    'packages': ['aston', 'aston.calibrations', 'aston.database', \
-                 'aston.peaks', 'aston.qtgui', 'aston.spectra', \
-                 'aston.test', 'aston.trace', 'aston.tracefile'],
+    'packages': ['aston', 'aston.calibrations', 'aston.compat', \
+                 'aston.database', 'aston.peaks', 'aston.qtgui', \
+                 'aston.spectra', 'aston.test', 'aston.trace', \
+                 'aston.tracefile'],
     'scripts': ['astonx.py'],
     'data_files': matplotlib.get_py2exe_datafiles(),
     'package_data': {'aston': \

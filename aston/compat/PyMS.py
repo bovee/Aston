@@ -8,6 +8,22 @@ class AstonPyMS(GCMS_data):
 
     Note: initialization uses AstonFrame, not scan lists
     as in pyms.
+
+
+    Example
+    -------
+    from aston.tracefile.TraceFile import TraceFile
+    from aston.trace.PyMS import AstonPyMS
+    from pyms.GCMS.Function import build_intensity_matrix
+    from pyms.Deconvolution.BillerBiemann.Function import BillerBiemann
+
+    astonfile = TraceFile('~/Agilent.d/DATA.MS')
+    raw_data = AstonPyMS(astonfile.data)
+
+    a.info()
+
+    im = build_intensity_matrix(raw_data)
+    peaks = BillerBiemann(im)
     """
 
     def __init__(self, data):
