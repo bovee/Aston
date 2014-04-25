@@ -11,7 +11,7 @@ class CSVFile(TraceFile):
     '''
     ext = 'CSV'
     traces = ['#']
-    #TODO: use pandas to make this much better
+    #TODO: use pandas to make this much better?
     #TODO: determine traces to list
 
     @property

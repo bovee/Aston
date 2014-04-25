@@ -30,14 +30,14 @@ class AgilentMHAcqMethod(TraceFile):
         d = super(AgilentMHAcqMethod, self).info
         try:
             r = ElementTree.parse(self.filename).getroot()
-            d['run_length'] = r.find('.//CapPump//Stoptime').text
-            d['flow'] = r.find('.//CapPump//Flow').text
-            d['solv'] = r.find('.//CapPump//SolvNameA').text
-            d['solv-b'] = r.find('.//CapPump//SolvNameB').text
-            d['solv-b-per'] = r.find('.//CapPump//SolvRatioB').text
-            d['solv-c'] = r.find('.//CapPump//SolvNameC').text
-            d['solv-d'] = r.find('.//CapPump//SolvNameD').text
-            d['temp'] = r.find('.//TCC//LeftTemp').text
+            d['r-en-time'] = r.find('.//CapPump//Stoptime').text
+            d['m-flw'] = r.find('.//CapPump//Flow').text
+            d['m-slv'] = r.find('.//CapPump//SolvNameA').text
+            d['m-slv-b'] = r.find('.//CapPump//SolvNameB').text
+            d['m-slv-b-per'] = r.find('.//CapPump//SolvRatioB').text
+            d['m-slv-c'] = r.find('.//CapPump//SolvNameC').text
+            d['m-slv-d'] = r.find('.//CapPump//SolvNameD').text
+            d['m-tmp'] = r.find('.//TCC//LeftTemp').text
         except AttributeError:
             #e.g. if LeftTemp is not set, find will
             #return None and None has no attribute text
@@ -61,13 +61,13 @@ class AgilentMHSampleInfo(TraceFile):
         r = ElementTree.parse(self.filename).getroot()
         info = {i.find('Name').text: i.find('Value').text \
                 for i in r.findall('Field')}
-        d['name'] = info.get('Sample Name', '')
-        d['vial_pos'] = info.get('Sample Position', '')
-        d['inst'] = info.get('InstrumentName', '')
-        d['operator'] = info.get('OperatorName', '')
-        d['date'] = info.get('AcqTime', '').replace('T', \
+        d['r-smp'] = info.get('Sample Name', '')
+        d['r-vial-pos'] = info.get('Sample Position', '')
+        d['r-inst'] = info.get('InstrumentName', '')
+        d['r-opr'] = info.get('OperatorName', '')
+        d['r-date'] = info.get('AcqTime', '').replace('T', \
           ' ').rstrip('Z')
-        d['inj_size'] = info.get(u('Inj Vol (µl)'), '')
+        d['m-inj-size'] = info.get(u('Inj Vol (µl)'), '')
         return d
 
 

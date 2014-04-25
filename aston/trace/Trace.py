@@ -172,7 +172,8 @@ class AstonSeries(object):
 
 
 class AstonFrame(object):
-    def __init__(self, data=None, index=None, columns=None):
+    def __init__(self, data=None, index=None, columns=None, yunits=None):
+        self.yunits = yunits
         if data is None:
             self.values = np.array([])
             self.index = np.array([])

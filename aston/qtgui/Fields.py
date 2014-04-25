@@ -34,20 +34,22 @@ aston_fields['m-tmp'] = tr('Temperature (°C)')  # type = time-dict
 aston_fields['m-prs'] = tr('Pressure (kbar)')  # type = time-dict
 aston_fields['m-flw'] = tr('Flow (µl/min)')  # type = time-dict
 aston_fields['m-slv'] = tr('Solvent/Carrier')  # Solvent A
-aston_fields['m-slv-B'] = tr('Solvent B')
-aston_fields['m-slv-B-per'] = tr('% Solvent B')  # type = time-dict
-aston_fields['m-slv-C'] = tr('Solvent C')
-aston_fields['m-slv-C-per'] = tr('% Solvent C')  # type = time-dict
-aston_fields['m-slv-D'] = tr('Solvent D')
-aston_fields['m-slv-D-per'] = tr('% Solvent D')  # type = time-dict
+aston_fields['m-slv-b'] = tr('Solvent B')
+aston_fields['m-slv-b-per'] = tr('% Solvent B')  # type = time-dict
+aston_fields['m-slv-c'] = tr('Solvent C')
+aston_fields['m-slv-c-per'] = tr('% Solvent C')  # type = time-dict
+aston_fields['m-slv-d'] = tr('Solvent D')
+aston_fields['m-slv-d-per'] = tr('% Solvent D')  # type = time-dict
 
 # detector information
 aston_fields['d-name'] = tr('Detector Type')
 aston_fields['d-ms-int-mode'] = tr('MS Interface Mode')
 aston_fields['d-y-units'] = tr('Units')
+#TODO: y units should be read in TraceFile and returned with DataFrame?
 
 # run information
-aston_fields['r-filename'] = tr('File Name')
+aston_fields['r-filenames'] = tr('File Name')
+aston_fields['r-analyses'] = tr('Analyses')
 aston_fields['r-smp'] = tr('Sample')  # e.g. BSA
 aston_fields['r-smp-conc'] = tr('Sample Concentration')  # e.g. 5 mg/ml
 aston_fields['r-date'] = tr('Date')

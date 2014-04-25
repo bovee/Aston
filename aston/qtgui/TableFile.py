@@ -24,11 +24,12 @@ Model for handling display of open files.
 
 from __future__ import unicode_literals
 import json
+import os.path as op
 from collections import OrderedDict
 from PyQt4 import QtGui, QtCore
 from aston.resources import resfile
 from aston.qtgui.Fields import aston_fields, aston_groups
-from aston.database.File import Project, Run, Analysis
+from aston.database.File import Project, Run  # , Analysis
 from aston.qtgui.TableModel import TableModel
 
 
@@ -42,7 +43,7 @@ class FileTreeModel(TableModel):
                                             master_window, *args)
 
         #TODO: load custom fields from the database
-        self.fields = ['name', 'sel']
+        self.fields = ['name', 'sel', 'r-filenames', 'r-analyses', 'other']
 
         # create a list with all of the root items in it
         self._children = self.db.query(Project).filter(Project.name != '').all()
@@ -162,27 +163,22 @@ class FileTreeModel(TableModel):
             elif role == QtCore.Qt.DisplayRole or role == QtCore.Qt.EditRole:
                 if fld == 'name':
                     rslt = obj.name
+                elif fld == 'r-filenames':
+                    #TODO: shorten path?
+                    rslt = ','.join([op.split(a.path)[1] for a in obj.analyses])
+                elif fld == 'r-analyses':
+                    rslt = ','.join([a.trace.strip('#*') for a in obj.analyses])
+                elif fld == 'other':
+                    rslt = json.dumps(obj.info)
                 else:
                     rslt = obj.info.get(fld, '')
             elif role == QtCore.Qt.DecorationRole and index.column() == 0:
                 loc = resfile('aston/qtgui', 'icons/file.png')
                 rslt = QtGui.QIcon(loc)
-        elif type(obj) is Analysis:
-            if role == QtCore.Qt.DisplayRole:
-                if fld == 'name':
-                    return obj.name
-        #elif role == QtCore.Qt.DisplayRole or role == QtCore.Qt.EditRole:
-        #    if fld == 'p-model' and f.db_type == 'peak':
-        #        rpeakmodels = {peak_models[k]: k for k in peak_models}
-        #        rslt = rpeakmodels.get(f.info[fld], 'None')
-        #    else:
-        #        rslt = f.info[fld]
-        #elif role == QtCore.Qt.DecorationRole and index.column() == 0:
-        #    #TODO: icon for method, compound
-        #    fname = {'file': 'file.png', 'peak': 'peak.png', \
-        #            'spectrum': 'spectrum.png'}
-        #    loc = resfile('aston/ui', 'icons/' + fname.get(f.db_type, ''))
-        #    rslt = QtGui.QIcon(loc)
+        #elif type(obj) is Analysis:
+        #    if role == QtCore.Qt.DisplayRole:
+        #        if fld == 'name':
+        #            return obj.name
         return rslt
 
     def setData(self, index, data, role):
@@ -218,7 +214,7 @@ class FileTreeModel(TableModel):
         dflags |= QtCore.Qt.ItemIsDragEnabled
         if col == 'sel' and type(obj) is Run:
             dflags |= QtCore.Qt.ItemIsUserCheckable
-        elif col in ['r-filename', 'vis']:
+        elif col in ['r-filenames', 'vis']:
             pass
         else:
             dflags |= QtCore.Qt.ItemIsEditable

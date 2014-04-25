@@ -3,6 +3,7 @@ import zlib
 import base64
 from xml.etree import ElementTree as ET
 import numpy as np
+from aston import __version__
 from aston.trace.Trace import AstonSeries
 from aston.tracefile.TraceFile import ScanListFile
 from aston.spectra.Scan import Scan
@@ -18,7 +19,7 @@ def t_to_min(x):
                 for i in range(3))
 
 
-#class mzXML(TraceFile):
+#class mzXML(ScanListFile):
 class mzXML(object):
     ext = 'MZXML'
     traces = ['#ms']
@@ -213,12 +214,12 @@ def write_mzml(filename, df, info=None):
     acc = {'ms': ('MS:1000579', 'MS1 spectrum'), \
            'uv': ('MS:1000806', 'absorption spectrum')}
     #TODO: need to select which kind of spectrum this is
-    ET.SubElement(c, 'cvParam', {'cvRef': 'MS', 'accession': acc[0], \
-                                 'name': acc[1]})
+    stype = 'ms'
+    ET.SubElement(c, 'cvParam', {'cvRef': 'MS', 'accession': acc[stype][0], \
+                                 'name': acc[stype][1]})
 
     c = ET.SubElement(r, 'softwareList', {'count': '1'})
-    #TODO: should use version in here
-    c = ET.SubElement(c, 'software', {'id': 'Aston', 'version': ''})
+    c = ET.SubElement(c, 'software', {'id': 'Aston', 'version': __version__})
     ET.SubElement(c, 'cvParam', {'cvRef': 'MS', 'accession': 'MS:1001457', \
                                  'name': 'data processing software'})
 
@@ -234,9 +235,20 @@ def write_mzml(filename, df, info=None):
     ET.SubElement(c, 'cvParam', {'cvRef': 'MS', 'accession': 'MS:1000544', \
                                  'name': 'Conversion to mzML'})
 
-    #TODO: add startTimeStamp
     c = ET.SubElement(r, 'run', {'defaultInstrumentConfigurationRef': 'IC1', \
                                  'id': 'R1'})
     sl = ET.SubElement(c, 'spectrumList', {'count': len(df.index), \
                                            'defaultDataProcessingRef': 'DP1'})
-    #TODO: write out each spectrum
+    for i, scan in enumerate(df.scans()):
+        s = ET.SubElement(sl, 'spectrum', {'index': str(i), \
+                                           'id': 'scan=' + str(i + 1), \
+                                           'defaultArrayLength': '1'})
+        #TODO: write out spectrum info
+        #ET.SubElement(s, 'scanList', {})  # is this necessary?
+        dal = ET.SubElement(s, 'binaryDataArrayList', {'count': '2'})
+        da1 = ET.SubElement(dal, 'binaryDataArray', {'encodedLength': ''})
+        ET.SubElement(da1, 'cvParamGroup', {})
+        ET.SubElement(da1, 'binary', {}).text = 'test'
+        da2 = ET.SubElement(dal, 'binaryDataArray', {'encodedLength': ''})
+        ET.SubElement(da2, 'cvParamGroup', {})
+        ET.SubElement(da2, 'binary', {}).text = 'test'

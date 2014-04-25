@@ -230,8 +230,7 @@ class Plot(Base):
         elif style in {'heatmap', 'colors'}:
             #TODO: should only be on name_type == '2d' ?
             # need other ui changes first though
-            #TODO: use colors
-            self.frame(twin).plot(style=style, color=color, ax=ax)
+            self.frame(twin).plot(style=style, cmap=color, ax=ax)
         else:
             #TODO: should technically only be allowed on 1d plots
             trace = self.trace(twin)

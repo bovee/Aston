@@ -191,14 +191,14 @@ class AgilentMS(TraceFile):
         f.seek(0x18)
         d['name'] = f.read(struct.unpack('>B', f.read(1))[0]).decode().strip()
         f.seek(0x94)
-        d['operator'] = f.read(struct.unpack('>B', f.read(1))[0]).decode()
+        d['r-opr'] = f.read(struct.unpack('>B', f.read(1))[0]).decode()
         f.seek(0xE4)
-        d['method'] = \
+        d['m-name'] = \
                 f.read(struct.unpack('>B', f.read(1))[0]).decode().strip()
         f.seek(0xB2)
         rawdate = f.read(struct.unpack('>B', f.read(1))[0]).decode()
         try:
-            d['date'] = datetime.strptime(rawdate, \
+            d['r-date'] = datetime.strptime(rawdate, \
               "%d %b %y %H:%M %p").isoformat(' ')
         except ValueError:
             pass  # date is not in correct format to parse?
@@ -321,6 +321,8 @@ class AgilentMSMSScan(ScanListFile):
         f.close()
 
     def mrm_trace(self, parent=None, daughter=None, tol=0.5, twin=None):
+        #TODO: should override `trace` and then call parent's `trace` method
+        # if name is not an mrm trace
         if twin is None:
             twin = (-np.inf, np.inf)
 

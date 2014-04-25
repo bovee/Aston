@@ -1,7 +1,13 @@
+0.7 Features
+************
+
+*
+
+
 0.7 Checklist
 *************
 
-* mzXML file support
+* make all columns display in table properly
 * save AIA/CDF, mzML & mzXML
 * RAW file support
   - look at linking to unfinnigan? (https://code.google.com/p/unfinnigan/)
@@ -34,6 +40,7 @@
 * fix color scaling as more chromatograms added: hard to keep track
 * put retention time on extracted spectra
 * buttons for spectral navigation?
+* xcms interface
 
 
 0.9 Checklist

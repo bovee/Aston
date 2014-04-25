@@ -114,6 +114,23 @@ class TraceFile(object):
         #TODO: check for '*' trace in self.traces
         return []
 
+    def subscan(self, name, t, mz):
+        """
+        Returns a spectra linked to both a time and mz, e.g.
+        the daughter scan in an MSMS or a MS scan from a GC-GC.
+        """
+        pass
+
+    def subscans(self, name, twin=None):
+        """
+        Returns a list of times with subscans and their associated mzs.
+
+        Preliminary idea:
+        If all points in self.data have subscans, return True.
+        """
+        # example: [0.1], [147, 178]
+        return [], []
+
     def md5hash(self):
         #TODO: calculate md5hash of this file
         # to be used for determining if files in db are unique
@@ -125,7 +142,7 @@ class ScanListFile(TraceFile):
         return []
 
     #TODO: is there a point in creating a data property here? (for heatmaps?)
-    #TODO: need better binning code then...
+    #TODO: if so, then need better binning code...
 
     def total_trace(self, twin=None):
         if twin is None:

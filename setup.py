@@ -27,9 +27,13 @@ import os
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
+# read in the version number
+with open('aston/__init__.py') as f:
+    exec(f.read())
+
 options = {
     'name': 'Aston',
-    'version': '0.7.0',
+    'version': __version__,
     'description': 'Mass/UV Spectral Analysis Program',
     'author': 'Roderick Bovee',
     'author_email': 'bovee@fas.harvard.edu',

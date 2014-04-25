@@ -33,6 +33,8 @@ class AgilentMWD(TraceFile):
                 #generate the time points if this is the first trace
                 if len(ions) == 0:
                     f = open(i, 'rb')
+                    f.seek(0x244)
+                    yunits = f.read(struct.unpack('>B', f.read(1))[0]).decode()
                     f.seek(0x11A)
                     st_t = struct.unpack('>i', f.read(4))[0] / 60000.
                     en_t = struct.unpack('>i', f.read(4))[0] / 60000.
@@ -44,7 +46,7 @@ class AgilentMWD(TraceFile):
                 ions.append(float(wv))
                 dtraces.append(dtrace)
         data = np.array(dtraces).transpose()
-        return AstonFrame(data, times, ions)
+        return AstonFrame(data, times, ions, yunits=yunits)
 
     def _read_ind_file(self, fname):
         f = open(fname, 'rb')
@@ -92,17 +94,15 @@ class AgilentMWD(TraceFile):
         f.seek(0x18)
         d['name'] = f.read(struct.unpack('>B', f.read(1))[0]).decode()
         f.seek(0x94)
-        d['operator'] = f.read(struct.unpack('>B', f.read(1))[0]).decode()
+        d['r-opr'] = f.read(struct.unpack('>B', f.read(1))[0]).decode()
         f.seek(0xE4)
-        d['method'] = f.read(struct.unpack('>B', f.read(1))[0]).decode()
+        d['m-name'] = f.read(struct.unpack('>B', f.read(1))[0]).decode()
         #try:
         f.seek(0xB2)
         rawdate = f.read(struct.unpack('>B', f.read(1))[0]).decode()
-        d['date'] = datetime.strptime(rawdate, \
+        d['r-date'] = datetime.strptime(rawdate, \
           "%d-%b-%y, %H:%M:%S").isoformat(' ')
         #except: pass #TODO: find out why this chokes
-        f.seek(0x244)
-        d['y_units'] = f.read(struct.unpack('>B', f.read(1))[0]).decode()
         f.seek(0x254)
         #TODO: replace signal name with reference_wavelength?
         #d['signal name'] = f.read(struct.unpack('>B', f.read(1))[0]).decode()
@@ -130,6 +130,7 @@ class AgilentMWD2(TraceFile):
                 #generate the time points if this is the first trace
                 if len(ions) == 0:
                     f = open(i, 'rb')
+                    yunits = self._get_str(f, 0x104C)
                     f.seek(0x11A)
                     st_t = struct.unpack('>i', f.read(4))[0] / 60000.
                     en_t = struct.unpack('>i', f.read(4))[0] / 60000.
@@ -141,7 +142,7 @@ class AgilentMWD2(TraceFile):
                 ions.append(float(wv))
                 dtraces.append(dtrace)
         data = np.array(dtraces).transpose()
-        return AstonFrame(data, times, ions)
+        return AstonFrame(data, times, ions, yunits=yunits)
 
     def _read_ind_file(self, fname):
         f = open(fname, 'rb')
@@ -175,34 +176,33 @@ class AgilentMWD2(TraceFile):
         f.close()
         return wv, np.array(data)
 
+    def _get_str(self, f, off):
+        """
+        Convenience function to quickly pull out strings.
+        """
+        f.seek(off)
+        return f.read(2 * struct.unpack('>B', \
+            f.read(1))[0]).decode('utf-16')
+
     @property
     def info(self):
         d = super(AgilentMWD2, self).info
         #TODO: fix this so that it doesn't rely upon MWD1A.CH?
 
-        def get_str(f, off):
-            """
-            Convenience function to quickly pull out strings.
-            """
-            f.seek(off)
-            return f.read(2 * struct.unpack('>B', \
-              f.read(1))[0]).decode('utf-16')
-
         f = open(self.filename, 'rb')
-        d['name'] = get_str(f, 0x35A)
-        d['operator'] = get_str(f, 0x758)
-        d['method'] = get_str(f, 0xA0E)
-        rawdate = get_str(f, 0x957)
+        d['name'] = self._get_str(f, 0x35A)
+        d['r-opr'] = self._get_str(f, 0x758)
+        d['m-name'] = self._get_str(f, 0xA0E)
+        rawdate = self._get_str(f, 0x957)
         try:
-            d['date'] = datetime.strptime(rawdate, \
+            d['r-date'] = datetime.strptime(rawdate, \
               '%d-%b-%y, %H:%M:%S').isoformat(' ')
         except ValueError:
             try:
-                d['date'] = datetime.strptime(rawdate, \
+                d['r-date'] = datetime.strptime(rawdate, \
                   '%d %b %y  %I:%M %p').isoformat(' ')
             except ValueError:
                 pass
-        d['y_units'] = get_str(f, 0x104C)
         #TODO: replace signal name with reference_wavelength?
         #d['signal name'] = f.read(struct.unpack('>B', f.read(1))[0]).decode()
         f.close()
@@ -269,6 +269,10 @@ class AgilentCSDAD(TraceFile):
         #same as the ones in the *.CH files. Maybe they need to be 0'd?
         f = open(self.filename, 'rb')
 
+        f.seek(0x146)
+        yunits = f.read(struct.unpack('>B', \
+                                      f.read(1))[0]).decode('ascii').strip()
+
         f.seek(0x116)
         nscans = struct.unpack('>i', f.read(4))[0]
 
@@ -302,7 +306,7 @@ class AgilentCSDAD(TraceFile):
         for i, d in zip(range(nscans), data):
             for ion, abn in d.items():
                 ndata[i, ions.index(ion)] = abn
-        return AstonFrame(ndata, times, ions)
+        return AstonFrame(ndata, times, ions, yunits=yunits)
 
     @property
     def info(self):
@@ -313,25 +317,23 @@ class AgilentCSDAD(TraceFile):
             f.seek(0x18)
             d['name'] = string_read(f)
             f.seek(0x94)
-            d['operator'] = string_read(f)
+            d['r-opr'] = string_read(f)
             f.seek(0xE4)
-            d['method'] = string_read(f)
+            d['m-name'] = string_read(f)
             f.seek(0xB2)
             rawdate = string_read(f)
             try:  # fails on 0331 UV files
-                d['date'] = datetime.strptime(rawdate, \
+                d['r-date'] = datetime.strptime(rawdate, \
                     "%d-%b-%y, %H:%M:%S").isoformat(' ')
             except:
                 pass
-            f.seek(0x146)
-            d['y_units'] = string_read(f)
             f.seek(0xD0)
-            d['inst'] = string_read(f)
+            d['r-inst'] = string_read(f)
             #TODO: are the next values correct?
             f.seek(0xFE)
-            d['vial_pos'] = string_read(f)
+            d['r-vial-pos'] = string_read(f)
             f.seek(0xFE)
-            d['seq_num'] = string_read(f)
+            d['r-seq-num'] = string_read(f)
         return d
 
 
@@ -348,6 +350,11 @@ class AgilentCSDAD2(TraceFile):
     @cache(maxsize=1)
     def data(self):
         f = open(self.filename, 'rb')
+
+        f.seek(0xC15)
+        string_read = lambda f: f.read(2 * struct.unpack('>B', \
+            f.read(1))[0]).decode('utf-16').strip()
+        yunits = string_read(f)
 
         f.seek(0x116)
         nscans = struct.unpack('>i', f.read(4))[0]
@@ -422,7 +429,7 @@ class AgilentCSDAD2(TraceFile):
             #    ndata[i, pidx:idx] = np.cumsum(data[pidx:idx])
             #    pidx = idx
 
-        return AstonFrame(ndata / 2000., times / 60000., wvs)
+        return AstonFrame(ndata / 2000., times / 60000., wvs, yunits=yunits)
 
     @property
     def info(self):
@@ -433,12 +440,10 @@ class AgilentCSDAD2(TraceFile):
             f.seek(0x35A)
             d['name'] = string_read(f)
             f.seek(0x758)
-            d['operator'] = string_read(f)
+            d['r-opr'] = string_read(f)
             # get date into correct format before using this
             #f.seek(0x957)
             #d['r-date'] = string_read()
             f.seek(0xA0E)
-            d['method'] = string_read(f)
-            f.seek(0xC15)
-            d['y_units'] = string_read(f)
+            d['m-name'] = string_read(f)
         return d
