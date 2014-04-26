@@ -20,8 +20,11 @@ class Scan(object):
 
         scn = np.vstack([self.x, self.abn])
 
-        if scn.shape[1] > 10 and np.all(np.abs(np.diff(scn[0]) - \
-          (scn[0, 1] - scn[0, 0])) < 1e-9):
+        # determine if the spectrum is continuous
+        cont_spec = scn.shape[1] > 10 and np.all(np.abs(np.diff(scn[0]) - \
+                    (scn[0, 1] - scn[0, 0])) < 1e-9)
+
+        if cont_spec:
             #if the spacing between all the points is equal, plot as a line
             scn = scn[:, np.argsort(scn)[0]]
             ax.plot(scn[0], scn[1], '-', color=color)
@@ -36,11 +39,23 @@ class Scan(object):
                 pass
             ax.plot(scn[0], scn[1], ',', color=color)
 
-        if label:
-            #FIXME: doesn't look good if less than AMU spacing
-            max_val = max(np.array(scn[1]))  # only label peaks X % of this
+        cut_val = 0.01 * max(np.array(scn[1]))  # only label peaks 1% of max
+        if label and cont_spec:
+            l_idxs = []
+            for idx in scn[1].argsort()[::-1]:
+                l_idxs.append(idx)
+                if idx - 1 in l_idxs or idx + 1 in l_idxs:
+                    continue
+                s = scn[:, idx].T
+                #TODO: allow a definable max number of labels?
+                # or do better collision detection between them?
+                if s[1] < cut_val or len(l_idxs) > 100:
+                    break
+                ax.text(s[0], s[1], str(s[0]), ha='center', \
+                    va='bottom', rotation=90, size=10, color=color)
+        elif label and not cont_spec:
             filt_scn = scn[:, 0.5 * np.roll(scn[1], 1) - scn[1] <= 0]
-            for s in filt_scn[:, filt_scn[1] > 0.01 * max_val].T:
+            for s in filt_scn[:, filt_scn[1] > cut_val].T:
                 ax.text(s[0], s[1], str(s[0]), ha='center', \
                     va='bottom', rotation=90, size=10, color=color)
 
