@@ -146,7 +146,7 @@ class Plot(Base):
     peaks = relationship(DBPeak, backref='dbplot')
     vis = Column(SmallInteger, default=1)
     name = Column(UnicodeText, default=u'TIC')
-    style = Column(Unicode(16), default=u'auto')
+    style = Column(Unicode(16), default=u'solid')
     color = Column(Unicode(16), default=u'auto')
     x_offset = Column(Float, default=0)
     x_scale = Column(Float, default=1)

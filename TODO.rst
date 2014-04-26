@@ -6,8 +6,11 @@
 
 0.7 Checklist
 *************
-
-* make all columns display in table properly
+* plot all 1d traces in same axes, each 2d gets its own axes (but x-axis is linked?)
+* allow scaling/stacking of 1d traces
+* remove "extras", "graph style" options from graph menu
+* axes labels? (e.g. R.T. (min), etc)
+* make all columns display in tables properly
 * save AIA/CDF, mzML & mzXML
 * RAW file support
   - look at linking to unfinnigan? (https://code.google.com/p/unfinnigan/)

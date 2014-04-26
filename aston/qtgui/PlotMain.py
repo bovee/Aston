@@ -39,10 +39,6 @@ class Plotter(object):
 
         self.highlight = None
 
-    def availStyles(self):
-        l_ord = ['default', 'scaled', 'stacked', 'scaled stacked', '2d']
-        return [self._styles[s] for s in l_ord]
-
     def plot_data(self, plots, update_bounds=True):
         if not update_bounds:
             bnds = self.plt.get_xlim(), self.plt.get_ylim()
@@ -77,7 +73,6 @@ class Plotter(object):
         #    sc_factor = (max(fts.data[:, 0]) - min(fts.data[:, 0])) / 5.
 
         ## count the number of traces that will be displayed
-        #trs = sum(1 for x in datafiles for _ in x.info['traces'].split(','))
         nplots = len(plots)
         if nplots < 6:
             alpha = 0.75 - nplots * 0.1
@@ -86,14 +81,11 @@ class Plotter(object):
         #FIXME: read this from the menu
         colors = get_cmap('Spectral')
 
+        #TODO: do scaling/scaling with offset/etc?
         #TODO: determine the number of axes to use
         #TODO: should be filtering out invalid plots before here
         for pnum, plot in enumerate(plots):
-            if plot.style == 'auto':
-                #FIXME: style for auto needs to be drawn from somewhere
-                style = 'solid'
-            else:
-                style = plot.style
+            style = plot.style
             if plot.color == 'auto':
                 if style in {'heatmap', 'colors'}:
                     c = colors
@@ -106,7 +98,6 @@ class Plotter(object):
             else:
                 c = plot.color
 
-            #FIXME: auto style could be "color strips"
             if style == 'heatmap':
                 plot.plot(style=style, color=c, ax=self.plt)
                 if self.legend:

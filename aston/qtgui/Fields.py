@@ -98,7 +98,6 @@ aston_fields['p-d13c'] = tr('δ¹³C Value (‰)')
 #TODO: add other options back in
 aston_field_opts = {}
 aston_field_opts['style'] = OrderedDict()
-aston_field_opts['style']['auto'] = tr('Auto')
 aston_field_opts['style']['solid'] = tr('Solid')
 aston_field_opts['style']['dash'] = tr('Dash')
 aston_field_opts['style']['dot'] = tr('Dot')
