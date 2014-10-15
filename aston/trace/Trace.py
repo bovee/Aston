@@ -428,7 +428,7 @@ class AstonFrame(object):
 
     def compress(self):
         """
-        Serializes the AstonFrame.
+        Serializes the AstonFrame into a binary stream.
 
         Returns
         -------

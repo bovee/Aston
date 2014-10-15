@@ -15,7 +15,7 @@ class User(Base):
     __tablename__ = 'users'
     _user_id = Column(Integer, primary_key=True)
     username = Column(Unicode(64), unique=True, nullable=False)
-    #password = Column()
+    password = Column(Unicode(64), nullable=False)
     prefs = Column(JSONDict)
 
 

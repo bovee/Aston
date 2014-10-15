@@ -13,7 +13,10 @@ def read_directory(path, db, group=None):
 
     # create blank project
     if db.execute('SELECT 1 FROM projects WHERE name = ""').scalar() is None:
-        db.add(Project(name='', directory=op.abspath(path)))
+        p = Project(name='', directory=op.abspath(path))
+        if group is not None:
+            p.group = group
+        db.add(p)
 
     for fold, dirs, files in os.walk(path):
         # for some reason, the scanning code at the end of this loop
@@ -53,18 +56,20 @@ def read_directory(path, db, group=None):
 
             tf = ftype_to_cls[ftype](op.join(fold, filename))
             tf.info['filename'] = op.relpath(op.join(fold, filename), path)
-            add_analysis(db, projname, projpath, runname, tf)
+            add_analysis(db, projname, projpath, runname, tf, group)
 
     db.commit()
     db.flush()
     #TODO: maybe give names to runs without them here?
 
 
-def add_analysis(db, projname, projpath, runname, tf):
+def add_analysis(db, projname, projpath, runname, tf, group=None):
     # find the project; if it doesn't exist, create it
     project = db.query(Project).filter_by(name=projname).first()
     if project is None:
         project = Project(name=projname, directory=projpath)
+        if group is not None:
+            project.group = group
         db.add(project)
 
     # find the run; if it doesn't exist, create it
