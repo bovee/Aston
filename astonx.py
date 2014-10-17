@@ -78,7 +78,6 @@ if startx:
 
     # translation stuff
     import locale
-    import pkg_resources
     from aston.resources import resfile
     try:
         locale.setlocale(locale.LC_ALL, '')
@@ -94,3 +93,7 @@ if startx:
     aston = AstonWindow()
     aston.show()
     sys.exit(qt.exec_())
+else:
+    # do command line things
+    #TODO
+    pass
