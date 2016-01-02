@@ -8,7 +8,7 @@ from aston.database.User import User, Group
 
 
 def read_directory(path, db, group=None):
-    #TODO: update with group also for permissions support
+    # TODO: update with group also for permissions support
     ftype_to_cls = {tf.__name__: tf for tf in tfclasses()}
 
     # create blank project
@@ -28,7 +28,7 @@ def read_directory(path, db, group=None):
 
         # extract a run name
         try:
-            runname = [i for i in curpath if \
+            runname = [i for i in curpath if
                        i.endswith(('.d', '.D', '.raw', '.RAW'))][-1]
         except IndexError:
             runname = ''
@@ -60,7 +60,7 @@ def read_directory(path, db, group=None):
 
     db.commit()
     db.flush()
-    #TODO: maybe give names to runs without them here?
+    # TODO: maybe give names to runs without them here?
 
 
 def add_analysis(db, projname, projpath, runname, tf, group=None):
@@ -84,8 +84,8 @@ def add_analysis(db, projname, projpath, runname, tf, group=None):
         run = Run(name=runname, path=runpath, project=project)
         db.add(run)
 
-    #TODO: filter by md5hash also to weed out uniques
-    #TODO: also use md5hash to update filenames of moved files
+    # TODO: filter by md5hash also to weed out uniques
+    # TODO: also use md5hash to update filenames of moved files
     analpath = op.relpath(op.abspath(tf.info['filename']), projpath)
     analysis = db.query(Analysis).filter_by(path=analpath).first()
     if analysis is None:
@@ -98,15 +98,15 @@ def add_analysis(db, projname, projpath, runname, tf, group=None):
         del info['filename'], info['filetype']
 
         # add in list of traces
-        other_traces = ','.join(a.trace for a in run.analyses \
+        other_traces = ','.join(a.trace for a in run.analyses
                                 if a.trace is not None)
-        other_traces = Counter(i.rstrip('0123456789') for \
+        other_traces = Counter(i.rstrip('0123456789') for
                                i in other_traces.split(','))
-        analysis.trace = ','.join(i if i not in other_traces \
-                                  else i + str(other_traces[i] + 1) \
+        analysis.trace = ','.join(i if i not in other_traces
+                                  else i + str(other_traces[i] + 1)
                                   for i in tf.traces)
 
-        #TODO: add trace info in
+        # TODO: add trace info in
         db.add(analysis)
 
         # update info in the containing run

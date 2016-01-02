@@ -1,4 +1,4 @@
-#!/usr/bin/python2.7
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 #    Copyright 2011-2014 Roderick Bovee
@@ -56,7 +56,7 @@ if startx:
 
     # to make some error messages go away
     import matplotlib
-    matplotlib.use('Qt4Agg')
+    matplotlib.use('Qt5Agg')
 
     import numpy
     numpy.seterr(divide='raise', invalid='raise', over='raise')
@@ -72,9 +72,9 @@ if startx:
 
     #all the other imports
     import sys
-    import PyQt4
+    import PyQt5
     from aston.qtgui.MainWindow import AstonWindow
-    qt = PyQt4.QtGui.QApplication(sys.argv)
+    qt = PyQt5.QtWidgets.QApplication(sys.argv)
 
     # translation stuff
     import locale
@@ -83,7 +83,7 @@ if startx:
         locale.setlocale(locale.LC_ALL, '')
         if locale.getlocale()[0] is not None:
             lang = locale.getlocale()[0]
-            tlate = PyQt4.QtCore.QTranslator(qt)
+            tlate = PyQt5.QtCore.QTranslator(qt)
             tlate.load('aston_' + lang + '.qm', resfile('aston/qtgui', 'i18n'))
             qt.installTranslator(tlate)
     except locale.Error:

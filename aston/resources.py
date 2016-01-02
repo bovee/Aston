@@ -19,8 +19,8 @@ except ImportError:  # Python 2
     from aston.cache import lru_cache as cache
 
 # translation function
-from PyQt4.QtCore import QObject
-tr = lambda s: QObject().trUtf8(s)
+from PyQt5.QtCore import QObject
+tr = lambda s: QObject().tr(s)
 
 
 def get_pref(key):
@@ -28,7 +28,11 @@ def get_pref(key):
         import configparser
     except ImportError:
         import ConfigParser as configparser
-    cp = configparser.SafeConfigParser()
+#    # TODO: figure out the error this will raise on <Python 3.2
+#    try:
+    cp = configparser.ConfigParser()
+#    except:
+#        cp = configparser.SafeConfigParser()
     for cfg in (op.expanduser('~/.aston.ini'), './aston.ini'):
         if op.exists(cfg):
             cp.readfp(open(cfg))

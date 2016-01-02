@@ -1,4 +1,4 @@
-from PyQt4 import QtGui
+from PyQt5 import QtGui, QtWidgets
 from aston.qtgui.ui_settings import Ui_Form
 #from aston.database.Database import AstonDatabase
 #from aston.database.Compound import get_compound_db
@@ -8,9 +8,9 @@ from aston.spectra.Isotopes import delta13C_constants
 from aston.database.User import User
 
 
-class SettingsWidget(QtGui.QWidget):
+class SettingsWidget(QtWidgets.QWidget):
     def __init__(self, parent=None, db=None):
-        QtGui.QWidget.__init__(self, parent)
+        QtWidgets.QWidget.__init__(self, parent)
         self.ui = Ui_Form()
         self.ui.setupUi(self)
         self.parent = parent
@@ -82,12 +82,12 @@ class SettingsWidget(QtGui.QWidget):
         k_to_b = self.numeric_opts()
         for k in k_to_b:
             v = self.get_key(k, dflt=None)
-            if type(k_to_b[k]) == QtGui.QDoubleSpinBox:
+            if type(k_to_b[k]) == QtWidgets.QDoubleSpinBox:
                 if v is not None:
                     k_to_b[k].setValue(float(v))
                 #k_to_b[k].valueChanged.connect(self.save_opts(k))
                 k_to_b[k].editingFinished.connect(self.save_opts(k))
-            elif type(k_to_b[k]) == QtGui.QCheckBox:
+            elif type(k_to_b[k]) == QtWidgets.QCheckBox:
                 if v is not None:
                     k_to_b[k].setChecked(v)
                 k_to_b[k].stateChanged.connect(self.save_opts(k))
@@ -109,7 +109,7 @@ class SettingsWidget(QtGui.QWidget):
         return wrapped_f
 
     def load_other_db(self):
-        path = str(QtGui.QFileDialog.getOpenFileName(self,
+        path = str(QtWidgets.QFileDialog.getOpenFileName(self,
           self.tr('Open DB'), '', self.tr('AstonDB (aston.sqlite)')))
         if path == '':
             return
@@ -120,7 +120,7 @@ class SettingsWidget(QtGui.QWidget):
     def load_cmpd_db(self):
         #TODO: relative to DB path if possible?
         fopts = self.tr('AstonDB (*.sqlite);;AMDIS DB (*.msl)')
-        path = str(QtGui.QFileDialog.getOpenFileName(self, \
+        path = str(QtWidgets.QFileDialog.getOpenFileName(self, \
           self.tr('Open DB'), '', fopts))
         if path == '':
             return
@@ -135,7 +135,7 @@ class SettingsWidget(QtGui.QWidget):
     def load_meth_db(self):
         #TODO: relative to DB path if possible?
         fopts = self.tr('AstonDB (*.sqlite);')
-        path = str(QtGui.QFileDialog.getOpenFileName(self, \
+        path = str(QtWidgets.QFileDialog.getOpenFileName(self, \
           self.tr('Open DB'), '', fopts))
         if path == '':
             return

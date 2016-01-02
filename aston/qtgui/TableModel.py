@@ -1,11 +1,10 @@
-import re
 from contextlib import contextmanager
-from PyQt4 import QtGui, QtCore
+from PyQt5 import QtGui, QtCore, QtWidgets
 from aston.qtgui.Fields import aston_fields, aston_field_opts
 
 
 class TableModel(QtCore.QAbstractItemModel):
-    def __init__(self, database=None, tree_view=None, \
+    def __init__(self, database=None, tree_view=None,
                  master_window=None, *args):
         #super(TableModel, self).__init__(self, *args)
         QtCore.QAbstractItemModel.__init__(self, *args)
@@ -24,7 +23,7 @@ class TableModel(QtCore.QAbstractItemModel):
 
         #tree_view.setModel(self)
 
-        #set up proxy model
+        # set up proxy model
         self.proxy_mod = FilterModel()
         self.proxy_mod.setSourceModel(self)
         self.proxy_mod.setDynamicSortFilter(True)
@@ -83,7 +82,7 @@ class TableModel(QtCore.QAbstractItemModel):
 
     def headerData(self, col, orientation, role):
         if orientation == QtCore.Qt.Horizontal and \
-          role == QtCore.Qt.DisplayRole:
+                role == QtCore.Qt.DisplayRole:
             if self.fields[col] in aston_fields:
                 return aston_fields[self.fields[col]]
             else:
@@ -130,39 +129,40 @@ class TableModel(QtCore.QAbstractItemModel):
         set_delegate = self.tree_view.setItemDelegateForColumn
         for c in aston_field_opts:
             if c in self.fields and c not in self.combo_delegates:
-                #new column, need to add combo support in
+                # new column, need to add combo support in
                 opts = list(aston_field_opts[c].values())
-                self.combo_delegates[c] = (self.fields.index(c), \
+                self.combo_delegates[c] = (self.fields.index(c),
                                            ComboDelegate(opts))
                 set_delegate(*self.combo_delegates[c])
             elif c not in self.fields and c in self.combo_delegates:
-                #column has been deleted, remove from delegate list
-                set_delegate(self.combo_delegates[c][0], \
+                # column has been deleted, remove from delegate list
+                set_delegate(self.combo_delegates[c][0],
                              self.tree_view.itemDelegate())
                 del self.combo_delegates[c]
 
 
-class FilterModel(QtGui.QSortFilterProxyModel):
+class FilterModel(QtCore.QSortFilterProxyModel):
     def __init__(self, parent=None):
         super(FilterModel, self).__init__(parent)
 
-    def filterAcceptsRow(self, row, index):
-        #if index.internalPointer() is not None:
-        #    db_type = index.internalPointer().db_type
-        #    if db_type == 'file':
-        #        return super(FilterModel, self).filterAcceptsRow(row, index)
-        #    else:
-        #        return True
-        #else:
-        return super(FilterModel, self).filterAcceptsRow(row, index)
+#    def filterAcceptsRow(self, row, index):
+#        #if index.internalPointer() is not None:
+#        #    db_type = index.internalPointer().db_type
+#        #    if db_type == 'file':
+#        #        return super(FilterModel, self).filterAcceptsRow(row, index)
+#        #    else:
+#        #        return True
+#        #else:
+#        return super(FilterModel, self).filterAcceptsRow(row, index)
+#
+#    def lessThan(self, left, right):
+#        def breakup(key):
+#            return [int(c) if c.isdigit() else c.lower()
+#                    for c in re.split('([0-9]+)', key)]
+#        return breakup(str(left.data())) < breakup(str(right.data()))
 
-    def lessThan(self, left, right):
-        tonum = lambda text: int(text) if text.isdigit() else text.lower()
-        breakup = lambda key: [tonum(c) for c in re.split('([0-9]+)', key)]
-        return breakup(str(left.data())) < breakup(str(right.data()))
 
-
-class ComboDelegate(QtGui.QItemDelegate):
+class ComboDelegate(QtWidgets.QItemDelegate):
     def __init__(self, opts, *args):
         self.opts = opts
         super(ComboDelegate, self).__init__(*args)

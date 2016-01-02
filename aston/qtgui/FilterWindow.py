@@ -1,10 +1,10 @@
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui, QtWidgets
 from aston.resources import tr
 from aston.qtgui.ui_filterwindow import Ui_filterDialog
 from aston.qtgui.Fields import aston_field_opts
 
 
-class FilterWindow(QtGui.QWidget):
+class FilterWindow(QtWidgets.QWidget):
     def __init__(self, parent=None):
         QtGui.QWidget.__init__(self)
         self.parent = parent

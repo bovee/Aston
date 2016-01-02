@@ -8,6 +8,7 @@ from datetime import datetime
 from xml.etree import ElementTree
 import numpy as np
 import scipy.sparse
+
 from aston.resources import cache
 from aston.trace.Trace import AstonSeries, AstonFrame
 from aston.tracefile.TraceFile import TraceFile, ScanListFile
@@ -108,15 +109,14 @@ class AgilentMS(TraceFile):
             i_lkup.update({ion: i + len(ions) for i, ion in enumerate(nions)})
             ions += nions
 
-            cols[rowst[scn]:rowst[scn + 1]] = \
-              [i_lkup[i] for i in mzs[0::2]]
+            cols[rowst[scn]:rowst[scn + 1]] = [i_lkup[i] for i in mzs[0::2]]
             vals[rowst[scn]:rowst[scn + 1]] = mzs[1::2]
             f.seek(npos)
         f.close()
 
         vals = ((vals & 16383) * 8 ** (vals >> 14)).astype(float)
-        data = scipy.sparse.csr_matrix((vals, cols, rowst), \
-          shape=(nscans, len(ions)), dtype=float)
+        data = scipy.sparse.csr_matrix((vals, cols, rowst),
+                                       shape=(nscans, len(ions)), dtype=float)
         ions = np.array(ions) / 20.
         return AstonFrame(data, times, ions)
 
@@ -193,13 +193,12 @@ class AgilentMS(TraceFile):
         f.seek(0x94)
         d['r-opr'] = f.read(struct.unpack('>B', f.read(1))[0]).decode()
         f.seek(0xE4)
-        d['m-name'] = \
-                f.read(struct.unpack('>B', f.read(1))[0]).decode().strip()
+        d['m-name'] = f.read(struct.unpack('>B', f.read(1))[0]).decode().strip()
         f.seek(0xB2)
         rawdate = f.read(struct.unpack('>B', f.read(1))[0]).decode()
         try:
-            d['r-date'] = datetime.strptime(rawdate, \
-              "%d %b %y %H:%M %p").isoformat(' ')
+            d['r-date'] = datetime.strptime(rawdate,
+                                            "%d %b %y %H:%M %p").isoformat(' ')
         except ValueError:
             pass  # date is not in correct format to parse?
         #TODO: vial number in here too?
@@ -222,7 +221,7 @@ class AgilentMSMSScan(ScanListFile):
         f = open(self.filename, 'rb')
         r = ElementTree.parse(op.splitext(self.filename)[0] + '.xsd').getroot()
 
-        xml_to_struct = {'xs:int': 'i', 'xs:long': 'q', 'xs:short': 'h', \
+        xml_to_struct = {'xs:int': 'i', 'xs:long': 'q', 'xs:short': 'h',
                          'xs:byte': 'b', 'xs:double': 'd', 'xs:float': 'f'}
         rfrmt = {}
 

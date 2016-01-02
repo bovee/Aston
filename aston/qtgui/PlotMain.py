@@ -1,7 +1,7 @@
 from matplotlib.figure import Figure
 from matplotlib.pyplot import get_cmap
-from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg
-from PyQt4.QtCore import Qt
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
+from PyQt5.QtCore import Qt
 from aston.qtgui.PlotNavbar import AstonNavBar
 
 

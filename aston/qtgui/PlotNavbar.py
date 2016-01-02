@@ -1,13 +1,13 @@
 import time
-from PyQt4 import QtGui
-from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg
+from PyQt5 import QtGui, QtWidgets
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT
 from aston.resources import resfile
 from aston.peaks.Integrators import merge_peaks_by_order
 
 
-class AstonNavBar(NavigationToolbar2QTAgg):
+class AstonNavBar(NavigationToolbar2QT):
     def __init__(self, canvas, parent=None):
-        NavigationToolbar2QTAgg.__init__(self, canvas, parent, False)
+        NavigationToolbar2QT.__init__(self, canvas, parent, False)
         self.parent = parent
         self.ev_time = 0
         self._xypress = []
@@ -23,8 +23,8 @@ class AstonNavBar(NavigationToolbar2QTAgg):
         #add the alignment tool
         if not hasattr(self, '_actions'):
             self._actions = {}
-        self._actions['align'] = QtGui.QAction(QtGui.QIcon(icon('align')), \
-          self.parent.tr('Align Chromatogram'), self)
+        self._actions['align'] = QtWidgets.QAction(QtGui.QIcon(icon('align')),
+                                                   self.parent.tr('Align Chromatogram'), self)
         self._actions['align'].setCheckable(True)
         self.addAction(self._actions['align'])
         self._actions['align'].triggered.connect(self.align)
@@ -32,14 +32,14 @@ class AstonNavBar(NavigationToolbar2QTAgg):
         self.addSeparator()
 
         #add the peak tool
-        self._actions['peak'] = QtGui.QAction(QtGui.QIcon(icon('peak')), \
-          self.parent.tr('Add/Delete Peak'), self)
+        self._actions['peak'] = QtWidgets.QAction(QtGui.QIcon(icon('peak')),
+                                                  self.parent.tr('Add/Delete Peak'), self)
         self._actions['peak'].setCheckable(True)
         self.addAction(self._actions['peak'])
         self._actions['peak'].triggered.connect(self.peak)
 
         #add the spectra tool
-        self._actions['spectrum'] = QtGui.QAction( \
+        self._actions['spectrum'] = QtWidgets.QAction( \
           QtGui.QIcon(icon('spectrum')), self.parent.tr('Get Spectrum'), self)
         self._actions['spectrum'].setCheckable(True)
         self.addAction(self._actions['spectrum'])

@@ -24,7 +24,7 @@ Model for handling display of open files.
 
 from __future__ import unicode_literals
 from collections import OrderedDict
-from PyQt4 import QtGui, QtCore
+from PyQt5 import QtGui, QtCore, QtWidgets
 from aston.resources import resfile
 from aston.qtgui.Fields import aston_fields, aston_groups, aston_field_opts
 #from aston.qtgui.MenuOptions import peak_models
@@ -49,20 +49,19 @@ class PaletteTreeModel(TableModel):
         q = self.db.query(PaletteRun)
         self._children = q.filter_by(palette=self.active_palette,
                                      enabled=True).all()
-        self.reset()
 
         #set up selections
-        tree_view.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
-        tree_view.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
+        tree_view.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+        tree_view.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
         ##TODO: this works, but needs to be detached when opening a new folder
         tree_view.selectionModel().currentChanged.connect(self.item_selected)
         #tree_view.clicked.connect(self.item_selected)
 
         #set up key shortcuts
-        del_ac = QtGui.QAction('Delete', tree_view, \
+        del_ac = QtWidgets.QAction('Delete', tree_view, \
             shortcut=QtCore.Qt.Key_Backspace, triggered=self.del_item)
         tree_view.addAction(del_ac)
-        del_ac = QtGui.QAction('Delete', tree_view, \
+        del_ac = QtWidgets.QAction('Delete', tree_view, \
             shortcut=QtCore.Qt.Key_Delete, triggered=self.del_item)
         tree_view.addAction(del_ac)
 
@@ -629,27 +628,27 @@ class PaletteTreeModel(TableModel):
         row_lst = []
         block_col = ['vis']
         for i in itms:
-            col_lst = [i.info[col] for col in flds \
+            col_lst = [i.info[col] for col in flds
                        if col not in block_col]
             row_lst.append(delim.join(col_lst))
 
         if incHeaders:
             try:  # for python 2
-                flds = [unicode(aston_fields[i]) for i in flds \
+                flds = [unicode(aston_fields[i]) for i in flds
                         if i not in ['vis']]
             except:  # for python 3
-                flds = [aston_fields[i] for i in flds \
+                flds = [aston_fields[i] for i in flds
                         if i not in ['vis']]
             header = delim.join(flds) + '\n'
             table = '\n'.join(row_lst)
             return header + table
 
 
-class NameColDelegate(QtGui.QItemDelegate):
+class NameColDelegate(QtWidgets.QItemDelegate):
     def get_opts(self, obj):
-        #TODO: make each name unique (e.g. UV3, MS2)
-        opts = [i.lstrip('#*') for a in obj.paletterun.run.analyses \
-                        for i in a.trace.split(',')]
+        # TODO: make each name unique (e.g. UV3, MS2)
+        opts = [i.lstrip('#*') for a in obj.paletterun.run.analyses
+                for i in a.trace.split(',')]
         opts += ['tic']
         return opts
 
@@ -685,7 +684,7 @@ class NameColDelegate(QtGui.QItemDelegate):
         model.setData(index, data, QtCore.Qt.EditRole)
 
 
-class ColorDelegate(QtGui.QItemDelegate):
+class ColorDelegate(QtWidgets.QItemDelegate):
     def get_opts(self, obj):
         if isinstance(obj, Plot) and obj.style in {'heatmap', 'colors'}:
             return aston_field_opts['color-2d']

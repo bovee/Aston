@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.optimize import leastsq, fmin, anneal, fmin_l_bfgs_b
+from scipy.optimize import leastsq, fmin, fmin_l_bfgs_b
 
 # bounding code inspired by http://newville.github.com/lmfit-py/bounds.html
 # which was inspired by leastsqbound, which was inspired by MINUIT
@@ -127,9 +127,6 @@ def fit(ts, fs=[], all_params=[], fit_vars=None, \
     if alg == 'simplex':
         fit_p, _ = fmin(errfunc, initc, args=(ts.index, ts.values, \
                                               peak_params))
-    elif alg == 'anneal':
-        fit_p, _ = anneal(errfunc, initc, args=(ts.index, ts.values, \
-                                                peak_params))
     elif alg == 'lbfgsb':
         #TODO: use bounds param
         fitp, _ = fmin_l_bfgs_b(errfunc, fit_p, args=(ts.index, ts.values, \

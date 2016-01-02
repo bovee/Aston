@@ -1,6 +1,6 @@
 import codecs
 import os.path as op
-from PyQt4 import QtGui
+from PyQt5 import QtGui, QtWidgets
 
 from aston.resources import resfile, tr, get_pref
 from aston.qtgui.ui_mainwindow import Ui_MainWindow
@@ -20,9 +20,9 @@ from aston.peaks.Integrators import integrate_peaks
 from aston.qtgui.Fields import aston_field_opts
 
 
-class AstonWindow(QtGui.QMainWindow):
+class AstonWindow(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
-        QtGui.QWidget.__init__(self, parent)
+        QtWidgets.QWidget.__init__(self, parent)
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
@@ -31,7 +31,7 @@ class AstonWindow(QtGui.QMainWindow):
         self.setWindowIcon(QtGui.QIcon(icn_path))
 
         #quick fix for Mac OS menus
-        self.ui.actionSettings.setMenuRole(QtGui.QAction.NoRole)
+        self.ui.actionSettings.setMenuRole(QtWidgets.QAction.NoRole)
 
         #set up the list of files in the current directory
         fdir = get_pref('Default.FILE_DIRECTORY')
@@ -46,7 +46,7 @@ class AstonWindow(QtGui.QMainWindow):
         self.ui.actionIntegrate.triggered.connect(self.integrate)
         self.ui.actionEditFilters.triggered.connect(self.showFilterWindow)
         self.ui.actionRevert.triggered.connect(self.revertChromChange)
-        self.ui.actionQuit.triggered.connect(QtGui.qApp.quit)
+        self.ui.actionQuit.triggered.connect(QtWidgets.qApp.quit)
         self.ui.loadPeakList.triggered.connect(self.load_peaks)
 
         #hook up the windows to the menu
@@ -77,21 +77,21 @@ class AstonWindow(QtGui.QMainWindow):
         #self.ui.lineEdit.textChanged.connect(self.updateSearch)
 
         ##make integrator options
-        peak_find_menu = QtGui.QMenu(self.ui.menuChromatogram)
+        peak_find_menu = QtWidgets.QMenu(self.ui.menuChromatogram)
         v = list(aston.qtgui.MenuOptions.peak_finders.keys())[0]
         self._add_opts_to_menu(peak_find_menu, \
           aston.qtgui.MenuOptions.peak_finders.keys(),
           lambda: None, v)
         self.ui.actionPeak_Finder.setMenu(peak_find_menu)
 
-        integrator_menu = QtGui.QMenu(self.ui.menuChromatogram)
+        integrator_menu = QtWidgets.QMenu(self.ui.menuChromatogram)
         v = list(aston.qtgui.MenuOptions.integrators.keys())[0]
         self._add_opts_to_menu(integrator_menu, \
           aston.qtgui.MenuOptions.integrators.keys(),
           lambda: None, v)
         self.ui.actionIntegrator.setMenu(integrator_menu)
 
-        menu_gp = QtGui.QActionGroup(self)
+        menu_gp = QtWidgets.QActionGroup(self)
         for ac in self.ui.menuIntegrand.actions():
             menu_gp.addAction(ac)
 
@@ -106,7 +106,7 @@ class AstonWindow(QtGui.QMainWindow):
         #  self.specplotter.save_prev_spec)
 
         #flesh out the settings menu
-        color_menu = QtGui.QMenu(self.ui.menuSettings)
+        color_menu = QtWidgets.QMenu(self.ui.menuSettings)
         v_cs = self.settings.get_key('color_scheme', dflt='Spectral')
         v = aston_field_opts['color-2d'][v_cs]
         c_opts = list(aston_field_opts['color-2d'].values())
@@ -121,7 +121,7 @@ class AstonWindow(QtGui.QMainWindow):
         #self.ui.actionGraphIRMS.triggered.connect(self.set_legend)
         #self.ui.actionGraph_Peaks_Found.triggered.connect(self.set_legend)
 
-        #style_menu = QtGui.QMenu(self.ui.menuSettings)
+        #style_menu = QtWidgets.QMenu(self.ui.menuSettings)
         #v_gs = self.settings.get_key('graph_style', dflt='default')
         #v = self.plotter._styles[v_gs]
         #self.plotter.setStyle(v)
@@ -140,7 +140,7 @@ class AstonWindow(QtGui.QMainWindow):
         #                                  self)
 
     def _add_opts_to_menu(self, menu, opts, fxn, dflt=None):
-        menu_gp = QtGui.QActionGroup(self)
+        menu_gp = QtWidgets.QActionGroup(self)
         for opt in opts:
             act = menu.addAction(opt, fxn)
             act.setData(opt)
@@ -180,7 +180,7 @@ class AstonWindow(QtGui.QMainWindow):
         self.statusBar().showMessage(msg, 2000)
 
     def open_folder(self):
-        folder = str(QtGui.QFileDialog.getExistingDirectory(self, \
+        folder = str(QtWidgets.QFileDialog.getExistingDirectory(self, \
           tr("Open Folder")))
         if folder == '':
             return
@@ -231,7 +231,7 @@ class AstonWindow(QtGui.QMainWindow):
 
     def load_peaks(self):
         ftypes = 'AMDIS (*.*);;Isodat (*.*)'
-        fname = QtGui.QFileDialog.getOpenFileName(self, \
+        fname = QtWidgets.QFileDialog.getOpenFileName(self, \
           tr("Open File"), '', ftypes)
         if str(fname) == '':
             return
@@ -259,7 +259,7 @@ class AstonWindow(QtGui.QMainWindow):
           'EMF Image (*.emf);;EPS Image (*.eps);;' + \
           'Portable Document Format (*.pdf);;Postscript Image (*.ps);;' + \
           'Compressed SVG File (*.svgz);;Comma-Delimited Text (*.csv)')
-        fname = str(QtGui.QFileDialog.getSaveFileNameAndFilter(self, \
+        fname = str(QtWidgets.QFileDialog.getSaveFileNameAndFilter(self, \
           tr("Save As..."), filter=fopts)[0])
         if fname == '':
             return
@@ -287,7 +287,7 @@ class AstonWindow(QtGui.QMainWindow):
           'EMF Image (*.emf);;EPS Image (*.eps);;' + \
           'Portable Document Format (*.pdf);;Postscript Image (*.ps);;' + \
           'Compressed SVG File (*.svgz);;Comma-Delimited Text (*.csv)')
-        fname = str(QtGui.QFileDialog.getSaveFileNameAndFilter(self, \
+        fname = str(QtWidgets.QFileDialog.getSaveFileNameAndFilter(self, \
           tr("Save As..."), filter=fopts)[0])
         if fname == '':
             return
@@ -306,7 +306,7 @@ class AstonWindow(QtGui.QMainWindow):
         #TODO: options for exporting different delimiters (e.g. tab) or
         #exporting select items as pictures (e.g. selected spectra)
         fopts = tr('Comma-Delimited Text (*.csv)')
-        fname = str(QtGui.QFileDialog.getSaveFileNameAndFilter(self, \
+        fname = str(QtWidgets.QFileDialog.getSaveFileNameAndFilter(self, \
           tr("Save As..."), filter=fopts)[0])
         if fname == '':
             return
