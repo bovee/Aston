@@ -18,9 +18,11 @@ try:
 except ImportError:  # Python 2
     from aston.cache import lru_cache as cache
 
+
 # translation function
-from PyQt5.QtCore import QObject
-tr = lambda s: QObject().tr(s)
+def tr(s):
+    from PyQt5.QtCore import QObject
+    return QObject().tr(s)
 
 
 def get_pref(key):
@@ -39,7 +41,7 @@ def get_pref(key):
             break
     else:
         pass
-        #TODO: write out this file?
+        # TODO: write out this file?
     try:
         return cp.get(key.split('.')[0], key.split('.')[1])
     except:

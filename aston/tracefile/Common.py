@@ -7,6 +7,7 @@ from itertools import product
 from glob import glob
 import inspect
 from importlib import import_module
+
 from aston.resources import cache
 
 #File types from http://en.wikipedia.org/wiki/Mass_spectrometry_data_format
@@ -129,7 +130,7 @@ def parse_c_serialized(f):
     These are used by Thermo for *.CF and *.DXF files and by Agilent
     for new-style *.REG files.
     """
-    #TODO: rewrite to use re library
+    # TODO: rewrite to use re library
     f.seek(0)
     try:
         p_rec_type = None

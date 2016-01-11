@@ -1,6 +1,7 @@
 from matplotlib.figure import Figure
 from matplotlib.pyplot import get_cmap
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
+from PyQt5 import QtWidgets
 from PyQt5.QtCore import Qt
 from aston.qtgui.PlotNavbar import AstonNavBar
 
@@ -12,25 +13,27 @@ class Plotter(object):
 
         plotArea = masterWindow.ui.plotArea
 
-        #create the plotting canvas and its toolbar and add them
+        # create the plotting canvas and its toolbar and add them
         tfig = Figure()
         tfig.set_facecolor('white')
         self.canvas = FigureCanvasQTAgg(tfig)
+        self.canvas.setMinimumSize(50, 100)
+        self.canvas.setSizePolicy(QtWidgets.QSizePolicy.Expanding,
+                                  QtWidgets.QSizePolicy.Expanding)
         self.navbar = AstonNavBar(self.canvas, masterWindow)
         plotArea.addWidget(self.navbar)
         plotArea.addWidget(self.canvas)
 
-        #TODO this next line is the slowest in this module
-        #self.plt = tfig.add_subplot(111, frameon=False)
         self.plt = tfig.add_axes((0.05, 0.1, 0.9, 0.85), frame_on=False)
+        self.plt.axes.hold(False)
         self.plt.xaxis.set_ticks_position('none')
         self.plt.yaxis.set_ticks_position('none')
         self.patches = []
         self.cb = None
 
-        #TODO: find a way to make the axes fill the figure properly
-        #tfig.subplots_adjust(left=0.05, right=0.95, bottom=0.05, top=0.95)
-        #tfig.tight_layout(pad=2)
+        # TODO: find a way to make the axes fill the figure properly
+        # tfig.subplots_adjust(left=0.05, right=0.95, bottom=0.05, top=0.95)
+        # tfig.tight_layout(pad=2)
 
         self.canvas.setFocusPolicy(Qt.ClickFocus)
         self.canvas.mpl_connect('button_press_event', self.mousedown)

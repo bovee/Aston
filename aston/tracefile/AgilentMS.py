@@ -21,7 +21,7 @@ class AgilentMS(TraceFile):
     traces = ['#ms']
 
     def total_trace(self, twin=None):
-        #TODO: use twin?
+        # TODO: use twin?
         f = open(self.filename, 'rb')
 
         # get number of scans to read in
@@ -342,5 +342,5 @@ class AgilentMSMSScan(ScanListFile):
             tme.append(t)
             ic.append(z)
 
-        return AstonSeries(np.array(ic), np.array(tme), \
+        return AstonSeries(np.array(ic), np.array(tme),
                            name=str(str(parent) + '→' + str(daughter)))
