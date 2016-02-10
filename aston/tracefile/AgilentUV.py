@@ -8,6 +8,10 @@ from aston.trace.Trace import AstonFrame
 from aston.tracefile.TraceFile import TraceFile
 
 
+def string_read(f):
+    return f.read(struct.unpack('>B', f.read(1))[0]).decode('ascii').strip()
+
+
 class AgilentMWD(TraceFile):
     ext = 'CH'
     mgc = '0233'
@@ -16,21 +20,21 @@ class AgilentMWD(TraceFile):
     @property
     def data(self):
         print(self.filename)
-        #Because the spectra are stored in several files in the same
-        #directory, we need to loop through them and return them together.
+        # Because the spectra are stored in several files in the same
+        # directory, we need to loop through them and return them together.
         ions = []
         dtraces = []
         foldname = os.path.dirname(self.filename)
-        #if foldname == '': foldname = os.curdir
-        for i in [os.path.join(foldname, i) for i \
-          in os.listdir(foldname)]:
+        # if foldname == '': foldname = os.curdir
+        for i in [os.path.join(foldname, i) for i in
+                  os.listdir(foldname)]:
             if i[-3:].upper() == '.CH':
                 wv, dtrace = self._read_ind_file(i)
 
                 if wv is None:
                     continue
 
-                #generate the time points if this is the first trace
+                # generate the time points if this is the first trace
                 if len(ions) == 0:
                     f = open(i, 'rb')
                     f.seek(0x244)
@@ -42,7 +46,7 @@ class AgilentMWD(TraceFile):
 
                     times = np.linspace(st_t, en_t, len(dtrace))
 
-                #add the wavelength and trace into the appropriate places
+                # add the wavelength and trace into the appropriate places
                 ions.append(float(wv))
                 dtraces.append(dtrace)
         data = np.array(dtraces).transpose()
@@ -57,8 +61,8 @@ class AgilentMWD(TraceFile):
 
         f.seek(0x254)
         sig_name = str(f.read(struct.unpack('>B', f.read(1))[0]))
-        #wavelength the file was collected at
-        wv = re.search("Sig=(\d+),(\d+)", sig_name).group(1)
+        # wavelength the file was collected at
+        wv = re.search('[\w]+=(\d+)', sig_name).group(1)
 
         f.seek(0x284)
         del_ab = struct.unpack('>d', f.read(8))[0]
@@ -89,7 +93,7 @@ class AgilentMWD(TraceFile):
     @property
     def info(self):
         d = super(AgilentMWD, self).info
-        #TODO: fix this so that it doesn't rely upon MWD1A.CH?
+        # TODO: fix this so that it doesn't rely upon MWD1A.CH?
         f = open(self.filename, 'rb')
         f.seek(0x18)
         d['name'] = f.read(struct.unpack('>B', f.read(1))[0]).decode()
@@ -97,15 +101,15 @@ class AgilentMWD(TraceFile):
         d['r-opr'] = f.read(struct.unpack('>B', f.read(1))[0]).decode()
         f.seek(0xE4)
         d['m-name'] = f.read(struct.unpack('>B', f.read(1))[0]).decode()
-        #try:
+        # try:
         f.seek(0xB2)
         rawdate = f.read(struct.unpack('>B', f.read(1))[0]).decode()
-        d['r-date'] = datetime.strptime(rawdate, \
-          "%d-%b-%y, %H:%M:%S").isoformat(' ')
-        #except: pass #TODO: find out why this chokes
+        d['r-date'] = datetime.strptime(rawdate,
+                                        '%d-%b-%y, %H:%M:%S').isoformat(' ')
+        # except: pass #TODO: find out why this chokes
         f.seek(0x254)
-        #TODO: replace signal name with reference_wavelength?
-        #d['signal name'] = f.read(struct.unpack('>B', f.read(1))[0]).decode()
+        # TODO: replace signal name with reference_wavelength?
+        # d['signal name'] = f.read(struct.unpack('>B', f.read(1))[0]).decode()
         f.close()
         return d
 
@@ -117,17 +121,17 @@ class AgilentMWD2(TraceFile):
 
     @property
     def data(self):
-        #Because the spectra are stored in several files in the same
-        #directory, we need to loop through them and return them together.
+        # Because the spectra are stored in several files in the same
+        # directory, we need to loop through them and return them together.
         ions = []
         dtraces = []
         foldname = os.path.dirname(self.filename)
-        for i in [os.path.join(foldname, i) for i \
-          in os.listdir(foldname)]:
+        for i in [os.path.join(foldname, i) for i in
+                  os.listdir(foldname)]:
             if i[-3:].upper() == '.CH':
                 wv, dtrace = self._read_ind_file(i)
 
-                #generate the time points if this is the first trace
+                # generate the time points if this is the first trace
                 if len(ions) == 0:
                     f = open(i, 'rb')
                     yunits = self._get_str(f, 0x104C)
@@ -138,7 +142,7 @@ class AgilentMWD2(TraceFile):
 
                     times = np.linspace(st_t, en_t, len(dtrace))
 
-                #add the wavelength and trace into the appropriate places
+                # add the wavelength and trace into the appropriate places
                 ions.append(float(wv))
                 dtraces.append(dtrace)
         data = np.array(dtraces).transpose()
@@ -148,15 +152,14 @@ class AgilentMWD2(TraceFile):
         f = open(fname, 'rb')
 
         f.seek(0x1075)
-        sig_name = f.read(2 * struct.unpack('>B', \
-          f.read(1))[0]).decode('utf-16')
-        #wavelength the file was collected at
-        wv = re.search("Sig=(\d+),(\d+)", sig_name).group(1)
+        sig_name = f.read(2 * struct.unpack('>B',
+                                            f.read(1))[0]).decode('utf-16')
+        # wavelength the file was collected at
+        wv = re.search('[\w]+=(\d+)', sig_name).group(1)
 
         f.seek(0x127C)
         del_ab = struct.unpack('>d', f.read(8))[0]
 
-        #data = np.array([])
         data = []
 
         f.seek(0x1800)
@@ -181,13 +184,12 @@ class AgilentMWD2(TraceFile):
         Convenience function to quickly pull out strings.
         """
         f.seek(off)
-        return f.read(2 * struct.unpack('>B', \
-            f.read(1))[0]).decode('utf-16')
+        return f.read(2 * struct.unpack('>B', f.read(1))[0]).decode('utf-16')
 
     @property
     def info(self):
         d = super(AgilentMWD2, self).info
-        #TODO: fix this so that it doesn't rely upon MWD1A.CH?
+        # TODO: fix this so that it doesn't rely upon MWD1A.CH?
 
         f = open(self.filename, 'rb')
         d['name'] = self._get_str(f, 0x35A)
@@ -195,16 +197,14 @@ class AgilentMWD2(TraceFile):
         d['m-name'] = self._get_str(f, 0xA0E)
         rawdate = self._get_str(f, 0x957)
         try:
-            d['r-date'] = datetime.strptime(rawdate, \
-              '%d-%b-%y, %H:%M:%S').isoformat(' ')
+            d['r-date'] = datetime.strptime(rawdate, '%d-%b-%y, %H:%M:%S').isoformat(' ')  # noqa
         except ValueError:
             try:
-                d['r-date'] = datetime.strptime(rawdate, \
-                  '%d %b %y  %I:%M %p').isoformat(' ')
+                d['r-date'] = datetime.strptime(rawdate, '%d %b %y  %I:%M %p').isoformat(' ')  # noqa
             except ValueError:
                 pass
-        #TODO: replace signal name with reference_wavelength?
-        #d['signal name'] = f.read(struct.unpack('>B', f.read(1))[0]).decode()
+        # TODO: replace signal name with reference_wavelength?
+        # d['signal name'] = f.read(struct.unpack('>B', f.read(1))[0]).decode()
         f.close()
         return d
 
@@ -213,15 +213,15 @@ class AgilentDAD(TraceFile):
     ext = 'SD'
     traces = ['#uv']
 
-    #header data in DAD1.sd
-    #80 byte repetition
-    #offset = 0xA4, format = 'IIfIfffQIIdddd'
-    # 750 entries
-    #f.seek(0xA4); struct.unpack('<IddffIQIIdddd', f.read(80))
+    # header data in DAD1.sd
+    # 80 byte repetition
+    # offset = 0xA4, format = 'IIfIfffQIIdddd'
+    #  750 entries
+    # f.seek(0xA4); struct.unpack('<IddffIQIIdddd', f.read(80))
 
-    #time series in DAD1.sg
-    #all doubles, starts at 0x44
-    #750x 54 double entries
+    # time series in DAD1.sg
+    # all doubles, starts at 0x44
+    # 750x 54 double entries
     @property
     def data(self):
         fhead = open(self.filename[:-3] + '.sd', 'rb')
@@ -237,8 +237,8 @@ class AgilentDAD(TraceFile):
 
             npts = t[7]
             if scn == 0:
-                #TODO: this will fail if the wavelengths collected
-                #change through the run.
+                # TODO: this will fail if the wavelengths collected
+                # change through the run.
                 data = np.zeros((nscans, npts))
                 times = np.zeros((nscans))
                 ions = [t[8] + x * t[3] for x in range(npts)]
@@ -246,7 +246,7 @@ class AgilentDAD(TraceFile):
             times[scn] = t[1]
 
             fdata.seek(t[5] + 16)
-            #TODO: use np.fromfile?
+            # TODO: use np.fromfile?
             data[scn] = struct.unpack('<' + npts * 'd', fdata.read(npts * 8))
         return AstonFrame(data, times, ions)
 
@@ -265,12 +265,12 @@ class AgilentCSDAD(TraceFile):
     @property
     @cache(maxsize=1)
     def data(self):
-        #TODO: the chromatograms this generates are not exactly the
-        #same as the ones in the *.CH files. Maybe they need to be 0'd?
+        # TODO: the chromatograms this generates are not exactly the
+        # same as the ones in the *.CH files. Maybe they need to be 0'd?
         f = open(self.filename, 'rb')
 
         f.seek(0x146)
-        yunits = f.read(struct.unpack('>B', \
+        yunits = f.read(struct.unpack('>B',
                                       f.read(1))[0]).decode('ascii').strip()
 
         f.seek(0x116)
@@ -312,8 +312,6 @@ class AgilentCSDAD(TraceFile):
     def info(self):
         d = super(AgilentCSDAD, self).info
         with open(self.filename, 'rb') as f:
-            string_read = lambda f: f.read(struct.unpack('>B', \
-                f.read(1))[0]).decode('ascii').strip()
             f.seek(0x18)
             d['name'] = string_read(f)
             f.seek(0x94)
@@ -323,13 +321,12 @@ class AgilentCSDAD(TraceFile):
             f.seek(0xB2)
             rawdate = string_read(f)
             try:  # fails on 0331 UV files
-                d['r-date'] = datetime.strptime(rawdate, \
-                    "%d-%b-%y, %H:%M:%S").isoformat(' ')
+                d['r-date'] = datetime.strptime(rawdate, "%d-%b-%y, %H:%M:%S").isoformat(' ')  # noqa
             except:
                 pass
             f.seek(0xD0)
             d['r-inst'] = string_read(f)
-            #TODO: are the next values correct?
+            # TODO: are the next values correct?
             f.seek(0xFE)
             d['r-vial-pos'] = string_read(f)
             f.seek(0xFE)
@@ -345,15 +342,12 @@ class AgilentCSDAD2(TraceFile):
     mgc = '0331'
     traces = ['#uv']
 
-    #@profile
     @property
     @cache(maxsize=1)
     def data(self):
         f = open(self.filename, 'rb')
 
         f.seek(0xC15)
-        string_read = lambda f: f.read(2 * struct.unpack('>B', \
-            f.read(1))[0]).decode('utf-16').strip()
         yunits = string_read(f)
 
         f.seek(0x116)
@@ -435,8 +429,6 @@ class AgilentCSDAD2(TraceFile):
     def info(self):
         d = super(AgilentCSDAD2, self).info
         with open(self.filename, 'rb') as f:
-            string_read = lambda f: f.read(2 * struct.unpack('>B', \
-                f.read(1))[0]).decode('utf-16').strip()
             f.seek(0x35A)
             d['name'] = string_read(f)
             f.seek(0x758)
