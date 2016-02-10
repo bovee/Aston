@@ -229,18 +229,19 @@ class FileTreeModel(TableModel):
         sel = self.returnSelFile()
         self.master_window.specplotter.libscans = []
         if sel is not None:
-            if sel.db_type == 'file':
-                pass
-            #     self.master_window.plotter.clear_peaks()
-            #     if sel.getInfo('vis') == 'y':
-            #         self.master_window.plotter.add_peaks( \
-            #             sel.getAllChildren('peak'))
-            elif sel.db_type == 'peak':
-                if sel.parent_of_type('file').info['vis'] == 'y':
-                    self.master_window.plotter.draw_highlight_peak(sel)
-            elif sel.db_type == 'spectrum':
-                self.master_window.specplotter.libscans = [sel.data]
-                self.master_window.specplotter.plot()
+            pass
+#            if sel.db_type == 'file':
+#                pass
+#            #     self.master_window.plotter.clear_peaks()
+#            #     if sel.getInfo('vis') == 'y':
+#            #         self.master_window.plotter.add_peaks( \
+#            #             sel.getAllChildren('peak'))
+#            elif sel.db_type == 'peak':
+#                if sel.parent_of_type('file').info['vis'] == 'y':
+#                    self.master_window.plotter.draw_highlight_peak(sel)
+#            elif sel.db_type == 'spectrum':
+#                self.master_window.specplotter.libscans = [sel.data]
+#                self.master_window.specplotter.plot()
         objs_sel = len(self.returnSelFiles())
         self.master_window.show_status(str(objs_sel) + ' items selected')
 

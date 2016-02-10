@@ -26,8 +26,7 @@ class AgilentMWD(TraceFile):
         dtraces = []
         foldname = os.path.dirname(self.filename)
         # if foldname == '': foldname = os.curdir
-        for i in [os.path.join(foldname, i) for i in
-                  os.listdir(foldname)]:
+        for i in [os.path.join(foldname, i) for i in os.listdir(foldname)]:
             if i[-3:].upper() == '.CH':
                 wv, dtrace = self._read_ind_file(i)
 
@@ -50,7 +49,10 @@ class AgilentMWD(TraceFile):
                 ions.append(float(wv))
                 dtraces.append(dtrace)
         data = np.array(dtraces).transpose()
-        return AstonFrame(data, times, ions, yunits=yunits)
+        if len(ions) == 0:
+            return AstonFrame()
+        else:
+            return AstonFrame(data, times, ions, yunits=yunits)
 
     def _read_ind_file(self, fname):
         f = open(fname, 'rb')
@@ -434,8 +436,8 @@ class AgilentCSDAD2(TraceFile):
             f.seek(0x758)
             d['r-opr'] = string_read(f)
             # get date into correct format before using this
-            #f.seek(0x957)
-            #d['r-date'] = string_read()
+            # f.seek(0x957)
+            # d['r-date'] = string_read()
             f.seek(0xA0E)
             d['m-name'] = string_read(f)
         return d

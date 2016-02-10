@@ -24,12 +24,6 @@ class Peak(object):
         else:
             self.components = []
 
-    # next two properties are only for dealing with SQLAlchemy
-    @property
-    def _parent(self):
-        return self.dbplot
-
-    _children = []
     #@property
     #def _children(self):
     #    return self.components

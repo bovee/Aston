@@ -12,15 +12,15 @@ class AstonNavBar(NavigationToolbar2QT):
         self.ev_time = 0
         self._xypress = []
 
-        #quick function to return icon locs
+        # quick function to return icon locs
         icon = lambda l: resfile('aston/qtgui', 'icons/' + l + '.png')
 
-        #remove the plot adjustment buttons
+        # remove the plot adjustment buttons
         self.removeAction(self.actions()[-1])
         self.removeAction(self.actions()[-1])
         self.removeAction(self.actions()[-1])
 
-        #add the alignment tool
+        # add the alignment tool
         if not hasattr(self, '_actions'):
             self._actions = {}
         self._actions['align'] = QtWidgets.QAction(QtGui.QIcon(icon('align')),
@@ -31,22 +31,22 @@ class AstonNavBar(NavigationToolbar2QT):
 
         self.addSeparator()
 
-        #add the peak tool
+        # add the peak tool
         self._actions['peak'] = QtWidgets.QAction(QtGui.QIcon(icon('peak')),
                                                   self.parent.tr('Add/Delete Peak'), self)
         self._actions['peak'].setCheckable(True)
         self.addAction(self._actions['peak'])
         self._actions['peak'].triggered.connect(self.peak)
 
-        #add the spectra tool
-        self._actions['spectrum'] = QtWidgets.QAction( \
-          QtGui.QIcon(icon('spectrum')), self.parent.tr('Get Spectrum'), self)
+        # add the spectra tool
+        self._actions['spectrum'] = QtWidgets.QAction(QtGui.QIcon(icon('spectrum')),
+                                                      self.parent.tr('Get Spectrum'), self)
         self._actions['spectrum'].setCheckable(True)
         self.addAction(self._actions['spectrum'])
         self._actions['spectrum'].triggered.connect(self.spec)
 
     def _update_buttons_checked(self):
-        #sync button checkstates to match active mode
+        # sync button checkstates to match active mode
         self._actions['pan'].setChecked(self._active == 'PAN')
         self._actions['zoom'].setChecked(self._active == 'ZOOM')
         self._actions['peak'].setChecked(self._active == 'PEAK')
@@ -57,7 +57,7 @@ class AstonNavBar(NavigationToolbar2QT):
         self._active = 'PEAK'
 
         self.disconnect_all()
-        #if self._active:
+        # if self._active:
         self._idPress = self.canvas.mpl_connect( \
             'button_press_event', self.press_peak)
         self._idRelease = self.canvas.mpl_connect( \
@@ -86,7 +86,7 @@ class AstonNavBar(NavigationToolbar2QT):
         trace = self.parent.pal_tab.active_plot()
         if trace is None:
             return
-        dclicktime = QtGui.QApplication.doubleClickInterval()
+        dclicktime = QtWidgets.QApplication.doubleClickInterval()
         if time.time() - self.ev_time < (dclicktime / 1000.):
             self.ev_time = time.time()
             if abs(self._xypress[0] - event.xdata) > 0.01:

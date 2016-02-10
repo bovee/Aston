@@ -11,17 +11,17 @@ from aston.spectra.Scan import Scan
 
 class AstonSeries(object):
     def __init__(self, data, index=None, name=''):
-        #TODO: reenable this without having to import from pandas
-        #if isinstance(data, Series):
-        #    self.values = data.values
-        #    self.index = data.index.values
-        #    self.name = data.name
+        # TODO: reenable this without having to import from pandas
+        # if isinstance(data, Series):
+        #     self.values = data.values
+        #     self.index = data.index.values
+        #     self.name = data.name
         if index is not None:
             self.values = np.array(data)
             self.index = np.array(index)
             self.name = name
         else:
-            #need either one pandas.Series or two np.arrays
+            # need either one pandas.Series or two np.arrays
             raise TypeError('AstonSeries initialized improperly.')
 
     @property
@@ -63,14 +63,14 @@ class AstonSeries(object):
 
     def as_text(self, width=80, height=20):
         raise NotImplementedError
-        #break s.index into width chunks
-        #find max and min of each chunk along with start and stop?
+        # break s.index into width chunks
+        # find max and min of each chunk along with start and stop?
 
     def get_point(self, time, interp_method=None):
-        #TODO: add more interpolation methods
+        # TODO: add more interpolation methods
         if len(self.index) < 2:
             return np.nan
-        f = interp1d(self.index, self.values, \
+        f = interp1d(self.index, self.values,
                      bounds_error=False, fill_value=0.0)
         return f(time)
 
@@ -86,15 +86,17 @@ class AstonSeries(object):
         if new_times.shape == self.shape[0]:
             if np.all(np.equal(new_times, self.index)):
                 return self
-        f = lambda d: interp1d(self.index, d, \
-            bounds_error=False, fill_value=fill)(new_times)
+
+        def f(d):
+            return interp1d(self.index, d, bounds_error=False,
+                            fill_value=fill)(new_times)
         return np.apply_along_axis(f, 0, self.values)
 
     def _apply_data(self, f, ts, reverse=False):
         """
         Convenience function for all of the math stuff.
         """
-        #TODO: needs to catch np numeric types?
+        # TODO: needs to catch np numeric types?
         if isinstance(ts, (int, float)):
             d = ts * np.ones(self.shape[0])
         elif ts is None:
@@ -128,7 +130,7 @@ class AstonSeries(object):
     def __reversed(self):
         raise NotImplementedError
 
-    #TODO: this should happen in place?
+    # TODO: this should happen in place?
     def __iadd__(self, ts):
         return self._apply_data(lambda x, y: x + y, ts)
 
@@ -178,13 +180,13 @@ class AstonFrame(object):
             self.values = np.array([])
             self.index = np.array([])
             self.columns = ['']
-        #TODO: reenable this without having to import from pandas
-        #elif isinstance(data, DataFrame):
-        #    self.values = data.values
-        #    self.index = data.index.values
-        #    self.columns = data.columns.values
+        # TODO: reenable this without having to import from pandas
+        # elif isinstance(data, DataFrame):
+        #     self.values = data.values
+        #     self.index = data.index.values
+        #     self.columns = data.columns.values
         elif index is not None:
-            #TODO: handle sparse arrays
+            # TODO: handle sparse arrays
             if isinstance(data, list):
                 self.values = np.array(data)
             else:
@@ -192,7 +194,7 @@ class AstonFrame(object):
             self.index = np.array(index)
             self.columns = columns
         else:
-            #need either one pandas.Series or two np.arrays
+            # need either one pandas.Series or two np.arrays
             raise TypeError('AstonFrame initialized improperly.')
 
     @property
@@ -200,7 +202,7 @@ class AstonFrame(object):
         return self.values.shape
 
     def copy(self):
-        return AstonFrame(self.values.copy(), self.index.copy(), \
+        return AstonFrame(self.values.copy(), self.index.copy(),
                           self.columns.copy())
 
     def __len__(self):
@@ -209,7 +211,7 @@ class AstonFrame(object):
     def __getitem__(self, key):
         if isinstance(key, tuple):
             # indexing on multiple dimensions
-            #TODO: check that dimensions are in right order
+            # TODO: check that dimensions are in right order
             v = self.values[key]
             i = self.index[key[0]]
             c = self.columns[key[1]]
@@ -244,14 +246,17 @@ class AstonFrame(object):
         return traces
 
     def trace(self, name='tic', tol=0.5, twin=None):
-        #TODO: aggfunc in here for tic and numeric
+        # TODO: aggfunc in here for tic and numeric
         st_idx, en_idx = _slice_idxs(self, twin)
 
         if isinstance(name, (int, float, np.float32, np.float64)):
             name = str(name)
 
         if name in ['tic', 'x', '']:
-            data = self.values.sum(axis=1)
+            if len(self.values) > 0:
+                data = self.values.sum(axis=1)
+            else:
+                data = []
             name = 'tic'
         elif name == '!':
             data = self[:, 0]
@@ -269,8 +274,8 @@ class AstonFrame(object):
             data = np.zeros(self.shape[0]) * np.nan
             name = ''
 
-        #TODO: better way to coerce this into the right class?
-        #TODO: use twin
+        # TODO: better way to coerce this into the right class?
+        # TODO: use twin
         return AstonSeries(data, index=self.index, name=name)
 
     def plot(self, style='heatmap', legend=False, cmap=None, ax=None):
@@ -285,7 +290,7 @@ class AstonFrame(object):
         ax : matplotlib.axes.Axes, optional
 
         """
-        #styles: 2d, colors, otherwise interpret as trace?
+        # styles: 2d, colors, otherwise interpret as trace?
         if ax is None:
             import matplotlib.pyplot as plt
             ax = plt.gca()
@@ -296,21 +301,23 @@ class AstonFrame(object):
             grid = self.values[:, np.argsort(self.columns)].transpose()
             if isinstance(self.values, scipy.sparse.spmatrix):
                 grid = grid.toarray()
-            img = ax.imshow(grid, origin='lower', aspect='auto', \
+            img = ax.imshow(grid, origin='lower', aspect='auto',
                             extent=ext, cmap=cmap)
             if legend:
                 ax.figure.colorbar(img)
         elif style == 'colors':
             from matplotlib.colors import ListedColormap
-            gaussian = lambda wvs, x, w: np.exp(-0.5 * ((wvs - x) / w) ** 2)
+
+            def gaussian(wvs, x, w):
+                return np.exp(-0.5 * ((wvs - x) / w) ** 2)
 
             wvs = np.genfromtxt(np.array(self.columns).astype(bytes))
-            #wvs = self.columns.astype(float)
+            # wvs = self.columns.astype(float)
 
-            #http://www.ppsloan.org/publications/XYZJCGT.pdf
+            # http://www.ppsloan.org/publications/XYZJCGT.pdf
             vis_filt = np.zeros((3, len(wvs)))
-            vis_filt[0] = 1.065 * gaussian(wvs, 595.8, 33.33) \
-                        + 0.366 * gaussian(wvs, 446.8, 19.44)
+            vis_filt[0] = 1.065 * gaussian(wvs, 595.8, 33.33) + \
+                0.366 * gaussian(wvs, 446.8, 19.44)
             vis_filt[1] = 1.014 * gaussian(np.log(wvs), np.log(556.3), 0.075)
             vis_filt[2] = 1.839 * gaussian(np.log(wvs), np.log(449.8), 0.051)
             if isinstance(self.values, scipy.sparse.spmatrix):
@@ -318,7 +325,7 @@ class AstonFrame(object):
             else:
                 xyz = np.dot(self.values.copy(), vis_filt.T)
 
-            #http://www.brucelindbloom.com/index.html?Eqn_RGB_XYZ_Matrix.html
+            # http://www.brucelindbloom.com/index.html?Eqn_RGB_XYZ_Matrix.html
             xyz_rgb = [[3.2404542, -1.5371385, -0.4985314],
                        [-0.9692660, 1.8760108, 0.0415560],
                        [0.0556434, -0.2040259, 1.0572252]]
@@ -332,7 +339,7 @@ class AstonFrame(object):
 
             # plot
             cmask = np.meshgrid(np.arange(rgb.shape[0]), 0)[0]
-            ax.imshow(cmask, cmap=ListedColormap(rgb), aspect='auto', \
+            ax.imshow(cmask, cmap=ListedColormap(rgb), aspect='auto',
                       extent=(self.index[0], self.index[-1], 0, 1))
             ax.yaxis.set_ticks([])
         else:
@@ -357,7 +364,8 @@ class AstonFrame(object):
             m/z's under this value will be clipped out.
         """
         # make a 1d array for the sound
-        to_t = lambda t: (t - self.index[0]) / speed
+        def to_t(t):
+            return (t - self.index[0]) / speed
         wav_len = int(to_t(self.index[-1]) * 60 * 44100)
         wav = np.zeros(wav_len)
 
@@ -376,8 +384,8 @@ class AstonFrame(object):
                 mz = float(mz)
             except:
                 return 100
-            wv = (mz * (max_hz - min_hz) - max_hz * min_mz + min_hz * max_mz) \
-                    / (max_mz - min_mz)
+            wv = (mz * (max_hz - min_hz) - max_hz * min_mz +
+                  min_hz * max_mz) / (max_mz - min_mz)
             return int(44100 / wv)
 
         # go through each trace and map it into the sound array

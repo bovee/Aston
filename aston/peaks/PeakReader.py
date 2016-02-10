@@ -8,15 +8,18 @@ from aston.peaks.PeakModels import gaussian
 from aston.timeseries.TimeSeries import TimeSeries
 
 
+def get_val(line, cols, key, delim='\t'):
+    return line.split(delim)[cols.index(key)]
+
+
 def read_amdis_list(db, filename):
-    get_val = lambda line, cols, key: line.split('\t')[cols.index(key)]
     CMP_LVL = 2  # number of directory levels to compare
-    #TODO: does this work for agilent files only?
+    # TODO: does this work for agilent files only?
     mapping = defaultdict(list)
     with open(filename, 'r') as f:
         cols = f.readline().split('\t')
         for line in f:
-            filename = get_val(line, cols, 'FileName')
+            filename = get_val(line, cols, 'FileName', '\t')
             fn = op.splitext('/'.join(filename.split('\\')[-CMP_LVL:]))[0]
             # find if filtered filename overlaps with anything in the db
             for dt in db.children_of_type('file'):
@@ -25,9 +28,9 @@ def read_amdis_list(db, filename):
             else:
                 continue
             info = {}
-            info['name'] = get_val(line, cols, 'Name')
-            info['p-s-time'] = get_val(line, cols, 'RT')
-            info['p-s-area'] = get_val(line, cols, 'Area')
+            info['name'] = get_val(line, cols, 'Name', '\t')
+            info['p-s-time'] = get_val(line, cols, 'RT', '\t')
+            info['p-s-area'] = get_val(line, cols, 'Area', '\t')
             ts = TimeSeries(np.array([np.nan]), np.array([np.nan]), [''])
             mapping[dt] += [Peak(info, ts)]
     with db:
@@ -43,7 +46,7 @@ def read_peaks(db, filename, ftype='isodat'):
                 ftype = 'isodat'
             else:
                 ftype = 'amdis'
-    if ftype == 'amdis':
+    elif ftype == 'amdis':
         delim = '\t'
         cvtr = {'name': 'name',
                 'p-s-time': 'rt',
@@ -59,14 +62,13 @@ def read_peaks(db, filename, ftype='isodat'):
     headers = None
     mapping = defaultdict(list)
     ref_pk_info = {}
-    get_val = lambda line, cols, key: line.split(delim)[cols.index(key)]
+
     with open(filename, 'r') as f:
         for line in f:
-            if bool(re.match('filename' + delim, line, re.I)) \
-              or headers is None:
+            if bool(re.match('filename' + delim, line, re.I)) or headers is None:
                 headers = line.lower().split(',')
                 continue
-            fn = get_val(line, headers, 'filename')
+            fn = get_val(line, headers, 'filename', delim)
             if ftype == 'amdis':
                 # AMDIS has '.FIN' sufffixes and other stuff, so
                 # munge Filename to get it into right format
@@ -81,7 +83,7 @@ def read_peaks(db, filename, ftype='isodat'):
             info = {}
             # load all the predefined fields
             for k in cvtr:
-                info[k] = get_val(line, headers, cvtr[k])
+                info[k] = get_val(line, headers, cvtr[k], delim)
 
             # create peak shapes for plotting
             if ftype == 'isodat':
@@ -90,17 +92,17 @@ def read_peaks(db, filename, ftype='isodat'):
                 t = np.linspace(rt - width, rt + width)
                 data = []
                 for ion in ['44', '45', '46']:
-                    area = float(get_val(line, headers, \
-                                         'rarea ' + ion + '[mvs]')) / 60.
-                    #bgd = float(get_val(line, headers, \
-                    #                       'bgd ' + ion + '[mv]'))
-                    height = float(get_val(line, headers, \
-                                           'ampl. ' + ion + '[mv]'))
+                    area = float(get_val(line, headers,
+                                         'rarea ' + ion + '[mvs]', delim)) / 60.
+                    # bgd = float(get_val(line, headers, \
+                    #                        'bgd ' + ion + '[mv]', delim))
+                    height = float(get_val(line, headers,
+                                           'ampl. ' + ion + '[mv]', delim))
                     # save the height at 44 into the info for linearity
                     if ion == '44':
                         info['p-s-ampl44'] = height
                     # 0.8 is a empirical number to make things look better
-                    data.append(gaussian(t, x=rt, w=0.5 * area / height, \
+                    data.append(gaussian(t, x=rt, w=0.5 * area / height,
                                          h=height))
                 # save info if this is the main ref gas peak
                 if info['name'].endswith('*'):
@@ -109,6 +111,7 @@ def read_peaks(db, filename, ftype='isodat'):
             else:
                 ts = TimeSeries(np.array([np.nan]), np.array([np.nan]), [''])
             mapping[dt] += [Peak(info, ts)]
+
     # do drift correction
     if ftype == 'isodat':
         for dt in mapping:
@@ -129,7 +132,10 @@ def read_peaks(db, filename, ftype='isodat'):
 
             # try to fit a linear model through all of them
             p0 = [d13cs[0], 0]
-            errfunc = lambda p, x, y: p[0] + p[1] * x - y
+
+            def errfunc(p, x, y):
+                return p[0] + p[1] * x - y
+
             try:
                 p, succ = leastsq(errfunc, p0, args=(np.array(rts), Dd13cs))
             except:
@@ -137,8 +143,8 @@ def read_peaks(db, filename, ftype='isodat'):
             # apply the linear model to get the Dd13C linearity correction
             # for a given time and add it to the value of this peak
             for pk in mapping[dt]:
-                pk.info['p-s-d13c'] = str(-errfunc(p, float(pk.info['p-s-time']), \
-                                               float(pk.info['p-s-d13c'])))
+                pk.info['p-s-d13c'] = str(-errfunc(p, float(pk.info['p-s-time']),
+                                                   float(pk.info['p-s-d13c'])))
 
     # save everything
     with db:

@@ -20,8 +20,8 @@ def simple_integrate(ts, peak_list, base_ts=None, intname='simple'):
         pk_ts = ts.twin((t0, t1))
         if base_ts is None:
             # make a two point baseline
-            base = AstonSeries([hints.get('y0', pk_ts[0]), \
-                                hints.get('y1', pk_ts[-1])], \
+            base = AstonSeries([hints.get('y0', pk_ts[0]),
+                                hints.get('y1', pk_ts[-1])],
                                [t0, t1], name=ts.name)
         else:
             base = base_ts.twin((t0, t1))
@@ -38,7 +38,7 @@ def _get_windows(peak_list):
         p_w = hints['t0'], hints['t1']
         for w in win_list:
             if p_w[0] <= w[0][1] and p_w[1] >= w[0][0]:
-                w[0] = (min(p_w[0], w[0][0]), \
+                w[0] = (min(p_w[0], w[0][0]),
                         max(p_w[1], w[0][1]))
                 w[1].append(hints)
                 break
@@ -120,7 +120,7 @@ def drop_integrate(ts, peak_list):
 
 
 def leastsq_integrate(ts, peak_list, f='gaussian'):
-    #FIXME: transition from t0, t1, params to params (containing 't0'/'t1'
+    # FIXME: transition from t0, t1, params to params (containing 't0'/'t1'
     # lookup the peak model function to use for fitting
     f = {f.__name__: f for f in peak_models}[f]
 
@@ -130,11 +130,11 @@ def leastsq_integrate(ts, peak_list, f='gaussian'):
         # if there's location info, we can use this for
         # our inital params
         if 'x' in peak_list[0][2]:
-            #TODO: should fill in other values?
-            #TODO: should do something with y0 and y1?
+            # TODO: should fill in other values?
+            # TODO: should do something with y0 and y1?
             initc = [i[2] for i in peak_list]
         else:
-            #TODO: should find peak maxima for rts?
+            # TODO: should find peak maxima for rts?
             rts = [0.5 * (i[0] + i[1]) for i in peak_list]
             initc = guess_initc(tr, f, rts)
         params, _ = fit(tr, [f] * len(initc), initc)
