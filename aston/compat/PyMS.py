@@ -1,3 +1,4 @@
+# FIXME
 import numpy as np
 from pyms.GCMS.Class import GCMS_data, Scan, IonChromatogram
 
@@ -6,7 +7,7 @@ class AstonPyMS(GCMS_data):
     """
     Adapter to allow pyms routines to run on aston files.
 
-    Note: initialization uses AstonFrame, not scan lists
+    Note: initialization uses Chromatogram, not scan lists
     as in pyms.
 
 
