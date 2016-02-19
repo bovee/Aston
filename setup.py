@@ -37,12 +37,11 @@ options = {
     'description': 'Mass/UV Spectral Analysis Program',
     'author': 'Roderick Bovee',
     'author_email': 'rbovee@gmail.com',
-    'url': 'github.com/bovee/aston',
+    'url': 'https://github.com/bovee/aston',
     'license': 'BSD 3-Clause',
     'platforms': ['Any'],
     'classifiers': [
         'Development Status :: 4 - Beta',
-        'Environment :: X11 Applications :: Qt',
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: BSD License',
         'Operating System :: OS Independent',
