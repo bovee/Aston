@@ -32,7 +32,7 @@ def basemz(df):
     return Trace(d, df.index, name='basemz')
 
 
-def CODA(df, window, level):
+def coda(df, window, level):
     """
     CODA processing from Windig, Phalp, & Payne 1996 Anal Chem
     """

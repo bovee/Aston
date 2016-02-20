@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.optimize import leastsq
 from aston.trace import Trace
-from aston.spectra.Isotopes import delta13C_Santrock
+from aston.spectra.isotopes import delta13c_santrock
 
 
 def ratio_f(pks, r2=45, r1=44):
@@ -19,7 +19,7 @@ def ratio_f(pks, r2=45, r1=44):
 
     # function to fit
     def errfunc(p, x, y):
-        return p[0] +  p[1] * x - y
+        return p[0] + p[1] * x - y
 
     # try fitting; if it doesn't work, just use first ratio peak
     try:
@@ -60,6 +60,6 @@ def calc_carbon_isotopes(pks, d13cstd, ks='Craig', d18ostd=23.5):
         r45std = r45(pk.time())
         r46std = r46(pk.time())
         # determine the d13c value and assign it to the peaks info dict
-        d13c = delta13C_Santrock(r45sam, r46sam, d13cstd,
+        d13c = delta13c_santrock(r45sam, r46sam, d13cstd,
                                  r45std, r46std, ks, d18ostd)
         pk.info['p-d13c'] = d13c

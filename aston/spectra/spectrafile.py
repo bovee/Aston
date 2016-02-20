@@ -2,7 +2,7 @@ import numpy as np
 from aston.spectra import Scan
 
 
-def read_AMDIS(filename):
+def read_amdis(filename):
     def make_spc(arr_str, info):
         b = [int(i.strip('()')) for i in
              arr_str.split() if i.strip('()') != '']
@@ -26,5 +26,5 @@ def read_AMDIS(filename):
                 info['p-s-time'] = val_prt(line)
 
 
-def read_JCAMP(filename):
+def read_jcamp(filename):
     raise NotImplementedError

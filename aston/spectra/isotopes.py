@@ -7,7 +7,7 @@ from scipy.optimize import fsolve
 # lower than this. See Schumacher et al 2008 Atm Chem & Phys Dis
 
 
-def delta13C_constants():
+def delta13c_constants():
     """
     Constants for calculating delta13C values from ratios.
     From website of Verkouteren & Lee 2001 Anal. Chem.
@@ -31,7 +31,7 @@ def delta13C_constants():
     return cst
 
 
-def delta13C_Craig(r45sam, r46sam, d13cstd, r45std, r46std,
+def delta13c_craig(r45sam, r46sam, d13cstd, r45std, r46std,
                    ks='Craig', d18ostd=23.5):
     """
     Algorithm from Craig 1957.
@@ -47,7 +47,7 @@ def delta13C_Craig(r45sam, r46sam, d13cstd, r45std, r46std,
     """
     # the constants for the calculations
     # originally r13, r17, r18 = 1123.72e-5, 759.9e-6, 415.8e-5
-    k = delta13C_constants()[ks]
+    k = delta13c_constants()[ks]
 
     # TODO: not clear why need to multiply by 2?
     r13, r18 = k['S13'], 2 * k['S18']
@@ -74,7 +74,7 @@ def delta13C_Craig(r45sam, r46sam, d13cstd, r45std, r46std,
     return x[0]
 
 
-def delta13C_Santrock(r45sam, r46sam, d13cstd, r45std, r46std,
+def delta13c_santrock(r45sam, r46sam, d13cstd, r45std, r46std,
                       ks='Santrock', d18ostd=23.5):
     """
     Given the measured isotope signals of a sample and a
@@ -83,7 +83,7 @@ def delta13C_Santrock(r45sam, r46sam, d13cstd, r45std, r46std,
 
     Algorithm from Santrock, Studley & Hayes 1985 Anal. Chem.
     """
-    k = delta13C_constants()[ks]
+    k = delta13c_constants()[ks]
 
     # function for calculating 17R from 18R
     def c17(r):
@@ -110,7 +110,7 @@ def delta13C_Santrock(r45sam, r46sam, d13cstd, r45std, r46std,
     return 1000 * (r13 / rcpdb - 1)
 
 
-def delta13C_Brand(r45sam, r46sam, d13cstd, r45std, r46std):
+def delta13c_brand(r45sam, r46sam, d13cstd, r45std, r46std):
     """
     Linear simplification from Brand et al. 2010 Pure Appl Chem
     """

@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
-import math
+import numpy as np
 import re
 from aston.trace import Trace
 from aston.trace.math_chromatograms import molmz, mzminus, basemz
+from aston.trace.math_traces import (ts_func, fft, noisefilter,
+                                     movingaverage, savitzkygolay)
 
 functions = {}  # TODO
 istr_type_2d = ['ms', 'uv', 'irms']
@@ -217,17 +219,10 @@ def trace_resolver(istr, analyses, twin=None):
 
 
 def fxn_resolver():
-    # TODO: need to do import's from math_traces but without including
-    # numpy dependency in here? (rethink if we need to be able to run w/o np?)
-    noisefilter = ts_func(noisefilter_)
-    abs = ts_func(np.abs)
-    sin = ts_func(np.sin)
-    cos = ts_func(np.cos)
-    tan = ts_func(np.tan)
-    derivative = ts_func(np.gradient)
+    # FIXME: not used properly (or at all)
     fxns = {
         'fft': fft,
-        'noise': ts_func(noisefilter_),
+        'noise': ts_func(noisefilter),
         'abs': ts_func(np.abs),
         'sin': ts_func(np.sin),
         'cos': ts_func(np.cos),
@@ -237,6 +232,8 @@ def fxn_resolver():
         'movingaverage': movingaverage,
         'savitzkygolay': savitzkygolay,
     }
+    return fxns
+
 
 def parse_ion_string(istr, analyses, twin=None):
     """
@@ -279,9 +276,9 @@ def parse_ion_string(istr, analyses, twin=None):
             # TODO: should this handle negative numbers?
             return float(istr[1:])
         elif istr == '!pi':
-            return math.pi
+            return np.pi
         elif istr == '!e':
-            return math.e
+            return np.e
         else:
             return trace_resolver(istr, analyses, twin)
 

@@ -52,10 +52,12 @@ class AgilentMHSampleInfo(TraceFile):
     @property
     def info(self):
         try:
-            u = lambda s: s.decode('utf-8')
+            def u(s):
+                return s.decode('utf-8')
             u('')
-        except:
-            u = lambda s: s
+        except AttributeError:
+            def u(s):
+                return s
 
         d = super(AgilentMHSampleInfo, self).info
         r = ElementTree.parse(self.filename).getroot()

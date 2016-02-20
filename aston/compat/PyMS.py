@@ -59,7 +59,7 @@ class AstonPyMS(GCMS_data):
         return list(self._scan_list)
 
     def get_tic(self):
-        return IonChromatogram(self.data.trace().values.T[0], \
+        return IonChromatogram(self.data.trace().values.T[0],
                                (self.data.index * 60.0).tolist())
 
     def trim(self, begin=None, end=None):
@@ -83,10 +83,10 @@ class AstonPyMS(GCMS_data):
         self.data = self.data[st_idx:en_idx]
 
     def info(self, print_scan_n=False):
-        print(" Data retention time range: %.3f min -- %.3f min" % \
+        print(" Data retention time range: %.3f min -- %.3f min" %
               (min(self.data.index), max(self.data.index)))
         tdiffs = np.diff(self.data.index)
-        print(" Time step: %.3f s (std=%.3f s)" % \
+        print(" Time step: %.3f s (std=%.3f s)" %
               (np.mean(tdiffs), np.std(tdiffs)))
         print(" Number of scans: %d" % len(self))
         print(" Minimum m/z measured: %.3f" % self.get_min_mass())

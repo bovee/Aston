@@ -56,18 +56,18 @@ def ifft(ic, t):
 #    ic = np.fft.ifft(np.fft.fftshift(ic * len(ic)))# / len(ic)
 
 
-def noisefilter_(arr, bandwidth=0.2):
+def noisefilter(arr, bandwidth=0.2):
     # adapted from http://glowingpython.blogspot.com/
     # 2011/08/fourier-transforms-and-image-filtering.html
-    I = np.fft.fftshift(np.fft.fft(arr))  # entering to frequency domain
+    i = np.fft.fftshift(np.fft.fft(arr))  # entering to frequency domain
     # fftshift moves zero-frequency component to the center of the array
-    P = np.zeros(len(I), dtype=complex)
-    c1 = len(I) / 2  # spectrum center
+    p = np.zeros(len(i), dtype=complex)
+    c1 = len(i) / 2  # spectrum center
     r = float(bandwidth)  # percent of signal to save
-    r = int((r * len(I)) / 2)  # convert to coverage of the array
+    r = int((r * len(i)) / 2)  # convert to coverage of the array
     for i in range(c1 - r, c1 + r):
-        P[i] = I[i]  # frequency cutting
-    return np.real(np.fft.ifft(np.fft.ifftshift(P)))
+        p[i] = i[i]  # frequency cutting
+    return np.real(np.fft.ifft(np.fft.ifftshift(p)))
 
 
 def movingaverage(arr, window):

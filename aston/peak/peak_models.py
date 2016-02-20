@@ -25,8 +25,12 @@ from scipy.special import erfc, i1, gamma
 # in labelling parameter bounds. The sqrt is to allow
 # the bounded parameter to be multiplied without fear of it
 # rounding outside the bounds.
-openhi = lambda i: np.nextafter(i, -1)
-openlow = lambda i: i + np.sqrt(np.nextafter(i, 1) - i)
+def openhi(i):
+    return np.nextafter(i, -1)
+
+
+def openlow(i):
+    return i + np.sqrt(np.nextafter(i, 1) - i)
 
 
 def bounds(**kwargs):
@@ -79,14 +83,14 @@ def peak_model(f):
 
     args = set(['v', 'h', 'x', 'w'])
     anames, _, _, _ = inspect.getargspec(f)
-    wrapped_f._peakargs = list(args.union([a for a in anames \
+    wrapped_f._peakargs = list(args.union([a for a in anames
                                            if a not in ('t', 'r')]))
     return wrapped_f
 
 
 @peak_model
 def bigaussian(t, w, s):
-    #for an example of use: http://www.biomedcentral.com/1471-2105/11/559
+    # for an example of use: http://www.biomedcentral.com/1471-2105/11/559
     # Di Marco & Bombi use formulation with w1 & w2, but it
     # looks better to use formulation with w and s
     w1, w2 = w * exp(-s) / (1 + exp(-s)), w / (1 + exp(-s))
@@ -106,7 +110,7 @@ def box(t):
 @bounds(w=(openlow(0.), np.inf), s=(1., np.inf))
 @peak_model
 def exp_mod_gaussian(t, w, s):
-    #http://en.wikipedia.org/wiki/Exponentially_modified_Gaussian_distribution
+    # http://en.wikipedia.org/wiki/Exponentially_modified_Gaussian_distribution
     exp_t = exp((w ** 2 - 2 * s * t) / (2 * s ** 2))
     erf_t = erfc((w ** 2 - s * t) / (s * w))
     return (w ** 1.5) / (1.414214 * s) * exp_t * erf_t
@@ -142,9 +146,9 @@ def giddings(t, w, x):
     # w != 0
     y = np.zeros(len(t))
     y[t > 0] = (1. / w) * sqrt(x / t[t > 0]) * exp((t[t > 0] + x) / -w)
-    #TODO: "overflow encountered in i1"
-    #y[t > 0] *= i1(2. * sqrt(x * t[t > 0]) / w)
-    #trying to keep the shape, but not allow such high numbers?
+    # TODO: "overflow encountered in i1"
+    # y[t > 0] *= i1(2. * sqrt(x * t[t > 0]) / w)
+    # trying to keep the shape, but not allow such high numbers?
     y[t > 0] *= i1(np.linspace(2, 10, sum(t > 0)))
     return y
 
@@ -166,7 +170,7 @@ def lognormal(t, w, s, r=2.):
     # r is the ratio between h and the height at
     # which s is computed: normally 2.
     y = np.zeros(len(t))
-    #TODO: if log(s) rounds to 0, big problems here
+    # TODO: if log(s) rounds to 0, big problems here
     lt = -log(r) / log(s) ** 2
     # try to adjust timing so peak stays centered at 0
     ta = t + (w - 1) / (1.12383 * s - 0.780647)
@@ -177,13 +181,13 @@ def lognormal(t, w, s, r=2.):
 @peak_model
 def lorentzian(t, a):
     # from Wikipedia: not the same as Di Marco & Bombi's formulation
-    #return 1. / (1. + 4. * t ** 2)
+    # return 1. / (1. + 4. * t ** 2)
     return a / (np.pi * (a ** 2 + t ** 2))
 
 
 @peak_model
 def papai_pap(t, s, e):
-    #s is skewness, e is excess
+    # s is skewness, e is excess
     y = np.zeros(len(t))
     ft = t[t > 0]
     y[t > 0] = 1 + (s / 6.) * (ft ** 2 - 3. * ft)
@@ -202,7 +206,7 @@ def parabola(t):
 
 @bounds(a=(openlow(0.), np.inf))
 @peak_model
-def pearsonVII(t, a):
+def pearson_vii(t, a):
     return (1 + 4 * t ** 2 * (2 ** (1 / a) - 1)) ** -a
 
 
@@ -232,47 +236,47 @@ def triangle(t):
 @bounds(a=(openlow(1.), np.inf))
 @peak_model
 def weibull3(t, a):
-    #TODO: doesn't work?
+    # TODO: doesn't work?
     y = np.zeros(len(t))
     at = (a - 1.) / a
     tt = t[t > 0] + ((a - 1.) / a) ** (1. / a)
     y[t > 0] = at ** at * tt ** (a - 1.) * exp(-tt ** a + at)
     return y
 
-## FUNCTIONS TO DO
-#def chesler_cram_a(t, a, b, c, d):
-#def chesler_cram_b(t, a, b, c, d, e):
-#def cumulative(t, w, a):
-#def f_variance(t, s1, s2):
-#def gladney_dowden_a(t, w, s):
-#def gladney_dowden_b(t, w, a, b):
-#def haldna_phi(t, w, s):
-#def intermediate(t, a, b):
-#def li_a(t, w):
-#def li_b(t, w, a1, a2, b1, b2):
-#def losev(t, w1, w2, a):
-#def nonlinearchromatography(t, x, w, s):
-#    # also r & v?
-#def pearsonIV(t, w, s1, s2):
-#def pearsonIVa(t, w, s):
-#def pearsonIVb(t, w, s):
-#def pseudovoight1(t, a):
-#def pseudovoight2(t, s, a):
-#def pulse(t, a):
-
-
-def gram_charlier(t, w, *n):
-    #TODO: implement this; Berberan-Santos '07 has
-    # ways to calculate cumulant values
-    raise NotImplementedError
-
-
-def edgeworth_cramer(t, *n):
-    #y = exp(-0.5 * t ** 2)
-    raise NotImplementedError
+#  FUNCTIONS TO DO
+# def chesler_cram_a(t, a, b, c, d):
+# def chesler_cram_b(t, a, b, c, d, e):
+# def cumulative(t, w, a):
+# def f_variance(t, s1, s2):
+# def gladney_dowden_a(t, w, s):
+# def gladney_dowden_b(t, w, a, b):
+# def haldna_phi(t, w, s):
+# def intermediate(t, a, b):
+# def li_a(t, w):
+# def li_b(t, w, a1, a2, b1, b2):
+# def losev(t, w1, w2, a):
+# def nonlinearchromatography(t, x, w, s):
+#     # also r & v?
+# def pearsonIV(t, w, s1, s2):
+# def pearsonIVa(t, w, s):
+# def pearsonIVb(t, w, s):
+# def pseudovoight1(t, a):
+# def pseudovoight2(t, s, a):
+# def pulse(t, a):
+#
+#
+# def gram_charlier(t, w, *n):
+#     # TODO: implement this; Berberan-Santos '07 has
+#     # ways to calculate cumulant values
+#     raise NotImplementedError
+#
+#
+# def edgeworth_cramer(t, *n):
+#     # y = exp(-0.5 * t ** 2)
+#     raise NotImplementedError
 
 
 peak_models = [bigaussian, box, exp_mod_gaussian, extreme_value, gamma_dist,
                gaussian, giddings, haarhoffvanderlinde, lognormal, lorentzian,
-               papai_pap, parabola, pearsonVII, poisson, studentt, triangle,
+               papai_pap, parabola, pearson_vii, poisson, studentt, triangle,
                weibull3]

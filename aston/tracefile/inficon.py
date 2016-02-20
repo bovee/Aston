@@ -31,15 +31,15 @@ class InficonHapsite(TraceFile):
             nions = struct.unpack('<I', f.read(4))[0]
             ions = []
             for _ in range(nions):
-                #TODO: check that itype is actually a SIM/full scan switch
-                i1, i2, _, _, _, _, itype, _ = \
-                        struct.unpack('<' + 8 * 'I', f.read(32))
+                # TODO: check that itype is actually a SIM/full scan switch
+                i1, i2, _, _, _, _, itype, _ = struct.unpack('<' + 8 * 'I',
+                                                             f.read(32))
                 if itype == 0:  # SIM
                     ions.append(i1 / 100.)
                 else:  # full scan
-                    #TODO: this might be a little hacky?
-                    # ideally we would need to know n for this, e.g.:
-                    #ions += np.linspace(i1 / 100, i2 / 100, n).tolist()
+                    # TODO: this might be a little hacky?
+                    #  ideally we would need to know n for this, e.g.:
+                    # ions += np.linspace(i1 / 100, i2 / 100, n).tolist()
                     ions += np.arange(i1 / 100., i2 / 100. + 1, 1).tolist()
             # save the file position and load the position
             # that we were at before we started this code
@@ -52,7 +52,7 @@ class InficonHapsite(TraceFile):
 
     @property
     def data(self):
-        #TODO: handle skip mass ranges
+        # TODO: handle skip mass ranges
         with open(self.filename, 'rb') as f:
             # read in the time segments/mz ranges for the run
 

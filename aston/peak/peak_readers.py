@@ -3,9 +3,9 @@ import os.path as op
 from collections import defaultdict
 import numpy as np
 from scipy.optimize import leastsq
-from aston.peak.peak import Peak
+from aston.peak import Peak
 from aston.peak.peak_models import gaussian
-from aston.trace.trace import Chromatogram
+from aston.trace import Chromatogram
 
 
 def read_amdis_list(db, filename):
@@ -13,14 +13,14 @@ def read_amdis_list(db, filename):
     def get_val(line, cols, key):
         return line.split('\t')[cols.index(key)]
 
-    CMP_LVL = 2  # number of directory levels to compare
+    cmp_lvl = 2  # number of directory levels to compare
     # TODO: does this work for agilent files only?
     mapping = defaultdict(list)
     with open(filename, 'r') as f:
         cols = f.readline().split('\t')
         for line in f:
             filename = get_val(line, cols, 'FileName')
-            fn = op.splitext('/'.join(filename.split('\\')[-CMP_LVL:]))[0]
+            fn = op.splitext('/'.join(filename.split('\\')[-cmp_lvl:]))[0]
             # find if filtered filename overlaps with anything in the db
             for dt in db.children_of_type('file'):
                 if fn in '/'.join(dt.rawdata.split(op.sep)):
@@ -76,8 +76,8 @@ def read_peaks(db, filename, ftype='isodat'):
             if ftype == 'amdis':
                 # AMDIS has '.FIN' sufffixes and other stuff, so
                 # munge Filename to get it into right format
-                CMP_LVL = 2
-                fn = op.splitext('/'.join(fn.split('\\')[-CMP_LVL:]))[0]
+                cmp_lvl = 2
+                fn = op.splitext('/'.join(fn.split('\\')[-cmp_lvl:]))[0]
             # find if filtered filename overlaps with anything in the db
             for dt in db.children_of_type('file'):
                 if fn in '/'.join(dt.rawdata.split(op.sep)):
@@ -128,9 +128,9 @@ def read_peaks(db, filename, ftype='isodat'):
                    abs(float(pk.info['p-s-d18o']) - d18o) < 2.:
                     ref_pks.append(pk)
 
-            # get out the Dd13C values and times for the ref gas peaks
+            # get out the dd13C values and times for the ref gas peaks
             d13cs = [float(pk.info['p-s-d13c']) for pk in ref_pks]
-            Dd13cs = np.array(d13cs) - d13c
+            dd13cs = np.array(d13cs) - d13c
             rts = [float(pk.info['p-s-time']) for pk in ref_pks]
 
             # try to fit a linear model through all of them
@@ -140,10 +140,10 @@ def read_peaks(db, filename, ftype='isodat'):
                 return p[0] + p[1] * x - y
 
             try:
-                p, succ = leastsq(errfunc, p0, args=(np.array(rts), Dd13cs))
+                p, succ = leastsq(errfunc, p0, args=(np.array(rts), dd13cs))
             except:
                 p = p0
-            # apply the linear model to get the Dd13C linearity correction
+            # apply the linear model to get the dd13C linearity correction
             # for a given time and add it to the value of this peak
             for pk in mapping[dt]:
                 pk.info['p-s-d13c'] = str(-errfunc(p,

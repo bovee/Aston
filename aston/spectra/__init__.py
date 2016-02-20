@@ -33,8 +33,9 @@ class Scan(object):
             # remove 0's
             scn = scn[:, scn[1] != 0]
             try:
-                # FIXME: this crashes on Windows unless the user has clicked on
-                # the spectrum graph previously. Matplotlib bug needs workaround
+                # FIXME: this crashes on Windows unless the user has
+                # clicked on the spectrum graph previously.
+                # Matplotlib bug needs workaround
                 ax.vlines(scn[0], 0, scn[1], color=color, alpha=0.5)
             except:
                 pass
@@ -99,7 +100,7 @@ class Scan(object):
     def ymax(self):
         return max(self.abn)
 
-    def d13C(self):
+    def d13c(self):
         # FIXME: this needs to be moved to somewhere else;
         # can't get parent in here
         if self.source != 'irms':
@@ -123,7 +124,7 @@ class Scan(object):
         # if r45std == 0.0:
         #     return ''
 
-        # d = delta13C_Santrock(self.ion(44), self.ion(45), self.ion(46), \
+        # d = delta13c_santrock(self.ion(44), self.ion(45), self.ion(46), \
         #          float(dt.info['r-d13c-std']), r45std, r46std)
 
         # return str(d)

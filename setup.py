@@ -1,27 +1,41 @@
 #!/usr/bin/env python
 
-#    Copyright 2011-2014 Roderick Bovee
-#
-#    This file is part of Aston.
-#
-#    Aston is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
-#    the Free Software Foundation, either version 3 of the License, or
-#    (at your option) any later version.
-#
-#    Aston is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
-#
-#    You should have received a copy of the GNU General Public License
-#    along with Aston.  If not, see <http://www.gnu.org/licenses/>.
-
+from setuptools.command.test import test as TestCommand
 from setuptools import setup
-import matplotlib
+# import matplotlib
 import os
+import sys
 
 from aston import __version__
+
+
+class Tox(TestCommand):
+    """
+    Shim class to allow `setup.py test` to run tox
+    (which in turn calls `setup.py pytest` to run tests)
+
+    from https://testrun.org/tox/latest/example/basic.html
+    """
+    user_options = [('tox-args=', 'a', "Arguments to pass to tox")]
+
+    def initialize_options(self):
+        TestCommand.initialize_options(self)
+        self.tox_args = None
+
+    def finalize_options(self):
+        TestCommand.finalize_options(self)
+        self.test_args = []
+        self.test_suite = True
+
+    def run_tests(self):
+        # import here, cause outside the eggs aren't loaded
+        import tox
+        import shlex
+        args = self.tox_args
+        if args:
+            args = shlex.split(self.tox_args)
+        errno = tox.cmdline(args=args)
+        sys.exit(errno)
 
 
 def read(fname):
@@ -50,14 +64,16 @@ options = {
     'long_description': read('README.rst'),
     'packages': [
         'aston', 'aston.calibrations', 'aston.compat', 'aston.peak',
-        'aston.spectra', 'aston.test', 'aston.trace', 'aston.tracefile'
+        'aston.spectra', 'aston.trace', 'aston.tracefile'
     ],
     'scripts': [],
-    'data_files': matplotlib.get_py2exe_datafiles(),
+    # 'data_files': matplotlib.get_py2exe_datafiles(),
     'package_data': {'aston': []},
     'include_package_data': True,
-    'install_requires': ['numpy', 'scipy', 'matplotlib'],
-    'test_suite': 'nose.collector',
+    'setup_requires': ['pytest-runner'],
+    'install_requires': ['scipy', 'numpy'],
+    'tests_require': ['numpy', 'scipy', 'pytest', 'tox', 'flake8'],
+    'cmdclass': {'test': Tox}
 }
 
 # all the magic happens right here

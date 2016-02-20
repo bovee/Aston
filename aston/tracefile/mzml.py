@@ -20,7 +20,7 @@ def t_to_min(x):
 
 
 # class mzXML(ScanListFile):
-class mzXML(object):
+class MzXML(object):
     mime = 'application/mzxml'
     traces = ['#ms']
 
@@ -40,6 +40,7 @@ class mzXML(object):
             d = np.frombuffer(base64.b64decode(pks.text), dtype)
             mz = d[::2]
             abn = d[1::2]
+            # FIXME
 
     def total_trace(self, twin=None):
         # TODO: use twin
@@ -53,7 +54,7 @@ class mzXML(object):
         return Trace(d, t, name='TIC')
 
 
-class mzML(ScanListFile):
+class MzML(ScanListFile):
     mime = 'application/mzml'
     traces = ['#ms']
 
@@ -73,7 +74,7 @@ class mzML(ScanListFile):
                 continue
             time = time_elem.get('value')
 
-            #FIXME: won't find these properties if a paramGroupRef exists
+            # FIXME: won't find these properties if a paramGroupRef exists
             for i in ['MS:1000514', 'MS:1000617', 'MS:1000786']:
                 q = './/m:cvParam[@accession="' + i + '"]/..'
                 x_elem = s.find(q, namespaces=self.ns)
@@ -81,7 +82,7 @@ class mzML(ScanListFile):
                     x = self.read_binary(x_elem, pgr)
                     break
             else:
-                #check paramGroupRef
+                # check paramGroupRef
                 q0 = './/m:referenceableParamGroupRef'
                 bin_arrs = s.findall(q0 + '/..', namespaces=self.ns)
                 for ba in bin_arrs:
@@ -108,7 +109,7 @@ class mzML(ScanListFile):
             if y_elem is not None:
                 y = self.read_binary(y_elem, pgr)
             else:
-                #check paramGroupRef
+                # check paramGroupRef
                 q0 = './/m:referenceableParamGroupRef'
                 bin_arrs = s.findall(q0 + '/..', namespaces=self.ns)
                 for ba in bin_arrs:
@@ -138,24 +139,24 @@ class mzML(ScanListFile):
         else:
             pg = ba
 
-        if pg.find('m:cvParam[@accession="MS:1000574"]', \
+        if pg.find('m:cvParam[@accession="MS:1000574"]',
                    namespaces=self.ns) is not None:
             compress = True
-        elif pg.find('m:cvParam[@accession="MS:1000576"]',\
+        elif pg.find('m:cvParam[@accession="MS:1000576"]',
                      namespaces=self.ns) is not None:
             compress = False
         else:
-            #TODO: no info? should check the other record?
+            # TODO: no info? should check the other record?
             pass
 
-        if pg.find('m:cvParam[@accession="MS:1000521"]', \
+        if pg.find('m:cvParam[@accession="MS:1000521"]',
                    namespaces=self.ns) is not None:
             dtype = 'f'
-        elif pg.find('m:cvParam[@accession="MS:1000523"]',\
+        elif pg.find('m:cvParam[@accession="MS:1000523"]',
                      namespaces=self.ns) is not None:
             dtype = 'd'
         else:
-            #TODO: no info? should check the other record?
+            # TODO: no info? should check the other record?
             pass
 
         datatext = ba.find('m:binary', namespaces=self.ns).text
@@ -169,7 +170,7 @@ class mzML(ScanListFile):
         r = ET.parse(self.filename).getroot()
 
         # get it from the chromatogram list
-        c = r.find('.//m:cvParam[@accession="MS:1000235"]/..', \
+        c = r.find('.//m:cvParam[@accession="MS:1000235"]/..',
                    namespaces=self.ns)
         if c is not None:
             q = './/m:cvParam[@accession="MS:1000595"]/..'
@@ -178,16 +179,16 @@ class mzML(ScanListFile):
             values = self.read_binary(c.find(q, namespaces=self.ns))
             return Trace(values, index, name='tic')
 
-        ## otherwise try to extract it from the individual records
-        #spectra = r.findall('*//m:spectrum/', namespaces=self.ns)
-        #for s in spectra:
-        #    # TIC
-        #    s.find('m:cvParam[@accession="MS:1000285"]', namespaces=self.ns)
-        #    # time
-        #    s.find('.//m:cvParam[@accession="MS:1000016"]', \
-        #           namespaces=self.ns)
+        # # otherwise try to extract it from the individual records
+        # spectra = r.findall('*//m:spectrum/', namespaces=self.ns)
+        # for s in spectra:
+        #     # TIC
+        #     s.find('m:cvParam[@accession="MS:1000285"]', namespaces=self.ns)
+        #     # time
+        #     s.find('.//m:cvParam[@accession="MS:1000016"]', \
+        #            namespaces=self.ns)
 
-        #TODO: call parent function if no TIC found
+        # TODO: call parent function if no TIC found
 
 
 def write_mzxml(filename, df, info=None, precision='f'):
