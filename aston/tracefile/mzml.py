@@ -1,7 +1,7 @@
 import re
 import zlib
 import base64
-from xml.etree import ElementTree as ET
+from xml.etree import ElementTree as Et
 import numpy as np
 from aston import __version__
 from aston.trace import Trace
@@ -29,7 +29,7 @@ class MzXML(object):
     @property
     def data(self):
         # get all the scans under the root node
-        r = ET.parse(self.filename).getroot()
+        r = Et.parse(self.filename).getroot()
         s = r.findall('*//m:scan', namespaces=self.ns)
 
         for scn in s:
@@ -38,8 +38,8 @@ class MzXML(object):
             pks = scn.find('m:peaks', namespaces=self.ns)
             dtype = {'32': '>f4', '64': '>f8'}.get(pks.get('precision'))
             d = np.frombuffer(base64.b64decode(pks.text), dtype)
-            mz = d[::2]
-            abn = d[1::2]
+            mz = d[::2]  # noqa
+            abn = d[1::2]  # noqa
             # FIXME
 
     def total_trace(self, twin=None):
@@ -47,7 +47,7 @@ class MzXML(object):
         # TODO: only get the scans with totIonCurrent; if none found
         # calculate from the data
 
-        r = ET.parse(self.filename).getroot()
+        r = Et.parse(self.filename).getroot()
         s = r.findall('*//m:scan', namespaces=self.ns)
         d = np.array([float(i.get('totIonCurrent')) for i in s])
         t = np.array([t_to_min(i.get('retentionTime')) for i in s])
@@ -63,7 +63,7 @@ class MzML(ScanListFile):
     def scans(self, twin=None):
         if twin is None:
             twin = (-np.inf, np.inf)
-        r = ET.parse(self.filename).getroot()
+        r = Et.parse(self.filename).getroot()
         pgr = r.find('.//m:referenceableParamGroupList', namespaces=self.ns)
 
         spectra = r.findall('*//m:spectrum', namespaces=self.ns)
@@ -167,7 +167,7 @@ class MzML(ScanListFile):
         return np.fromstring(rawdata, dtype=dtype)
 
     def total_trace(self, twin=None):
-        r = ET.parse(self.filename).getroot()
+        r = Et.parse(self.filename).getroot()
 
         # get it from the chromatogram list
         c = r.find('.//m:cvParam[@accession="MS:1000235"]/..',
@@ -201,55 +201,55 @@ def write_mzxml(filename, df, info=None, precision='f'):
 
 
 def write_mzml(filename, df, info=None):
-    r = ET.Element('mzML')
+    r = Et.Element('mzML')
 
-    c = ET.SubElement(r, 'cvList', {'count': '1'})
+    c = Et.SubElement(r, 'cvList', {'count': '1'})
     cva = {'id': 'MS', 'fullName': 'Proteomics Standards Initiative Mass ' +
            'Spectrometry Ontology', 'version': '1.18.2',
            'URI': 'http://psidev.cvs.sourceforge.net/*checkout*/psidev/psi' +
            '/psi-ms/mzML/controlledVocabulary/psi-ms.obo'}
-    ET.SubElement(c, 'cv', cva)
+    Et.SubElement(c, 'cv', cva)
 
-    c = ET.SubElement(r, 'fileDescription')
-    c = ET.SubElement(c, 'fileContent')
+    c = Et.SubElement(r, 'fileDescription')
+    c = Et.SubElement(c, 'fileContent')
     acc = {'ms': ('MS:1000579', 'MS1 spectrum'),
            'uv': ('MS:1000806', 'absorption spectrum')}
     # TODO: need to select which kind of spectrum this is
     stype = 'ms'
-    ET.SubElement(c, 'cvParam', {'cvRef': 'MS', 'accession': acc[stype][0],
+    Et.SubElement(c, 'cvParam', {'cvRef': 'MS', 'accession': acc[stype][0],
                                  'name': acc[stype][1]})
 
-    c = ET.SubElement(r, 'softwareList', {'count': '1'})
-    c = ET.SubElement(c, 'software', {'id': 'Aston', 'version': __version__})
-    ET.SubElement(c, 'cvParam', {'cvRef': 'MS', 'accession': 'MS:1001457',
+    c = Et.SubElement(r, 'softwareList', {'count': '1'})
+    c = Et.SubElement(c, 'software', {'id': 'Aston', 'version': __version__})
+    Et.SubElement(c, 'cvParam', {'cvRef': 'MS', 'accession': 'MS:1001457',
                                  'name': 'data processing software'})
 
-    c = ET.SubElement(r, 'instrumentConfigurationList', {'count': '1'})
-    c = ET.SubElement(c, 'instrumentConfiguration', {'id': 'IC1'})
-    ET.SubElement(c, 'cvParam', {'cvRef': 'MS', 'accession': 'MS:1000031',
+    c = Et.SubElement(r, 'instrumentConfigurationList', {'count': '1'})
+    c = Et.SubElement(c, 'instrumentConfiguration', {'id': 'IC1'})
+    Et.SubElement(c, 'cvParam', {'cvRef': 'MS', 'accession': 'MS:1000031',
                                  'name': 'instrument model'})
 
-    c = ET.SubElement(r, 'dataProcessingList', {'count': '1'})
-    c = ET.SubElement(c, 'dataProcessing', {'id': 'DP1'})
-    c = ET.SubElement(c, 'processingMethod', {'order': '1',
+    c = Et.SubElement(r, 'dataProcessingList', {'count': '1'})
+    c = Et.SubElement(c, 'dataProcessing', {'id': 'DP1'})
+    c = Et.SubElement(c, 'processingMethod', {'order': '1',
                                               'softwareRef': 'Aston'})
-    ET.SubElement(c, 'cvParam', {'cvRef': 'MS', 'accession': 'MS:1000544',
+    Et.SubElement(c, 'cvParam', {'cvRef': 'MS', 'accession': 'MS:1000544',
                                  'name': 'Conversion to mzML'})
 
-    c = ET.SubElement(r, 'run', {'defaultInstrumentConfigurationRef': 'IC1',
+    c = Et.SubElement(r, 'run', {'defaultInstrumentConfigurationRef': 'IC1',
                                  'id': 'R1'})
-    sl = ET.SubElement(c, 'spectrumList', {'count': len(df.index),
+    sl = Et.SubElement(c, 'spectrumList', {'count': len(df.index),
                                            'defaultDataProcessingRef': 'DP1'})
     for i, scan in enumerate(df.scans()):
-        s = ET.SubElement(sl, 'spectrum', {'index': str(i),
+        s = Et.SubElement(sl, 'spectrum', {'index': str(i),
                                            'id': 'scan=' + str(i + 1),
                                            'defaultArrayLength': '1'})
         # TODO: write out spectrum info
         # ET.SubElement(s, 'scanList', {})  # is this necessary?
-        dal = ET.SubElement(s, 'binaryDataArrayList', {'count': '2'})
-        da1 = ET.SubElement(dal, 'binaryDataArray', {'encodedLength': ''})
-        ET.SubElement(da1, 'cvParamGroup', {})
-        ET.SubElement(da1, 'binary', {}).text = 'test'
-        da2 = ET.SubElement(dal, 'binaryDataArray', {'encodedLength': ''})
-        ET.SubElement(da2, 'cvParamGroup', {})
-        ET.SubElement(da2, 'binary', {}).text = 'test'
+        dal = Et.SubElement(s, 'binaryDataArrayList', {'count': '2'})
+        da1 = Et.SubElement(dal, 'binaryDataArray', {'encodedLength': ''})
+        Et.SubElement(da1, 'cvParamGroup', {})
+        Et.SubElement(da1, 'binary', {}).text = 'test'
+        da2 = Et.SubElement(dal, 'binaryDataArray', {'encodedLength': ''})
+        Et.SubElement(da2, 'cvParamGroup', {})
+        Et.SubElement(da2, 'binary', {}).text = 'test'

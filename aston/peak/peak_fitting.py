@@ -150,7 +150,7 @@ def fit(ts, fs=[], all_params=[], fit_vars=None,
     #     #    fit_p = r['x']
 
     fit_pl = fit_p.tolist()
-    v = fit_pl.pop(0)
+    v = fit_pl.pop(0)  # noqa
     fitted_params = []
     for f, to_fit in zip(fs, fit_vars):
         fit_p_dict = {v: fit_pl.pop(0) for v in to_fit}
