@@ -1,6 +1,3 @@
-from matplotlib.transforms import offset_copy
-
-
 # this is used here and in the peak plotting code
 def desaturate(c, k=0):
     """
@@ -13,6 +10,7 @@ def desaturate(c, k=0):
 
 
 def plot_events(events, color='k', ax=None):
+    from matplotlib.transforms import offset_copy
     if ax is None:
         import matplotlib.pyplot as plt
         ax = plt.gca()

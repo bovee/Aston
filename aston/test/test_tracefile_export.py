@@ -1,4 +1,5 @@
 # from io import StringIO
+import os
 import numpy as np
 from aston.trace.trace import Chromatogram
 from aston.tracefile.netcdf import write_netcdf
@@ -11,3 +12,5 @@ def test_write_netcdf():
     df = Chromatogram(d, t, ['A', 'B'])
     # f_obj = StringIO()
     write_netcdf('test.cdf', df)
+    # clean up
+    os.remove('test.cdf')
