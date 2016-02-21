@@ -1,2 +1,3 @@
 include *.rst
 include LICENSE.txt
+recursive-include test_data *

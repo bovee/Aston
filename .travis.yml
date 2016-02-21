@@ -1,12 +1,25 @@
 language: python
-env:
-  - TOXENV=py27
-  - TOXENV=py34
-  - TOXENV=py35
+python:
+  - 2.7
+  - 3.4
+  - 3.5
+
+before_install:
+  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
+      wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh;
+    else
+      wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+    fi
+  - bash miniconda.sh -b -p $HOME/miniconda
+  - export PATH="$HOME/miniconda/bin:$PATH"
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q conda
 
 install:
-  - pip install tox
-  - apt-get install numpy scipy
+  - conda install python=$TRAVIS_PYTHON_VERSION atlas numpy scipy 
+  - python setup.py install
+  - pip install pytest coverage pytest-cov flake8
 
 script:
-  - tox
+  - py.test --cov=aston aston
+  - flake8 aston

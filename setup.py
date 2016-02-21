@@ -39,9 +39,9 @@ options = {
     # 'data_files': matplotlib.get_py2exe_datafiles(),
     'package_data': {'aston': []},
     'include_package_data': True,
-    'install_requires': ['numpy', 'scipy'],
+    'install_requires': [],
     'extras_require': {
-        'plot': ['matplotlib']
+        'plot': ['matplotlib', 'jupyter'],
     }
 }
 
