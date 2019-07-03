@@ -74,7 +74,7 @@ class AgilentMS(TraceFile):
             npos = f.tell() + 2 * struct.unpack('>H', f.read(2))[0]
 
             # keep a running total of how many measurements
-            tot_pts += (npos - f.tell() - 26) / 4
+            tot_pts += (npos - f.tell() - 26) // 4
             rowst[scn + 1] = tot_pts
 
             # move forward

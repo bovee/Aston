@@ -1,6 +1,8 @@
-# FIXME
 import numpy as np
-from pyms.GCMS.Class import GCMS_data, Scan, IonChromatogram
+try:
+    from pyms.GCMS.Class import GCMS_data, Scan, IonChromatogram
+except ImportError:
+    GCMS_data = object
 
 
 class AstonPyMS(GCMS_data):
@@ -28,6 +30,8 @@ class AstonPyMS(GCMS_data):
     """
 
     def __init__(self, data):
+        if 'Scan' not in vars():
+            raise Exception('pyms is not installed')
         self.data = data
 
     def __len__(self):

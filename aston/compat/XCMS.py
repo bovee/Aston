@@ -1,3 +1,4 @@
-import rpy2  # noqa
-
-pass
+try:
+    import rpy2  # noqa
+except:
+    pass
