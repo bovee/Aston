@@ -60,7 +60,7 @@ class Peak(object):
             def check(name):
                 try:
                     return np.abs(mz - float(name)) < tol
-                except:
+                except ValueError:
                     return False
 
             cs = [c for c in self.components if check(c._trace.name)]

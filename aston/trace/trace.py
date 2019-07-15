@@ -382,7 +382,7 @@ class Chromatogram(object):
             """
             try:
                 mz = float(mz)
-            except:
+            except ValueError:
                 return 100
             wv = (mz * (max_hz - min_hz) -
                   max_hz * min_mz + min_hz * max_mz) / (max_mz - min_mz)

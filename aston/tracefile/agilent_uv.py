@@ -61,7 +61,7 @@ class AgilentMWD(TraceFile):
         f.seek(0x254)
         sig_name = str(f.read(struct.unpack('>B', f.read(1))[0]))
         # wavelength the file was collected at
-        wv = re.search('[\w]+=(\d+)', sig_name).group(1)
+        wv = re.search('[\\w]+=(\\d+)', sig_name).group(1)
 
         f.seek(0x284)
         del_ab = struct.unpack('>d', f.read(8))[0]
@@ -153,7 +153,7 @@ class AgilentMWD2(TraceFile):
         sig_name = f.read(2 * struct.unpack('>B',
                                             f.read(1))[0]).decode('utf-16')
         # wavelength the file was collected at
-        wv = re.search('[\w]+=(\d+)', sig_name).group(1)
+        wv = re.search('[\\w]+=(\\d+)', sig_name).group(1)
 
         f.seek(0x127C)
         del_ab = struct.unpack('>d', f.read(8))[0]
@@ -319,7 +319,7 @@ class AgilentCSDAD(TraceFile):
             rawdate = string_read(f)
             try:  # fails on 0331 UV files
                 d['r-date'] = datetime.strptime(rawdate, "%d-%b-%y, %H:%M:%S").isoformat(' ')  # noqa
-            except:
+            except TypeError:
                 pass
             f.seek(0xD0)
             d['r-inst'] = string_read(f)

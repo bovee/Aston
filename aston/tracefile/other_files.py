@@ -24,7 +24,7 @@ class CSVFile(TraceFile):
                 data = np.array([np.fromstring(ln, sep=delim)
                                  for ln in lns[1:]])
                 return Chromatogram(data[:, 1:], data[:, 0], ions)
-        except:
+        except Exception:
             return Chromatogram()
 
 

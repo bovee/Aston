@@ -141,7 +141,7 @@ def read_peaks(db, filename, ftype='isodat'):
 
             try:
                 p, succ = leastsq(errfunc, p0, args=(np.array(rts), dd13cs))
-            except:
+            except Exception:
                 p = p0
             # apply the linear model to get the dd13C linearity correction
             # for a given time and add it to the value of this peak

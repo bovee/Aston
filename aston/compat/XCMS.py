@@ -1,4 +1,4 @@
 try:
     import rpy2  # noqa
-except:
+except ImportError:
     pass

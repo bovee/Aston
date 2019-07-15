@@ -37,7 +37,7 @@ class Scan(object):
                 # clicked on the spectrum graph previously.
                 # Matplotlib bug needs workaround
                 ax.vlines(scn[0], 0, scn[1], color=color, alpha=0.5)
-            except:
+            except Exception:
                 pass
             ax.plot(scn[0], scn[1], ',', color=color)
 

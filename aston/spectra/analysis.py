@@ -20,7 +20,7 @@ abn = {'-': {0.000548: 1},
 
 def mono_mass(formula):
     mass = 0
-    for atom, count in re.findall('([A-Z][a-z]*)(\d*)', formula):
+    for atom, count in re.findall('([A-Z][a-z]*)(\\d*)', formula):
         if count == '':
             count = 1
         else:
@@ -32,7 +32,7 @@ def mono_mass(formula):
 
 def all_mass(formula):
     iso_dists = []
-    for atom, count in re.findall('([A-Z][a-z]*)(\d*)', formula):
+    for atom, count in re.findall('([A-Z][a-z]*)(\\d*)', formula):
         if count == '':
             count = 1
         else:

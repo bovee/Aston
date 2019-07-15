@@ -24,7 +24,7 @@ def ratio_f(pks, r2=45, r1=44):
     # try fitting; if it doesn't work, just use first ratio peak
     try:
         p, succ = leastsq(errfunc, p0, args=(np.array(x), np.array(y)))
-    except:
+    except Exception:
         p = p0
 
     # construct a function from the fitted data
