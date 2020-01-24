@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 from setuptools import setup
-# import matplotlib
 import os
 
 from aston import __version__
@@ -39,7 +38,7 @@ options = {
     # 'data_files': matplotlib.get_py2exe_datafiles(),
     'package_data': {'aston': []},
     'include_package_data': True,
-    'install_requires': ['numpy==1.16.4', 'scipy>=1.2.0'],
+    'install_requires': ['numpy>=1.16.4', 'scipy>=1.2.0'],
     'extras_require': {
         'plot': ['matplotlib', 'jupyter'],
     }
