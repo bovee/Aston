@@ -9,7 +9,18 @@ from aston.tracefile import TraceFile
 
 
 def string_read(f):
-    return f.read(struct.unpack('>B', f.read(1))[0]).decode('ascii').strip()
+    """modified string read method which works with our UV files"""
+    # todo figure out why there is a null character between every value
+    #   - check if this is true across all cases
+    #   - if so, does this affect the interpretation of intensity values
+    # it's not pretty, but it works
+    read_len = struct.unpack(  # determine length to read
+        '>B', f.read(1)
+    )[0]
+    out = f.read(  # read values, decode, and strip
+        2 * read_len - 1
+    ).decode('ascii').strip()
+    return out.replace('\x00', '')
 
 
 class AgilentMWD(TraceFile):
