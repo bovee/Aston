@@ -64,7 +64,7 @@ def peak_model(f):
                 kw[v] = def_vals[v]
 
         # this copies all of the defaults into what the peak function needs
-        anames, _, _, _ = inspect.getargspec(f)
+        anames = list(inspect.signature(f).parameters)
         fkw = dict([(arg, kw[arg]) for arg in anames if arg in kw])
 
         # some functions use location or width parameters explicitly
@@ -82,7 +82,7 @@ def peak_model(f):
         return kw['v'] + kw['h'] / max(mod) * mod
 
     args = set(['v', 'h', 'x', 'w'])
-    anames, _, _, _ = inspect.getargspec(f)
+    anames = list(inspect.signature(f).parameters)
     wrapped_f._peakargs = list(args.union([a for a in anames
                                            if a not in ('t', 'r')]))
     return wrapped_f

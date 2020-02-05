@@ -31,7 +31,7 @@ options = {
     ],
     'long_description': read('README.md'),
     'packages': [
-        'aston', 'aston.calibrations', 'aston.compat', 'aston.peak',
+        'aston', 'aston.calibrations', 'aston.peak',
         'aston.spectra', 'aston.trace', 'aston.tracefile'
     ],
     'scripts': [],
@@ -39,6 +39,8 @@ options = {
     'package_data': {'aston': []},
     'include_package_data': True,
     'install_requires': ['numpy>=1.16.4', 'scipy>=1.2.0'],
+    'setup_requires': ['pytest-runner'],
+    'tests_require': ['pytest', 'coverage', 'pytest-cov'],
     'extras_require': {
         'plot': ['matplotlib', 'jupyter'],
     }

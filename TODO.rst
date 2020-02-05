@@ -1,11 +1,5 @@
-0.7 Features
-************
-
-*
-
-
-0.7 Checklist
-*************
+Ideas For Things To Do
+**********************
 * plot all 1d traces in same axes, each 2d gets its own axes (but x-axis is linked?)
 * allow scaling/stacking of 1d traces
 * remove "extras", "graph style" options from graph menu
@@ -25,10 +19,6 @@
 * compound libraries
 * inner product/neutral loss chromatograms
 
-
-0.8 Checklist
-*************
-
 * Agilent .REG scraping
   - method parameters
 * autoalign chromatograms
@@ -44,10 +34,6 @@
 * put retention time on extracted spectra
 * buttons for spectral navigation?
 * xcms interface
-
-
-0.9 Checklist
-*************
 
 * MSMS support
   - tune MSMS file format performance (rewrites in C?)
@@ -68,9 +54,6 @@
 * package example data with aston (for tests / quality control)
 * write unit tests
 
-
-Indefinite
-**********
 * MWD import: check changes in "peak width", e.g. sampling rate (0x212 or 0x214?)
 * package size on Macs
 * setup/disttools? need better versioning
