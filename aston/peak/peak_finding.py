@@ -18,7 +18,10 @@ def simple_peak_find(s, init_slope=500, start_slope=500, end_slope=200,
         """Returns a sliding window of size 'size' along itr."""
         itr, buf = iter(itr), []
         for _ in range(size):
-            buf += [next(itr)]
+            try:
+                buf += [next(itr)]
+            except StopIteration:
+                return
         for l in itr:
             yield buf
             buf = buf[1:] + [l]

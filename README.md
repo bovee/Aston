@@ -1,8 +1,6 @@
-.. image:: https://travis-ci.org/bovee/Aston.svg?branch=master
-   :target: https://travis-ci.org/bovee/Aston/
+[![Travis CI](https://travis-ci.org/bovee/Aston.svg?branch=master)](https://travis-ci.org/bovee/Aston/)
 
 
-*****
 Aston
 *****
 
@@ -23,6 +21,7 @@ Once these are installed, you can check that everything works by installing tox 
 
 Usage
 *****
-
-    from aston.tracefile import TraceFile
-    c = TraceFile('./test.cdf')
+```python
+from aston.tracefile import TraceFile
+c = TraceFile('./test.cdf')
+```

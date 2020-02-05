@@ -29,7 +29,7 @@ options = {
         'Operating System :: OS Independent',
         'Topic :: Scientific/Engineering :: Chemistry'
     ],
-    'long_description': read('README.rst'),
+    'long_description': read('README.md'),
     'packages': [
         'aston', 'aston.calibrations', 'aston.compat', 'aston.peak',
         'aston.spectra', 'aston.trace', 'aston.tracefile'
