@@ -30,6 +30,7 @@ options = {
         'Topic :: Scientific/Engineering :: Chemistry'
     ],
     'long_description': read('README.md'),
+    'long_description_content_type': 'text/markdown',
     'packages': [
         'aston', 'aston.calibrations', 'aston.peak',
         'aston.spectra', 'aston.trace', 'aston.tracefile'
