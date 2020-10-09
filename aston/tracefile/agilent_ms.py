@@ -158,9 +158,9 @@ class AgilentMS(TraceFile):
 
             # TODO: use numpy.fromfile?
             nions = np.fromfile(f, dtype='>H', count=npts * 2)[0::2]
-            if scn < 2:
-                print(npts)
-                print(nions)
+            # if scn < 2:
+            #     print(npts)
+            #     print(nions)
             # nions = struct.unpack('>' + npts * 'HH', f.read(npts * 4))[0::2]
             ions.update(nions)
             f.seek(npos)
