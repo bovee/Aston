@@ -429,7 +429,7 @@ class AgilentCSDAD2(TraceFile):
             # for idx in np.hstack([oob_idxs, data.shape[0]]):
             #     ndata[i, pidx:idx] = np.cumsum(data[pidx:idx])
             #     pidx = idx
-
+        f.close()
         return Chromatogram(ndata / 2000., times / 60000., wvs, yunits=yunits)
 
     @property
