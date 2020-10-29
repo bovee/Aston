@@ -62,10 +62,10 @@ class AgilentMWD(TraceFile):
         data = np.array(dtraces).transpose()
         return Chromatogram(data, times, ions, yunits=yunits)
 
-    def _read_ind_file(self, fname):
+    @staticmethod
+    def _read_ind_file(fname):
         f = open(fname, 'rb')
 
-        f.read(2)
         if f.read(2) != b'\x02\x33':
             return None, None
 

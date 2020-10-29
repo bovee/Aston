@@ -22,9 +22,9 @@ def simple_peak_find(s, init_slope=500, start_slope=500, end_slope=200,
                 buf += [next(itr)]
             except StopIteration:
                 return
-        for l in itr:
+        for new_item in itr:
             yield buf
-            buf = buf[1:] + [l]
+            buf = buf[1:] + [new_item]
         yield buf
 
     # TODO: check these smoothing defaults

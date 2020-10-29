@@ -150,9 +150,12 @@ def leastsq_integrate(ts, peak_list, f='gaussian'):
 
 def periodic_integrate(ts, peak_list, offset=0., period=1.):
     # TODO: should be a peak finder, not an integrator?
-    def movwin(a, l):
-        return np.lib.stride_tricks.as_strided(a, (a.shape[0] - l + 1, l),
-                                               a.itemsize * np.ones(2))
+    def movwin(a, length):
+        return np.lib.stride_tricks.as_strided(
+            a,
+            (a.shape[0] - length + 1, length),
+            a.itemsize * np.ones(2)
+        )
     new_peak_list = []
     for hints in peak_list:
         t0, t1 = hints['t0'], hints['t1']

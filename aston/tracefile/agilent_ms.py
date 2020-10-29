@@ -253,13 +253,13 @@ class AgilentMSMSScan(ScanListFile):
         start_offset = struct.unpack('<i', f.read(4))[0]
         f.seek(start_offset)
 
-        loc = [fnames.index(k) for k in keylist]
+        locations = [fnames.index(k) for k in keylist]
         while True:
             try:
                 data = struct.unpack(rec_str, f.read(sz))
             except struct.error:
                 break
-            yield (data[l] for l in loc)
+            yield (data[loc] for loc in locations)
         f.close()
 
     def total_trace(self, twin=None):
