@@ -372,6 +372,9 @@ class AgilentCSDAD2(TraceFile):
             n_wvs = np.arange(nm_srt, nm_end, nm_stp) / 20.
             wvs.update(set(n_wvs).difference(wvs))
         wvs = list(wvs)
+        max_index = wvs.index(max(wvs))  # index maximum wavelength
+        wv_index_map = [val for val in range(max_index + 1, len(wvs))]
+        wv_index_map.extend([val for val in range(0, max_index + 1)])
 
         ndata = np.empty((nscans, len(wvs)), dtype="<i4")
         npos = 0x1002
@@ -387,19 +390,18 @@ class AgilentCSDAD2(TraceFile):
             dlen = unpack('<H', read(2))[0]
             npos += dlen
             seek(tell() + 4)  # skip time
-            nm_srt, nm_end, nm_stp = unpack('<HHH', read(6))
-            seek(tell() + 8)
+            seek(tell() + 6 + 8)  # skip wavelength description and extra
 
             # OLD CODE
             v = 0
             pos = f.tell()
-            for wv in np.arange(nm_srt, nm_end, nm_stp) / 20.:
+            for ind in wv_index_map:
                 ov = unpack('<h', read(2))[0]
                 if ov == -32768:
                     v = unpack('<i', read(4))[0]
                 else:
                     v += ov
-                ndata[i, wvs.index(wv)] = v
+                ndata[i, ind] = v
             seek(pos)
 
             #  WORKING ON A FASTER WAY TO READ ALL THIS DATA BELOW
