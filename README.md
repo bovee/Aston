@@ -1,6 +1,11 @@
 [![Travis CI](https://travis-ci.org/bovee/Aston.svg?branch=master)](https://travis-ci.org/bovee/Aston/)
 
 
+# :warning: MAINTENANCE-ONLY :warning:
+
+I still check the notifications for Aston and I'm happy to answer questions, but I have no intention of writing any more code here. If you need to work with chromatographic or other scientific file formats, **please check out [entab](https://github.com/bovee/entab)** (`pip install entab`) for a package that's still in active development, much faster, and supports most of the same formats that Aston does.
+
+
 # Aston
 
 Aston is a cross-platform, open source library for the analysis of chromatographic data. It's named for Francis William Aston, creator of the first fully functional mass spectrometer, and written using Python, Numpy, and Scipy. A graphical front-end is also available at https://github.com/bovee/AstonQt.
